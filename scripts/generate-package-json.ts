@@ -68,7 +68,11 @@ const packageJson: PackageJson = {
 const packageJsonPath = new URL("../package.json", import.meta.url).pathname;
 Deno.writeTextFileSync(
   packageJsonPath,
-  JSON.stringify(packageJson, null, 2) + "\n"
+  JSON.stringify(packageJson, null, 2) + "\n",
 );
 
-console.log(`✓ Generated package.json with ${Object.keys(dependencies).length} runtime deps and ${Object.keys(devDependencies).length} dev deps`);
+console.log(
+  `✓ Generated package.json with ${
+    Object.keys(dependencies).length
+  } runtime deps and ${Object.keys(devDependencies).length} dev deps`,
+);

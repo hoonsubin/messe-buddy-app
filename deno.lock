@@ -8,15 +8,12 @@
     "npm:@vitejs/plugin-react@^6.0.1": "6.0.2_vite@8.0.14__@types+node@24.12.4_@types+node@24.12.4",
     "npm:eslint-plugin-react-hooks@^7.1.1": "7.1.1_eslint@10.4.1",
     "npm:eslint-plugin-react-refresh@~0.5.2": "0.5.2_eslint@10.4.1",
-    "npm:eslint@*": "10.4.1",
     "npm:eslint@^10.3.0": "10.4.1",
     "npm:globals@^17.6.0": "17.6.0",
     "npm:react-dom@^19.2.6": "19.2.6_react@19.2.6",
     "npm:react@^19.2.6": "19.2.6",
     "npm:typescript-eslint@^8.59.2": "8.60.0_eslint@10.4.1_typescript@6.0.3",
-    "npm:typescript@*": "6.0.3",
     "npm:typescript@~6.0.2": "6.0.3",
-    "npm:vite@*": "8.0.14_@types+node@24.12.4",
     "npm:vite@^8.0.12": "8.0.14_@types+node@24.12.4"
   },
   "npm": {

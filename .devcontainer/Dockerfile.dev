@@ -1,0 +1,45 @@
+FROM denoland/deno:latest
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      curl wget git unzip bash-completion \
+      ca-certificates gnupg procps sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/* \
+    && node --version && npm --version
+
+# install github mcp server
+RUN curl -L https://github.com/github/github-mcp-server/releases/latest/download/github-mcp-server_Linux_x86_64.tar.gz \
+  | tar -xz -C /usr/local/bin github-mcp-server
+
+# ── install excalidraw MCP server ─────────────────────────────────────────────
+# RUN MCPB_TMP=$(mktemp -d) \
+#  && curl -fsSL https://github.com/excalidraw/excalidraw-mcp/releases/download/v0.3.2/excalidraw-mcp-app.mcpb \
+#       -o "$MCPB_TMP/excalidraw-mcp.zip" \
+#  && unzip "$MCPB_TMP/excalidraw-mcp.zip" -d /opt/excalidraw-mcp \
+#  && cd /opt/excalidraw-mcp \
+#  && npm install --omit=dev --ignore-scripts 2>/dev/null || true \
+#  && rm -rf "$MCPB_TMP"
+
+# ── 4. vscode user ────────────────────────────────────────────────────────────
+ARG USERNAME=vscode
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+RUN groupadd --gid $USER_GID $USERNAME \
+ && useradd  --uid $USER_UID --gid $USER_GID -m -s /bin/bash $USERNAME \
+ && mkdir -p /home/$USERNAME/.cache/deno \
+ && mkdir -p /home/$USERNAME/.pi \
+ && mkdir -p /home/$USERNAME/.npm-global \
+ && chown -R $USERNAME:$USERNAME /home/$USERNAME
+
+ RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/$USERNAME \
+ && chmod 0440 /etc/sudoers.d/$USERNAME
+
+USER $USERNAME
+
+ENV DENO_DIR=/home/vscode/.cache/deno
+ENV NPM_CONFIG_PREFIX=/home/vscode/.npm-global
+ENV PATH=/home/vscode/.npm-global/bin:$PATH

@@ -13,7 +13,10 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.0.0
+          deno-version: v2.8.1
+
+      - name: Install Dependency
+        run: deno install
 
       - name: Verify code format
         run: deno fmt --check

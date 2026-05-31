@@ -23,7 +23,10 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.0.0
+          deno-version: v2.8.1
+
+      - name: Install Dependency
+        run: deno install
 
       - name: Verify code format
         run: deno fmt --check
@@ -46,7 +49,7 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.0.0
+          deno-version: v2.8.1
 
       - name: Build
         run: deno task build
@@ -56,6 +59,8 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

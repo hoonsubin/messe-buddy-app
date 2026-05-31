@@ -25,3 +25,8 @@ package.json
 *.sw?
 
 .vite
+
+deno.lock
+
+.act.secrets
+.env

@@ -14,9 +14,19 @@
   "nodeModulesDir": "auto",
   "compilerOptions": {
     "types": ["react", "react-dom", "@types/react", "vite/client"],
-    "lib": ["dom", "dom.iterable", "deno.ns", "ES2023"],
+    "lib": ["dom", "dom.iterable", "deno.ns", "ES2024"],
     "jsx": "react-jsx",
     "jsxImportSource": "react"
+  },
+  "fmt": {
+    "include": ["src/"],
+    "exclude": ["src/testdata/", "src/generated/**/*.ts", "src/**/*.css"],
+    "useTabs": false,
+    "lineWidth": 80,
+    "indentWidth": 2,
+    "semiColons": true,
+    "singleQuote": false,
+    "proseWrap": "preserve"
   },
   "imports": {
     "react": "npm:react@^19.2.6",

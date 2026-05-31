@@ -1,13 +1,15 @@
 {
   "name": "Messe Buddy App",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".."
-  },
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "workspace",
+  "workspaceFolder": "/workspace",
   "features": {
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+    "ghcr.io/devcontainers-extra/features/deno:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:3": {
       "moby": false
-    }
+    },
+    "ghcr.io/devcontainers-extra/features/act:1": {}
   },
   "forwardPorts": [5173],
   "postCreateCommand": "deno install",
@@ -17,7 +19,8 @@
       "extensions": [
         "denoland.vscode-deno",
         "dbaeumer.vscode-eslint",
-        "ms-azuretools.vscode-containers"
+        "ms-azuretools.vscode-containers",
+        "ZooCodeOrganization.zoo-code"
       ],
       "settings": {
         "deno.enable": true,
