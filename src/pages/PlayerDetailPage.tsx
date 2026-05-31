@@ -16,8 +16,8 @@ export default function PlayerDetailPage({ sessionId, playerId, navigate }: Play
   const initials = player.name.split(' ').map(w => w[0]).join('')
 
   const msColors: Record<string, string> = {
-    completed: 'var(--success)', inProgress: 'var(--primary)',
-    upcoming: 'var(--subtle)', locked: '#374151',
+    completed: 'var(--success)', inProgress: 'var(--brand)',
+    upcoming: 'var(--text-subtle)', locked: '#374151',
   }
 
   return (
@@ -30,21 +30,21 @@ export default function PlayerDetailPage({ sessionId, playerId, navigate }: Play
 
       <div className="scroll">
         {/* Profile header */}
-        <div style={{ background: '#1c2b3a', padding: '14px 16px' }}>
+        <div style={{ background: 'var(--brand-deeper)', padding: '14px 16px' }}>
           <div className="row gap8">
-            <div className="avatar lg" style={{ background: '#a5d8ff', color: '#1864ab', width: 56, height: 56, fontSize: '1.1rem' }}>
+            <div className="avatar lg" style={{ background: 'var(--brand-bg)', color: 'var(--brand)', width: 56, height: 56, fontSize: '1.1rem' }}>
               {initials}
             </div>
             <div className="flex1">
               <div style={{ fontSize: '1.05rem', fontWeight: 600, color: '#fff' }}>{player.name}</div>
-              <div style={{ fontSize: '0.78rem', color: '#74c0fc', marginTop: 2 }}>
+              <div style={{ fontSize: '0.78rem', color: '#7AB8E8', marginTop: 2 }}>
                 {player.jobTitle} · {player.team}
               </div>
-              <div style={{ fontSize: '0.68rem', color: '#4a6a8a', marginTop: 2 }}>
+              <div style={{ fontSize: '0.68rem', color: '#3A5A7A', marginTop: 2 }}>
                 Start: {player.startDate} · {player.location}
               </div>
             </div>
-            <div style={{ background: '#2d4a6a', borderRadius: 20, padding: '4px 10px', fontSize: '0.72rem', fontWeight: 600, color: '#74c0fc' }}>
+            <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 20, padding: '4px 10px', fontSize: '0.72rem', fontWeight: 600, color: '#7AB8E8' }}>
               {player.totalXP}/{maxXP} XP
             </div>
           </div>
@@ -52,7 +52,7 @@ export default function PlayerDetailPage({ sessionId, playerId, navigate }: Play
             <div className="pbar">
               <div className="pbar-fill primary" style={{ width: `${overallPct}%` }} />
             </div>
-            <div style={{ fontSize: '0.68rem', color: '#74c0fc', marginTop: 4 }}>
+            <div style={{ fontSize: '0.68rem', color: '#7AB8E8', marginTop: 4 }}>
               {overallPct}% overall progress · Day 23 of 90
             </div>
           </div>
@@ -68,7 +68,7 @@ export default function PlayerDetailPage({ sessionId, playerId, navigate }: Play
             return (
               <div key={ms.id} className="ms-row">
                 <div className="ms-dot" style={{ background: col }} />
-                <div className="ms-row-name" style={{ color: ms.status === 'locked' || ms.status === 'upcoming' ? 'var(--muted)' : 'var(--text)' }}>
+                <div className="ms-row-name" style={{ color: ms.status === 'locked' || ms.status === 'upcoming' ? 'var(--text-muted)' : 'var(--text)' }}>
                   {ms.name}
                   <div className="text-xs text-muted" style={{ marginTop: 2 }}>
                     {ms.subtitle} · {missions.length} tasks
@@ -101,7 +101,7 @@ export default function PlayerDetailPage({ sessionId, playerId, navigate }: Play
           <div
             style={{
               background: 'var(--warn-bg)', border: '1px solid var(--warn)',
-              borderRadius: 'var(--radius-sm)', padding: '12px 14px',
+              borderRadius: 'var(--r-sm)', padding: '12px 14px',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
             }}
           >

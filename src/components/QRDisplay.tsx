@@ -62,7 +62,7 @@ export default function QRDisplay({ missionTitle, xpValue, onValidated, onClose 
           <button
             className="btn btn-ghost btn-full"
             onClick={onClose}
-            style={{ background: '#1c2b3a', color: '#6c757d', border: '1px solid #2d4a6a' }}
+            style={{ background: 'var(--map-bg)', color: '#6c757d', border: '1px solid #2d4a6a' }}
           >
             Cancel
           </button>

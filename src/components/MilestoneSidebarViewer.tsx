@@ -28,14 +28,14 @@ export default function MilestoneSidebarViewer({
         {/* Header */}
         <div className="panel-hdr">
           <div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginBottom: 2 }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 2 }}>
               {milestone.subtitle}
             </div>
             <h2 style={{ fontSize: '1.1rem' }}>{milestone.name}</h2>
             <div className="row gap8 mt4">
               <span className="text-xs text-muted">{missions.length} tasks</span>
               <span className="text-xs text-muted">·</span>
-              <span className="text-xs" style={{ color: 'var(--primary)', fontWeight: 600 }}>
+              <span className="text-xs" style={{ color: 'var(--brand)', fontWeight: 600 }}>
                 {milestone.earnedXP} / {milestone.xpThreshold} XP
               </span>
             </div>
@@ -82,7 +82,7 @@ export default function MilestoneSidebarViewer({
                       </div>
                       {done
                         ? <div className="mission-check">✓</div>
-                        : <div className="mission-check" style={{ color: 'var(--subtle)' }}>›</div>
+                        : <div className="mission-check" style={{ color: 'var(--text-subtle)' }}>›</div>
                       }
                     </div>
                   )
@@ -98,7 +98,7 @@ export default function MilestoneSidebarViewer({
                 {['Your Manager', 'IT Support', 'HR Team'].map(p => (
                   <div key={p} style={{ textAlign: 'center' }}>
                     <div className="avatar md" style={{ margin: '0 auto 4px' }}>{p[0]}</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>{p}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{p}</div>
                   </div>
                 ))}
               </div>
@@ -113,7 +113,7 @@ export default function MilestoneSidebarViewer({
         <div style={{ padding: '10px 14px 16px', borderTop: '1px solid var(--border)', marginTop: 4 }}>
           <div className="row sb text-sm text-muted">
             <span>{doneMissions.length} of {missions.length} done</span>
-            <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{progressPct}% complete</span>
+            <span style={{ color: 'var(--brand)', fontWeight: 600 }}>{progressPct}% complete</span>
           </div>
         </div>
 

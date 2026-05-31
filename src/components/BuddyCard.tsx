@@ -7,11 +7,11 @@ export default function BuddyCard({ name, role, tenure, contactUrl }: BuddyCardP
 
   return (
     <div className="buddy-card">
-      <div className="avatar lg" style={{ background: '#d0bfff', color: '#6741d9' }}>
+      <div className="avatar lg" style={{ background: 'var(--brand-bg)', color: 'var(--brand)' }}>
         {initials}
       </div>
       <div className="buddy-info flex1">
-        <div className="label" style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.06em', color: '#4dd0c4', marginBottom: 3 }}>
+        <div className="label" style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.06em', color: "rgba(150,200,255,0.6)", marginBottom: 3 }}>
           YOUR ONBOARDING BUDDY
         </div>
         <div className="buddy-name">{name}</div>

@@ -50,19 +50,19 @@ export default function AdminCockpitPage({ sessionId, navigate }: AdminCockpitPa
         </div>
 
         {/* Player profile card */}
-        <div style={{ padding: '10px 12px', background: '#1c2b3a', borderBottom: '1px solid #2d4a6a' }}>
+        <div style={{ padding: '10px 12px', background: 'var(--brand-deeper)', borderBottom: '1px solid rgba(0,0,0,0.2)' }}>
           <div className="row gap8">
-            <div className="avatar lg" style={{ background: '#a5d8ff', color: '#1864ab' }}>
+            <div className="avatar lg" style={{ background: 'var(--brand-bg)', color: 'var(--brand)' }}>
               {player.name.split(' ').map(w => w[0]).join('')}
             </div>
             <div className="flex1">
               <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.95rem' }}>{player.name}</div>
-              <div style={{ fontSize: '0.75rem', color: '#74c0fc' }}>{player.jobTitle} · {player.team}</div>
-              <div style={{ fontSize: '0.68rem', color: '#4a6a8a', marginTop: 2 }}>
+              <div style={{ fontSize: '0.75rem', color: '#7AB8E8' }}>{player.jobTitle} · {player.team}</div>
+              <div style={{ fontSize: '0.68rem', color: '#3A5A7A', marginTop: 2 }}>
                 Start: {player.startDate} · {player.location}
               </div>
             </div>
-            <div style={{ background: '#2d4a6a', borderRadius: 20, padding: '4px 10px', fontSize: '0.72rem', fontWeight: 600, color: '#74c0fc' }}>
+            <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 20, padding: '4px 10px', fontSize: '0.72rem', fontWeight: 600, color: '#7AB8E8' }}>
               {player.totalXP} XP
             </div>
           </div>
@@ -122,7 +122,7 @@ export default function AdminCockpitPage({ sessionId, navigate }: AdminCockpitPa
               className="mission-card"
               style={{ cursor: 'grab' }}
             >
-              <div style={{ padding: '10px 8px', color: 'var(--subtle)', fontSize: '1rem', display: 'flex', alignItems: 'center' }}>⠿</div>
+              <div style={{ padding: '10px 8px', color: 'var(--text-subtle)', fontSize: '1rem', display: 'flex', alignItems: 'center' }}>⠿</div>
               <div className={`mission-accent ${m.type}`} />
               <div className="mission-body">
                 <div className="mission-title">{m.title}</div>

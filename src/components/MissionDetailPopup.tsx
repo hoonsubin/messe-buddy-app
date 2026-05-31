@@ -47,7 +47,7 @@ export default function MissionDetailPopup({
             </div>
             <div className="col gap4" style={{ alignItems: 'flex-end' }}>
               <span className="text-xs text-muted">Reward</span>
-              <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary)' }}>+{mission.xpValue} XP</span>
+              <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--brand)' }}>+{mission.xpValue} XP</span>
             </div>
           </div>
           {mission.suggestedDueDate && (

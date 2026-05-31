@@ -94,7 +94,7 @@ export default function PlayerCockpitPage({ sessionId, playerId, navigate }: Pla
               key={ms.id}
               className="ms-pip"
               style={{
-                background: allDone ? 'var(--success)' : ms.status === 'inProgress' ? 'var(--primary)' : 'var(--border)',
+                background: allDone ? 'var(--success)' : ms.status === 'inProgress' ? 'var(--brand)' : 'var(--border)',
               }}
             />
           ))}
@@ -139,7 +139,7 @@ export default function PlayerCockpitPage({ sessionId, playerId, navigate }: Pla
                 </div>
                 {done
                   ? <div className="mission-check">✓</div>
-                  : <div className="mission-check" style={{ color: 'var(--subtle)' }}>›</div>
+                  : <div className="mission-check" style={{ color: 'var(--text-subtle)' }}>›</div>
                 }
               </div>
             )
