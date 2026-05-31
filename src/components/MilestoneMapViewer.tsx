@@ -35,7 +35,7 @@ export default function MilestoneMapViewer({
           const to   = byId[toId]
           if (!from || !to) return null
           const active = isPathActive(from, to)
-          const color = active ? statusColor(from.status) : '#2d4a6a'
+          const color = active ? statusColor(from.status) : '#142848'
           const strokeWidth = active ? 2 : 1
           const strokeDash = to.status === 'upcoming' || to.status === 'locked' ? '4,3' : undefined
           return (
@@ -67,7 +67,7 @@ export default function MilestoneMapViewer({
         {[
           { label: 'done', color: '#2f9e44' },
           { label: 'active', color: '#1971c2' },
-          { label: 'next', color: '#4a6a8a' },
+          { label: 'next', color: '#2D4B6E' },
           { label: 'locked', color: '#374151' },
         ].map(l => (
           <div key={l.label} className="leg-item">
@@ -96,7 +96,7 @@ function MilestoneNode({ milestone: ms, isActive, onClick }: MilestoneNodeProps)
   const fillColor =
     ms.status === 'completed'  ? '#2f9e44' :
     ms.status === 'inProgress' ? '#1971c2' :
-    ms.status === 'upcoming'   ? '#4a6a8a' : 'transparent'
+    ms.status === 'upcoming'   ? '#2D4B6E' : 'transparent'
 
   // Short label: hall number only
   const shortLabel = ms.name.split(' ').slice(0, 2).join(' ')

@@ -26,9 +26,9 @@ export default function QRScannerPage({ sessionId, navigate }: QRScannerPageProp
         {/* Camera viewport */}
         <div
           style={{
-            background: '#1a1a2e', borderRadius: 'var(--radius)', width: '100%',
+            background: '#1a1a2e', borderRadius: 'var(--r-md)', width: '100%',
             aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            position: 'relative', color: '#74c0fc', fontSize: '0.9rem', marginBottom: 16,
+            position: 'relative', color: '#7AB8E8', fontSize: '0.9rem', marginBottom: 16,
           }}
         >
           {/* Corner brackets */}
@@ -42,7 +42,7 @@ export default function QRScannerPage({ sessionId, navigate }: QRScannerPageProp
               key={i}
               style={{
                 position: 'absolute', width: 28, height: 28,
-                border: '3px solid var(--primary)', ...style,
+                border: '3px solid var(--brand)', ...style,
               }}
             />
           ))}
@@ -58,7 +58,7 @@ export default function QRScannerPage({ sessionId, navigate }: QRScannerPageProp
         <div
           style={{
             background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)', padding: 16, marginBottom: 16,
+            borderRadius: 'var(--r-md)', padding: 16, marginBottom: 16,
           }}
         >
           <div className="text-xs text-muted bold" style={{ marginBottom: 8, letterSpacing: '0.06em' }}>
@@ -78,7 +78,7 @@ export default function QRScannerPage({ sessionId, navigate }: QRScannerPageProp
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div className="text-xs text-muted">XP</div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--primary)' }}>+30</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--brand)' }}>+30</div>
                 </div>
               </div>
               <div className="text-xs text-muted">Mission</div>
@@ -108,7 +108,7 @@ export default function QRScannerPage({ sessionId, navigate }: QRScannerPageProp
         {scanState === 'confirmed' && (
           <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div
-              style={{ background: 'var(--success-bg)', border: '1px solid var(--success)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', color: 'var(--success)', fontWeight: 600 }}
+              style={{ background: 'var(--success-bg)', border: '1px solid var(--success)', borderRadius: 'var(--r-sm)', padding: '12px 16px', color: 'var(--success)', fontWeight: 600 }}
             >
               ✓ Mission confirmed! +30 XP awarded
             </div>

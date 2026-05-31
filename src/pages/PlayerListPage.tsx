@@ -36,7 +36,7 @@ export default function PlayerListPage({ sessionId, navigate }: PlayerListPagePr
             const pct = Math.round((player.totalXP / maxXP) * 100)
             const statusColor =
               pct >= 50 ? 'var(--success)' :
-              pct >= 20 ? 'var(--primary)' :
+              pct >= 20 ? 'var(--brand)' :
               'var(--danger)'
             const statusLabel =
               pct >= 50 ? 'Ahead' :
@@ -49,7 +49,7 @@ export default function PlayerListPage({ sessionId, navigate }: PlayerListPagePr
                 className="player-card"
                 onClick={() => navigate({ name: 'playerDetail', sessionId, playerId: player.id })}
               >
-                <div className="avatar md" style={{ background: '#a5d8ff', color: '#1864ab' }}>
+                <div className="avatar md" style={{ background: "var(--brand-bg)", color: "var(--brand)" }}>
                   {player.name.split(' ').map(w => w[0]).join('')}
                 </div>
                 <div className="flex1">
@@ -75,13 +75,13 @@ export default function PlayerListPage({ sessionId, navigate }: PlayerListPagePr
                       borderColor: statusColor,
                       color: statusColor,
                       background: statusColor === 'var(--danger)' ? 'var(--danger-bg)' :
-                                  statusColor === 'var(--success)' ? 'var(--success-bg)' : 'var(--primary-bg)',
+                                  statusColor === 'var(--success)' ? 'var(--success-bg)' : 'var(--brand-bg)',
                     }}
                   >
                     {statusLabel}
                   </span>
                 </div>
-                <span style={{ color: 'var(--subtle)', fontSize: '1rem' }}>›</span>
+                <span style={{ color: 'var(--text-subtle)', fontSize: '1rem' }}>›</span>
               </div>
             )
           })}

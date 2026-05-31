@@ -14,17 +14,13 @@ export default function LandingPage({ navigate }: LandingPageProps) {
 
   function handleJoin() {
     if (!sessionId.trim()) { setError('Enter a Session ID'); return }
-    // Prototype: go straight to player cockpit with first player
     navigate({ name: 'playerCockpit', sessionId: sessionId.trim(), playerId: MOCK_PLAYERS[0].id })
   }
-
   function handleCreate() {
     navigate({ name: 'adminCockpit', sessionId: sessionId.trim() || 'demo-2026' })
   }
-
   function handleRecover() {
     if (!recoveryKey.trim()) { setError('Enter your recovery key'); return }
-    // Prototype: any key works
     navigate({ name: 'playerCockpit', sessionId: 'demo-2026', playerId: MOCK_PLAYERS[0].id })
   }
 
@@ -35,23 +31,17 @@ export default function LandingPage({ navigate }: LandingPageProps) {
         <span className="topbar-title">Join Session</span>
       </div>
       <div className="p16">
-        <div className="col" style={{ marginBottom: 8 }}>
-          <label className="text-xs text-muted bold">Session ID</label>
-          <input
-            className="input"
-            placeholder="e.g. demo-2026"
-            value={sessionId}
-            onChange={e => { setSessionId(e.target.value); setError('') }}
-          />
-          <p className="text-xs text-muted mt4">Your Game Maker will share this with you.</p>
+        <div className="col mt8">
+          <label className="text-xs bold uppercase text-muted">Session ID</label>
+          <input className="input" placeholder="e.g. demo-2026" value={sessionId}
+            onChange={e => { setSessionId(e.target.value); setError('') }} />
+          <p className="text-xs text-muted">Your Game Maker will share this with you.</p>
         </div>
-        {error && <div className="text-xs" style={{ color: 'var(--danger)' }}>{error}</div>}
-        <button className="btn btn-primary btn-full btn-lg mt8" onClick={handleJoin}>
-          Join →
-        </button>
-        <div className="text-xs text-muted" style={{ textAlign: 'center', marginTop: 8 }}>
-          Demo: any Session ID works
-        </div>
+        {error && <p className="text-xs text-danger">{error}</p>}
+        <button className="btn btn-primary btn-full btn-lg mt12" onClick={handleJoin}>Join →</button>
+        <p className="text-xs text-subtle" style={{ textAlign: 'center', marginTop: 8 }}>
+          Demo: any Session ID opens the prototype
+        </p>
       </div>
     </div>
   )
@@ -63,24 +53,20 @@ export default function LandingPage({ navigate }: LandingPageProps) {
         <span className="topbar-title">Create Session</span>
       </div>
       <div className="p16">
-        <div className="col" style={{ marginBottom: 8 }}>
-          <label className="text-xs text-muted bold">Session Name</label>
-          <input
-            className="input"
-            placeholder="e.g. Messe München · June 2026"
-            value={sessionId}
-            onChange={e => setSessionId(e.target.value)}
-          />
+        <div className="col mt8">
+          <label className="text-xs bold uppercase text-muted">Session Name</label>
+          <input className="input" placeholder="e.g. Messe München · June 2026" value={sessionId}
+            onChange={e => setSessionId(e.target.value)} />
         </div>
-        <button className="btn btn-primary btn-full btn-lg mt8" onClick={handleCreate}>
+        <button className="btn btn-primary btn-full btn-lg mt12" onClick={handleCreate}>
           Create Session →
         </button>
         <button className="btn btn-ghost btn-full mt8" onClick={handleCreate}>
           Load from Template
         </button>
-        <div className="text-xs text-muted" style={{ textAlign: 'center', marginTop: 8 }}>
-          Demo: opens admin view directly
-        </div>
+        <p className="text-xs text-subtle" style={{ textAlign: 'center', marginTop: 8 }}>
+          Demo: opens admin cockpit directly
+        </p>
       </div>
     </div>
   )
@@ -92,38 +78,34 @@ export default function LandingPage({ navigate }: LandingPageProps) {
         <span className="topbar-title">Recover Progress</span>
       </div>
       <div className="p16">
-        <div className="col" style={{ marginBottom: 8 }}>
-          <label className="text-xs text-muted bold">Recovery Key</label>
-          <input
-            className="input"
-            placeholder="e.g. A3K9-XZ7M"
-            value={recoveryKey}
-            onChange={e => { setRecoveryKey(e.target.value); setError('') }}
-          />
-          <p className="text-xs text-muted mt4">The 8-character key shown when you first joined.</p>
+        <div className="col mt8">
+          <label className="text-xs bold uppercase text-muted">Recovery Key</label>
+          <input className="input" placeholder="e.g. A3K9-XZ7M" value={recoveryKey}
+            onChange={e => { setRecoveryKey(e.target.value); setError('') }} />
+          <p className="text-xs text-muted">The 8-character key shown when you first joined.</p>
         </div>
-        {error && <div className="text-xs" style={{ color: 'var(--danger)' }}>{error}</div>}
-        <button className="btn btn-primary btn-full btn-lg mt8" onClick={handleRecover}>
-          Recover →
-        </button>
-        <div className="text-xs text-muted" style={{ textAlign: 'center', marginTop: 8 }}>
+        {error && <p className="text-xs text-danger">{error}</p>}
+        <button className="btn btn-primary btn-full btn-lg mt12" onClick={handleRecover}>Recover →</button>
+        <p className="text-xs text-subtle" style={{ textAlign: 'center', marginTop: 8 }}>
           Demo: any key restores the demo session
-        </div>
+        </p>
       </div>
     </div>
   )
 
-  // ── Home ──────────────────────────────────────────────────────────────────
   return (
     <div className="app-screen">
+      {/* Hero */}
       <div className="land-hero">
         <div className="land-logo">MesseBuddy</div>
-        <div className="land-tag">Your first 90 days at Messe München</div>
+        <div className="land-logo-sub">Messe München · Onboarding</div>
+        <div className="land-tag">Your journey through the first 90 days.</div>
       </div>
 
       <div className="p16">
-        <div style={{ marginBottom: 8, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--muted)' }}>
-          FOR NEW EMPLOYEES
+        {/* Player entry */}
+        <div style={{ marginBottom: 4, fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+          For New Employees
         </div>
         <button className="btn btn-primary btn-full btn-lg" onClick={() => setMode('joinPlayer')}>
           Join Session →
@@ -132,8 +114,9 @@ export default function LandingPage({ navigate }: LandingPageProps) {
 
         <div className="divider" style={{ margin: '20px 0' }} />
 
-        <div style={{ marginBottom: 8, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--muted)' }}>
-          FOR HR &amp; TEAM LEADS
+        {/* GM entry */}
+        <div style={{ marginBottom: 4, fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+          For HR &amp; Team Leads
         </div>
         <button className="btn btn-ghost btn-full btn-lg" onClick={() => setMode('createGM')}>
           Create Session
@@ -145,12 +128,22 @@ export default function LandingPage({ navigate }: LandingPageProps) {
           Recover my progress →
         </button>
 
+        {/* Recovery key notice */}
         <div
           className="mt12"
-          style={{ background: 'var(--warn-bg)', border: '1px solid var(--warn)', borderRadius: 'var(--radius-sm)', padding: '10px 14px' }}
+          style={{
+            background: 'var(--warn-bg)',
+            border: '1px solid var(--warn-mid)',
+            borderRadius: 'var(--r-sm)',
+            padding: '10px 13px',
+          }}
         >
-          <div className="text-xs bold" style={{ color: 'var(--warn)', marginBottom: 4 }}>Save your Recovery Key!</div>
-          <div className="text-xs text-muted">Shown once on first join. Copy and save it somewhere safe.</div>
+          <div className="text-xs bold" style={{ color: 'var(--warn)', marginBottom: 3 }}>
+            Save your Recovery Key
+          </div>
+          <div className="text-xs text-muted">
+            Shown once on first join. Copy and save it — you'll need it if you switch devices.
+          </div>
         </div>
       </div>
     </div>
