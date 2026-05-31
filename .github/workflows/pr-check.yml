@@ -1,0 +1,31 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.8.1
+
+      - name: Install Dependency
+        run: deno install
+
+      - name: Verify code format
+        run: deno fmt --check
+
+      - name: Run linter
+        run: deno task lint
+
+      - name: Type check & build
+        run: deno task build
+
+      - name: Generate package.json (verify no errors)
+        run: deno run -A scripts/generate-package-json.ts

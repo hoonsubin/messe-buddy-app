@@ -1,0 +1,32 @@
+{
+  "name": "Messe Buddy App",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "workspace",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers-extra/features/deno:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:3": {
+      "moby": false
+    },
+    "ghcr.io/devcontainers-extra/features/act:1": {}
+  },
+  "forwardPorts": [5173],
+  "postCreateCommand": "deno install",
+  "postStartCommand": "docker info > /dev/null 2>&1 || echo 'Docker is not available. Start Docker on the host to use act.'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "denoland.vscode-deno",
+        "dbaeumer.vscode-eslint",
+        "ms-azuretools.vscode-containers",
+        "ZooCodeOrganization.zoo-code"
+      ],
+      "settings": {
+        "deno.enable": true,
+        "deno.lint": true,
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  }
+}

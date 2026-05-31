@@ -1,0 +1,17 @@
+services:
+  workspace:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile.dev
+    volumes:
+      - ..:/workspace:cached
+      - workspace-cache:/home/vscode
+    working_dir: /workspace
+    command: sleep infinity
+    env_file:
+      - ../.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  workspace-cache:
