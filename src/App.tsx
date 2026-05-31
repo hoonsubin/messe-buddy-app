@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import type { NavPage } from './types'
-import LandingPage       from './pages/LandingPage'
-import PlayerCockpitPage from './pages/PlayerCockpitPage'
-import AdminCockpitPage  from './pages/AdminCockpitPage'
-import PlayerListPage    from './pages/PlayerListPage'
-import PlayerDetailPage  from './pages/PlayerDetailPage'
-import QRScannerPage     from './pages/QRScannerPage'
-import FormPage          from './pages/FormPage'
+import type { NavPage } from './types.ts'
+import LandingPage       from './pages/LandingPage.tsx'
+import PlayerCockpitPage from './pages/PlayerCockpitPage.tsx'
+import AdminCockpitPage  from './pages/AdminCockpitPage.tsx'
+import PlayerListPage    from './pages/PlayerListPage.tsx'
+import PlayerDetailPage  from './pages/PlayerDetailPage.tsx'
+import QRScannerPage     from './pages/QRScannerPage.tsx'
+import FormPage          from './pages/FormPage.tsx'
 
 export default function App() {
   const [nav, setNav] = useState<NavPage>({ name: 'landing' })
@@ -14,7 +14,7 @@ export default function App() {
   function navigate(page: NavPage) {
     setNav(page)
     // Scroll to top on navigation
-    window.scrollTo(0, 0)
+    globalThis.scrollTo(0, 0)
   }
 
   switch (nav.name) {

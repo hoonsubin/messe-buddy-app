@@ -1,7 +1,7 @@
-import type { Navigate } from '../types'
-import { getPlayerById, MOCK_MILESTONES, getMissionsForMilestone, MOCK_BUDDY } from '../mockData'
-import TopBar from '../components/TopBar'
-import BuddyCard from '../components/BuddyCard'
+import type { Navigate } from '../types.ts'
+import { getPlayerById, MOCK_MILESTONES, getMissionsForMilestone, MOCK_BUDDY } from '../mockData.ts'
+import TopBar from '../components/TopBar.tsx'
+import BuddyCard from '../components/BuddyCard.tsx'
 
 interface PlayerDetailPageProps {
   sessionId: string
@@ -64,7 +64,6 @@ export default function PlayerDetailPage({ sessionId, playerId, navigate }: Play
           {MOCK_MILESTONES.map(ms => {
             const missions = getMissionsForMilestone(ms.id)
             const col = msColors[ms.status]
-            const msPct = ms.xpThreshold > 0 ? Math.round((ms.earnedXP / ms.xpThreshold) * 100) : 0
             return (
               <div key={ms.id} className="ms-row">
                 <div className="ms-dot" style={{ background: col }} />
@@ -84,7 +83,7 @@ export default function PlayerDetailPage({ sessionId, playerId, navigate }: Play
         <div className="sec-hdr">BUDDY ASSIGNED</div>
         <div style={{ padding: '8px 12px' }}>
           <BuddyCard {...MOCK_BUDDY} />
-          <button
+          <button type="button"
             className="btn btn-ghost btn-full mt8"
             onClick={() => alert('Change buddy (prototype)')}
           >
@@ -109,7 +108,7 @@ export default function PlayerDetailPage({ sessionId, playerId, navigate }: Play
               <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>Meet Your Manager</div>
               <div className="text-xs text-muted mt4">Awaiting GM scan · Hall A4 · +30 XP</div>
             </div>
-            <button
+            <button type="button"
               className="btn btn-success btn-sm"
               onClick={() => navigate({ name: 'qrScanner', sessionId })}
             >

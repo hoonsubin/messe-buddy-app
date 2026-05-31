@@ -1,6 +1,6 @@
-import type { Navigate } from '../types'
-import { MOCK_PLAYERS, MOCK_MILESTONES } from '../mockData'
-import TopBar from '../components/TopBar'
+import type { Navigate } from '../types.ts'
+import { MOCK_PLAYERS, MOCK_MILESTONES } from '../mockData.ts'
+import TopBar from '../components/TopBar.tsx'
 
 interface PlayerListPageProps {
   sessionId: string

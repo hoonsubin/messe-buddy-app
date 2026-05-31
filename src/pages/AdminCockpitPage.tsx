@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import type { Navigate } from '../types'
-import { MOCK_MILESTONES, MOCK_MISSIONS, MOCK_PLAYERS, getMissionsForMilestone } from '../mockData'
-import TopBar from '../components/TopBar'
-import MilestoneMapViewer from '../components/MilestoneMapViewer'
-import TagBadge from '../components/TagBadge'
+import type { Navigate } from '../types.ts'
+import { MOCK_MILESTONES, MOCK_MISSIONS, MOCK_PLAYERS, getMissionsForMilestone } from '../mockData.ts'
+import TopBar from '../components/TopBar.tsx'
+import MilestoneMapViewer from '../components/MilestoneMapViewer.tsx'
+import TagBadge from '../components/TagBadge.tsx'
 
 interface AdminCockpitPageProps {
   sessionId: string
@@ -31,7 +31,7 @@ export default function AdminCockpitPage({ sessionId, navigate }: AdminCockpitPa
         <div style={{ padding: '10px 12px', background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
           <div className="row sb">
             <span className="text-xs text-muted bold">VIEWING PLAYER</span>
-            <button
+            <button type="button"
               className="btn btn-ghost btn-sm"
               onClick={() => navigate({ name: 'playerList', sessionId })}
             >
@@ -79,8 +79,8 @@ export default function AdminCockpitPage({ sessionId, navigate }: AdminCockpitPa
         <div className="drag-hint">Tap a room to edit its missions · In production: drag to reposition</div>
 
         <div style={{ padding: '6px 12px', display: 'flex', gap: 8 }}>
-          <button className="btn btn-ghost btn-sm flex1">⬆ Upload BG Image</button>
-          <button className="btn btn-ghost btn-sm">Grid: ON</button>
+          <button type="button" className="btn btn-ghost btn-sm flex1">⬆ Upload BG Image</button>
+          <button type="button" className="btn btn-ghost btn-sm">Grid: ON</button>
         </div>
 
         {/* Milestone sidebar editor */}
@@ -100,7 +100,7 @@ export default function AdminCockpitPage({ sessionId, navigate }: AdminCockpitPa
                   <span className="mission-xp">+{m.xpValue} XP</span>
                 </div>
               </div>
-              <button
+              <button type="button"
                 className="btn btn-ghost btn-sm"
                 style={{ margin: '8px', fontSize: '0.72rem', padding: '5px 10px' }}
               >
@@ -108,7 +108,7 @@ export default function AdminCockpitPage({ sessionId, navigate }: AdminCockpitPa
               </button>
             </div>
           ))}
-          <button className="btn btn-ghost btn-full" style={{ fontSize: '0.85rem' }}>
+          <button type="button" className="btn btn-ghost btn-full" style={{ fontSize: '0.85rem' }}>
             + Add Mission
           </button>
         </div>
@@ -137,10 +137,10 @@ export default function AdminCockpitPage({ sessionId, navigate }: AdminCockpitPa
 
         {/* Save / export */}
         <div style={{ padding: '12px', display: 'flex', gap: 8, borderTop: '1px solid var(--border)' }}>
-          <button className="btn btn-primary flex1" onClick={() => alert('Changes saved! (prototype)')}>
+          <button type="button" className="btn btn-primary flex1" onClick={() => alert('Changes saved! (prototype)')}>
             Save Changes
           </button>
-          <button className="btn btn-ghost flex1" onClick={() => alert('Template exported! (prototype)')}>
+          <button type="button" className="btn btn-ghost flex1" onClick={() => alert('Template exported! (prototype)')}>
             Export Template
           </button>
         </div>

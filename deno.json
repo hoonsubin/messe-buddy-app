@@ -22,6 +22,7 @@
     "react": "npm:react@^19.2.6",
     "react-dom": "npm:react-dom@^19.2.6",
     "@eslint/js": "npm:@eslint/js@^10.0.1",
+    "@std/fs": "https://deno.land/std@0.208.0/fs/mod.ts",
     "@types/node": "npm:@types/node@^24.12.3",
     "@types/react": "npm:@types/react@^19.2.14",
     "@types/react-dom": "npm:@types/react-dom@^19.2.3",

@@ -9,7 +9,7 @@
  * Output: package.json at project root
  */
 
-import { readTextFileSync } from "https://deno.land/std@0.208.0/fs/mod.ts";
+// Deno.readTextFileSync is a built-in Deno API — no import needed
 
 interface DenoConfig {
   imports?: Record<string, string>;
@@ -26,7 +26,7 @@ interface PackageJson {
 
 // Read deno.json
 const denoJsonPath = new URL("../deno.json", import.meta.url).pathname;
-const denoJsonContent = readTextFileSync(denoJsonPath, "utf-8");
+const denoJsonContent = Deno.readTextFileSync(denoJsonPath);
 const denoConfig: DenoConfig = JSON.parse(denoJsonContent);
 
 if (!denoConfig.imports) {
@@ -49,7 +49,9 @@ for (const [key, value] of Object.entries(denoConfig.imports)) {
 
   const [, pkgName, version] = npmMatch;
   const target = runtimePackages.includes(key) ? dependencies : devDependencies;
-  target[pkgName] = `^${version.replace(/^\^/, "")}`;
+  // Normalize: strip leading ^ or ~, then add ^ for semver compatibility
+  const sanitized = version.replace(/^[\^~]/, "");
+  target[pkgName] = `^${sanitized}`;
 }
 
 // Generate package.json

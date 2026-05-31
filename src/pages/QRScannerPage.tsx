@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import type { Navigate } from '../types'
-import TopBar from '../components/TopBar'
+import type { Navigate } from '../types.ts'
+import TopBar from '../components/TopBar.tsx'
 
 interface QRScannerPageProps {
   sessionId: string
@@ -91,16 +91,16 @@ export default function QRScannerPage({ sessionId, navigate }: QRScannerPageProp
 
         {/* Actions */}
         {scanState === 'idle' && (
-          <button className="btn btn-primary btn-full btn-lg" onClick={handleSimulateScan}>
+          <button type="button" className="btn btn-primary btn-full btn-lg" onClick={handleSimulateScan}>
             [Demo] Simulate Scan
           </button>
         )}
         {scanState === 'scanned' && (
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-success flex1 btn-lg" onClick={handleConfirm}>
+            <button type="button" className="btn btn-success flex1 btn-lg" onClick={handleConfirm}>
               ✓ Confirm
             </button>
-            <button className="btn btn-danger flex1 btn-lg" onClick={() => setScanState('idle')}>
+            <button type="button" className="btn btn-danger flex1 btn-lg" onClick={() => setScanState('idle')}>
               ✕ Reject
             </button>
           </div>
@@ -115,7 +115,7 @@ export default function QRScannerPage({ sessionId, navigate }: QRScannerPageProp
             <div className="text-xs text-muted">
               Player's QR screen will close automatically via SSE push.
             </div>
-            <button className="btn btn-ghost btn-full" onClick={() => setScanState('idle')}>
+            <button type="button" className="btn btn-ghost btn-full" onClick={() => setScanState('idle')}>
               Scan another QR
             </button>
           </div>

@@ -1,7 +1,7 @@
 import type {
   Session, Milestone, Mission, Player, BuddyProfile, Resource,
   ProgressEvent, TutorialStep
-} from './types'
+} from './types.ts'
 
 export const MOCK_SESSION: Session = {
   id: 'demo-2026',

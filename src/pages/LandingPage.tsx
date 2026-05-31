@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import type { Navigate } from '../types'
-import { MOCK_PLAYERS } from '../mockData'
+import type { Navigate } from '../types.ts'
+import { MOCK_PLAYERS } from '../mockData.ts'
 
 interface LandingPageProps { navigate: Navigate }
 
@@ -27,7 +27,7 @@ export default function LandingPage({ navigate }: LandingPageProps) {
   if (mode === 'joinPlayer') return (
     <div className="app-screen">
       <div className="topbar">
-        <button className="topbar-back" onClick={() => { setMode('home'); setError('') }}>‹</button>
+        <button type="button" className="topbar-back" onClick={() => { setMode('home'); setError('') }}>‹</button>
         <span className="topbar-title">Join Session</span>
       </div>
       <div className="p16">
@@ -38,7 +38,7 @@ export default function LandingPage({ navigate }: LandingPageProps) {
           <p className="text-xs text-muted">Your Game Maker will share this with you.</p>
         </div>
         {error && <p className="text-xs text-danger">{error}</p>}
-        <button className="btn btn-primary btn-full btn-lg mt12" onClick={handleJoin}>Join →</button>
+        <button type="button" className="btn btn-primary btn-full btn-lg mt12" onClick={handleJoin}>Join →</button>
         <p className="text-xs text-subtle" style={{ textAlign: 'center', marginTop: 8 }}>
           Demo: any Session ID opens the prototype
         </p>
@@ -49,7 +49,7 @@ export default function LandingPage({ navigate }: LandingPageProps) {
   if (mode === 'createGM') return (
     <div className="app-screen">
       <div className="topbar">
-        <button className="topbar-back" onClick={() => { setMode('home'); setError('') }}>‹</button>
+        <button type="button" className="topbar-back" onClick={() => { setMode('home'); setError('') }}>‹</button>
         <span className="topbar-title">Create Session</span>
       </div>
       <div className="p16">
@@ -58,10 +58,10 @@ export default function LandingPage({ navigate }: LandingPageProps) {
           <input className="input" placeholder="e.g. Messe München · June 2026" value={sessionId}
             onChange={e => setSessionId(e.target.value)} />
         </div>
-        <button className="btn btn-primary btn-full btn-lg mt12" onClick={handleCreate}>
+        <button type="button" className="btn btn-primary btn-full btn-lg mt12" onClick={handleCreate}>
           Create Session →
         </button>
-        <button className="btn btn-ghost btn-full mt8" onClick={handleCreate}>
+        <button type="button" className="btn btn-ghost btn-full mt8" onClick={handleCreate}>
           Load from Template
         </button>
         <p className="text-xs text-subtle" style={{ textAlign: 'center', marginTop: 8 }}>
@@ -74,7 +74,7 @@ export default function LandingPage({ navigate }: LandingPageProps) {
   if (mode === 'recover') return (
     <div className="app-screen">
       <div className="topbar">
-        <button className="topbar-back" onClick={() => { setMode('home'); setError('') }}>‹</button>
+        <button type="button" className="topbar-back" onClick={() => { setMode('home'); setError('') }}>‹</button>
         <span className="topbar-title">Recover Progress</span>
       </div>
       <div className="p16">
@@ -85,7 +85,7 @@ export default function LandingPage({ navigate }: LandingPageProps) {
           <p className="text-xs text-muted">The 8-character key shown when you first joined.</p>
         </div>
         {error && <p className="text-xs text-danger">{error}</p>}
-        <button className="btn btn-primary btn-full btn-lg mt12" onClick={handleRecover}>Recover →</button>
+        <button type="button" className="btn btn-primary btn-full btn-lg mt12" onClick={handleRecover}>Recover →</button>
         <p className="text-xs text-subtle" style={{ textAlign: 'center', marginTop: 8 }}>
           Demo: any key restores the demo session
         </p>
@@ -107,7 +107,7 @@ export default function LandingPage({ navigate }: LandingPageProps) {
         <div style={{ marginBottom: 4, fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
           For New Employees
         </div>
-        <button className="btn btn-primary btn-full btn-lg" onClick={() => setMode('joinPlayer')}>
+        <button type="button" className="btn btn-primary btn-full btn-lg" onClick={() => setMode('joinPlayer')}>
           Join Session →
         </button>
         <p className="text-xs text-muted mt4">Enter your Session ID or open your invite link.</p>
@@ -118,13 +118,13 @@ export default function LandingPage({ navigate }: LandingPageProps) {
         <div style={{ marginBottom: 4, fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
           For HR &amp; Team Leads
         </div>
-        <button className="btn btn-ghost btn-full btn-lg" onClick={() => setMode('createGM')}>
+        <button type="button" className="btn btn-ghost btn-full btn-lg" onClick={() => setMode('createGM')}>
           Create Session
         </button>
 
         <div className="divider" style={{ margin: '20px 0' }} />
 
-        <button className="btn btn-ghost btn-full" onClick={() => setMode('recover')}>
+        <button type="button" className="btn btn-ghost btn-full" onClick={() => setMode('recover')}>
           Recover my progress →
         </button>
 

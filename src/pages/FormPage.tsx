@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import type { Navigate } from '../types'
-import { MOCK_MISSIONS } from '../mockData'
-import TopBar from '../components/TopBar'
+import type { Navigate } from '../types.ts'
+import { MOCK_MISSIONS } from '../mockData.ts'
+import TopBar from '../components/TopBar.tsx'
 
 interface FormPageProps {
   missionId: string
@@ -16,7 +16,6 @@ export default function FormPage({ missionId, sessionId, playerId, navigate }: F
 
   // Prototype: mock form fields based on mission id
   const is90DayGoals = missionId === 'msn-a4-3'
-  const isProfile    = missionId === 'msn-profile'
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

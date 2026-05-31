@@ -1,19 +1,19 @@
 import { useState } from 'react'
-import type { Navigate, Mission, ProgressEvent } from '../types'
+import type { Navigate, Mission, ProgressEvent } from '../types.ts'
 import {
   MOCK_MILESTONES, MOCK_MISSIONS, MOCK_BUDDY, MOCK_RESOURCES,
   getMissionsForMilestone, getProgressForPlayer, isMissionDone,
   getMilestoneById, TUTORIAL_STEPS, getPlayerById,
-} from '../mockData'
-import TopBar from '../components/TopBar'
-import MilestoneMapViewer from '../components/MilestoneMapViewer'
-import MilestoneSidebarViewer from '../components/MilestoneSidebarViewer'
-import MissionDetailPopup from '../components/MissionDetailPopup'
-import QRDisplay from '../components/QRDisplay'
-import TutorialOverlay from '../components/TutorialOverlay'
-import BuddyCard from '../components/BuddyCard'
-import ResourcesSection from '../components/ResourcesSection'
-import TagBadge from '../components/TagBadge'
+} from '../mockData.ts'
+import TopBar from '../components/TopBar.tsx'
+import MilestoneMapViewer from '../components/MilestoneMapViewer.tsx'
+import MilestoneSidebarViewer from '../components/MilestoneSidebarViewer.tsx'
+import MissionDetailPopup from '../components/MissionDetailPopup.tsx'
+import QRDisplay from '../components/QRDisplay.tsx'
+import TutorialOverlay from '../components/TutorialOverlay.tsx'
+import BuddyCard from '../components/BuddyCard.tsx'
+import ResourcesSection from '../components/ResourcesSection.tsx'
+import TagBadge from '../components/TagBadge.tsx'
 
 interface PlayerCockpitPageProps {
   sessionId: string

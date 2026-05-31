@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 interface QRDisplayProps {
   missionTitle: string
@@ -55,11 +55,11 @@ export default function QRDisplay({ missionTitle, xpValue, onValidated, onClose 
         {/* Prototype helper */}
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {!simulating && (
-            <button className="btn btn-success btn-full" onClick={simulateScan}>
+            <button type="button" className="btn btn-success btn-full" onClick={simulateScan}>
               [Demo] Simulate GM Scan
             </button>
           )}
-          <button
+          <button type="button"
             className="btn btn-ghost btn-full"
             onClick={onClose}
             style={{ background: 'var(--map-bg)', color: '#6c757d', border: '1px solid #2d4a6a' }}

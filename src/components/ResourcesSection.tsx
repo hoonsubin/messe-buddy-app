@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import type { Resource } from '../types'
+import type { Resource } from '../types.ts'
 
 const RESOURCE_ICONS: Record<string, string> = {
   guide: '📘', video: '▶', link: '🔗', document: '📄',

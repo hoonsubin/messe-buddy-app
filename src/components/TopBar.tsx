@@ -1,4 +1,4 @@
-import type { UserRole } from '../types'
+import type { UserRole } from '../types.ts'
 
 interface TopBarProps {
   title: string
@@ -12,7 +12,7 @@ export default function TopBar({ title, totalXP, onBack, action }: TopBarProps) 
   return (
     <div className="topbar">
       {onBack && (
-        <button className="topbar-back" onClick={onBack} aria-label="Back">
+        <button type="button" className="topbar-back" onClick={onBack} aria-label="Back">
           ‹
         </button>
       )}
@@ -21,7 +21,7 @@ export default function TopBar({ title, totalXP, onBack, action }: TopBarProps) 
         <span className="topbar-xp">XP {totalXP}</span>
       )}
       {action && (
-        <button
+        <button type="button"
           className={`topbar-action${action.variant === 'green' ? ' green' : ''}`}
           onClick={action.onClick}
         >

@@ -1,4 +1,4 @@
-import type { MissionTag, MissionType } from '../types'
+import type { MissionTag, MissionType } from '../types.ts'
 
 interface TagBadgeProps {
   label: string

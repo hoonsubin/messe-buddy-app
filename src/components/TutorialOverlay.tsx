@@ -1,4 +1,4 @@
-import type { TutorialStep } from '../types'
+import type { TutorialStep } from '../types.ts'
 
 interface TutorialOverlayProps {
   steps: TutorialStep[]
@@ -18,7 +18,7 @@ export default function TutorialOverlay({ steps, currentStep, onNext, onComplete
         <div className="tutorial-title">{step.title}</div>
         <div className="tutorial-body">{step.body}</div>
         <div className="tutorial-footer">
-          <button className="tutorial-skip" onClick={onComplete}>
+          <button type="button" className="tutorial-skip" onClick={onComplete}>
             Skip tutorial
           </button>
           <div className="tutorial-dots">
@@ -26,7 +26,7 @@ export default function TutorialOverlay({ steps, currentStep, onNext, onComplete
               <div key={i} className={`t-dot${i === currentStep ? ' on' : ''}`} />
             ))}
           </div>
-          <button className="tutorial-next" onClick={isLast ? onComplete : onNext}>
+          <button type="button" className="tutorial-next" onClick={isLast ? onComplete : onNext}>
             {isLast ? 'Get started →' : 'Next →'}
           </button>
         </div>

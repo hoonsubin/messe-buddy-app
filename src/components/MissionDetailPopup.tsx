@@ -1,5 +1,5 @@
-import type { Mission } from '../types'
-import TagBadge from './TagBadge'
+import type { Mission } from '../types.ts'
+import TagBadge from './TagBadge.tsx'
 
 interface MissionDetailPopupProps {
   mission: Mission
@@ -36,7 +36,7 @@ export default function MissionDetailPopup({
               {mission.tags.map(t => <TagBadge key={t} label={t} variant={t} />)}
             </div>
           </div>
-          <button className="panel-close" onClick={onClose}>✕</button>
+          <button type="button" className="panel-close" onClick={onClose}>✕</button>
         </div>
 
         <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
@@ -88,7 +88,7 @@ export default function MissionDetailPopup({
               <div className="text-xs text-muted" style={{ textAlign: 'center' }}>
                 This is a form mission — fill it in and submit. No QR scan needed.
               </div>
-              <button
+              <button type="button"
                 className="btn btn-primary btn-full"
                 onClick={onMarkComplete}
                 disabled={isSubmitting}
@@ -101,7 +101,7 @@ export default function MissionDetailPopup({
               <div className="text-xs text-muted" style={{ textAlign: 'center' }}>
                 After completing, your Game Maker will scan your QR code to confirm.
               </div>
-              <button
+              <button type="button"
                 className="btn btn-primary btn-full"
                 onClick={onMarkComplete}
                 disabled={isSubmitting}

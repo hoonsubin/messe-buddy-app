@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import type { Milestone, Mission, ProgressEvent } from '../types'
-import TagBadge from './TagBadge'
-import { isMissionDone } from '../mockData'
+import type { Milestone, Mission, ProgressEvent } from '../types.ts'
+import TagBadge from './TagBadge.tsx'
+import { isMissionDone } from '../mockData.ts'
 
 interface MilestoneSidebarViewerProps {
   milestone: Milestone
@@ -46,13 +46,13 @@ export default function MilestoneSidebarViewer({
               />
             </div>
           </div>
-          <button className="panel-close" onClick={onClose}>✕</button>
+          <button type="button" className="panel-close" onClick={onClose}>✕</button>
         </div>
 
         {/* Tabs */}
         <div className="tabs">
           {TABS.map(t => (
-            <button key={t} className={`tab${tab === t ? ' on' : ''}`} onClick={() => setTab(t)}>
+            <button type="button" key={t} className={`tab${tab === t ? ' on' : ''}`} onClick={() => setTab(t)}>
               {t === 'Tasks' ? `Tasks ${missions.length}` : t}
             </button>
           ))}

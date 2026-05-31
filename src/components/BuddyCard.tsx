@@ -1,6 +1,6 @@
-import type { BuddyProfile } from '../types'
+import type { BuddyProfile } from '../types.ts'
 
-interface BuddyCardProps extends BuddyProfile {}
+type BuddyCardProps = BuddyProfile
 
 export default function BuddyCard({ name, role, tenure, contactUrl }: BuddyCardProps) {
   const initials = name.split(' ').map(w => w[0]).join('').toUpperCase()

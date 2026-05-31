@@ -1,5 +1,5 @@
-import type { Milestone, MilestoneStatus } from '../types'
-import { MILESTONE_CONNECTIONS } from '../mockData'
+import type { Milestone, MilestoneStatus } from '../types.ts'
+import { MILESTONE_CONNECTIONS } from '../mockData.ts'
 
 interface MilestoneMapViewerProps {
   milestones: Milestone[]
