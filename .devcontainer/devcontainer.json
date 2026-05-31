@@ -1,0 +1,29 @@
+{
+  "name": "Messe Buddy App",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": false
+    }
+  },
+  "forwardPorts": [5173],
+  "postCreateCommand": "deno install",
+  "postStartCommand": "docker info > /dev/null 2>&1 || echo 'Docker is not available. Start Docker on the host to use act.'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "denoland.vscode-deno",
+        "dbaeumer.vscode-eslint",
+        "ms-azuretools.vscode-containers"
+      ],
+      "settings": {
+        "deno.enable": true,
+        "deno.lint": true,
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  }
+}
