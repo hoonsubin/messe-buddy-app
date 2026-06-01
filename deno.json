@@ -3,13 +3,7 @@
     "dev": "deno run -A npm:vite -- --host",
     "build": "deno run -A npm:typescript/bin/tsc -b && deno run -A npm:vite build",
     "lint": "deno run -A npm:eslint .",
-    "preview": "deno run -A npm:vite preview -- --host",
-    "act": "act",
-    "act:list": "act -l",
-    "act:ci": "act push -W .github/workflows/ci.yml -j lint-and-build",
-    "act:ci:bind": "act --bind push -W .github/workflows/ci.yml -j lint-and-build",
-    "act:deploy": "act push -W .github/workflows/deploy.yml -j deploy",
-    "act:deploy:bind": "act --bind push -W .github/workflows/deploy.yml -j deploy"
+    "preview": "deno run -A npm:vite preview -- --host"
   },
   "nodeModulesDir": "auto",
   "compilerOptions": {
