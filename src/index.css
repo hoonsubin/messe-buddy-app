@@ -19,7 +19,7 @@ body {
   font-family:
     "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica Neue,
     Arial, sans-serif;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   background: #e8edf3;
@@ -67,18 +67,18 @@ body {
   --map-grid: #142848;
 
   /* Spacing scale */
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 12px;
-  --space-lg: 16px;
-  --space-xl: 24px;
-  --space-2xl: 32px;
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem;
+  --space-lg: 1rem;
+  --space-xl: 1.5rem;
+  --space-2xl: 2rem;
 
   /* Radius — Messe München is restrained, corners are tight */
-  --r-sm: 3px;
-  --r-md: 5px;
-  --r-lg: 8px; /* only used for cards / panels */
-  --r-pill: 20px;
+  --r-sm: 0.1875rem;
+  --r-md: 0.3125rem;
+  --r-lg: 0.5rem; /* only used for cards / panels */
+  --r-pill: 1.25rem;
 
   /* Shadow */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
@@ -93,7 +93,7 @@ body {
 #root {
   display: flex;
   justify-content: center;
-  padding: 16px;
+  padding: 1rem;
   min-height: 100vh;
   background: #d6dce5; /* cool medium gray — like concrete hall floor */
 }
@@ -101,7 +101,7 @@ body {
 .app-screen {
   width: 100%;
   max-width: 430px;
-  min-height: calc(100vh - 32px);
+  min-height: calc(100vh - 2rem);
   background: var(--surface-alt);
   border-radius: var(--r-lg);
   overflow: hidden;
@@ -116,7 +116,7 @@ body {
   background: var(--brand);
   color: var(--text-white);
   padding: 0 var(--space-lg);
-  height: 54px;
+  height: 3.375rem;
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -138,10 +138,10 @@ body {
   color: rgba(255, 255, 255, 0.85);
   font-size: 1.25rem;
   cursor: pointer;
-  padding: 4px;
+  padding: 0.25rem;
   line-height: 1;
   transition: color var(--ease);
-  margin-right: 2px;
+  margin-right: 0.125rem;
 }
 .topbar-back:hover {
   color: #fff;
@@ -153,7 +153,7 @@ body {
   color: #fff;
   font-size: 0.75rem;
   font-weight: 500;
-  padding: 5px 12px;
+  padding: 0.3125rem 0.75rem;
   border-radius: var(--r-sm);
   cursor: pointer;
   font-family: inherit;
@@ -172,7 +172,7 @@ body {
 .topbar-xp {
   background: rgba(0, 0, 0, 0.18);
   border-radius: var(--r-pill);
-  padding: 3px 10px;
+  padding: 0.1875rem 0.625rem;
   font-size: 0.6875rem; /* 11px */
   font-weight: 600;
   color: #d0e8ff;
@@ -184,7 +184,7 @@ body {
   background: var(--surface-alt);
   border-top: 1px solid var(--border-light);
   border-bottom: 1px solid var(--border);
-  padding: 6px var(--space-lg);
+  padding: 0.375rem var(--space-lg);
   font-size: 0.6875rem; /* 11px */
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -207,13 +207,13 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 0.375rem;
   border: none;
   border-radius: var(--r-sm);
   font-family: inherit;
   font-size: 0.875rem; /* 14px */
   font-weight: 500;
-  padding: 10px 18px;
+  padding: 0.625rem 1.125rem;
   cursor: pointer;
   transition:
     background var(--ease),
@@ -269,11 +269,11 @@ body {
   width: 100%;
 }
 .btn-sm {
-  padding: 6px 12px;
+  padding: 0.375rem 0.75rem;
   font-size: 0.8125rem;
 }
 .btn-lg {
-  padding: 13px 22px;
+  padding: 0.8125rem 1.375rem;
   font-size: 0.9375rem;
   font-weight: 600;
 }
@@ -282,7 +282,7 @@ body {
 .tag {
   display: inline-flex;
   align-items: center;
-  padding: 2px 7px;
+  padding: 0.125rem 0.4375rem;
   border-radius: var(--r-sm);
   font-size: 0.6875rem;
   font-weight: 600;
@@ -363,7 +363,7 @@ body {
 }
 
 .mission-body {
-  padding: 10px 12px;
+  padding: 0.625rem 0.75rem;
   flex: 1;
   min-width: 0;
 }
@@ -371,12 +371,12 @@ body {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text);
-  margin-bottom: 5px;
+  margin-bottom: 0.3125rem;
   line-height: 1.3;
 }
 .mission-meta {
   display: flex;
-  gap: 5px;
+  gap: 0.3125rem;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -386,7 +386,7 @@ body {
   font-weight: 500;
 }
 .mission-check {
-  padding: 10px 12px;
+  padding: 0.625rem 0.75rem;
   display: flex;
   align-items: center;
   font-size: 1rem;
@@ -432,7 +432,7 @@ body {
 /* ─── Input ──────────────────────────────────────────────────────────────── */
 .input {
   width: 100%;
-  padding: 9px 11px;
+  padding: 0.5625rem 0.6875rem;
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   font-size: 0.875rem;
@@ -453,7 +453,7 @@ body {
 
 textarea.input {
   resize: vertical;
-  min-height: 80px;
+  min-height: 5rem;
 }
 
 /* ─── Divider ────────────────────────────────────────────────────────────── */
@@ -475,18 +475,18 @@ textarea.input {
   letter-spacing: -0.01em;
 }
 .avatar.sm {
-  width: 30px;
-  height: 30px;
+  width: 1.875rem;
+  height: 1.875rem;
   font-size: 0.6875rem;
 }
 .avatar.md {
-  width: 40px;
-  height: 40px;
+  width: 2.5rem;
+  height: 2.5rem;
   font-size: 0.875rem;
 }
 .avatar.lg {
-  width: 52px;
-  height: 52px;
+  width: 3.25rem;
+  height: 3.25rem;
   font-size: 1rem;
 }
 
@@ -533,8 +533,8 @@ textarea.input {
   font-size: 0.9rem;
   cursor: pointer;
   color: var(--text-muted);
-  width: 28px;
-  height: 28px;
+  width: 1.75rem;
+  height: 1.75rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -585,7 +585,7 @@ textarea.input {
 .row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.625rem;
 }
 .row.sb {
   justify-content: space-between;
@@ -593,32 +593,32 @@ textarea.input {
 .col {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 0.3125rem;
 }
 .flex1 {
   flex: 1;
   min-width: 0;
 }
 .gap4 {
-  gap: 4px;
+  gap: 0.25rem;
 }
 .gap8 {
-  gap: 8px;
+  gap: 0.5rem;
 }
 .gap12 {
-  gap: 12px;
+  gap: 0.75rem;
 }
 .mt4 {
-  margin-top: 4px;
+  margin-top: 0.25rem;
 }
 .mt8 {
-  margin-top: 8px;
+  margin-top: 0.5rem;
 }
 .mt12 {
-  margin-top: 12px;
+  margin-top: 0.75rem;
 }
 .mt16 {
-  margin-top: 16px;
+  margin-top: 1rem;
 }
 
 /* ─── Milestone map canvas ───────────────────────────────────────────────── */
@@ -649,8 +649,8 @@ textarea.input {
 }
 .map-hint {
   position: absolute;
-  top: 8px;
-  left: 10px;
+  top: 0.5rem;
+  left: 0.625rem;
   font-size: 0.625rem; /* 10px */
   color: rgba(255, 255, 255, 0.18);
   pointer-events: none;
@@ -664,13 +664,13 @@ textarea.input {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 0.25rem;
   cursor: pointer;
 }
 .ms-room {
-  width: 50px;
-  height: 28px;
-  border-radius: 3px;
+  width: 3.125rem;
+  height: 1.75rem;
+  border-radius: 0.1875rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -698,7 +698,7 @@ textarea.input {
   font-size: 0.5625rem; /* 9px */
   color: rgba(255, 255, 255, 0.4);
   text-align: center;
-  max-width: 68px;
+  max-width: 4.25rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -736,13 +736,13 @@ textarea.input {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: calc(100% + 6px);
+  bottom: calc(100% + 0.375rem);
   background: var(--brand);
   color: #fff;
   font-size: 0.5625rem;
   font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 2px;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 0.125rem;
   white-space: nowrap;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -760,22 +760,22 @@ textarea.input {
 /* Map legend */
 .map-legend {
   position: absolute;
-  bottom: 8px;
-  left: 10px;
+  bottom: 0.5rem;
+  left: 0.625rem;
   display: flex;
-  gap: 10px;
+  gap: 0.625rem;
   pointer-events: none;
 }
 .leg-item {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 0.1875rem;
   font-size: 0.5625rem;
   color: rgba(255, 255, 255, 0.3);
 }
 .leg-dot {
-  width: 6px;
-  height: 6px;
+  width: 0.375rem;
+  height: 0.375rem;
   border-radius: 50%;
 }
 
@@ -783,22 +783,22 @@ textarea.input {
 .ms-strip {
   background: var(--bg);
   border-bottom: 1px solid var(--border);
-  padding: 7px var(--space-lg);
+  padding: 0.4375rem var(--space-lg);
   font-size: 0.75rem;
   color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 0.5rem;
 }
 .ms-pips {
   display: flex;
-  gap: 4px;
+  gap: 0.25rem;
   align-items: center;
 }
 .ms-pip {
-  width: 8px;
-  height: 8px;
+  width: 0.5rem;
+  height: 0.5rem;
   border-radius: 50%;
 }
 
@@ -806,7 +806,7 @@ textarea.input {
 .buddy-card {
   background: var(--brand-deeper);
   border-radius: var(--r-md);
-  padding: 13px var(--space-lg);
+  padding: 0.8125rem var(--space-lg);
   display: flex;
   align-items: center;
   gap: var(--space-md);
@@ -817,7 +817,7 @@ textarea.input {
   letter-spacing: 0.08em;
   color: rgba(150, 200, 255, 0.6);
   text-transform: uppercase;
-  margin-bottom: 3px;
+  margin-bottom: 0.1875rem;
 }
 .buddy-name {
   font-size: 0.9375rem;
@@ -827,7 +827,7 @@ textarea.input {
 .buddy-meta {
   font-size: 0.75rem;
   color: rgba(150, 200, 255, 0.7);
-  margin-top: 2px;
+  margin-top: 0.125rem;
 }
 .buddy-btn {
   background: rgba(255, 255, 255, 0.1);
@@ -835,7 +835,7 @@ textarea.input {
   color: #fff;
   font-size: 0.75rem;
   font-weight: 500;
-  padding: 6px 12px;
+  padding: 0.375rem 0.75rem;
   border-radius: var(--r-sm);
   cursor: pointer;
   white-space: nowrap;
@@ -851,10 +851,10 @@ textarea.input {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  padding: 10px 13px;
+  padding: 0.625rem 0.8125rem;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.625rem;
   cursor: pointer;
   text-decoration: none;
   transition: background var(--ease), border-color var(--ease);
@@ -865,7 +865,7 @@ textarea.input {
 }
 .res-icon {
   font-size: 0.9rem;
-  width: 24px;
+  width: 1.5rem;
   text-align: center;
   flex-shrink: 0;
 }
@@ -887,8 +887,8 @@ textarea.input {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 24px 24px;
-  gap: 18px;
+  padding: 0 1.5rem 1.5rem;
+  gap: 1.125rem;
 }
 .qr-banner {
   background: #0d2040;
@@ -896,21 +896,21 @@ textarea.input {
   color: #7ab8e8;
   font-size: 0.875rem;
   font-weight: 500;
-  padding: 13px 16px;
+  padding: 0.8125rem 1rem;
   text-align: center;
   width: 100%;
   letter-spacing: 0.01em;
 }
 .qr-box {
-  width: 200px;
-  height: 200px;
+  width: 12.5rem;
+  height: 12.5rem;
   background: #fff;
   border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  margin-top: 8px;
+  margin-top: 0.5rem;
   border: 3px solid #fff;
   box-shadow: 0 0 0 1px rgba(0, 113, 212, 0.3), 0 8px 24px rgba(0, 0, 0, 0.5);
 }
@@ -918,8 +918,8 @@ textarea.input {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   gap: 2px;
-  width: 150px;
-  height: 150px;
+  width: 9.375rem;
+  height: 9.375rem;
   opacity: 0.12;
 }
 .qr-cell {
@@ -936,13 +936,13 @@ textarea.input {
 .qr-meta {
   font-size: 0.75rem;
   color: #3a5a7a;
-  margin-top: 4px;
+  margin-top: 0.25rem;
 }
 .sse-bar {
   background: #0d2040;
   border: 1px solid #1a3a6a;
   border-radius: var(--r-sm);
-  padding: 11px 14px;
+  padding: 0.6875rem 0.875rem;
   width: 100%;
   text-align: center;
   font-size: 0.8125rem;
@@ -950,11 +950,11 @@ textarea.input {
 }
 .sse-dot {
   display: inline-block;
-  width: 7px;
-  height: 7px;
+  width: 0.4375rem;
+  height: 0.4375rem;
   border-radius: 50%;
   background: var(--brand);
-  margin-right: 7px;
+  margin-right: 0.4375rem;
   animation: blink 1.4s infinite;
 }
 @keyframes blink {
@@ -978,7 +978,7 @@ textarea.input {
 .tutorial-card {
   background: var(--brand);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
-  padding: 22px 20px 18px;
+  padding: 1.375rem 1.25rem 1.125rem;
   width: 100%;
   color: #fff;
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
@@ -986,21 +986,21 @@ textarea.input {
 .tutorial-step {
   font-size: 0.6875rem;
   opacity: 0.6;
-  margin-bottom: 6px;
+  margin-bottom: 0.375rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .tutorial-title {
   font-size: 1.0625rem;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 0.5rem;
   letter-spacing: -0.01em;
 }
 .tutorial-body {
   font-size: 0.875rem;
   opacity: 0.85;
   line-height: 1.55;
-  margin-bottom: 20px;
+  margin-bottom: 1.25rem;
 }
 .tutorial-footer {
   display: flex;
@@ -1009,11 +1009,11 @@ textarea.input {
 }
 .tutorial-dots {
   display: flex;
-  gap: 5px;
+  gap: 0.3125rem;
 }
 .t-dot {
-  width: 6px;
-  height: 6px;
+  width: 0.375rem;
+  height: 0.375rem;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.28);
 }
@@ -1024,7 +1024,7 @@ textarea.input {
   background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: #fff;
-  padding: 8px 18px;
+  padding: 0.5rem 1.125rem;
   border-radius: var(--r-sm);
   cursor: pointer;
   font-size: 0.875rem;
@@ -1052,7 +1052,7 @@ textarea.input {
 }
 .tab {
   flex: 1;
-  padding: 10px 6px;
+  padding: 0.625rem 0.375rem;
   font-size: 0.8125rem;
   font-weight: 500;
   text-align: center;
@@ -1077,10 +1077,10 @@ textarea.input {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  padding: 12px 13px;
+  padding: 0.75rem 0.8125rem;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0.75rem;
   cursor: pointer;
   transition: background var(--ease), border-color var(--ease);
 }
@@ -1102,13 +1102,13 @@ textarea.input {
 .ms-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 0;
+  gap: 0.625rem;
+  padding: 0.4375rem 0;
   border-bottom: 1px solid var(--border-light);
 }
 .ms-dot {
-  width: 10px;
-  height: 10px;
+  width: 0.625rem;
+  height: 0.625rem;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -1124,12 +1124,12 @@ textarea.input {
 /* ─── Landing page hero ──────────────────────────────────────────────────── */
 .land-hero {
   background: var(--brand);
-  padding: 36px 24px 30px;
+  padding: 2.25rem 1.5rem 1.875rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 8px;
+  gap: 0.5rem;
   /* subtle texture */
   background-image: linear-gradient(
     135deg,
@@ -1153,7 +1153,7 @@ textarea.input {
   color: rgba(255, 255, 255, 0.55);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  margin-top: 2px;
+  margin-top: 0.125rem;
 }
 .land-tag {
   font-size: 0.9rem;
@@ -1166,12 +1166,12 @@ textarea.input {
   font-size: 0.6875rem;
   color: rgba(255, 255, 255, 0.2);
   text-align: center;
-  margin-top: 4px;
+  margin-top: 0.25rem;
 }
 
 /* ─── Misc utilities ─────────────────────────────────────────────────────── */
 .empty {
-  padding: 28px 16px;
+  padding: 1.75rem 1rem;
   text-align: center;
   color: var(--text-muted);
   font-size: 0.875rem;
