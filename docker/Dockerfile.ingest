@@ -1,0 +1,21 @@
+# MesseBuddy — Document Ingestion Container
+#
+# One-shot container: reads consume-docs/, embeds all text files, stores in pgvector.
+# Exits after ingestion is complete.
+#
+# Rebuild if you change ingest.py or add new Python dependencies.
+# To re-ingest documents without rebuilding: docker compose run --rm ingest
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# psycopg2-binary includes libpq — no system-level postgres install needed
+RUN pip install --no-cache-dir \
+    openai==1.* \
+    psycopg2-binary==2.9.* \
+    pgvector==0.3.*
+
+COPY ingest.py .
+
+CMD ["python", "ingest.py"]
