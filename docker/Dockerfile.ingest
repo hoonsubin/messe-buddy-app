@@ -16,6 +16,6 @@ RUN pip install --no-cache-dir \
     psycopg2-binary==2.9.* \
     pgvector==0.3.*
 
-COPY ingest.py .
+COPY docker/ingest.py .
 
 CMD ["python", "ingest.py"]
