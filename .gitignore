@@ -30,3 +30,4 @@ deno.lock
 
 .act.secrets
 .env
+consume-docs/
