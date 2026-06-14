@@ -3,7 +3,7 @@ import type { LocalIdentity } from "../types/index.ts";
 
 const IDENTITY_KEY = "mb_identity";
 
-function readIdentity(): LocalIdentity | null {
+const readIdentity = (): LocalIdentity | null => {
   try {
     const raw = localStorage.getItem(IDENTITY_KEY);
     if (!raw) return null;
@@ -11,7 +11,7 @@ function readIdentity(): LocalIdentity | null {
   } catch {
     return null;
   }
-}
+};
 
 export interface UseIdentityResult {
   readonly identity: LocalIdentity | null;
@@ -23,7 +23,7 @@ export interface UseIdentityResult {
 // Reads and writes mb_identity from localStorage.
 // Components should call refresh() after externally writing identity
 // (e.g. after joinSession or recoverIdentity use cases).
-export function useIdentity(): UseIdentityResult {
+export const useIdentity = (): UseIdentityResult => {
   const [identity, setIdentityState] = useState<LocalIdentity | null>(
     readIdentity
   );

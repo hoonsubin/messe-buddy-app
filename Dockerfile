@@ -1,7 +1,7 @@
 # ─── Stage 1: Build ────────────────────────────────────────────────────────────
 # Builds the React PWA into static assets using Deno as the runtime.
 # deno.json is the source of truth; package.json is never committed.
-FROM denoland/deno:2.4.2 AS builder
+FROM denoland/deno:2.8.1 AS builder
 
 WORKDIR /app
 

@@ -36,7 +36,6 @@ export interface DraftMission {
 }
 
 // IDs stripped on export; used for template JSON. (C-10)
-export interface TemplateRecord {
-  readonly name: string;
-  readonly exportedAt: string;
-}
+// Alias of TemplateExport without the exportType discriminant — used for
+// in-memory display (template list, preview) where the discriminant is already known.
+export type TemplateRecord = import("./exports.ts").TemplateExport;

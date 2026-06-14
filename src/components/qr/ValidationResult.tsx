@@ -1,0 +1,38 @@
+// Phase 1 shell — shows scan result (success / invalid / error). Logic wired in Phase 5.
+type ValidationState = "idle" | "success" | "invalid" | "error";
+
+interface ValidationResultProps {
+  readonly state: ValidationState;
+  readonly missionTitle?: string;
+  readonly errorMessage?: string;
+}
+
+const STATE_CONFIG: Record<ValidationState, { icon: string; label: string; colorVar: string }> = {
+  idle: { icon: "◎", label: "Ready to scan", colorVar: "--color-muted-fg" },
+  success: { icon: "✓", label: "Validated!", colorVar: "--color-status-complete" },
+  invalid: { icon: "✕", label: "Invalid QR code", colorVar: "--color-destructive" },
+  error: { icon: "!", label: "Scan error", colorVar: "--color-destructive" },
+};
+
+const ValidationResult = (props: ValidationResultProps) => {
+  const cfg = STATE_CONFIG[props.state];
+  return (
+    <div
+      className="validation-display"
+      data-testid="validation-result"
+      data-state={props.state}
+      style={{ textAlign: "center", padding: "var(--space-6)", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}
+    >
+      <span style={{ fontSize: "var(--text-3xl)", color: `hsl(var(${cfg.colorVar}))` }}>{cfg.icon}</span>
+      <p style={{ fontWeight: "var(--weight-semibold)", color: `hsl(var(${cfg.colorVar}))`, margin: 0 }}>{cfg.label}</p>
+      {props.state === "success" && props.missionTitle && (
+        <p style={{ fontSize: "var(--text-sm)", color: "hsl(var(--color-muted-fg))", margin: 0 }}>{props.missionTitle}</p>
+      )}
+      {props.errorMessage && (
+        <p style={{ fontSize: "var(--text-sm)", color: "hsl(var(--color-destructive))", margin: 0 }}>{props.errorMessage}</p>
+      )}
+    </div>
+  );
+};
+
+export default ValidationResult;

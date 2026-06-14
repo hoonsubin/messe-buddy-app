@@ -69,7 +69,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     body: "Tell us a bit about yourself so your team can get to know you.",
     type: "form",
     difficulty: 2,
-    xpValue: 28, // pre-derived for this milestone's 3 missions
+    xpValue: 33, // deriveXP(weights=[2,1,3], total=6): floor(100*2/6)=33
     tags: ["mandatory"],
     order: 0,
     isInCurrentMissions: true,
@@ -84,7 +84,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     type: "link",
     externalUrl: "https://www.messe-muenchen.de/",
     difficulty: 1,
-    xpValue: 15,
+    xpValue: 16, // floor(100*1/6)=16
     tags: ["mandatory"],
     order: 1,
     isInCurrentMissions: true,
@@ -99,7 +99,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     type: "link",
     externalUrl: "https://www.messe-muenchen.de/",
     difficulty: 3,
-    xpValue: 57,
+    xpValue: 51, // floor(100*3/6)=50, +1 remainder (highest weight) → 51
     tags: ["mandatory"],
     order: 2,
     isInCurrentMissions: false,
@@ -115,7 +115,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     body: "## Your First Check-In\n\nSchedule a 30-minute coffee chat with your assigned buddy. This is your chance to ask all the questions you haven't had the nerve to ask yet.\n\nYour buddy will scan a QR code to confirm the meeting happened.",
     type: "text",
     difficulty: 2,
-    xpValue: 20,
+    xpValue: 29, // deriveXP(weights=[2,1,1,3], total=7): floor(100*2/7)=28, +1 remainder → 29
     tags: ["mandatory"],
     order: 0,
     isInCurrentMissions: true,
@@ -129,7 +129,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     body: "## Say Hello\n\nIntroduce yourself in the team Slack channel using the template pinned to `#introductions`. Include your name, role, and one fun fact.",
     type: "text",
     difficulty: 1,
-    xpValue: 10,
+    xpValue: 14, // floor(100*1/7)=14
     tags: [],
     order: 1,
     isInCurrentMissions: true,
@@ -144,7 +144,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     type: "link",
     externalUrl: "https://slack.com/downloads",
     difficulty: 1,
-    xpValue: 10,
+    xpValue: 14, // floor(100*1/7)=14
     tags: [],
     order: 2,
     isInCurrentMissions: false,
@@ -158,7 +158,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     body: "Set your goals for the first week with your buddy.",
     type: "form",
     difficulty: 3,
-    xpValue: 60,
+    xpValue: 43, // floor(100*3/7)=42, +1 remainder (highest weight) → 43
     tags: ["mandatory"],
     order: 3,
     isInCurrentMissions: false,
@@ -174,7 +174,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     body: "## Find Your Way Around\n\nComplete a self-guided tour of the office. Check off the key locations: your desk, the main kitchen, emergency exits, and the product team area.\n\nYour buddy will confirm completion with a QR scan.",
     type: "text",
     difficulty: 2,
-    xpValue: 28,
+    xpValue: 34, // deriveXP(weights=[2,2,2], total=6): floor(100*2/6)=33, +1 remainder (order 0) → 34
     tags: [],
     order: 0,
     isInCurrentMissions: false,
@@ -188,7 +188,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     body: "## Get Your Devices Ready\n\nVisit IT support to collect your laptop and set up two-factor authentication on your accounts.",
     type: "text",
     difficulty: 2,
-    xpValue: 28,
+    xpValue: 33, // floor(100*2/6)=33
     tags: ["urgent"],
     order: 1,
     isInCurrentMissions: true,
@@ -203,7 +203,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     type: "link",
     externalUrl: "https://www.messe-muenchen.de/",
     difficulty: 2,
-    xpValue: 44,
+    xpValue: 33, // floor(100*2/6)=33
     tags: [],
     order: 2,
     isInCurrentMissions: false,

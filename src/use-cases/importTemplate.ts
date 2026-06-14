@@ -6,63 +6,45 @@ import type { TemplateExport } from "../types/index.ts";
 //
 // Import order per SPECS.md:
 //  1. Session → new sessionId
-//  2. Milestones in order → oldId → newId map
-//  3. Missions, remapping milestoneId
-//  4. FormSchemas, remapping missionId
+//  2. Milestones in order → order → newId map
+//  3. Missions, remapping milestoneId via _milestoneOrder
+//  4. FormSchemas, remapping missionId via _missionOrder
 //  5. Resources with new sessionId
-export async function importTemplate(
+export const importTemplate = async (
   template: TemplateExport,
   sessionName: string,
   gameMakerUid: string,
   adapter: AppAdapter
-): Promise<string> {
+): Promise<string> => {
   const session = await adapter.createSession(sessionName, gameMakerUid);
   const sessionId = session.id;
 
-  // 1. Milestones — sort by order before inserting
-  const milestoneIdMap = new Map<string, string>(); // oldKey → newId
+  // 1. Milestones — sort by order, then register order → newId
+  const milestoneIdByOrder = new Map<number, string>();
   const sortedMilestones = [...template.milestones].sort(
     (a, b) => a.order - b.order
   );
-
   for (const ms of sortedMilestones) {
-    // Templates have no PB IDs — use sessionId+order as the old key for mapping
-    const oldKey = `ms_order_${ms.order}`;
     const created = await adapter.createMilestone({ ...ms, sessionId });
-    milestoneIdMap.set(oldKey, created.id);
+    milestoneIdByOrder.set(ms.order, created.id);
   }
 
-  // 2. Missions — remap milestoneId via order-based key
-  const missionIdMap = new Map<string, string>(); // order → newId
-  for (const mission of template.missions) {
-    // Find which milestone this mission belongs to by matching order
-    const msIdx = sortedMilestones.findIndex(
-      (_ms, i) => i === sortedMilestones.findIndex((m) => m === _ms)
-    );
-    // Re-derive the mapping key from milestone order
-    const msMilestoneIdx = sortedMilestones.findIndex(
-      (ms) => ms.sessionId === mission.sessionId
-    );
-    const msKey = `ms_order_${sortedMilestones[msMilestoneIdx]?.order ?? 0}`;
-    const newMilestoneId = milestoneIdMap.get(msKey) ?? "";
-    void msIdx; // suppress unused warning
-
+  // 2. Missions — _milestoneOrder was embedded at export time (see exportTemplate.ts)
+  const missionIdByOrder = new Map<number, string>();
+  for (const { _milestoneOrder, ...missionData } of template.missions) {
+    const newMilestoneId = milestoneIdByOrder.get(_milestoneOrder) ?? "";
     const created = await adapter.createMission({
-      ...mission,
+      ...missionData,
       sessionId,
       milestoneId: newMilestoneId,
     });
-    missionIdMap.set(`mission_order_${mission.order}`, created.id);
+    missionIdByOrder.set(missionData.order, created.id);
   }
 
-  // 3. FormSchemas — remap missionId via order
-  for (const schema of template.formSchemas) {
-    const missionOrder = template.missions.findIndex(
-      (m) => m.milestoneId === schema.missionId
-    );
-    const newMissionId =
-      missionIdMap.get(`mission_order_${missionOrder}`) ?? "";
-    await adapter.upsertFormSchema(newMissionId, schema.fields);
+  // 3. FormSchemas — _missionOrder was embedded at export time (see exportTemplate.ts)
+  for (const { _missionOrder, ...schemaData } of template.formSchemas) {
+    const newMissionId = missionIdByOrder.get(_missionOrder) ?? "";
+    await adapter.upsertFormSchema(newMissionId, schemaData.fields);
   }
 
   // 4. Resources

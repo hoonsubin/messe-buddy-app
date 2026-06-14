@@ -1,11 +1,7 @@
-import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 import type { AppAdapter } from "./interface.ts";
 import { mockAdapter } from "./mock/index.ts";
-
-// ── Context ───────────────────────────────────────────────────────────────────
-
-const AdapterContext = createContext<AppAdapter>(mockAdapter);
+import { AdapterContext } from "./AdapterContextValue.ts";
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
@@ -14,19 +10,13 @@ interface AdapterContextProviderProps {
   readonly children: ReactNode;
 }
 
-export function AdapterContextProvider({
+export const AdapterContextProvider = ({
   adapter = mockAdapter,
   children,
-}: AdapterContextProviderProps) {
+}: AdapterContextProviderProps) => {
   return (
     <AdapterContext.Provider value={adapter}>
       {children}
     </AdapterContext.Provider>
   );
-}
-
-// ── Hook ──────────────────────────────────────────────────────────────────────
-
-export function useAdapter(): AppAdapter {
-  return useContext(AdapterContext);
-}
+};

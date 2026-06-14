@@ -15,10 +15,12 @@ const router = createBrowserRouter([
   { path: "/qr/:missionId", element: <QRScannerView /> },
 ]);
 
-export default function App() {
+const App = () => {
   return (
     <AdapterContextProvider>
       <RouterProvider router={router} />
     </AdapterContextProvider>
   );
-}
+};
+
+export default App;

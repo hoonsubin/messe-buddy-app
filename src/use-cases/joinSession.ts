@@ -5,12 +5,12 @@ import { USER_ROLE } from "../types/index.ts";
 const IDENTITY_KEY = "mb_identity";
 const RECOVERY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-function generateRecoveryKey(): string {
+const generateRecoveryKey = (): string => {
   const bytes = crypto.getRandomValues(new Uint8Array(8));
   return Array.from(bytes)
     .map((b) => RECOVERY_ALPHABET[b % RECOVERY_ALPHABET.length])
     .join("");
-}
+};
 
 export interface JoinSessionResult {
   readonly identity: LocalIdentity;
@@ -20,10 +20,10 @@ export interface JoinSessionResult {
 // Creates a Player record in the adapter, writes LocalIdentity to localStorage,
 // and returns both. The profile fields default to empty strings — they are
 // filled in during the Tutorial's Profile Setup Mission.
-export async function joinSession(
+export const joinSession = async (
   sessionId: string,
   adapter: AppAdapter
-): Promise<JoinSessionResult> {
+): Promise<JoinSessionResult> => {
   const uid = crypto.randomUUID();
   const recoveryKey = generateRecoveryKey();
   const now = new Date().toISOString().split("T")[0] ?? "";
@@ -59,10 +59,10 @@ export async function joinSession(
 }
 
 // Creates a Game Maker identity (no Player record — GM uses the session itself).
-export async function createGameMakerSession(
+export const createGameMakerSession = async (
   sessionName: string,
   adapter: AppAdapter
-): Promise<LocalIdentity> {
+): Promise<LocalIdentity> => {
   const uid = crypto.randomUUID();
   const recoveryKey = generateRecoveryKey();
 

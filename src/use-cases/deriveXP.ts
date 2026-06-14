@@ -19,7 +19,7 @@ const WEIGHT_MAP: Readonly<Record<number, number>> = {
   5: 5,
 };
 
-export function deriveXP(missions: ReadonlyArray<Mission>): ReadonlyArray<number> {
+export const deriveXP = (missions: ReadonlyArray<Mission>): ReadonlyArray<number> => {
   if (missions.length === 0) return [];
 
   const weights = missions.map((m) => WEIGHT_MAP[m.difficulty] ?? 1);

@@ -15,12 +15,12 @@ const COMPLETED_STATUSES = new Set<string>([
   PROGRESS_STATUS.AUTO_APPROVED,
 ]);
 
-export function computeProgress(
+export const computeProgress = (
   playerId: string,
   missions: ReadonlyArray<Mission>,
   milestones: ReadonlyArray<Milestone>,
   progressEvents: ReadonlyArray<ProgressEvent>
-): PlayerProgress {
+): PlayerProgress => {
   const eventByMission = new Map<string, ProgressEvent>();
   for (const e of progressEvents) {
     if (e.playerId === playerId) {

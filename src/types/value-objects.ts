@@ -12,12 +12,15 @@ export interface FieldSchema {
 }
 
 // QR strategy only — used when mission.validationMethod = 'qr'. (C-07, C-16)
+// hmac = HMAC-SHA256(playerId + missionId + sessionId + issuedAt, sessionSecret)
+// Never transmitted to the player device; computed by GM and verified at scan time.
 export interface QRPayload {
   readonly playerId: string;
   readonly missionId: string;
   readonly sessionId: string;
   readonly xpValue: number;
   readonly issuedAt: number; // Unix ms timestamp
+  readonly hmac: string; // hex-encoded HMAC-SHA256 (C-16)
 }
 
 // Decoded and enriched after QR scan — shown in ValidationResult.
