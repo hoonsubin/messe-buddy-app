@@ -1,4 +1,6 @@
 // Phase 1 shell — shows scan result (success / invalid / error). Logic wired in Phase 5.
+import { MdCheck, MdClose, MdError, MdRadioButtonUnchecked } from "react-icons/md";
+
 type ValidationState = "idle" | "success" | "invalid" | "error";
 
 interface ValidationResultProps {
@@ -9,24 +11,26 @@ interface ValidationResultProps {
 
 const STATE_CONFIG: Record<
   ValidationState,
-  { icon: string; label: string; colorVar: string }
+  { label: string; colorVar: string }
 > = {
-  idle: { icon: "◎", label: "Ready to scan", colorVar: "--color-muted-fg" },
-  success: {
-    icon: "✓",
-    label: "Validated!",
-    colorVar: "--color-status-complete",
-  },
-  invalid: {
-    icon: "✕",
-    label: "Invalid QR code",
-    colorVar: "--color-destructive",
-  },
-  error: { icon: "!", label: "Scan error", colorVar: "--color-destructive" },
+  idle: { label: "Ready to scan", colorVar: "--color-muted-fg" },
+  success: { label: "Validated!", colorVar: "--color-status-complete" },
+  invalid: { label: "Invalid QR code", colorVar: "--color-destructive" },
+  error: { label: "Scan error", colorVar: "--color-destructive" },
+};
+
+const getStateIcon = (state: ValidationState) => {
+  switch (state) {
+    case "success": return MdCheck;
+    case "invalid": return MdClose;
+    case "error": return MdError;
+    case "idle": return MdRadioButtonUnchecked;
+  }
 };
 
 const ValidationResult = (props: ValidationResultProps) => {
   const cfg = STATE_CONFIG[props.state];
+  const StateIcon = getStateIcon(props.state);
   return (
     <div
       className="validation-display"
@@ -45,9 +49,11 @@ const ValidationResult = (props: ValidationResultProps) => {
         style={{
           fontSize: "var(--text-3xl)",
           color: `hsl(var(${cfg.colorVar}))`,
+          display: "flex",
+          alignItems: "center",
         }}
       >
-        {cfg.icon}
+        <StateIcon size={48} aria-hidden="true" />
       </span>
       <p
         style={{

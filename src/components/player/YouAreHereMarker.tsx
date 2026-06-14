@@ -1,4 +1,6 @@
 // Phase 1 shell — logic wired in Phase 2+.
+import { MdLocationOn } from "react-icons/md";
+
 interface YouAreHereMarkerProps {
   readonly xPercent: number;
   readonly yPercent: number;
@@ -12,7 +14,7 @@ const YouAreHereMarker = (props: YouAreHereMarkerProps) => (
     aria-label="Your current location"
     role="img"
   >
-    📍
+    <MdLocationOn size={28} aria-hidden="true" />
   </div>
 );
 

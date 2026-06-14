@@ -1,4 +1,6 @@
 // Phase 1 shell — logic wired in Phase 2+.
+import { MdDescription } from "react-icons/md";
+
 interface ResourceCardProps {
   readonly title: string;
   readonly type: string;
@@ -13,7 +15,7 @@ const ResourceCard = (props: ResourceCardProps) => (
     rel="noopener noreferrer"
     data-testid="resource-card"
   >
-    <div className="resource-card__icon" aria-hidden="true">📄</div>
+    <div className="resource-card__icon" aria-hidden="true"><MdDescription size={20} /></div>
     <span className="resource-card__title">{props.title}</span>
     <span className="resource-card__type">{props.type}</span>
   </a>

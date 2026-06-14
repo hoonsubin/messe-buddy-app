@@ -1,4 +1,5 @@
 // Phase 1 shell — logic wired in Phase 3.
+import { MdClose } from "react-icons/md";
 import type { Mission, ProgressEvent } from "../../types/index.ts";
 import TagBadge from "../shared/TagBadge.tsx";
 import XPBadge from "../shared/XPBadge.tsx";
@@ -51,7 +52,7 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
             onClick={props.onClose}
             aria-label="Close"
           >
-            ✕
+            <MdClose size={20} aria-hidden="true" />
           </button>
         </div>
 

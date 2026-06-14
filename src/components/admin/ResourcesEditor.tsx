@@ -1,4 +1,5 @@
 // Phase 1 shell — logic wired in Phase 4.
+import { MdClose } from "react-icons/md";
 import type { PBRecord, Resource } from "../../types/index.ts";
 import type { ResourceType } from "../../types/index.ts";
 import { RESOURCE_TYPE } from "../../types/index.ts";
@@ -53,7 +54,7 @@ const ResourcesEditor = (props: ResourcesEditorProps) => (
             onClick={() => props.onDelete(r.id)}
             aria-label={`Remove ${r.title}`}
           >
-            ✕
+            <MdClose size={16} aria-hidden="true" />
           </button>
         </li>
       ))}

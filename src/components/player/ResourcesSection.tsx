@@ -1,4 +1,11 @@
 import { useState } from "react";
+import {
+  MdAssignment,
+  MdDescription,
+  MdEditNote,
+  MdLink,
+  MdVideocam,
+} from "react-icons/md";
 import type { Resource } from "../../types/index.ts";
 
 interface ResourcesSectionProps {
@@ -6,15 +13,15 @@ interface ResourcesSectionProps {
   readonly onSearch: (query: string) => void;
 }
 
-const TYPE_ICONS: Record<string, string> = {
-  document: "📄",
-  guide: "📋",
-  link: "🔗",
-  video: "🎥",
-  form: "📝",
+const typeIcon = (type: string) => {
+  switch (type) {
+    case "document": return <MdDescription size={18} aria-hidden="true" />;
+    case "guide": return <MdAssignment size={18} aria-hidden="true" />;
+    case "video": return <MdVideocam size={18} aria-hidden="true" />;
+    case "form": return <MdEditNote size={18} aria-hidden="true" />;
+    default: return <MdLink size={18} aria-hidden="true" />;
+  }
 };
-
-const typeIcon = (type: string): string => TYPE_ICONS[type] ?? "🔗";
 
 const typeLabel = (type: string): string =>
   type.charAt(0).toUpperCase() + type.slice(1);

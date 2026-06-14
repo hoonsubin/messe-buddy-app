@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { MdZoomIn, MdZoomOut } from "react-icons/md";
 import type { Milestone } from "../../types/index.ts";
 import type { MilestoneProgress } from "../../types/index.ts";
 import MilestoneNode from "../shared/MilestoneNode.tsx";
@@ -280,7 +281,7 @@ const MilestoneMapViewer = (props: MilestoneMapViewerProps) => {
           aria-label="Zoom in"
           onClick={() => zoomToward(ZOOM_STEP)}
         >
-          🔍<sup>+</sup>
+          <MdZoomIn size={20} aria-hidden="true" />
         </button>
         <button
           type="button"
@@ -288,7 +289,7 @@ const MilestoneMapViewer = (props: MilestoneMapViewerProps) => {
           aria-label="Zoom out"
           onClick={() => zoomToward(1 / ZOOM_STEP)}
         >
-          🔍<sup>−</sup>
+          <MdZoomOut size={20} aria-hidden="true" />
         </button>
       </div>
     </div>

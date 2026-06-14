@@ -1,3 +1,4 @@
+import { MdBolt, MdCalendarToday, MdCheck, MdChevronRight } from "react-icons/md";
 import type { Mission, ProgressEvent } from "../../types/index.ts";
 import TagBadge from "../shared/TagBadge.tsx";
 
@@ -56,7 +57,7 @@ const CurrentMissionsList = (props: CurrentMissionsListProps) => {
                 }`}
                 aria-hidden="true"
               >
-                {isCompleted && "✓"}
+                {isCompleted && <MdCheck size={14} />}
               </div>
 
               {/* Main content */}
@@ -72,7 +73,12 @@ const CurrentMissionsList = (props: CurrentMissionsListProps) => {
                 {desc && <p className="mission-item__desc">{desc}</p>}
                 {mission.suggestedDueDate !== undefined && (
                   <p className="mission-item__due">
-                    📅 {mission.suggestedDueDate}
+                    <MdCalendarToday
+                      size={12}
+                      aria-hidden="true"
+                      style={{ verticalAlign: "middle", marginRight: "0.25rem" }}
+                    />
+                    {mission.suggestedDueDate}
                   </p>
                 )}
               </div>
@@ -80,17 +86,18 @@ const CurrentMissionsList = (props: CurrentMissionsListProps) => {
               {/* XP + chevron */}
               <div className="mission-item__right">
                 <span className="mission-item__xp">
-                  ⚡ {mission.xpValue} XP
+                  <MdBolt
+                    size={14}
+                    aria-hidden="true"
+                    style={{ verticalAlign: "middle" }}
+                  />
+                  {mission.xpValue} XP
                 </span>
-                <span
+                <MdChevronRight
+                  size={18}
                   aria-hidden="true"
-                  style={{
-                    color: "hsl(var(--color-muted-fg))",
-                    fontSize: "var(--text-sm)",
-                  }}
-                >
-                  ›
-                </span>
+                  style={{ color: "hsl(var(--color-muted-fg))" }}
+                />
               </div>
             </button>
           );

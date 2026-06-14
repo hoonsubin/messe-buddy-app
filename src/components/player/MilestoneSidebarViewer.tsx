@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { MdBolt, MdCheck, MdClose } from "react-icons/md";
 import type { Mission, ProgressEvent } from "../../types/index.ts";
 
 const SWIPE_THRESHOLD_PX = 60;
@@ -85,7 +86,7 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
             onClick={props.onClose}
             aria-label="Close sidebar"
           >
-            ✕
+            <MdClose size={20} aria-hidden="true" />
           </button>
         </div>
 
@@ -180,7 +181,7 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
                       aria-hidden="true"
                       style={{ flexShrink: 0 }}
                     >
-                      {isCompleted && "✓"}
+                      {isCompleted && <MdCheck size={14} />}
                     </div>
                     <span
                       style={{
@@ -201,9 +202,13 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
                         color: "hsl(var(--color-primary))",
                         fontWeight: "var(--weight-medium)",
                         flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.125rem",
                       }}
                     >
-                      ⚡ {mission.xpValue}
+                      <MdBolt size={14} aria-hidden="true" />
+                      {mission.xpValue}
                     </span>
                   </button>
                 );

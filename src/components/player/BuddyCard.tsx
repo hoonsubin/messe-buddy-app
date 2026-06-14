@@ -1,3 +1,5 @@
+import { MdEmail, MdPhone } from "react-icons/md";
+
 interface BuddyCardProps {
   readonly name: string;
   readonly role: string;
@@ -59,13 +61,13 @@ const BuddyCard = (props: BuddyCardProps) => (
             className="buddy-card__contact-link"
             href={`mailto:${props.email}`}
           >
-            <span aria-hidden="true">✉</span>
+            <MdEmail size={16} aria-hidden="true" />
             {props.email}
           </a>
         )}
         {props.phone !== undefined && (
           <a className="buddy-card__contact-link" href={`tel:${props.phone}`}>
-            <span aria-hidden="true">☎</span>
+            <MdPhone size={16} aria-hidden="true" />
             {props.phone}
           </a>
         )}
