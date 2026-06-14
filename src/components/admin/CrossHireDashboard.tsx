@@ -6,7 +6,7 @@ interface HireProgressRow {
   readonly playerName: string;
   readonly sessionName: string;
   readonly progressPercent: number;
-  readonly daysSinceLastActivity: number;
+  readonly daysSinceLastActivity: number | null;
   readonly isStalled: boolean;
 }
 
@@ -14,7 +14,7 @@ interface CrossHireDashboardProps {
   readonly hires: ReadonlyArray<HireProgressRow>;
 }
 
-const StalledHireAlert = ({ days }: { readonly days: number }) => (
+const StalledHireAlert = ({ days }: { readonly days: number | null }) => (
   <span
     data-testid="stalled-hire-alert"
     style={{
@@ -32,7 +32,7 @@ const StalledHireAlert = ({ days }: { readonly days: number }) => (
     }}
   >
     <MdWarning size={12} aria-hidden="true" />
-    Stalled &middot; {days}d
+    {days !== null ? `Stalled · ${days}d` : "Stalled · No activity"}
   </span>
 );
 
@@ -49,10 +49,12 @@ const CrossHireDashboard = ({ hires }: CrossHireDashboardProps) => {
       );
 
     // Sort: stalled first, then by daysSinceLastActivity descending
-    // (most stalled at top)
+    // (most stalled at top). null (no activity) sorts as most stalled.
     return [...base].sort((a, b) => {
       if (a.isStalled !== b.isStalled) return a.isStalled ? -1 : 1;
-      return b.daysSinceLastActivity - a.daysSinceLastActivity;
+      const da = a.daysSinceLastActivity ?? Number.MAX_SAFE_INTEGER;
+      const db = b.daysSinceLastActivity ?? Number.MAX_SAFE_INTEGER;
+      return db - da;
     });
   }, [hires, filter]);
 
@@ -311,7 +313,9 @@ const CrossHireDashboard = ({ hires }: CrossHireDashboardProps) => {
                 color: "hsl(var(--color-muted-fg))",
               }}
             >
-              {hire.daysSinceLastActivity === 0
+              {hire.daysSinceLastActivity === null
+                ? "No activity yet"
+                : hire.daysSinceLastActivity === 0
                 ? "Active today"
                 : `Last active ${hire.daysSinceLastActivity} day${
                   hire.daysSinceLastActivity === 1 ? "" : "s"

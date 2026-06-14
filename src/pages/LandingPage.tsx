@@ -17,6 +17,13 @@ type Status = "idle" | "loading" | "error";
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
+// Module-level guard to prevent double-navigation under React 18+ StrictMode.
+// Unlike useRef (which is re-initialized on StrictMode unmount/remount), a
+// module-level variable survives remount and prevents the second effect fire
+// from calling navigate() — which would otherwise throw a SecurityError:
+// "Too many calls to Location or History APIs within a short timeframe."
+let hasNavigated = false;
+
 const LandingPage = () => {
   const navigate = useNavigate();
   const adapter = useAdapter();
@@ -46,12 +53,20 @@ const LandingPage = () => {
   // Returning user: if identity exists in localStorage, navigate to cockpit
   // only if the user hasn't explicitly chosen a view (i.e. landing page loads
   // and identity is present, but the user hasn't clicked any button yet).
+  // Uses module-level hasNavigated (not useRef) to survive StrictMode remount.
   useEffect(() => {
     if (!identity || view !== "role-select") return;
+    if (hasNavigated) return;
+    hasNavigated = true;
     const dest = identity.role === USER_ROLE.PLAYER
       ? `/session/${identity.sessionId}`
       : `/admin/${identity.sessionId}`;
-    navigate(dest, { replace: true });
+    try {
+      navigate(dest, { replace: true });
+    } catch {
+      // Suppress SecurityError from react-router when navigate() is called
+      // too rapidly (StrictMode double-fire safety net).
+    }
   }, [identity, navigate, view]);
 
   // Fetch templates when entering templates view

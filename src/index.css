@@ -134,8 +134,8 @@ body {
 }
 
 .map-zoom-btn {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
   background: hsl(var(--color-card));
   border: 1px solid hsl(var(--color-border));
   display: flex;
@@ -224,7 +224,7 @@ body {
 .milestone-node__name {
   position: relative;
   z-index: 1;
-  font-size: 0.625rem;   /* 10px — compact for map nodes */
+  font-size: 0.75rem;   /* 12px — minimum readable size on mobile */
   font-weight: var(--weight-semibold);
   color: hsl(var(--color-card));
   text-align: center;

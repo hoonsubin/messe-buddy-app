@@ -36,6 +36,7 @@ import PreBoardingChecklist from "../components/admin/PreBoardingChecklist.tsx";
 import CrossHireDashboard from "../components/admin/CrossHireDashboard.tsx";
 import type { HireProgressRow } from "../components/admin/CrossHireDashboard.tsx";
 import AdminQRScannerModal from "../components/admin/AdminQRScannerModal.tsx";
+import SessionInviteCard from "../components/admin/SessionInviteCard.tsx";
 
 const ADMIN_TABS = {
   ACTIVE_SESSION: "activeSession",
@@ -515,9 +516,10 @@ const AdminCockpitPage = () => {
           const lastActivity = events.length > 0
             ? Math.max(...events.map((e) => new Date(e.updated).getTime()))
             : null;
-          const daysSinceLastActivity = lastActivity
+          // null means no activity recorded yet — never treat as Infinity
+          const daysSinceLastActivity = lastActivity !== null
             ? Math.floor((Date.now() - lastActivity) / (1000 * 60 * 60 * 24))
-            : Infinity;
+            : null;
 
           rows.push({
             playerId: p.id,
@@ -525,7 +527,7 @@ const AdminCockpitPage = () => {
             sessionName: s.name,
             progressPercent,
             daysSinceLastActivity,
-            isStalled: daysSinceLastActivity > 3,
+            isStalled: daysSinceLastActivity !== null && daysSinceLastActivity > 3,
           });
         }
       }
@@ -940,6 +942,7 @@ const AdminCockpitPage = () => {
 
           {/* Sidebar panels */}
           <div className="admin-layout__sidebar">
+            <SessionInviteCard sessionId={sid} />
             {players.length > 0 && (
               <PlayerSelectorDropdown
                 players={players}
