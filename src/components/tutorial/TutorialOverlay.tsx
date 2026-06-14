@@ -124,10 +124,12 @@ const TutorialOverlay = (props: TutorialOverlayProps) => {
       }}
       aria-hidden="true" /* TutorialStep dialog is the accessible focus target */
     >
-      {/* Dim backdrop — only when there is no targeted highlight ring.
+      {
+        /* Dim backdrop — only when there is no targeted highlight ring.
           When a highlight ring is active, the ring's box-shadow provides the
           dimming outside the spotlight; a separate backdrop would double-stack
-          the opacity (~80%) and bleed into the spotlight center. */}
+          the opacity (~80%) and bleed into the spotlight center. */
+      }
       {highlightRect === null && (
         <div
           style={{

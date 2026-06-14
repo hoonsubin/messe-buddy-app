@@ -12,8 +12,7 @@ interface TutorialStepProps {
 }
 
 /** Returns the first name from a full name string, or falls back to the full string. */
-const firstName = (name: string): string =>
-  name.split(" ")[0] ?? name;
+const firstName = (name: string): string => name.split(" ")[0] ?? name;
 
 /** Returns a personalized title for the Welcome step (stepNumber === 1). */
 const welcomeTitle = (playerName?: string): string => {
@@ -130,7 +129,11 @@ const TutorialStep = (props: TutorialStepProps) => {
         >
           Skip tutorial
         </button>
-        <button type="button" className="btn btn--primary" onClick={props.onNext}>
+        <button
+          type="button"
+          className="btn btn--primary"
+          onClick={props.onNext}
+        >
           {props.step.ctaLabel}
         </button>
       </div>

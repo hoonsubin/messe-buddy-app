@@ -20,10 +20,22 @@ const pb = (id: string) => ({ id, created: NOW, updated: NOW });
 // ── Pre-Boarding Checklist Defaults ────────────────────────────────────────────
 
 const MOCK_PRE_BOARDING_CHECKS: ReadonlyArray<PreBoardingCheckItem> = [
-  { id: "pbc_workspace", label: "Workspace prepared (desk, badge, parking)", checked: true },
+  {
+    id: "pbc_workspace",
+    label: "Workspace prepared (desk, badge, parking)",
+    checked: true,
+  },
   { id: "pbc_laptop", label: "Laptop ordered and configured", checked: true },
-  { id: "pbc_system", label: "System access requested (email, Slack, HR tools)", checked: false },
-  { id: "pbc_intro", label: "Team intro email drafted (buddy + manager)", checked: false },
+  {
+    id: "pbc_system",
+    label: "System access requested (email, Slack, HR tools)",
+    checked: false,
+  },
+  {
+    id: "pbc_intro",
+    label: "Team intro email drafted (buddy + manager)",
+    checked: false,
+  },
   { id: "pbc_buddy", label: "Buddy assigned and briefed", checked: true },
   { id: "pbc_schedule", label: "First-week schedule shared", checked: false },
 ];

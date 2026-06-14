@@ -198,7 +198,9 @@ const FormPage = () => {
         // and the runtime adapter applies only the provided keys.
         await adapter.updatePlayer(
           player.id,
-          patch as unknown as Partial<Omit<Player, "id" | "created" | "updated">>,
+          patch as unknown as Partial<
+            Omit<Player, "id" | "created" | "updated">
+          >,
         );
       }
 

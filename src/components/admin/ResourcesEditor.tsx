@@ -50,7 +50,15 @@ const ResourcesEditor = (props: ResourcesEditorProps) => (
             gap: "var(--space-2)",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--space-3)",
+              flex: 1,
+              minWidth: 0,
+            }}
+          >
             {/* Visibility toggle */}
             <label
               style={{

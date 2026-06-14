@@ -30,7 +30,11 @@ const MissionEditor = (props: MissionEditorProps) => {
   return (
     <div
       data-testid="mission-editor"
-      style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-5)",
+      }}
     >
       {/* Title */}
       <div className="form-field">
@@ -92,8 +96,7 @@ const MissionEditor = (props: MissionEditorProps) => {
             <MarkdownEditor
               value={props.draft.body ?? ""}
               placeholder="Describe this mission…"
-              onChange={(body) =>
-                props.onDraftChange({ ...props.draft, body })}
+              onChange={(body) => props.onDraftChange({ ...props.draft, body })}
             />
           )}
       </div>

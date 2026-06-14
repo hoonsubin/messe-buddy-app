@@ -192,7 +192,11 @@ const PreBoardingChecklist = (props: PreBoardingChecklistProps) => {
             type="button"
             className="btn btn--secondary"
             onClick={() => setAdding(true)}
-            style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--space-1)",
+            }}
           >
             <MdAdd aria-hidden="true" /> Add item
           </button>

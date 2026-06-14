@@ -29,11 +29,13 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
   const [gridEnabled, setGridEnabled] = useState(false);
 
   // ── Context menu state ──────────────────────────────────────────────────────
-  const [contextMenu, setContextMenu] = useState<{
-    milestoneId: string;
-    x: number;
-    y: number;
-  } | null>(null);
+  const [contextMenu, setContextMenu] = useState<
+    {
+      milestoneId: string;
+      x: number;
+      y: number;
+    } | null
+  >(null);
 
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -122,7 +124,11 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
   return (
     <div
       data-testid="milestone-map-editor"
-      style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-3)",
+      }}
       onClick={handleCloseContextMenu}
     >
       <MapViewport

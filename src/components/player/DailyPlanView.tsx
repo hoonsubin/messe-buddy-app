@@ -114,8 +114,7 @@ const DailyPlanView = (props: DailyPlanViewProps) => {
         style={{
           overflow: "hidden",
           maxHeight: collapsed ? "0" : "80rem",
-          transition:
-            "max-height var(--duration-normal) var(--ease-out)",
+          transition: "max-height var(--duration-normal) var(--ease-out)",
           borderBottomLeftRadius: "var(--radius-lg)",
           borderBottomRightRadius: "var(--radius-lg)",
         }}
@@ -137,70 +136,72 @@ const DailyPlanView = (props: DailyPlanViewProps) => {
           >
             Start here — these are your top priorities for today.
           </p>
-          {missions.length === 0 ? (
-            <p
-              style={{
-                margin: 0,
-                fontSize: "var(--text-sm)",
-                color: "hsl(var(--color-muted-fg))",
-                fontStyle: "italic",
-                padding: "var(--space-3) 0",
-              }}
-            >
-              Nothing planned for today.
-            </p>
-          ) : (
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                margin: 0,
-                display: "flex",
-                flexDirection: "column",
-                gap: "var(--space-2)",
-              }}
-            >
-              {missions.map((m) => (
-                <li
-                  key={m.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "var(--space-3)",
-                    background: "hsl(var(--color-bg))",
-                    borderRadius: "var(--radius-md)",
-                    gap: "var(--space-2)",
-                    minHeight: "var(--min-touch)",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: "var(--text-sm)",
-                      fontWeight: "var(--weight-medium)",
-                      color: "hsl(var(--color-fg))",
-                      flex: 1,
-                    }}
-                  >
-                    {m.title}
-                  </span>
-                  <span
+          {missions.length === 0
+            ? (
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "var(--text-sm)",
+                  color: "hsl(var(--color-muted-fg))",
+                  fontStyle: "italic",
+                  padding: "var(--space-3) 0",
+                }}
+              >
+                Nothing planned for today.
+              </p>
+            )
+            : (
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-2)",
+                }}
+              >
+                {missions.map((m) => (
+                  <li
+                    key={m.id}
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: "var(--space-1)",
-                      flexShrink: 0,
+                      justifyContent: "space-between",
+                      padding: "var(--space-3)",
+                      background: "hsl(var(--color-bg))",
+                      borderRadius: "var(--radius-md)",
+                      gap: "var(--space-2)",
+                      minHeight: "var(--min-touch)",
                     }}
                   >
-                    {m.tags.map((tag) => (
-                      <TagBadge key={tag} label={tag} variant={tag} />
-                    ))}
-                    <XPBadge value={m.xpValue} />
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+                    <span
+                      style={{
+                        fontSize: "var(--text-sm)",
+                        fontWeight: "var(--weight-medium)",
+                        color: "hsl(var(--color-fg))",
+                        flex: 1,
+                      }}
+                    >
+                      {m.title}
+                    </span>
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "var(--space-1)",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {m.tags.map((tag) => (
+                        <TagBadge key={tag} label={tag} variant={tag} />
+                      ))}
+                      <XPBadge value={m.xpValue} />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
         </div>
       </div>
     </section>

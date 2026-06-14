@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import type { ChatMessage } from "./useChatStream.ts";
 
 // ── Keyword-matched policy responses ──────────────────────────────────────

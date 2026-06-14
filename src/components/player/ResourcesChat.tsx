@@ -62,7 +62,11 @@ const ResourcesChat = (props: ResourcesChatProps) => {
           />
         )}
         {activeTab === TAB_KEYS.CHAT && (
-          <ChatPanel messages={messages} isStreaming={isStreaming} onSend={send} />
+          <ChatPanel
+            messages={messages}
+            isStreaming={isStreaming}
+            onSend={send}
+          />
         )}
       </div>
     </div>

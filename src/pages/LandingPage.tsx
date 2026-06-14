@@ -748,16 +748,16 @@ const LandingPage = () => {
                           color: "hsl(var(--color-muted-fg))",
                         }}
                       >
-                        {t.milestones.length} milestones ·{" "}
-                        {t.missions.length} missions
+                        {t.milestones.length} milestones · {t.missions.length}
+                        {" "}
+                        missions
                       </div>
                     </div>
                     <button
                       type="button"
                       className="btn btn--secondary"
                       disabled={status === "loading"}
-                      onClick={() =>
-                        void handleLoadTemplateFromStore(t.name)}
+                      onClick={() => void handleLoadTemplateFromStore(t.name)}
                     >
                       {status === "loading" ? "Loading…" : "Use Template"}
                     </button>

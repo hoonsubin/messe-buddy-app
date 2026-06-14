@@ -141,7 +141,9 @@ const CameraFeed = (props: CameraFeedProps) => {
         props.onError?.("No camera found on this device.");
       } else {
         props.onError?.(
-          `Unable to access camera: ${err instanceof Error ? err.message : "Unknown error"}`,
+          `Unable to access camera: ${
+            err instanceof Error ? err.message : "Unknown error"
+          }`,
         );
       }
     }

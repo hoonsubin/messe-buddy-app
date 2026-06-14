@@ -167,10 +167,7 @@ const PlayerCockpitPage = () => {
 
   // Derived data
   const dailyMissions = useMemo(
-    () =>
-      playerProgress
-        ? getDailyMissions(playerProgress, missions)
-        : [],
+    () => playerProgress ? getDailyMissions(playerProgress, missions) : [],
     [playerProgress, missions],
   );
   const currentMissions = missions.filter((m) => m.isInCurrentMissions);

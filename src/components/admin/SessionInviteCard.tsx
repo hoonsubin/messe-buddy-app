@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MdContentCopy, MdCheck, MdPersonAdd } from "react-icons/md";
+import { MdCheck, MdContentCopy, MdPersonAdd } from "react-icons/md";
 
 interface SessionInviteCardProps {
   readonly sessionId: string;
@@ -39,7 +39,9 @@ const SessionInviteCard = ({ sessionId }: SessionInviteCardProps) => {
         gap: "var(--space-3)",
       }}
     >
-      <header style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+      <header
+        style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}
+      >
         <MdPersonAdd
           size={18}
           aria-hidden="true"
@@ -58,7 +60,13 @@ const SessionInviteCard = ({ sessionId }: SessionInviteCardProps) => {
         </h3>
       </header>
 
-      <p style={{ margin: 0, fontSize: "var(--text-sm)", color: "hsl(var(--color-muted-fg))" }}>
+      <p
+        style={{
+          margin: 0,
+          fontSize: "var(--text-sm)",
+          color: "hsl(var(--color-muted-fg))",
+        }}
+      >
         Share this code with the new hire. They'll enter it on the{" "}
         <strong>New Employee</strong> login screen at{" "}
         <span style={{ fontFamily: "monospace" }}>{joinUrl}</span>

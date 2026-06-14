@@ -276,11 +276,9 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
         {/* Scan status */}
         <ValidationResult
           state={validationState}
-          missionTitle={
-            validationState === "success"
-              ? props.context?.missionTitle
-              : undefined
-          }
+          missionTitle={validationState === "success"
+            ? props.context?.missionTitle
+            : undefined}
           errorMessage={errorMessage || undefined}
         />
 
@@ -304,9 +302,7 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
                   setCameraActive(true);
                 }}
               >
-                {validationState === "error"
-                  ? "Retry camera"
-                  : "Start camera"}
+                {validationState === "error" ? "Retry camera" : "Start camera"}
               </button>
             )}
             <button

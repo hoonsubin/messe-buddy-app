@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import type { Milestone, Mission, DraftMission } from "../../types/index.ts";
+import type { DraftMission, Milestone, Mission } from "../../types/index.ts";
 import MissionEditor from "./MissionEditor.tsx";
 import SaveActions from "./SaveActions.tsx";
 

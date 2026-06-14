@@ -1,4 +1,4 @@
-import type { Player, MilestoneProgress } from "../../types/index.ts";
+import type { MilestoneProgress, Player } from "../../types/index.ts";
 
 interface PlayerProfileCardProps {
   readonly player: Player | null;

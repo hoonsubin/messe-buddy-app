@@ -25,6 +25,7 @@ import { exportTemplate } from "../use-cases/exportTemplate.ts";
 import { importTemplate } from "../use-cases/importTemplate.ts";
 import TopBar from "../components/shared/TopBar.tsx";
 import MilestoneMapEditor from "../components/admin/MilestoneMapEditor.tsx";
+import AdminMissionsList from "../components/admin/AdminMissionsList.tsx";
 import MilestoneSidebarEditor from "../components/admin/MilestoneSidebarEditor.tsx";
 import PendingApprovalsPanel from "../components/admin/PendingApprovalsPanel.tsx";
 import PlayerSelectorDropdown from "../components/admin/PlayerSelectorDropdown.tsx";
@@ -144,7 +145,7 @@ const AdminCockpitPage = () => {
     (id: string) => {
       setPreBoardingItems((prev) => {
         const next = prev.map((item) =>
-          item.id === id ? { ...item, checked: !item.checked } : item,
+          item.id === id ? { ...item, checked: !item.checked } : item
         );
         void adapter.updateSession(sid, { preBoardingChecks: next });
         return next;
@@ -428,6 +429,7 @@ const AdminCockpitPage = () => {
         if (!real) return prev;
         const draft: DraftMission = {
           milestoneId: real.milestoneId,
+          originalId: real.id,
           isDirty: false,
           title: real.title,
           body: real.body,
@@ -470,8 +472,7 @@ const AdminCockpitPage = () => {
     const draft = draftMissions.get(selectedMissionId);
     if (!draft || draft.difficulty === undefined) return 0;
     const msMissions = missions.filter(
-      (m) =>
-        m.milestoneId === draft.milestoneId && m.id !== selectedMissionId,
+      (m) => m.milestoneId === draft.milestoneId && m.id !== selectedMissionId,
     );
     return computeXPPreview(draft, msMissions);
   }, [selectedMissionId, draftMissions, missions]);
@@ -534,7 +535,8 @@ const AdminCockpitPage = () => {
             sessionName: s.name,
             progressPercent,
             daysSinceLastActivity,
-            isStalled: daysSinceLastActivity !== null && daysSinceLastActivity > 3,
+            isStalled: daysSinceLastActivity !== null &&
+              daysSinceLastActivity > 3,
           });
         }
       }
@@ -550,12 +552,14 @@ const AdminCockpitPage = () => {
 
   // ── QR scanner ──────────────────────────────────────────────────────────────
 
-  const [qrScannerContext, setQrScannerContext] = useState<{
-    playerId: string;
-    missionId: string;
-    playerName: string;
-    missionTitle: string;
-  } | null>(null);
+  const [qrScannerContext, setQrScannerContext] = useState<
+    {
+      playerId: string;
+      missionId: string;
+      playerName: string;
+      missionTitle: string;
+    } | null
+  >(null);
 
   const handleScanQR = useCallback(
     (playerId: string, missionId: string) => {
@@ -624,11 +628,27 @@ const AdminCockpitPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveToast, setSaveToast] = useState<string | null>(null);
 
+  // ── Mission reorder tracking ────────────────────────────────────────────
+  // Maps missionId → newOrder for missions that have been drag-reordered
+  const [missionOrderChanges, setMissionOrderChanges] = useState<
+    ReadonlyMap<string, number>
+  >(new Map());
+
+  const handleMissionReorder = useCallback(
+    (missionId: string, newOrder: number) => {
+      setMissionOrderChanges((prev) =>
+        new Map(prev).set(missionId, newOrder)
+      );
+    },
+    [],
+  );
+
   const isDirty = useMemo(() => {
     const msDirty = draftMilestones.some((dm) => dm.isDirty);
     const mDirty = [...draftMissions.values()].some((dm) => dm.isDirty);
-    return msDirty || mDirty;
-  }, [draftMilestones, draftMissions]);
+    const reorderDirty = missionOrderChanges.size > 0;
+    return msDirty || mDirty || reorderDirty;
+  }, [draftMilestones, draftMissions, missionOrderChanges]);
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
@@ -662,20 +682,22 @@ const AdminCockpitPage = () => {
       // 2. Save missions
       for (const [, draft] of draftMissions) {
         if (!draft.isDirty) continue;
-        const real = missions.find((m) => m.id === selectedMissionId);
-        if (real && selectedMissionId) {
-          await adapter.updateMission(selectedMissionId, {
-            title: draft.title ?? real.title,
-            body: draft.body ?? real.body,
-            type: draft.type ?? real.type,
-            externalUrl: draft.externalUrl,
-            difficulty: draft.difficulty ?? real.difficulty,
-            tags: draft.tags ?? real.tags,
-            suggestedDueDate: draft.suggestedDueDate ?? real.suggestedDueDate,
-            validationMethod: draft.validationMethod ?? real.validationMethod,
-            isInCurrentMissions: draft.isInCurrentMissions ??
-              real.isInCurrentMissions,
-          });
+        if (draft.originalId) {
+          const real = missions.find((m) => m.id === draft.originalId);
+          if (real) {
+            await adapter.updateMission(draft.originalId, {
+              title: draft.title ?? real.title,
+              body: draft.body ?? real.body,
+              type: draft.type ?? real.type,
+              externalUrl: draft.externalUrl,
+              difficulty: draft.difficulty ?? real.difficulty,
+              tags: draft.tags ?? real.tags,
+              suggestedDueDate: draft.suggestedDueDate ?? real.suggestedDueDate,
+              validationMethod: draft.validationMethod ?? real.validationMethod,
+              isInCurrentMissions: draft.isInCurrentMissions ??
+                real.isInCurrentMissions,
+            });
+          }
         } else {
           await adapter.createMission({
             sessionId: sid,
@@ -693,6 +715,21 @@ const AdminCockpitPage = () => {
         }
       }
 
+      // 3. Save form schemas for form-type missions with dirty form fields
+      for (const [, draft] of draftMissions) {
+        if (!draft.isDirty || draft.type !== MISSION_TYPE.FORM) continue;
+        if (draft.originalId && draft.formFields?.length) {
+          await adapter.upsertFormSchema(draft.originalId, draft.formFields);
+        }
+      }
+
+      // 4. Persist mission reorder changes
+      if (missionOrderChanges.size > 0) {
+        for (const [missionId, newOrder] of missionOrderChanges) {
+          await adapter.updateMission(missionId, { order: newOrder });
+        }
+      }
+
       // Clear dirty state
       setDraftMilestones((prev) =>
         prev.map((dm) => ({ ...dm, isDirty: false }))
@@ -704,6 +741,7 @@ const AdminCockpitPage = () => {
         }
         return next;
       });
+      setMissionOrderChanges(new Map());
 
       setSaveToast("All changes saved");
       setTimeout(() => setSaveToast(null), 3000);
@@ -720,8 +758,8 @@ const AdminCockpitPage = () => {
     draftMissions,
     missions,
     milestones,
-    selectedMissionId,
     xpPreview,
+    missionOrderChanges,
   ]);
 
   const handleDiscard = useCallback(() => {
@@ -733,6 +771,7 @@ const AdminCockpitPage = () => {
     setDraftMissions(new Map());
     setSelectedMissionId(null);
     setSelectedMilestone(null);
+    setMissionOrderChanges(new Map());
   }, [milestones]);
 
   // ── Template export ─────────────────────────────────────────────────────────
@@ -745,9 +784,7 @@ const AdminCockpitPage = () => {
     if (!session) return;
     setIsSavingTemplate(true);
     try {
-      const formMissions = missions.filter((m) =>
-        m.type === MISSION_TYPE.FORM
-      );
+      const formMissions = missions.filter((m) => m.type === MISSION_TYPE.FORM);
       const schemaResults = await Promise.all(
         formMissions.map((m) => adapter.getFormSchema(m.id).catch(() => null)),
       );
@@ -948,6 +985,23 @@ const AdminCockpitPage = () => {
               onUploadBackground={() => undefined}
             />
           </div>
+
+          {/* Mission list — grouped by milestone, drag-to-reorder */}
+          <AdminMissionsList
+            missions={missions}
+            milestones={milestones}
+            onReorder={handleMissionReorder}
+            onMissionClick={(missionId) => {
+              const mission = missions.find((m) => m.id === missionId);
+              const milestone = mission
+                ? milestones.find((ms) => ms.id === mission.milestoneId) ?? null
+                : null;
+              if (milestone) {
+                setSelectedMilestone(milestone);
+                handleMissionSelect(missionId);
+              }
+            }}
+          />
 
           {/* Sidebar panels */}
           <div ref={sidebarRef} className="admin-layout__sidebar">

@@ -54,8 +54,7 @@ const PendingApprovalsPanel = (props: PendingApprovalsPanelProps) => (
                 onApprove={() => props.onApprove(evt.playerId, evt.missionId)}
                 onReject={() =>
                   props.onReject(evt.playerId, evt.missionId)}
-                onScanQR={() =>
-                  props.onScanQR(evt.playerId, evt.missionId)}
+                onScanQR={() => props.onScanQR(evt.playerId, evt.missionId)}
               />
             );
           })}

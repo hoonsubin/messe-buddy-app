@@ -46,6 +46,7 @@ export interface DraftMilestone {
 // In-progress admin edit; not yet written to PocketBase.
 export interface DraftMission {
   readonly milestoneId: string;
+  readonly originalId?: string;
   readonly isDirty: boolean;
   readonly title?: string;
   readonly body?: string;
