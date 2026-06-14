@@ -1,118 +1,501 @@
-// Phase 1 shell — static layout only. All interaction wired in Phase 2.
-// Role selection / recovery sub-screen switching is a Phase 2 concern.
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useIdentity } from "../hooks/useIdentity.ts";
+import { useAdapter } from "../adapters/useAdapter.ts";
+import { joinSession, createGameMakerSession } from "../use-cases/joinSession.ts";
+import { recoverIdentity } from "../use-cases/recoverIdentity.ts";
+import RecoveryKeyModal from "../components/shared/RecoveryKeyModal.tsx";
+import { USER_ROLE } from "../types/index.ts";
+
+type View = "role-select" | "join" | "create" | "recover";
+type Status = "idle" | "loading" | "error";
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-const LandingPage = () => (
-  <div
-    className="landing"
-    data-testid="landing-page"
-    data-page="landing"
-    style={{
-      minHeight: "100dvh",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      background: "hsl(var(--color-bg))",
-      backgroundImage:
-        "linear-gradient(hsl(var(--color-border) / 0.5) 1px, transparent 1px), " +
-        "linear-gradient(90deg, hsl(var(--color-border) / 0.5) 1px, transparent 1px)",
-      backgroundSize: "2rem 2rem",
-      padding: "var(--space-6) var(--space-4)",
-      gap: "var(--space-6)",
-    }}
-  >
-    {/* Messe München logotype */}
-    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+const LandingPage = () => {
+  const navigate = useNavigate();
+  const adapter = useAdapter();
+  const { identity } = useIdentity();
+
+  const [view, setView] = useState<View>("role-select");
+  const [status, setStatus] = useState<Status>("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // Controlled inputs
+  const [sessionCode, setSessionCode] = useState("");
+  const [sessionName, setSessionName] = useState("");
+  const [recoveryKey, setRecoveryKey] = useState("");
+  const [recoverySessionId, setRecoverySessionId] = useState("");
+
+  // Set after a successful join/create — triggers the modal
+  const [pendingRecoveryKey, setPendingRecoveryKey] = useState<string | null>(null);
+  // Set alongside pendingRecoveryKey so we know where to redirect on dismiss
+  const [pendingRedirect, setPendingRedirect] = useState<string>("/");
+
+  // Returning user: if identity exists in localStorage, route silently to cockpit
+  useEffect(() => {
+    if (!identity) return;
+    const dest =
+      identity.role === USER_ROLE.PLAYER
+        ? `/session/${identity.sessionId}`
+        : `/admin/${identity.sessionId}`;
+    navigate(dest, { replace: true });
+  }, [identity, navigate]);
+
+  // ── handlers ────────────────────────────────────────────────────────────────
+
+  const handleJoin = async () => {
+    if (!sessionCode.trim()) return;
+    setStatus("loading");
+    setErrorMessage("");
+    try {
+      const result = await joinSession(sessionCode.trim(), adapter);
+      // joinSession already writes to localStorage — do NOT call setIdentity here,
+      // which would fire the returning-user useEffect and navigate before the modal renders.
+      setPendingRedirect(`/session/${result.identity.sessionId}`);
+      setPendingRecoveryKey(result.identity.recoveryKey);
+      setStatus("idle");
+    } catch {
+      setStatus("error");
+      setErrorMessage("Session not found. Check your session code and try again.");
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!sessionName.trim()) return;
+    setStatus("loading");
+    setErrorMessage("");
+    try {
+      const createdIdentity = await createGameMakerSession(sessionName.trim(), adapter);
+      // Same reasoning: use case writes localStorage; setIdentity would race the modal.
+      setPendingRedirect(`/admin/${createdIdentity.sessionId}`);
+      setPendingRecoveryKey(createdIdentity.recoveryKey);
+      setStatus("idle");
+    } catch {
+      setStatus("error");
+      setErrorMessage("Could not create session. Please try again.");
+    }
+  };
+
+  const handleRecover = async () => {
+    if (!recoveryKey.trim() || !recoverySessionId.trim()) return;
+    setStatus("loading");
+    setErrorMessage("");
+    try {
+      const recovered = await recoverIdentity(
+        recoveryKey.trim().toUpperCase(),
+        recoverySessionId.trim(),
+        adapter
+      );
+      // recoverIdentity writes localStorage; navigate directly (no modal for recovery).
+      const dest =
+        recovered.role === USER_ROLE.PLAYER
+          ? `/session/${recovered.sessionId}`
+          : `/admin/${recovered.sessionId}`;
+      navigate(dest, { replace: true });
+    } catch {
+      setStatus("error");
+      setErrorMessage("No account found for that key and session. Check and try again.");
+    }
+  };
+
+  const handleRecoveryKeyDismiss = () => {
+    navigate(pendingRedirect, { replace: true });
+  };
+
+  const resetError = () => {
+    setErrorMessage("");
+    setStatus("idle");
+  };
+
+  // ── shared shell ────────────────────────────────────────────────────────────
+
+  return (
+    <>
       <div
-        aria-hidden="true"
+        className="landing"
+        data-testid="landing-page"
+        data-page="landing"
         style={{
+          minHeight: "100dvh",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          width: "3rem",
-          height: "3rem",
-          background: "hsl(var(--color-primary))",
-          color: "hsl(var(--color-primary-fg))",
-          borderRadius: "var(--radius-sm)",
-          fontWeight: "var(--weight-semibold)",
-          fontSize: "var(--text-base)",
-          letterSpacing: "-0.03em",
-          flexShrink: 0,
+          background: "hsl(var(--color-bg))",
+          backgroundImage:
+            "linear-gradient(hsl(var(--color-border) / 0.5) 1px, transparent 1px), " +
+            "linear-gradient(90deg, hsl(var(--color-border) / 0.5) 1px, transparent 1px)",
+          backgroundSize: "2rem 2rem",
+          padding: "var(--space-6) var(--space-4)",
+          gap: "var(--space-6)",
         }}
       >
-        MM
+        {/* Messe München logotype */}
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          <div
+            aria-hidden="true"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "3rem",
+              height: "3rem",
+              background: "hsl(var(--color-primary))",
+              color: "hsl(var(--color-primary-fg))",
+              borderRadius: "var(--radius-sm)",
+              fontWeight: "var(--weight-semibold)",
+              fontSize: "var(--text-base)",
+              letterSpacing: "-0.03em",
+              flexShrink: 0,
+            }}
+          >
+            MM
+          </div>
+          <span
+            style={{
+              fontSize: "var(--text-base)",
+              color: "hsl(var(--color-muted-fg))",
+              fontWeight: "var(--weight-medium)",
+            }}
+          >
+            Messe München
+          </span>
+        </div>
+
+        {/* Headline */}
+        <div style={{ textAlign: "center" }}>
+          <h1
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "var(--text-3xl)",
+              fontWeight: "var(--weight-semibold)",
+              color: "hsl(var(--color-fg))",
+              margin: 0,
+              lineHeight: "var(--leading-tight)",
+            }}
+          >
+            Employee Onboarding
+          </h1>
+          <p
+            style={{
+              color: "hsl(var(--color-muted-fg))",
+              marginTop: "var(--space-2)",
+              marginBottom: 0,
+              fontSize: "var(--text-sm)",
+            }}
+          >
+            {view === "role-select" && "Choose how you'd like to join"}
+            {view === "join" && "Enter your session code"}
+            {view === "create" && "Create a new onboarding session"}
+            {view === "recover" && "Restore your progress"}
+          </p>
+        </div>
+
+        {/* Card */}
+        <div
+          className="card"
+          style={{
+            width: "100%",
+            maxWidth: "22rem",
+            padding: "var(--space-6)",
+            boxShadow: "var(--shadow-md)",
+          }}
+        >
+          {/* ── role-select view ── */}
+          {view === "role-select" && (
+            <>
+              <p
+                style={{
+                  fontSize: "var(--text-sm)",
+                  fontWeight: "var(--weight-medium)",
+                  color: "hsl(var(--color-muted-fg))",
+                  margin: "0 0 var(--space-4)",
+                }}
+              >
+                Join as
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  style={{ width: "100%", justifyContent: "center" }}
+                  onClick={() => { resetError(); setView("join"); }}
+                >
+                  New Employee
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--secondary"
+                  style={{ width: "100%", justifyContent: "center" }}
+                  onClick={() => { resetError(); setView("create"); }}
+                >
+                  Admin
+                </button>
+              </div>
+              <hr
+                style={{
+                  margin: "var(--space-5) 0",
+                  border: "none",
+                  borderTop: "1px solid hsl(var(--color-border))",
+                }}
+              />
+              <button
+                type="button"
+                className="btn btn--ghost"
+                style={{
+                  width: "100%",
+                  justifyContent: "center",
+                  color: "hsl(var(--color-muted-fg))",
+                  fontSize: "var(--text-sm)",
+                }}
+                onClick={() => { resetError(); setView("recover"); }}
+              >
+                Recover my progress
+              </button>
+            </>
+          )}
+
+          {/* ── join view ── */}
+          {view === "join" && (
+            <>
+              <label
+                htmlFor="session-code"
+                style={{
+                  display: "block",
+                  fontSize: "var(--text-sm)",
+                  fontWeight: "var(--weight-medium)",
+                  color: "hsl(var(--color-fg))",
+                  marginBottom: "var(--space-2)",
+                }}
+              >
+                Session code
+              </label>
+              <input
+                id="session-code"
+                type="text"
+                className="form-input"
+                placeholder="Ask your Game Master for the code"
+                value={sessionCode}
+                onChange={(e) => setSessionCode(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") void handleJoin(); }}
+                autoFocus
+                style={{ width: "100%", marginBottom: "var(--space-4)" }}
+              />
+              {errorMessage && (
+                <p
+                  role="alert"
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "hsl(var(--color-destructive))",
+                    margin: "0 0 var(--space-3)",
+                  }}
+                >
+                  {errorMessage}
+                </p>
+              )}
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  style={{ width: "100%", justifyContent: "center" }}
+                  disabled={!sessionCode.trim() || status === "loading"}
+                  onClick={() => void handleJoin()}
+                >
+                  {status === "loading" ? "Joining…" : "Join session"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  style={{ width: "100%", justifyContent: "center" }}
+                  onClick={() => { resetError(); setView("role-select"); }}
+                >
+                  Back
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ── create view ── */}
+          {view === "create" && (
+            <>
+              <label
+                htmlFor="session-name"
+                style={{
+                  display: "block",
+                  fontSize: "var(--text-sm)",
+                  fontWeight: "var(--weight-medium)",
+                  color: "hsl(var(--color-fg))",
+                  marginBottom: "var(--space-2)",
+                }}
+              >
+                Session name
+              </label>
+              <input
+                id="session-name"
+                type="text"
+                className="form-input"
+                placeholder="e.g. Munich Onboarding June 2026"
+                value={sessionName}
+                onChange={(e) => setSessionName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") void handleCreate(); }}
+                autoFocus
+                style={{ width: "100%", marginBottom: "var(--space-4)" }}
+              />
+              {errorMessage && (
+                <p
+                  role="alert"
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "hsl(var(--color-destructive))",
+                    margin: "0 0 var(--space-3)",
+                  }}
+                >
+                  {errorMessage}
+                </p>
+              )}
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  style={{ width: "100%", justifyContent: "center" }}
+                  disabled={!sessionName.trim() || status === "loading"}
+                  onClick={() => void handleCreate()}
+                >
+                  {status === "loading" ? "Creating…" : "Create session"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  style={{ width: "100%", justifyContent: "center" }}
+                  onClick={() => { resetError(); setView("role-select"); }}
+                >
+                  Back
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ── recover view ── */}
+          {view === "recover" && (
+            <>
+              <label
+                htmlFor="recover-key"
+                style={{
+                  display: "block",
+                  fontSize: "var(--text-sm)",
+                  fontWeight: "var(--weight-medium)",
+                  color: "hsl(var(--color-fg))",
+                  marginBottom: "var(--space-2)",
+                }}
+              >
+                Recovery key
+              </label>
+              <input
+                id="recover-key"
+                type="text"
+                className="form-input"
+                placeholder="8-character key"
+                value={recoveryKey}
+                onChange={(e) => setRecoveryKey(e.target.value)}
+                autoCapitalize="characters"
+                autoFocus
+                style={{
+                  width: "100%",
+                  fontFamily: "var(--font-mono)",
+                  letterSpacing: "0.1em",
+                  marginBottom: "var(--space-3)",
+                }}
+              />
+              <label
+                htmlFor="recover-session"
+                style={{
+                  display: "block",
+                  fontSize: "var(--text-sm)",
+                  fontWeight: "var(--weight-medium)",
+                  color: "hsl(var(--color-fg))",
+                  marginBottom: "var(--space-2)",
+                }}
+              >
+                Session ID
+              </label>
+              <input
+                id="recover-session"
+                type="text"
+                className="form-input"
+                placeholder="Shared by your Game Master"
+                value={recoverySessionId}
+                onChange={(e) => setRecoverySessionId(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") void handleRecover(); }}
+                style={{ width: "100%", marginBottom: "var(--space-4)" }}
+              />
+              {errorMessage && (
+                <p
+                  role="alert"
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "hsl(var(--color-destructive))",
+                    margin: "0 0 var(--space-3)",
+                  }}
+                >
+                  {errorMessage}
+                </p>
+              )}
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  style={{ width: "100%", justifyContent: "center" }}
+                  disabled={
+                    !recoveryKey.trim() ||
+                    !recoverySessionId.trim() ||
+                    status === "loading"
+                  }
+                  onClick={() => void handleRecover()}
+                >
+                  {status === "loading" ? "Recovering…" : "Restore progress"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  style={{ width: "100%", justifyContent: "center" }}
+                  onClick={() => { resetError(); setView("role-select"); }}
+                >
+                  Back
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <p
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "hsl(var(--color-muted-fg))",
+            margin: 0,
+            textAlign: "center",
+          }}
+        >
+          Having trouble?{" "}
+          <a
+            href="mailto:it@messe-muenchen.de"
+            style={{ color: "hsl(var(--color-primary))" }}
+          >
+            Contact IT Support
+          </a>
+        </p>
       </div>
-      <span style={{ fontSize: "var(--text-base)", color: "hsl(var(--color-muted-fg))", fontWeight: "var(--weight-medium)" }}>
-        Messe München
-      </span>
-    </div>
 
-    {/* Headline */}
-    <div style={{ textAlign: "center" }}>
-      <h1
-        style={{
-          fontFamily: "var(--font-display)",
-          fontSize: "var(--text-3xl)",
-          fontWeight: "var(--weight-semibold)",
-          color: "hsl(var(--color-fg))",
-          margin: 0,
-          lineHeight: "var(--leading-tight)",
-        }}
-      >
-        Employee Onboarding
-      </h1>
-      <p style={{ color: "hsl(var(--color-muted-fg))", marginTop: "var(--space-2)", marginBottom: 0, fontSize: "var(--text-sm)" }}>
-        Choose how you'd like to join
-      </p>
-    </div>
-
-    {/* Role selection card */}
-    <div
-      className="card"
-      style={{
-        width: "100%",
-        maxWidth: "22rem",
-        padding: "var(--space-6)",
-        boxShadow: "var(--shadow-md)",
-      }}
-    >
-      <p style={{ fontSize: "var(--text-sm)", fontWeight: "var(--weight-medium)", color: "hsl(var(--color-muted-fg))", margin: "0 0 var(--space-4)" }}>
-        Join as
-      </p>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        {/* Phase 2: onClick → joinSession use case → redirect to /session/:id */}
-        <button type="button" className="btn btn--primary" style={{ width: "100%", justifyContent: "center" }}>
-          New Employee
-        </button>
-        {/* Phase 2: onClick → createGameMakerSession use case → redirect to /admin/:id */}
-        <button type="button" className="btn btn--secondary" style={{ width: "100%", justifyContent: "center" }}>
-          Admin
-        </button>
-      </div>
-
-      <hr style={{ margin: "var(--space-5) 0", border: "none", borderTop: "1px solid hsl(var(--color-border))" }} />
-
-      {/* Phase 2: onClick → show recovery key input inline */}
-      <button
-        type="button"
-        className="btn btn--ghost"
-        style={{ width: "100%", justifyContent: "center", color: "hsl(var(--color-muted-fg))", fontSize: "var(--text-sm)" }}
-      >
-        Recover my progress
-      </button>
-    </div>
-
-    {/* Footer */}
-    <p style={{ fontSize: "var(--text-xs)", color: "hsl(var(--color-muted-fg))", margin: 0, textAlign: "center" }}>
-      Having trouble?{" "}
-      <a href="mailto:it@messe-muenchen.de" style={{ color: "hsl(var(--color-primary))" }}>
-        Contact IT Support
-      </a>
-    </p>
-  </div>
-);
+      {/* Recovery key modal — shown once after join/create */}
+      {pendingRecoveryKey && (
+        <RecoveryKeyModal
+          recoveryKey={pendingRecoveryKey}
+          onDismiss={handleRecoveryKeyDismiss}
+        />
+      )}
+    </>
+  );
+};
 
 export default LandingPage;

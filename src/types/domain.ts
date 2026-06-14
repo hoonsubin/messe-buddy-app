@@ -52,6 +52,9 @@ export interface BuddyProfile extends PBRecord {
   readonly tenure?: string;
   readonly avatarUrl?: string;
   readonly contactUrl?: string;
+  readonly quote?: string;   // short personal quote shown on the buddy card
+  readonly email?: string;
+  readonly phone?: string;
 }
 
 export interface Milestone extends PBRecord {

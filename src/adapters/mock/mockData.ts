@@ -305,6 +305,9 @@ export const MOCK_BUDDY_PROFILES: ReadonlyArray<BuddyProfile> = [
     role: "Lead Designer",
     tenure: "6 years at Messe München",
     contactUrl: "https://slack.com/",
+    quote: "The best onboarding is the one that makes you feel like you already belong.",
+    email: "lena.hoffmann@messe-muenchen.de",
+    phone: "+49 89 949-21345",
   },
 ];
 

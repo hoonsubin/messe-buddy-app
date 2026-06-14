@@ -90,7 +90,7 @@
   /* ── Layout ──────────────────────────────────────────────────────────────── */
   --topbar-h:      3.5rem;    /* 56px — fixed top bar height */
   --sidebar-w:     22rem;     /* 352px — milestone/mission sidebar */
-  --ms-strip-h:    4.5rem;    /* mission strip at bottom of player cockpit */
+  --ms-strip-h:    7rem;      /* mission strip at bottom of player cockpit */
   --touch-target:  2.75rem;   /* 44px min touch target per WCAG */
 
   /* ── Transitions ─────────────────────────────────────────────────────────── */

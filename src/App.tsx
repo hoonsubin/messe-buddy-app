@@ -5,12 +5,27 @@ import PlayerCockpitPage from "./pages/PlayerCockpitPage.tsx";
 import AdminCockpitPage from "./pages/AdminCockpitPage.tsx";
 import FormPage from "./pages/FormPage.tsx";
 import QRScannerView from "./pages/QRScannerView.tsx";
+import RequireRole from "./components/layout/RequireRole.tsx";
+import { USER_ROLE } from "./types/index.ts";
 
-// Route tree — guards and layouts added in Phase 2.
 const router = createBrowserRouter([
   { path: "/", element: <LandingPage /> },
-  { path: "/session/:sessionId", element: <PlayerCockpitPage /> },
-  { path: "/admin/:sessionId", element: <AdminCockpitPage /> },
+  {
+    path: "/session/:sessionId",
+    element: (
+      <RequireRole role={USER_ROLE.PLAYER}>
+        <PlayerCockpitPage />
+      </RequireRole>
+    ),
+  },
+  {
+    path: "/admin/:sessionId",
+    element: (
+      <RequireRole role={USER_ROLE.GAMEMAKER}>
+        <AdminCockpitPage />
+      </RequireRole>
+    ),
+  },
   { path: "/form/:missionId", element: <FormPage /> },
   { path: "/qr/:missionId", element: <QRScannerView /> },
 ]);

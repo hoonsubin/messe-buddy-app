@@ -25,6 +25,7 @@
   "imports": {
     "react": "npm:react@^19.2.6",
     "react-dom": "npm:react-dom@^19.2.6",
+    "react-icons": "npm:react-icons@^5.6.0",
     "react-router-dom": "npm:react-router-dom@^7.6.2",
     "pocketbase": "npm:pocketbase@^0.26.0",
     "qrcode": "npm:qrcode@^1.5.4",

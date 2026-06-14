@@ -1,22 +1,78 @@
-// Phase 1 shell — logic wired in Phase 3.
+import { useState } from "react";
 import type { Resource } from "../../types/index.ts";
-import SearchBar from "../shared/SearchBar.tsx";
-import ResourceCard from "../shared/ResourceCard.tsx";
 
 interface ResourcesSectionProps {
   readonly resources: ReadonlyArray<Resource>;
   readonly onSearch: (query: string) => void;
 }
 
-const ResourcesSection = (props: ResourcesSectionProps) => (
-  <div className="resources-section" data-testid="resources-section" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", height: "100%" }}>
-    <SearchBar placeholder="Search resources…" onSearch={props.onSearch} />
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", overflowY: "auto", flex: 1 }}>
-      {props.resources.map((r) => (
-        <ResourceCard key={r.id} title={r.title} type={r.type} url={r.url} />
-      ))}
+const TYPE_ICONS: Record<string, string> = {
+  document: "📄",
+  guide: "📋",
+  link: "🔗",
+  video: "🎥",
+  form: "📝",
+};
+
+const typeIcon = (type: string): string => TYPE_ICONS[type] ?? "🔗";
+
+const typeLabel = (type: string): string =>
+  type.charAt(0).toUpperCase() + type.slice(1);
+
+const ResourcesSection = (props: ResourcesSectionProps) => {
+  const [query, setQuery] = useState("");
+
+  const filtered = query.trim()
+    ? props.resources.filter((r) =>
+        r.title.toLowerCase().includes(query.toLowerCase())
+      )
+    : props.resources;
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    props.onSearch(e.target.value);
+  };
+
+  return (
+    <div className="resources-section" data-testid="resources-section">
+      {/* Search bar */}
+      <input
+        type="search"
+        className="form-input"
+        placeholder="Search resources…"
+        value={query}
+        onChange={handleSearch}
+        aria-label="Search resources"
+        style={{ marginBottom: "var(--space-3)" }}
+      />
+
+      {/* 2-column grid */}
+      <div className="resources-grid">
+        {filtered.map((r) => (
+          <a
+            key={r.id}
+            className="resource-card"
+            href={r.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="resource-card"
+          >
+            <div className="resource-card__icon" aria-hidden="true">
+              {typeIcon(r.type)}
+            </div>
+            <span className="resource-card__title">{r.title}</span>
+            <span className="resource-card__type">{typeLabel(r.type)}</span>
+          </a>
+        ))}
+      </div>
+
+      {filtered.length === 0 && (
+        <p style={{ color: "hsl(var(--color-muted-fg))", fontSize: "var(--text-sm)" }}>
+          No resources found.
+        </p>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 export default ResourcesSection;

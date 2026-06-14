@@ -1,4 +1,3 @@
-// Phase 1 shell — logic wired in Phase 2+.
 import type { MilestoneStatus } from "../../types/index.ts";
 
 interface MilestoneNodeProps {
@@ -13,22 +12,35 @@ interface MilestoneNodeProps {
   readonly onDragEnd?: (x: number, y: number) => void;
 }
 
-const MilestoneNode = (props: MilestoneNodeProps) => (
-  <button
-    type="button"
-    className="milestone-node"
-    data-testid={`milestone-node-${props.id}`}
-    data-status={props.status}
-    style={{ left: `${props.xPercent}%`, top: `${props.yPercent}%` }}
-    onClick={props.onClick}
-    draggable={props.draggable ?? false}
-    aria-label={`${props.label} — ${Math.round(props.progressPercent * 100)}% complete`}
-  >
-    <div className={`milestone-node__ring milestone-node__ring--${props.status}`}>
-      <span aria-hidden="true">{Math.round(props.progressPercent * 100)}</span>
-    </div>
-    <span className="milestone-node__label">{props.label}</span>
-  </button>
-);
+// Minimum visible fill so nodes never appear empty on the map.
+const MIN_FILL = 0.12;
+
+const MilestoneNode = (props: MilestoneNodeProps) => {
+  const fillHeight = Math.max(MIN_FILL, props.progressPercent);
+  const pct = Math.round(props.progressPercent * 100);
+
+  return (
+    <button
+      type="button"
+      className="milestone-node"
+      data-testid={`milestone-node-${props.id}`}
+      data-status={props.status}
+      style={{ left: `${props.xPercent}%`, top: `${props.yPercent}%` }}
+      onClick={props.onClick}
+      draggable={props.draggable ?? false}
+      aria-label={`${props.label} — ${pct}% complete`}
+    >
+      <div className="milestone-node__box">
+        {/* Liquid fill — rises from bottom */}
+        <div
+          className="milestone-node__fill"
+          style={{ height: `${fillHeight * 100}%` }}
+        />
+        {/* Label sits above fill via z-index */}
+        <span className="milestone-node__name">{props.label}</span>
+      </div>
+    </button>
+  );
+};
 
 export default MilestoneNode;
