@@ -12,7 +12,7 @@ import type { TemplateExport } from "../types/index.ts";
 import RecoveryKeyModal from "../components/shared/RecoveryKeyModal.tsx";
 import { USER_ROLE } from "../types/index.ts";
 
-type View = "role-select" | "join" | "create" | "recover";
+type View = "role-select" | "join" | "create" | "recover" | "templates";
 type Status = "idle" | "loading" | "error";
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -31,6 +31,7 @@ const LandingPage = () => {
   const [sessionName, setSessionName] = useState("");
   const [recoveryKey, setRecoveryKey] = useState("");
   const [recoverySessionId, setRecoverySessionId] = useState("");
+  const [templates, setTemplates] = useState<ReadonlyArray<TemplateExport>>([]);
 
   // Set after a successful join/create — triggers the modal
   const [pendingRecoveryKey, setPendingRecoveryKey] = useState<string | null>(
@@ -52,6 +53,12 @@ const LandingPage = () => {
       : `/admin/${identity.sessionId}`;
     navigate(dest, { replace: true });
   }, [identity, navigate, view]);
+
+  // Fetch templates when entering templates view
+  useEffect(() => {
+    if (view !== "templates") return;
+    void adapter.listTemplates().then(setTemplates);
+  }, [adapter, view]);
 
   // ── handlers ────────────────────────────────────────────────────────────────
 
@@ -136,6 +143,31 @@ const LandingPage = () => {
       role: USER_ROLE.GAMEMAKER,
     });
     // useEffect above navigates to /admin/sess_mmt2026
+  };
+
+  const handleLoadTemplateFromStore = async (templateName: string) => {
+    const template = templates.find((t) => t.name === templateName);
+    if (!template) return;
+    setStatus("loading");
+    setErrorMessage("");
+    try {
+      const gmUid = crypto.randomUUID();
+      const newSessionId = await importTemplate(
+        template,
+        template.name,
+        gmUid,
+        adapter,
+      );
+      setIdentity({
+        uid: gmUid,
+        recoveryKey: "TMPL0001",
+        sessionId: newSessionId,
+        role: USER_ROLE.GAMEMAKER,
+      });
+    } catch {
+      setStatus("error");
+      setErrorMessage("Could not import template. Please try again.");
+    }
   };
 
   const handleTemplateImport = async (
@@ -608,6 +640,129 @@ const LandingPage = () => {
                 onClick={() => templateFileRef.current?.click()}
               >
                 {status === "loading" ? "Importing…" : "Import from template"}
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost"
+                style={{
+                  width: "100%",
+                  justifyContent: "center",
+                  fontSize: "var(--text-sm)",
+                  color: "hsl(var(--color-muted-fg))",
+                }}
+                disabled={status === "loading"}
+                onClick={() => {
+                  resetError();
+                  setView("templates");
+                }}
+              >
+                Browse Templates
+              </button>
+            </>
+          )}
+
+          {/* ── templates view ── */}
+          {view === "templates" && (
+            <>
+              <p
+                style={{
+                  fontSize: "var(--text-sm)",
+                  fontWeight: "var(--weight-medium)",
+                  color: "hsl(var(--color-fg))",
+                  margin: "0 0 var(--space-3)",
+                }}
+              >
+                Select a template to create a new session
+              </p>
+              {errorMessage && (
+                <p
+                  role="alert"
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "hsl(var(--color-destructive))",
+                    margin: "0 0 var(--space-3)",
+                  }}
+                >
+                  {errorMessage}
+                </p>
+              )}
+              {templates.length === 0 &&
+                !errorMessage &&
+                status !== "loading" && (
+                <p
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "hsl(var(--color-muted-fg))",
+                    margin: "0 0 var(--space-3)",
+                  }}
+                >
+                  No templates saved yet. Create a session and save it as a
+                  template to see it here.
+                </p>
+              )}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-2)",
+                }}
+              >
+                {templates.map((t) => (
+                  <div
+                    key={t.name}
+                    className="card"
+                    style={{
+                      padding: "var(--space-3)",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontWeight: "var(--weight-medium)",
+                          fontSize: "var(--text-sm)",
+                        }}
+                      >
+                        {t.name}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "var(--text-xs)",
+                          color: "hsl(var(--color-muted-fg))",
+                        }}
+                      >
+                        {t.milestones.length} milestones ·{" "}
+                        {t.missions.length} missions
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn--secondary"
+                      disabled={status === "loading"}
+                      onClick={() =>
+                        void handleLoadTemplateFromStore(t.name)}
+                    >
+                      {status === "loading" ? "Loading…" : "Use Template"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="btn btn--ghost"
+                style={{
+                  width: "100%",
+                  justifyContent: "center",
+                  marginTop: "var(--space-3)",
+                }}
+                onClick={() => {
+                  resetError();
+                  setView("create");
+                }}
+              >
+                Back
               </button>
             </>
           )}

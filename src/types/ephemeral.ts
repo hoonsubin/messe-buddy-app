@@ -6,6 +6,15 @@ import type {
 } from "./unions.ts";
 import type { FieldSchema } from "./value-objects.ts";
 
+// Pre-boarding checklist item — session-scoped, stored on the Session record.
+// Not a separate PB collection.
+export interface PreBoardingCheckItem {
+  readonly id: string;
+  readonly label: string;
+  readonly checked: boolean;
+  readonly dueDate?: string; // ISO date string or empty
+}
+
 // Derived at read time by computeProgress — never persisted. (C-11)
 
 export interface MilestoneProgress {
@@ -22,6 +31,16 @@ export interface PlayerProgress {
   readonly totalXP: number;
   readonly milestoneProgress: ReadonlyArray<MilestoneProgress>;
   readonly completedMissionIds: ReadonlyArray<string>;
+}
+
+// In-progress admin edit; not yet written to PocketBase.
+export interface DraftMilestone {
+  readonly id: string;
+  readonly name: string;
+  readonly xPercent: number;
+  readonly yPercent: number;
+  readonly bgImageUrl?: string;
+  readonly isDirty: boolean;
 }
 
 // In-progress admin edit; not yet written to PocketBase.

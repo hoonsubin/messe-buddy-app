@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { Mission, Player } from "../types/index.ts";
 import { MISSION_TYPE } from "../types/index.ts";
@@ -8,14 +8,25 @@ import { useSession } from "../hooks/useSession.ts";
 import { usePlayerProgress } from "../hooks/usePlayerProgress.ts";
 import { useBuddy } from "../hooks/useBuddy.ts";
 import { useResources } from "../hooks/useResources.ts";
+import { getDailyMissions } from "../use-cases/getDailyMissions.ts";
 import TopBar from "../components/shared/TopBar.tsx";
 import DailyPlanView from "../components/player/DailyPlanView.tsx";
 import MilestoneMapViewer from "../components/player/MilestoneMapViewer.tsx";
 import MilestoneSidebarViewer from "../components/player/MilestoneSidebarViewer.tsx";
 import MissionDetailPopup from "../components/player/MissionDetailPopup.tsx";
 import CurrentMissionsList from "../components/player/CurrentMissionsList.tsx";
-import ResourcesSection from "../components/player/ResourcesSection.tsx";
+import ResourcesChat from "../components/player/ResourcesChat.tsx";
 import BuddyCard from "../components/player/BuddyCard.tsx";
+import {
+  PLACEHOLDER_STEPS,
+  TutorialOverlayWithStep,
+} from "../components/tutorial/TutorialOverlay.tsx";
+
+// Profile Setup mission ID from mock data — used for tutorial Step 1 routing.
+const PROFILE_MISSION_ID = "mission_profile";
+
+// sessionStorage key for tracking tutorial state across form navigation.
+const TUTORIAL_FORM_KEY = "mb_tutorial_form_pending";
 
 const PlayerCockpitPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -28,6 +39,15 @@ const PlayerCockpitPage = () => {
   const [playerLoading, setPlayerLoading] = useState(true);
   const [playerError, setPlayerError] = useState<Error | null>(null);
 
+  // ── Tutorial state ─────────────────────────────────────────────────────
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false);
+
+  // On mount, check if tutorial should be shown.
+  // Also handles form round-trip: if sessionStorage has a pending tutorial
+  // marker, restore the tutorial state and advance past step 1 if profile
+  // is now complete.
   useEffect(() => {
     let cancelled = false;
 
@@ -40,7 +60,27 @@ const PlayerCockpitPage = () => {
       setPlayerError(null);
       try {
         const p = await adapter.getPlayer(identity.uid);
-        if (!cancelled) setPlayer(p);
+        if (cancelled) return;
+        setPlayer(p);
+
+        // Check for pending tutorial form round-trip.
+        const formPending = sessionStorage.getItem(TUTORIAL_FORM_KEY);
+        if (formPending !== null) {
+          sessionStorage.removeItem(TUTORIAL_FORM_KEY);
+          // We were on step 1 (Profile) before navigating to the form.
+          // If profile is now complete, advance to step 2; otherwise stay.
+          if (p?.profileComplete) {
+            setShowTutorial(true);
+            setTutorialStep(2);
+          } else {
+            setShowTutorial(true);
+            setTutorialStep(1);
+          }
+        } else if (p && !p.tutorialComplete) {
+          setShowTutorial(true);
+          setTutorialStep(0);
+        }
+        // If tutorialComplete === true, showTutorial stays false — no overlay.
       } catch (e) {
         if (!cancelled) {
           setPlayerError(e instanceof Error ? e : new Error(String(e)));
@@ -85,6 +125,13 @@ const PlayerCockpitPage = () => {
   const [popupMission, setPopupMission] = useState<Mission | null>(null);
 
   // Derived data
+  const dailyMissions = useMemo(
+    () =>
+      playerProgress
+        ? getDailyMissions(playerProgress, missions)
+        : [],
+    [playerProgress, missions],
+  );
   const currentMissions = missions.filter((m) => m.isInCurrentMissions);
   const selectedMilestone = selectedMilestoneId !== null
     ? milestones.find((m) => m.id === selectedMilestoneId) ?? undefined
@@ -116,6 +163,57 @@ const PlayerCockpitPage = () => {
     )
     : undefined;
 
+  // ── Tutorial handlers ──────────────────────────────────────────────────
+
+  // Step forward: if on step 1 (Profile), navigate to the profile form first.
+  // For all other steps, advance the tutorial step.
+  // For step 4 (Resources, index 4), mark tutorial complete.
+  const handleTutorialNext = useCallback(() => {
+    if (tutorialStep === 1) {
+      // Save current tutorial state before navigating to form.
+      sessionStorage.setItem(TUTORIAL_FORM_KEY, "1");
+      navigate(`/form/${PROFILE_MISSION_ID}`);
+      return;
+    }
+
+    const nextStep = tutorialStep + 1;
+    if (nextStep >= PLACEHOLDER_STEPS.length) {
+      // Final step completed — mark tutorial as done.
+      if (playerId) {
+        adapter.updatePlayer(playerId, { tutorialComplete: true }).catch(
+          () => {
+            // Silent failure — user can continue anyway
+          },
+        );
+      }
+      setShowTutorial(false);
+      return;
+    }
+
+    setTutorialStep(nextStep);
+  }, [tutorialStep, playerId, adapter, navigate]);
+
+  // Skip tutorial — show confirmation dialog first.
+  const handleTutorialSkip = useCallback(() => {
+    setShowSkipConfirm(true);
+  }, []);
+
+  // Confirm skip: persist tutorialComplete and dismiss.
+  const handleSkipConfirm = useCallback(() => {
+    if (playerId) {
+      adapter.updatePlayer(playerId, { tutorialComplete: true }).catch(() => {
+        // Silent failure
+      });
+    }
+    setShowSkipConfirm(false);
+    setShowTutorial(false);
+  }, [playerId, adapter]);
+
+  // Cancel skip: dismiss confirmation.
+  const handleSkipCancel = useCallback(() => {
+    setShowSkipConfirm(false);
+  }, []);
+
   // ── Mission click handler ──────────────────────────────────────────────
   // Routes to the appropriate view based on mission type and completion status.
   // Completed FORM missions open MissionDetailPopup (shows disabled state) rather
@@ -130,12 +228,17 @@ const PlayerCockpitPage = () => {
         progress?.status === "completed";
 
       if (mission.type === MISSION_TYPE.FORM && !isCompleted) {
+        // If tutorial is active and we're clicking the profile mission,
+        // store tutorial state so we resume on return.
+        if (showTutorial && missionId === PROFILE_MISSION_ID) {
+          sessionStorage.setItem(TUTORIAL_FORM_KEY, "1");
+        }
         navigate(`/form/${missionId}`);
       } else {
         setPopupMission(mission);
       }
     },
-    [missions, progressEvents, navigate],
+    [missions, progressEvents, navigate, showTutorial],
   );
 
   // Sidebar mission click — same routing logic
@@ -222,6 +325,90 @@ const PlayerCockpitPage = () => {
         </div>
       )}
 
+      {/* ── Tutorial Overlay ─────────────────────────────────────────── */}
+      <TutorialOverlayWithStep
+        isVisible={showTutorial}
+        currentStepIndex={tutorialStep}
+        steps={PLACEHOLDER_STEPS}
+        onNext={handleTutorialNext}
+        onSkip={handleTutorialSkip}
+      />
+
+      {/* ── Skip Confirmation Dialog ─────────────────────────────────── */}
+      {showSkipConfirm && (
+        <div
+          data-testid="tutorial-skip-confirm"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 110,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "hsl(var(--color-fg) / 0.4)",
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="skip-confirm-title"
+            style={{
+              background: "hsl(var(--color-card))",
+              borderRadius: "var(--radius-lg)",
+              boxShadow: "var(--shadow-lg)",
+              padding: "var(--space-6)",
+              maxWidth: "min(90%, 20rem)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-4)",
+            }}
+          >
+            <h3
+              id="skip-confirm-title"
+              style={{
+                margin: 0,
+                fontSize: "var(--text-lg)",
+                fontWeight: "var(--weight-semibold)",
+              }}
+            >
+              Skip tutorial?
+            </h3>
+            <p
+              style={{
+                margin: 0,
+                fontSize: "var(--text-sm)",
+                color: "hsl(var(--color-muted-fg))",
+                lineHeight: "var(--leading-relaxed)",
+              }}
+            >
+              You can always complete the tutorial later from settings.
+            </p>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "var(--space-3)",
+              }}
+            >
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={handleSkipCancel}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={handleSkipConfirm}
+              >
+                Skip tutorial
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <TopBar
         playerName={player?.name ?? ""}
         totalXP={playerProgress?.totalXP ?? 0}
@@ -298,7 +485,7 @@ const PlayerCockpitPage = () => {
         </header>
 
         {/* Today's missions — primary orientation surface */}
-        <DailyPlanView />
+        <DailyPlanView missions={dailyMissions} />
 
         {/* Milestones section */}
         <section aria-label="Milestones">
@@ -372,12 +559,9 @@ const PlayerCockpitPage = () => {
               )}
           </section>
 
-          {/* Resources */}
+          {/* Resources + AI Chat */}
           <section aria-label="Resources">
-            <ResourcesSection
-              resources={resources}
-              onSearch={() => undefined}
-            />
+            <ResourcesChat resources={resources} />
           </section>
         </div>
       </main>

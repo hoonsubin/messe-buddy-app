@@ -1,5 +1,5 @@
-// Phase 1 shell — logic wired in Phase 4.
-import { MdClose } from "react-icons/md";
+// Phase 6 — wired resources editor with visibility toggles.
+import { MdCheckBox, MdCheckBoxOutlineBlank, MdClose } from "react-icons/md";
 import type { PBRecord, Resource } from "../../types/index.ts";
 import type { ResourceType } from "../../types/index.ts";
 import { RESOURCE_TYPE } from "../../types/index.ts";
@@ -8,6 +8,7 @@ interface ResourcesEditorProps {
   readonly resources: ReadonlyArray<Resource>;
   readonly onAdd: (data: Omit<Resource, keyof PBRecord>) => void;
   readonly onDelete: (resourceId: string) => void;
+  readonly onToggleVisibility: (resourceId: string, visible: boolean) => void;
   readonly sessionId: string;
 }
 
@@ -16,6 +17,17 @@ const ResourcesEditor = (props: ResourcesEditorProps) => (
     data-testid="resources-editor"
     style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
   >
+    <h3
+      style={{
+        margin: 0,
+        fontFamily: "var(--font-display)",
+        fontSize: "var(--text-base)",
+        fontWeight: "var(--weight-semibold)",
+        color: "hsl(var(--color-fg))",
+      }}
+    >
+      Resources
+    </h3>
     <ul
       style={{
         listStyle: "none",
@@ -35,24 +47,72 @@ const ResourcesEditor = (props: ResourcesEditorProps) => (
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            gap: "var(--space-2)",
           }}
         >
-          <span>
-            {r.title}{" "}
-            <span
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", flex: 1, minWidth: 0 }}>
+            {/* Visibility toggle */}
+            <label
               style={{
-                fontSize: "var(--text-xs)",
-                color: "hsl(var(--color-muted-fg))",
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
+                flexShrink: 0,
               }}
+              aria-label={`Toggle visibility for ${r.title}`}
             >
-              ({r.type})
-            </span>
-          </span>
+              <input
+                type="checkbox"
+                checked={r.isVisibleToPlayer}
+                onChange={(e) =>
+                  props.onToggleVisibility(r.id, e.target.checked)}
+                style={{ display: "none" }}
+              />
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  fontSize: "var(--text-lg)",
+                  color: r.isVisibleToPlayer
+                    ? "hsl(var(--color-status-complete))"
+                    : "hsl(var(--color-muted-fg))",
+                }}
+              >
+                {r.isVisibleToPlayer
+                  ? <MdCheckBox />
+                  : <MdCheckBoxOutlineBlank />}
+              </span>
+            </label>
+            <div style={{ minWidth: 0 }}>
+              <span
+                style={{
+                  fontSize: "var(--text-sm)",
+                  fontWeight: "var(--weight-medium)",
+                  color: "hsl(var(--color-fg))",
+                  display: "block",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {r.title}
+              </span>
+              <span
+                style={{
+                  fontSize: "var(--text-xs)",
+                  color: "hsl(var(--color-muted-fg))",
+                }}
+              >
+                {r.type}
+              </span>
+            </div>
+          </div>
           <button
             type="button"
             className="btn btn--ghost"
             onClick={() => props.onDelete(r.id)}
             aria-label={`Remove ${r.title}`}
+            style={{ flexShrink: 0 }}
           >
             <MdClose size={16} aria-hidden="true" />
           </button>

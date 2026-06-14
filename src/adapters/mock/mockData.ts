@@ -5,6 +5,7 @@ import type {
   Milestone,
   Mission,
   Player,
+  PreBoardingCheckItem,
   ProgressEvent,
   Resource,
   Session,
@@ -16,6 +17,17 @@ import type {
 const NOW = "2026-06-13T08:00:00.000Z";
 const pb = (id: string) => ({ id, created: NOW, updated: NOW });
 
+// ── Pre-Boarding Checklist Defaults ────────────────────────────────────────────
+
+const MOCK_PRE_BOARDING_CHECKS: ReadonlyArray<PreBoardingCheckItem> = [
+  { id: "pbc_workspace", label: "Workspace prepared (desk, badge, parking)", checked: true },
+  { id: "pbc_laptop", label: "Laptop ordered and configured", checked: true },
+  { id: "pbc_system", label: "System access requested (email, Slack, HR tools)", checked: false },
+  { id: "pbc_intro", label: "Team intro email drafted (buddy + manager)", checked: false },
+  { id: "pbc_buddy", label: "Buddy assigned and briefed", checked: true },
+  { id: "pbc_schedule", label: "First-week schedule shared", checked: false },
+];
+
 // ── Session ──────────────────────────────────────────────────────────────────
 
 export const MOCK_SESSION: Session = {
@@ -23,6 +35,7 @@ export const MOCK_SESSION: Session = {
   name: "Messe München Onboarding — Summer 2026",
   bgImageUrl: mapBackground,
   gameMakerId: "uid_gamemaker_peter",
+  preBoardingChecks: MOCK_PRE_BOARDING_CHECKS,
 };
 
 // ── Milestones ────────────────────────────────────────────────────────────────
@@ -411,6 +424,155 @@ export const MOCK_PLAYERS: ReadonlyArray<Player> = [
     languages: ["English", "Mandarin", "German (beginner)"],
     workStyle:
       "I work best with focused mornings and collaborative afternoons.",
+  },
+  // Player 3: Engineering session, just started (low progress, very recent activity)
+  {
+    ...pb("player_marco"),
+    uid: "uid_marco_003",
+    recoveryKey: "MARCO026",
+    sessionId: "sess_eng_2026",
+    tutorialComplete: true,
+    profileComplete: false,
+    name: "Marco Russo",
+    role: "Junior Developer",
+    team: "Engineering",
+    startDate: "2026-06-08",
+    location: "Munich, Germany",
+    timezone: "Europe/Berlin",
+    skillsConfident: ["Python", "Git"],
+    skillsDevelop: ["Kubernetes", "Go"],
+    languages: ["Italian", "English"],
+  },
+  // Player 4: Engineering session, on track (high progress, recent activity)
+  {
+    ...pb("player_julia"),
+    uid: "uid_julia_004",
+    recoveryKey: "JULIA026",
+    sessionId: "sess_eng_2026",
+    tutorialComplete: true,
+    profileComplete: true,
+    name: "Julia Klein",
+    role: "Senior Engineer",
+    team: "Engineering",
+    startDate: "2026-06-01",
+    location: "Berlin, Germany",
+    timezone: "Europe/Berlin",
+    skillsConfident: ["TypeScript", "React", "AWS", "Docker"],
+    skillsDevelop: ["Rust", "System Design"],
+    languages: ["German", "English", "French"],
+    workStyle: "I thrive in async, written communication.",
+  },
+];
+
+// ── Second Session: Engineering Onboarding ─────────────────────────────────────
+
+export const MOCK_SESSION_2: Session = {
+  ...pb("sess_eng_2026"),
+  name: "Engineering Onboarding — June 2026",
+  bgImageUrl: "",
+  gameMakerId: "uid_gamemaker_peter",
+  preBoardingChecks: [],
+};
+
+export const MOCK_MILESTONES_2: ReadonlyArray<Milestone> = [
+  {
+    ...pb("ms_eng_firststeps"),
+    sessionId: "sess_eng_2026",
+    name: "First Steps",
+    xPercent: 20,
+    yPercent: 40,
+    xpThreshold: 100,
+    order: 0,
+  },
+  {
+    ...pb("ms_eng_build"),
+    sessionId: "sess_eng_2026",
+    name: "Build Phase",
+    xPercent: 60,
+    yPercent: 50,
+    xpThreshold: 100,
+    order: 1,
+  },
+];
+
+export const MOCK_MISSIONS_2: ReadonlyArray<Mission> = [
+  // First Steps (2 missions)
+  {
+    ...pb("mission_eng_setup"),
+    sessionId: "sess_eng_2026",
+    milestoneId: "ms_eng_firststeps",
+    title: "Dev Environment Setup",
+    body:
+      "## Set Up Your Machine\n\nFollow the onboarding guide to install all required tools and clone the main repositories. Your buddy will walk you through the process.",
+    type: "text",
+    difficulty: 2,
+    xpValue: 50,
+    tags: ["mandatory"],
+    order: 0,
+    isInCurrentMissions: true,
+    validationMethod: "selfApprove",
+  },
+  {
+    ...pb("mission_eng_codereview"),
+    sessionId: "sess_eng_2026",
+    milestoneId: "ms_eng_firststeps",
+    title: "First Code Review",
+    body:
+      "## Review a Pull Request\n\nFind an open PR in the team board and leave a constructive review. Your tech lead will validate this mission.",
+    type: "text",
+    difficulty: 3,
+    xpValue: 50,
+    tags: ["mandatory"],
+    order: 1,
+    isInCurrentMissions: true,
+    validationMethod: "gmApprove",
+  },
+  // Build Phase (1 mission)
+  {
+    ...pb("mission_eng_deploy"),
+    sessionId: "sess_eng_2026",
+    milestoneId: "ms_eng_build",
+    title: "First Deploy",
+    body:
+      "## Ship Something\n\nDeploy a small change to staging. Your buddy will scan your QR code to confirm.",
+    type: "text",
+    difficulty: 3,
+    xpValue: 100,
+    tags: ["mandatory"],
+    order: 0,
+    isInCurrentMissions: false,
+    validationMethod: "qr",
+  },
+];
+
+// ── Progress Events for Engineering Players ────────────────────────────────────
+
+export const MOCK_PROGRESS_EVENTS_2: ReadonlyArray<ProgressEvent> = [
+  // Marco: just started — only 1 mission submitted, very recently
+  {
+    ...pb("evt_marco_setup"),
+    sessionId: "sess_eng_2026",
+    playerId: "player_marco",
+    missionId: "mission_eng_setup",
+    status: "autoApproved",
+    updated: "2026-06-14T20:00:00.000Z",
+  },
+  // Julia: on track — 2 missions done, recently active
+  {
+    ...pb("evt_julia_setup"),
+    sessionId: "sess_eng_2026",
+    playerId: "player_julia",
+    missionId: "mission_eng_setup",
+    status: "autoApproved",
+    updated: "2026-06-13T09:00:00.000Z",
+  },
+  {
+    ...pb("evt_julia_codereview"),
+    sessionId: "sess_eng_2026",
+    playerId: "player_julia",
+    missionId: "mission_eng_codereview",
+    status: "pendingApproval",
+    updated: "2026-06-14T08:00:00.000Z",
   },
 ];
 

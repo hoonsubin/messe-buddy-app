@@ -2,14 +2,7 @@
 // Each step highlights a target region via `targetSelector` (CSS class) and
 // renders an instructional card anchored near the highlight ring.
 
-export interface TutorialStepData {
-  readonly stepNumber: number; // 1-based display index
-  readonly totalSteps: number;
-  readonly title: string;
-  readonly body: string;
-  readonly ctaLabel: string;
-  readonly targetSelector?: string; // CSS selector of the element to highlight
-}
+import type { TutorialStepData } from "./tutorialSteps.ts";
 
 interface TutorialStepProps {
   readonly step: TutorialStepData;

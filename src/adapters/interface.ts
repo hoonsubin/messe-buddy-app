@@ -9,6 +9,7 @@ import type {
   ProgressEvent,
   Resource,
   Session,
+  TemplateExport,
 } from "../types/index.ts";
 
 // The single contract both mock and PocketBase adapters must satisfy.
@@ -17,6 +18,7 @@ import type {
 export interface AppAdapter {
   // Sessions
   getSession(sessionId: string): Promise<Session>;
+  listSessions(): Promise<ReadonlyArray<Session>>;
   createSession(name: string, gameMakerUid: string): Promise<Session>;
   updateSession(
     sessionId: string,
@@ -96,4 +98,8 @@ export interface AppAdapter {
     patch: Partial<Omit<Resource, keyof PBRecord>>,
   ): Promise<Resource>;
   deleteResource(resourceId: string): Promise<void>;
+
+  // Templates
+  listTemplates(): Promise<ReadonlyArray<TemplateExport>>;
+  saveTemplate(template: TemplateExport): Promise<void>;
 }

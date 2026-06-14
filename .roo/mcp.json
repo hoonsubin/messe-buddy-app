@@ -4,7 +4,7 @@
 			"command": "npx",
 			"args": [
 				"-y",
-				"@playwright/mcp@0.0.38"
+				"@playwright/mcp@latest", "--browser=firefox", "--device=iPhone 15"
 			],
 			"alwaysAllow": [
 				"browser_navigate",
@@ -17,17 +17,25 @@
 				"browser_take_screenshot",
 				"browser_wait_for",
 				"browser_tabs",
-				"browser_close"
+				"browser_close",
+				"browser_fill_form",
+				"browser_evaluate"
 			]
 		},
-		"puppeteer": {
+		"searxng": {
 			"command": "npx",
 			"args": [
 				"-y",
-				"@modelcontextprotocol/server-puppeteer"
+				"mcp-searxng"
 			],
-			"disabled": true,
-			"alwaysAllow": []
+			"env": {
+				"SEARXNG_URL": "http://searxng:8888"
+			},
+			"alwaysAllow": [
+				"searxng_web_search",
+				"web_url_read"
+			],
+			"disabled": false
 		}
 	}
 }

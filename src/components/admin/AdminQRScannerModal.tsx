@@ -1,16 +1,135 @@
-// Phase 1 shell — modal overlay for GM QR scanning.
-// Visually matches QRScannerView but rendered as a modal, not a full-page route.
-// Camera + validation logic wired in Phase 5.
+// AdminQRScannerModal — modal overlay for GM QR scanning with camera,
+// jsqr decode, payload validation against context, and Simulate Scan.
+import { useCallback, useRef, useState } from "react";
 import { MdClose } from "react-icons/md";
 import CameraFeed from "../qr/CameraFeed.tsx";
 import ValidationResult from "../qr/ValidationResult.tsx";
+import {
+  decodeQRPayload,
+  encodeQRPayload,
+  QRPayloadError,
+} from "../../utils/qrPayload.ts";
+
+type ScanState = "idle" | "scanning" | "success" | "invalid" | "error";
+
+interface QRScannerContext {
+  readonly playerId: string;
+  readonly missionId: string;
+  readonly playerName: string;
+  readonly missionTitle: string;
+}
 
 interface AdminQRScannerModalProps {
   readonly isOpen: boolean;
+  readonly context: QRScannerContext | null;
+  readonly sessionId: string;
   readonly onClose: () => void;
+  readonly onValidate: (playerId: string, missionId: string) => Promise<void>;
 }
 
+// Key fragment so the modal remounts when opened with new context,
+// avoiding cascading setState-in-effect warnings.
+const contextKey = (ctx: QRScannerContext | null): string =>
+  ctx ? `${ctx.playerId}::${ctx.missionId}` : "closed";
+
 const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
+  const [cameraActive, setCameraActive] = useState(true);
+  const [validationState, setValidationState] = useState<ScanState>(
+    "scanning",
+  );
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── QR decode + validate ─────────────────────────────────────────────────────
+
+  const handleDecode = useCallback(
+    async (encoded: string) => {
+      if (!props.context || !props.sessionId) return;
+
+      let decoded;
+      try {
+        decoded = await decodeQRPayload(encoded, props.sessionId);
+      } catch (err: unknown) {
+        const message = err instanceof QRPayloadError
+          ? `Invalid QR: ${err.message}`
+          : "Failed to decode QR code — please try again.";
+        setValidationState("invalid");
+        setErrorMessage(message);
+        return;
+      }
+
+      // Validate payload matches the approval context
+      if (
+        decoded.playerId !== props.context.playerId ||
+        decoded.missionId !== props.context.missionId
+      ) {
+        setValidationState("invalid");
+        setErrorMessage(
+          "QR code doesn't match this request — please verify the correct mission QR is being scanned.",
+        );
+        return;
+      }
+
+      // Success — write progress event
+      try {
+        await props.onValidate(decoded.playerId, decoded.missionId);
+        setValidationState("success");
+        setErrorMessage("");
+        setCameraActive(false);
+
+        // Auto-close after 2 seconds
+        closeTimerRef.current = setTimeout(() => {
+          props.onClose();
+        }, 2000);
+      } catch {
+        setValidationState("error");
+        setErrorMessage("Failed to save validation result — please try again.");
+      }
+    },
+    [props],
+  );
+
+  // ── Camera error handler ─────────────────────────────────────────────────────
+
+  const handleCameraError = useCallback((message: string) => {
+    setValidationState("error");
+    setErrorMessage(message);
+    setCameraActive(false);
+  }, []);
+
+  // ── Simulate Scan — build mock payload and feed through decode flow ──────────
+
+  const handleSimulate = useCallback(async () => {
+    if (!props.context || !props.sessionId) return;
+
+    const mockPayload = await encodeQRPayload(
+      {
+        playerId: props.context.playerId,
+        missionId: props.context.missionId,
+        sessionId: props.sessionId,
+        xpValue: 100,
+        issuedAt: Date.now(),
+      },
+      props.sessionId,
+    );
+
+    // Feed through the same decode + validate pipeline
+    await handleDecode(mockPayload);
+  }, [props, handleDecode]);
+
+  // ── Cancel ───────────────────────────────────────────────────────────────────
+
+  const handleCancel = useCallback(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setCameraActive(false);
+    props.onClose();
+  }, [props]);
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+
   if (!props.isOpen) return null;
 
   return (
@@ -38,7 +157,7 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
           background: "hsl(0 0% 0% / 0.7)",
           backdropFilter: "blur(4px)",
         }}
-        onClick={props.onClose}
+        onClick={handleCancel}
       />
 
       {/* Modal content */}
@@ -78,7 +197,7 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
           </h2>
           <button
             type="button"
-            onClick={props.onClose}
+            onClick={handleCancel}
             aria-label="Close scanner"
             style={{
               background: "none",
@@ -99,6 +218,44 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
           </button>
         </div>
 
+        {/* Context info */}
+        {props.context && (
+          <div
+            style={{
+              padding: "var(--space-3)",
+              borderRadius: "var(--radius-md)",
+              background: "hsl(var(--color-bg))",
+              fontSize: "var(--text-sm)",
+            }}
+          >
+            <p
+              style={{
+                margin: 0,
+                fontWeight: "var(--weight-medium)",
+                color: "hsl(var(--color-muted-fg))",
+              }}
+            >
+              Scanning for:
+            </p>
+            <p
+              style={{
+                margin: "var(--space-1) 0 0",
+                fontWeight: "var(--weight-semibold)",
+              }}
+            >
+              {props.context.playerName}
+            </p>
+            <p
+              style={{
+                margin: "var(--space-1) 0 0",
+                color: "hsl(var(--color-muted-fg))",
+              }}
+            >
+              {props.context.missionTitle}
+            </p>
+          </div>
+        )}
+
         {/* Camera feed placeholder */}
         <div
           style={{
@@ -109,32 +266,64 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
             background: "hsl(0 0% 0%)",
           }}
         >
-          <CameraFeed isActive={false} />
+          <CameraFeed
+            isActive={cameraActive}
+            onDecode={handleDecode}
+            onError={handleCameraError}
+          />
         </div>
 
         {/* Scan status */}
-        <ValidationResult state="idle" />
+        <ValidationResult
+          state={validationState}
+          missionTitle={
+            validationState === "success"
+              ? props.context?.missionTitle
+              : undefined
+          }
+          errorMessage={errorMessage || undefined}
+        />
 
         {/* Actions */}
         <div
           style={{
             display: "flex",
-            gap: "var(--space-3)",
+            flexDirection: "column",
+            gap: "var(--space-2)",
           }}
         >
+          <div style={{ display: "flex", gap: "var(--space-3)" }}>
+            {!cameraActive && validationState !== "success" && (
+              <button
+                type="button"
+                className="btn btn--primary"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  setValidationState("scanning");
+                  setErrorMessage("");
+                  setCameraActive(true);
+                }}
+              >
+                {validationState === "error"
+                  ? "Retry camera"
+                  : "Start camera"}
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={handleCancel}
+            >
+              Cancel
+            </button>
+          </div>
           <button
             type="button"
-            className="btn btn--primary"
-            style={{ flex: 1 }}
+            className="btn btn--secondary"
+            onClick={handleSimulate}
+            disabled={validationState === "success"}
           >
-            Start camera
-          </button>
-          <button
-            type="button"
-            className="btn btn--ghost"
-            onClick={props.onClose}
-          >
-            Cancel
+            Simulate Scan
           </button>
         </div>
       </div>
@@ -142,4 +331,14 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
   );
 };
 
-export default AdminQRScannerModal;
+const AdminQRScannerModalWithKey = (props: AdminQRScannerModalProps) => {
+  // Re-mount the modal when context changes so state is always fresh
+  return (
+    <AdminQRScannerModal
+      key={props.isOpen ? contextKey(props.context) : "closed"}
+      {...props}
+    />
+  );
+};
+
+export default AdminQRScannerModalWithKey;

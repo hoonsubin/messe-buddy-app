@@ -48,7 +48,10 @@ const QRScannerView = () => {
         </h1>
 
         <div style={{ width: "100%", maxWidth: "24rem" }}>
-          <CameraFeed isActive={false} />
+          <CameraFeed
+            isActive={false}
+            onDecode={() => undefined}
+          />
         </div>
 
         <ValidationResult state="idle" />

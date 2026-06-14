@@ -1,38 +1,15 @@
-// Phase 1 shell — "Today's Missions" card/banner.
-// Primary orientation surface for new hires. Logic wired in Phase 2+.
+// Today's Missions — primary orientation surface for new hires.
+// Renders missions computed by the getDailyMissions use case.
+import type { Mission } from "../../types/index.ts";
 import TagBadge from "../shared/TagBadge.tsx";
 import XPBadge from "../shared/XPBadge.tsx";
 
-interface DailyMissionPlaceholder {
-  readonly title: string;
-  readonly xpValue: number;
-  readonly tags: ReadonlyArray<string>;
-}
-
 interface DailyPlanViewProps {
-  readonly missions?: ReadonlyArray<DailyMissionPlaceholder>;
+  readonly missions: ReadonlyArray<Mission>;
 }
-
-const DEFAULT_MISSIONS: ReadonlyArray<DailyMissionPlaceholder> = [
-  {
-    title: "Complete your profile",
-    xpValue: 50,
-    tags: ["mandatory"],
-  },
-  {
-    title: "Meet your buddy",
-    xpValue: 30,
-    tags: ["urgent"],
-  },
-  {
-    title: "Explore the office map",
-    xpValue: 20,
-    tags: [],
-  },
-];
 
 const DailyPlanView = (props: DailyPlanViewProps) => {
-  const missions = props.missions ?? DEFAULT_MISSIONS;
+  const { missions } = props;
 
   return (
     <section
@@ -69,56 +46,70 @@ const DailyPlanView = (props: DailyPlanViewProps) => {
       >
         Start here — these are your top priorities for today.
       </p>
-      <ul
-        style={{
-          listStyle: "none",
-          padding: 0,
-          margin: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-2)",
-        }}
-      >
-        {missions.map((m, i) => (
-          <li
-            key={i}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "var(--space-3)",
-              background: "hsl(var(--color-bg))",
-              borderRadius: "var(--radius-md)",
-              gap: "var(--space-2)",
-              minHeight: "var(--min-touch)",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "var(--text-sm)",
-                fontWeight: "var(--weight-medium)",
-                color: "hsl(var(--color-fg))",
-                flex: 1,
-              }}
-            >
-              {m.title}
-            </span>
-            <span
+      {missions.length === 0 ? (
+        <p
+          style={{
+            margin: 0,
+            fontSize: "var(--text-sm)",
+            color: "hsl(var(--color-muted-fg))",
+            fontStyle: "italic",
+            padding: "var(--space-3) 0",
+          }}
+        >
+          Nothing planned for today.
+        </p>
+      ) : (
+        <ul
+          style={{
+            listStyle: "none",
+            padding: 0,
+            margin: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-2)",
+          }}
+        >
+          {missions.map((m) => (
+            <li
+              key={m.id}
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "var(--space-1)",
-                flexShrink: 0,
+                justifyContent: "space-between",
+                padding: "var(--space-3)",
+                background: "hsl(var(--color-bg))",
+                borderRadius: "var(--radius-md)",
+                gap: "var(--space-2)",
+                minHeight: "var(--min-touch)",
               }}
             >
-              {m.tags.map((tag) => (
-                <TagBadge key={tag} label={tag} variant={tag} />
-              ))}
-              <XPBadge value={m.xpValue} />
-            </span>
-          </li>
-        ))}
-      </ul>
+              <span
+                style={{
+                  fontSize: "var(--text-sm)",
+                  fontWeight: "var(--weight-medium)",
+                  color: "hsl(var(--color-fg))",
+                  flex: 1,
+                }}
+              >
+                {m.title}
+              </span>
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--space-1)",
+                  flexShrink: 0,
+                }}
+              >
+                {m.tags.map((tag) => (
+                  <TagBadge key={tag} label={tag} variant={tag} />
+                ))}
+                <XPBadge value={m.xpValue} />
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 };

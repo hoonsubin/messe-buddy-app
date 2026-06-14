@@ -1,12 +1,13 @@
-// Phase 1 shell — shows scan result (success / invalid / error). Logic wired in Phase 5.
+// Shows scan result (idle / scanning / success / invalid / error).
 import {
+  MdBluetoothSearching,
   MdCheck,
   MdClose,
   MdError,
   MdRadioButtonUnchecked,
 } from "react-icons/md";
 
-type ValidationState = "idle" | "success" | "invalid" | "error";
+type ValidationState = "idle" | "scanning" | "success" | "invalid" | "error";
 
 interface ValidationResultProps {
   readonly state: ValidationState;
@@ -19,6 +20,7 @@ const STATE_CONFIG: Record<
   { label: string; colorVar: string }
 > = {
   idle: { label: "Ready to scan", colorVar: "--color-muted-fg" },
+  scanning: { label: "Scanning...", colorVar: "--color-accent" },
   success: { label: "Validated!", colorVar: "--color-status-complete" },
   invalid: { label: "Invalid QR code", colorVar: "--color-destructive" },
   error: { label: "Scan error", colorVar: "--color-destructive" },
@@ -26,6 +28,7 @@ const STATE_CONFIG: Record<
 
 const STATE_ICON: Record<ValidationState, typeof MdCheck> = {
   idle: MdRadioButtonUnchecked,
+  scanning: MdBluetoothSearching,
   success: MdCheck,
   invalid: MdClose,
   error: MdError,

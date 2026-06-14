@@ -7,6 +7,7 @@ import type {
   ValidationMethod,
 } from "./unions.ts";
 import type { FieldSchema } from "./value-objects.ts";
+import type { PreBoardingCheckItem } from "./ephemeral.ts";
 
 // Base for all PocketBase-persisted records.
 export interface PBRecord {
@@ -19,6 +20,7 @@ export interface Session extends PBRecord {
   readonly name: string;
   readonly bgImageUrl: string;
   readonly gameMakerId: string; // raw UID string, not a PB relation
+  readonly preBoardingChecks: ReadonlyArray<PreBoardingCheckItem>;
 }
 
 export interface Player extends PBRecord {

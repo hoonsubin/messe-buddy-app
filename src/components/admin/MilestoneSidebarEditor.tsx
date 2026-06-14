@@ -1,5 +1,5 @@
-// Phase 1 shell — admin sidebar for editing a milestone's missions. Logic wired in Phase 4.
-import type { Milestone, Mission, PBRecord } from "../../types/index.ts";
+import { useCallback, useState } from "react";
+import type { Milestone, Mission, DraftMission } from "../../types/index.ts";
 import MissionEditor from "./MissionEditor.tsx";
 import SaveActions from "./SaveActions.tsx";
 
@@ -7,11 +7,13 @@ interface MilestoneSidebarEditorProps {
   readonly milestone: Milestone | null;
   readonly missions: ReadonlyArray<Mission>;
   readonly activeMissionId: string | null;
-  readonly draft: Omit<Mission, keyof PBRecord> | null;
+  readonly draft: DraftMission | null;
+  readonly xpPreview: number;
   readonly isDirty: boolean;
   readonly isSaving: boolean;
   readonly onMissionSelect: (missionId: string) => void;
-  readonly onDraftChange: (draft: Omit<Mission, keyof PBRecord>) => void;
+  readonly onDraftChange: (draft: DraftMission) => void;
+  readonly onRename: (newName: string) => void;
   readonly onSave: () => void;
   readonly onSaveAsTemplate: () => void;
   readonly onDiscard: () => void;
@@ -19,6 +21,30 @@ interface MilestoneSidebarEditorProps {
 }
 
 const MilestoneSidebarEditor = (props: MilestoneSidebarEditorProps) => {
+  const { milestone, onRename } = props;
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(milestone?.name ?? "");
+
+  const handleRenameStart = useCallback(() => {
+    setRenameValue(milestone?.name ?? "");
+    setIsRenaming(true);
+  }, [milestone]);
+
+  const handleRenameSubmit = useCallback(() => {
+    if (renameValue.trim()) {
+      onRename(renameValue.trim());
+    }
+    setIsRenaming(false);
+  }, [onRename, renameValue]);
+
+  const handleRenameKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") handleRenameSubmit();
+      if (e.key === "Escape") setIsRenaming(false);
+    },
+    [handleRenameSubmit],
+  );
+
   if (!props.milestone) {
     return (
       <div className="sidebar" data-testid="milestone-sidebar-editor">
@@ -46,15 +72,41 @@ const MilestoneSidebarEditor = (props: MilestoneSidebarEditorProps) => {
           borderBottom: "1px solid hsl(var(--color-border))",
         }}
       >
-        <h2
-          style={{
-            margin: 0,
-            fontSize: "var(--text-lg)",
-            fontWeight: "var(--weight-semibold)",
-          }}
-        >
-          {props.milestone.name}
-        </h2>
+        {isRenaming
+          ? (
+            <input
+              className="form-input"
+              type="text"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onBlur={handleRenameSubmit}
+              onKeyDown={handleRenameKeyDown}
+              autoFocus
+              style={{
+                fontSize: "var(--text-lg)",
+                fontWeight: "var(--weight-semibold)",
+                width: "100%",
+              }}
+            />
+          )
+          : (
+            <button
+              type="button"
+              className="btn btn--ghost"
+              style={{
+                margin: 0,
+                padding: 0,
+                fontSize: "var(--text-lg)",
+                fontWeight: "var(--weight-semibold)",
+                textAlign: "left",
+                width: "100%",
+              }}
+              onClick={handleRenameStart}
+              title="Click to rename"
+            >
+              {props.milestone.name}
+            </button>
+          )}
       </div>
 
       <div
@@ -113,6 +165,7 @@ const MilestoneSidebarEditor = (props: MilestoneSidebarEditorProps) => {
         >
           <MissionEditor
             draft={props.draft}
+            xpPreview={props.xpPreview}
             onDraftChange={props.onDraftChange}
           />
         </div>

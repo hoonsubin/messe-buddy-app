@@ -10,6 +10,7 @@ interface MilestoneNodeProps {
   readonly draggable?: boolean;
   readonly onClick: () => void;
   readonly onDragEnd?: (x: number, y: number) => void;
+  readonly onContextMenu?: (e: React.MouseEvent) => void;
 }
 
 // Minimum visible fill so nodes never appear empty on the map.
@@ -27,6 +28,7 @@ const MilestoneNode = (props: MilestoneNodeProps) => {
       data-status={props.status}
       style={{ left: `${props.xPercent}%`, top: `${props.yPercent}%` }}
       onClick={props.onClick}
+      onContextMenu={props.onContextMenu}
       draggable={props.draggable ?? false}
       aria-label={`${props.label} — ${pct}% complete`}
     >

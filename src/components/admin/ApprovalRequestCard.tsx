@@ -1,10 +1,11 @@
-// Phase 1 shell — logic wired in Phase 4.
+// ApprovalRequestCard — shows a single pending approval with Approve, Reject, and Scan QR buttons.
 interface ApprovalRequestCardProps {
   readonly playerName: string;
   readonly missionTitle: string;
   readonly xpValue: number;
   readonly onApprove: () => void;
   readonly onReject: () => void;
+  readonly onScanQR: () => void;
 }
 
 const ApprovalRequestCard = (props: ApprovalRequestCardProps) => (
@@ -30,16 +31,37 @@ const ApprovalRequestCard = (props: ApprovalRequestCardProps) => (
         +{props.xpValue} XP
       </p>
     </div>
-    <div className="approval-card__actions">
+    <div
+      className="approval-card__actions"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-2)",
+      }}
+    >
+      <div style={{ display: "flex", gap: "var(--space-2)" }}>
+        <button
+          type="button"
+          className="btn btn--primary"
+          onClick={props.onApprove}
+        >
+          Approve
+        </button>
+        <button
+          type="button"
+          className="btn btn--ghost"
+          onClick={props.onReject}
+        >
+          Reject
+        </button>
+      </div>
       <button
         type="button"
-        className="btn btn--primary"
-        onClick={props.onApprove}
+        className="btn btn--secondary"
+        style={{ width: "100%" }}
+        onClick={props.onScanQR}
       >
-        Approve
-      </button>
-      <button type="button" className="btn btn--ghost" onClick={props.onReject}>
-        Reject
+        Scan QR
       </button>
     </div>
   </div>

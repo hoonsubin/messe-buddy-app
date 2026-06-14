@@ -1,23 +1,20 @@
-// Phase 1 shell — HR overview dashboard with filterable hire progress list.
-// Logic wired in Phase 3+.
+import { useMemo, useState } from "react";
 import { MdWarning } from "react-icons/md";
 
 interface HireProgressRow {
+  readonly playerId: string;
   readonly playerName: string;
   readonly sessionName: string;
   readonly progressPercent: number;
   readonly daysSinceLastActivity: number;
-  readonly status: "onTrack" | "stalled" | "justStarted";
+  readonly isStalled: boolean;
 }
 
 interface CrossHireDashboardProps {
-  readonly hires?: ReadonlyArray<HireProgressRow>;
-  readonly totalActive?: number;
-  readonly averageProgress?: number;
-  readonly stalledCount?: number;
+  readonly hires: ReadonlyArray<HireProgressRow>;
 }
 
-const StalledHireAlert = () => (
+const StalledHireAlert = ({ days }: { readonly days: number }) => (
   <span
     data-testid="stalled-hire-alert"
     style={{
@@ -35,51 +32,49 @@ const StalledHireAlert = () => (
     }}
   >
     <MdWarning size={12} aria-hidden="true" />
-    Stalled
+    Stalled &middot; {days}d
   </span>
 );
 
-const DEFAULT_HIRES: ReadonlyArray<HireProgressRow> = [
-  {
-    playerName: "Anna Schneider",
-    sessionName: "Q1 Engineering Cohort",
-    progressPercent: 72,
-    daysSinceLastActivity: 1,
-    status: "onTrack",
-  },
-  {
-    playerName: "Marco Reus",
-    sessionName: "Q1 Engineering Cohort",
-    progressPercent: 15,
-    daysSinceLastActivity: 12,
-    status: "stalled",
-  },
-  {
-    playerName: "Lena Weber",
-    sessionName: "Sales Onboarding",
-    progressPercent: 4,
-    daysSinceLastActivity: 0,
-    status: "justStarted",
-  },
-];
+const CrossHireDashboard = ({ hires }: CrossHireDashboardProps) => {
+  const [filter, setFilter] = useState("");
 
-const STATUS_LABELS: Record<HireProgressRow["status"], string> = {
-  onTrack: "On track",
-  stalled: "Stalled",
-  justStarted: "Just started",
-};
+  const filtered = useMemo(() => {
+    const lower = filter.toLowerCase().trim();
+    const base = lower === ""
+      ? hires
+      : hires.filter((h) =>
+        h.playerName.toLowerCase().includes(lower) ||
+        h.sessionName.toLowerCase().includes(lower)
+      );
 
-const STATUS_COLOR_VARS: Record<HireProgressRow["status"], string> = {
-  onTrack: "--color-status-complete",
-  stalled: "--color-destructive",
-  justStarted: "--color-muted-fg",
-};
+    // Sort: stalled first, then by daysSinceLastActivity descending
+    // (most stalled at top)
+    return [...base].sort((a, b) => {
+      if (a.isStalled !== b.isStalled) return a.isStalled ? -1 : 1;
+      return b.daysSinceLastActivity - a.daysSinceLastActivity;
+    });
+  }, [hires, filter]);
 
-const CrossHireDashboard = (props: CrossHireDashboardProps) => {
-  const hires = props.hires ?? DEFAULT_HIRES;
-  const totalActive = props.totalActive ?? 12;
-  const averageProgress = props.averageProgress ?? 48;
-  const stalledCount = props.stalledCount ?? 2;
+  const totalActive = hires.length;
+  const averageProgress = hires.length > 0
+    ? Math.round(
+      hires.reduce((sum, h) => sum + h.progressPercent, 0) / hires.length,
+    )
+    : 0;
+  const stalledCount = hires.filter((h) => h.isStalled).length;
+
+  const statusLabel = (hire: HireProgressRow): string => {
+    if (hire.isStalled) return "Stalled";
+    if (hire.progressPercent < 20) return "Just started";
+    return "On track";
+  };
+
+  const statusColorVar = (hire: HireProgressRow): string => {
+    if (hire.isStalled) return "--color-destructive";
+    if (hire.progressPercent < 20) return "--color-muted-fg";
+    return "--color-status-complete";
+  };
 
   return (
     <section
@@ -163,7 +158,7 @@ const CrossHireDashboard = (props: CrossHireDashboardProps) => {
         </div>
       </div>
 
-      {/* Filter bar (placeholder — no onChange handler for Phase 1 shell) */}
+      {/* Filter bar */}
       <div
         style={{
           display: "flex",
@@ -175,6 +170,8 @@ const CrossHireDashboard = (props: CrossHireDashboardProps) => {
           type="search"
           placeholder="Filter by name or session..."
           aria-label="Filter hires"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
           style={{
             flex: 1,
             padding: "var(--space-2) var(--space-3)",
@@ -199,9 +196,9 @@ const CrossHireDashboard = (props: CrossHireDashboardProps) => {
           gap: "var(--space-3)",
         }}
       >
-        {hires.map((hire, i) => (
+        {filtered.map((hire) => (
           <li
-            key={i}
+            key={hire.playerId}
             className="card"
             style={{
               padding: "var(--space-4)",
@@ -210,7 +207,7 @@ const CrossHireDashboard = (props: CrossHireDashboardProps) => {
               gap: "var(--space-2)",
             }}
             data-testid="hire-progress-row"
-            data-status={hire.status}
+            data-status={hire.isStalled ? "stalled" : "onTrack"}
           >
             {/* Top row: name + status badge */}
             <div
@@ -249,13 +246,15 @@ const CrossHireDashboard = (props: CrossHireDashboardProps) => {
                 <span
                   style={{
                     fontSize: "var(--text-xs)",
-                    color: `hsl(var(${STATUS_COLOR_VARS[hire.status]}))`,
+                    color: `hsl(var(${statusColorVar(hire)}))`,
                     fontWeight: "var(--weight-medium)",
                   }}
                 >
-                  {STATUS_LABELS[hire.status]}
+                  {statusLabel(hire)}
                 </span>
-                {hire.status === "stalled" && <StalledHireAlert />}
+                {hire.isStalled && (
+                  <StalledHireAlert days={hire.daysSinceLastActivity} />
+                )}
               </div>
             </div>
 
@@ -286,7 +285,7 @@ const CrossHireDashboard = (props: CrossHireDashboardProps) => {
                     width: `${hire.progressPercent}%`,
                     height: "100%",
                     borderRadius: "var(--radius-full)",
-                    background: hire.status === "stalled"
+                    background: hire.isStalled
                       ? "hsl(var(--color-destructive))"
                       : "hsl(var(--color-accent))",
                   }}

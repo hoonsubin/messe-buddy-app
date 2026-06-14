@@ -9,17 +9,22 @@ import type {
   ProgressEvent,
   Resource,
   Session,
+  TemplateExport,
 } from "../../types/index.ts";
 import type { FieldSchema } from "../../types/index.ts";
 import {
   MOCK_BUDDY_PROFILES,
   MOCK_FORM_SCHEMAS,
   MOCK_MILESTONES,
+  MOCK_MILESTONES_2,
   MOCK_MISSIONS,
+  MOCK_MISSIONS_2,
   MOCK_PLAYERS,
   MOCK_PROGRESS_EVENTS,
+  MOCK_PROGRESS_EVENTS_2,
   MOCK_RESOURCES,
   MOCK_SESSION,
+  MOCK_SESSION_2,
 } from "./mockData.ts";
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -34,6 +39,7 @@ const formSchemas = new Map<string, FormSchema>(); // keyed by missionId
 const progressEvents = new Map<string, ProgressEvent>(); // keyed by `${playerId}::${missionId}`
 const buddyProfiles = new Map<string, BuddyProfile>(); // keyed by assignedToPlayerId
 const resources = new Map<string, Resource>();
+const templates = new Map<string, TemplateExport>();
 
 // Subscriptions: key = `${playerId}::${missionId}`, value = Set of callbacks
 type ProgressCallback = (event: ProgressEvent) => void;
@@ -42,14 +48,20 @@ const subscriptions = new Map<string, Set<ProgressCallback>>();
 // Seeding — runs once at module load.
 (() => {
   sessions.set(MOCK_SESSION.id, MOCK_SESSION);
+  sessions.set(MOCK_SESSION_2.id, MOCK_SESSION_2);
   for (const m of MOCK_MILESTONES) milestones.set(m.id, m);
+  for (const m of MOCK_MILESTONES_2) milestones.set(m.id, m);
   for (const m of MOCK_MISSIONS) missions.set(m.id, m);
+  for (const m of MOCK_MISSIONS_2) missions.set(m.id, m);
   for (const s of MOCK_FORM_SCHEMAS) formSchemas.set(s.missionId, s);
   for (const p of MOCK_PLAYERS) players.set(p.id, p);
   for (const b of MOCK_BUDDY_PROFILES) {
     buddyProfiles.set(b.assignedToPlayerId, b);
   }
   for (const e of MOCK_PROGRESS_EVENTS) {
+    progressEvents.set(`${e.playerId}::${e.missionId}`, e);
+  }
+  for (const e of MOCK_PROGRESS_EVENTS_2) {
     progressEvents.set(`${e.playerId}::${e.missionId}`, e);
   }
   for (const r of MOCK_RESOURCES) resources.set(r.id, r);
@@ -115,6 +127,10 @@ const getSession = async (sessionId: string): Promise<Session> => {
   return s;
 };
 
+const listSessions = async (): Promise<ReadonlyArray<Session>> => {
+  return [...sessions.values()];
+};
+
 const createSession = async (
   name: string,
   gameMakerUid: string,
@@ -124,6 +140,7 @@ const createSession = async (
     name,
     bgImageUrl: "",
     gameMakerId: gameMakerUid,
+    preBoardingChecks: [],
   };
   sessions.set(session.id, session);
   return session;
@@ -305,6 +322,16 @@ const upsertProgressEvent = async (
     simulateGmApproval(key);
   }
 
+  // Tutorial support: when the profile form is submitted, mark
+  // profileComplete on the player so the tutorial can advance past step 1.
+  if (
+    missionId === "mission_profile" &&
+    event.status === "autoApproved" &&
+    player
+  ) {
+    players.set(playerId, { ...player, profileComplete: true });
+  }
+
   return event;
 };
 
@@ -380,10 +407,21 @@ const deleteResource = async (resourceId: string): Promise<void> => {
   resources.delete(resourceId);
 };
 
+// ── Templates ─────────────────────────────────────────────────────────────────
+
+const listTemplates = async (): Promise<ReadonlyArray<TemplateExport>> => {
+  return [...templates.values()];
+};
+
+const saveTemplate = async (template: TemplateExport): Promise<void> => {
+  templates.set(template.name, template);
+};
+
 // ── Export ────────────────────────────────────────────────────────────────────
 
 export const mockAdapter: AppAdapter = {
   getSession,
+  listSessions,
   createSession,
   updateSession,
   getPlayer,
@@ -411,4 +449,6 @@ export const mockAdapter: AppAdapter = {
   createResource,
   updateResource,
   deleteResource,
+  listTemplates,
+  saveTemplate,
 };

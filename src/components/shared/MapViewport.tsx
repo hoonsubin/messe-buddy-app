@@ -52,12 +52,16 @@ const MapViewport = (props: MapViewportProps) => {
     return { x: 0, y: 0, scale: DEFAULT_SCALE };
   });
 
+  // Guard to ensure the callback ref only centers once on mount.
+  const centeredRef = useRef(false);
+
   // Callback ref: fires synchronously during the commit phase, before paint.
   // This eliminates the double-render from origin → centered that a useEffect
   // would cause.
   const viewportCallbackRef = (el: HTMLDivElement | null) => {
     viewportRef.current = el;
-    if (el) {
+    if (el && !centeredRef.current) {
+      centeredRef.current = true;
       setTransform(getCenteredTransform(el));
     }
   };
