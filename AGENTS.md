@@ -97,6 +97,7 @@ All 17 constraints in [`SPECS.md`](SPECS.md:946).
 - **`useChatStream` is a Phase 1 stub** ([`useChatStream.ts`](src/hooks/useChatStream.ts:20)) — returns empty state. Real AI streaming will be wired in Phase 6.
 - **Build-time env vars** (`VITE_PB_URL`, `VITE_LITELLM_URL`) are frozen in the JS bundle at build time. Runtime env changes won't affect them — you must rebuild.
 - **`consume-docs/`** feeds the RAG ingestion pipeline. Documents placed there are chunked, embedded, and stored in pgvector.
+- Use the PlayWright MCP tool for testing. Always view from the user's perspective. All screenshots must be saved in `.playwright-mcp`
 
 ---
 

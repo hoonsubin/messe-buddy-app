@@ -119,18 +119,24 @@ const TutorialOverlay = (props: TutorialOverlayProps) => {
         position: "fixed",
         inset: 0,
         zIndex: 90,
+        background: "transparent", // override .tutorial-overlay CSS which sets background-color: hsl(--color-bg)
         pointerEvents: "none",
       }}
       aria-hidden="true" /* TutorialStep dialog is the accessible focus target */
     >
-      {/* Dim backdrop */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "hsl(var(--color-fg) / 0.55)",
-        }}
-      />
+      {/* Dim backdrop — only when there is no targeted highlight ring.
+          When a highlight ring is active, the ring's box-shadow provides the
+          dimming outside the spotlight; a separate backdrop would double-stack
+          the opacity (~80%) and bleed into the spotlight center. */}
+      {highlightRect === null && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "hsl(var(--color-fg) / 0.55)",
+          }}
+        />
+      )}
 
       {/* Highlight ring — spotlight effect via box-shadow */}
       {highlightRect !== null && (

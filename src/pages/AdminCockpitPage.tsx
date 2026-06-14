@@ -826,9 +826,8 @@ const AdminCockpitPage = () => {
       style={{
         display: "flex",
         flexDirection: "column",
-        height: "100dvh",
+        minHeight: "100dvh",
         paddingTop: "var(--topbar-h)",
-        overflow: "hidden",
         background: "hsl(var(--color-bg))",
       }}
     >
@@ -1010,7 +1009,6 @@ const AdminCockpitPage = () => {
         <main
           style={{
             flex: 1,
-            overflowY: "auto",
             padding: "var(--space-6) var(--space-4)",
             maxWidth: "40rem",
             marginInline: "auto",
@@ -1032,7 +1030,6 @@ const AdminCockpitPage = () => {
         <main
           style={{
             flex: 1,
-            overflowY: "auto",
             padding: "var(--space-6) var(--space-4)",
             maxWidth: "48rem",
             marginInline: "auto",
