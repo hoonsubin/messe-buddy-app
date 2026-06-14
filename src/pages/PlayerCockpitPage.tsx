@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import type { Player } from "../types/index.ts";
+import type { Mission, Player } from "../types/index.ts";
 import { MISSION_TYPE } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { useIdentity } from "../hooks/useIdentity.ts";
@@ -8,10 +8,10 @@ import { useSession } from "../hooks/useSession.ts";
 import { usePlayerProgress } from "../hooks/usePlayerProgress.ts";
 import { useBuddy } from "../hooks/useBuddy.ts";
 import { useResources } from "../hooks/useResources.ts";
-import BackgroundCanvas from "../components/shared/BackgroundCanvas.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
 import MilestoneMapViewer from "../components/player/MilestoneMapViewer.tsx";
 import MilestoneSidebarViewer from "../components/player/MilestoneSidebarViewer.tsx";
+import MissionDetailPopup from "../components/player/MissionDetailPopup.tsx";
 import CurrentMissionsList from "../components/player/CurrentMissionsList.tsx";
 import ResourcesSection from "../components/player/ResourcesSection.tsx";
 import BuddyCard from "../components/player/BuddyCard.tsx";
@@ -79,6 +79,9 @@ const PlayerCockpitPage = () => {
   );
   const sidebarOpen = selectedMilestoneId !== null;
 
+  // Mission detail popup state (text / link missions)
+  const [popupMission, setPopupMission] = useState<Mission | null>(null);
+
   // Derived data
   const currentMissions = missions.filter((m) => m.isInCurrentMissions);
   const selectedMilestone = selectedMilestoneId !== null
@@ -104,9 +107,10 @@ const PlayerCockpitPage = () => {
 
       if (mission.type === MISSION_TYPE.FORM) {
         navigate(`/form/${missionId}`);
+      } else {
+        // text / link missions open MissionDetailPopup
+        setPopupMission(mission);
       }
-      // Text/link missions open MissionDetailPopup (Phase 4a)
-      // For now, non-form missions are no-ops.
     },
     [missions, navigate],
   );
@@ -119,6 +123,8 @@ const PlayerCockpitPage = () => {
 
       if (mission.type === MISSION_TYPE.FORM) {
         navigate(`/form/${missionId}`);
+      } else {
+        setPopupMission(mission);
       }
     },
     [missions, navigate],
@@ -171,12 +177,6 @@ const PlayerCockpitPage = () => {
       data-page="player-cockpit"
       style={{ minHeight: "100dvh" }}
     >
-      {/* Background layer */}
-      <BackgroundCanvas
-        imageUrl={session?.bgImageUrl ?? ""}
-        alt="Session background"
-      />
-
       {isLoading && (
         <div
           style={{
@@ -200,6 +200,20 @@ const PlayerCockpitPage = () => {
         totalXP={playerProgress?.totalXP ?? 0}
         role={player?.role ?? ""}
       />
+
+      {/* Mission detail popup (text / link missions) */}
+      {popupMission !== null && player !== null && (
+        <MissionDetailPopup
+          mission={popupMission}
+          playerId={player.id}
+          sessionId={sessionId ?? ""}
+          progressEvent={
+            progressEvents.find((e) => e.missionId === popupMission.id) ?? null
+          }
+          onClose={() => setPopupMission(null)}
+          onValidated={() => setPopupMission(null)}
+        />
+      )}
 
       {/* Sidebar overlay */}
       {sidebarOpen && selectedMilestone !== undefined && (

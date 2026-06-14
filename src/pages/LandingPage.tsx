@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useIdentity } from "../hooks/useIdentity.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
@@ -7,6 +7,8 @@ import {
   joinSession,
 } from "../use-cases/joinSession.ts";
 import { recoverIdentity } from "../use-cases/recoverIdentity.ts";
+import { importTemplate } from "../use-cases/importTemplate.ts";
+import type { TemplateExport } from "../types/index.ts";
 import RecoveryKeyModal from "../components/shared/RecoveryKeyModal.tsx";
 import { USER_ROLE } from "../types/index.ts";
 
@@ -36,6 +38,9 @@ const LandingPage = () => {
   );
   // Set alongside pendingRecoveryKey so we know where to redirect on dismiss
   const [pendingRedirect, setPendingRedirect] = useState<string>("/");
+
+  // Hidden file input for template import
+  const templateFileRef = useRef<HTMLInputElement>(null);
 
   // Returning user: if identity exists in localStorage, route silently to cockpit
   useEffect(() => {
@@ -105,6 +110,60 @@ const LandingPage = () => {
       setStatus("error");
       setErrorMessage(
         "No account found for that key and session. Check and try again.",
+      );
+    }
+  };
+
+  // ── demo shortcuts ────────────────────────────────────────────────────────
+
+  const handleDemoPlayer = () => {
+    setIdentity({
+      uid: "uid_sofia_002",
+      recoveryKey: "SOFIA026",
+      sessionId: "sess_mmt2026",
+      role: USER_ROLE.PLAYER,
+    });
+    // useEffect above navigates to /session/sess_mmt2026
+  };
+
+  const handleDemoAdmin = () => {
+    setIdentity({
+      uid: "uid_gamemaker_peter",
+      recoveryKey: "DEMO1234",
+      sessionId: "sess_mmt2026",
+      role: USER_ROLE.GAMEMAKER,
+    });
+    // useEffect above navigates to /admin/sess_mmt2026
+  };
+
+  const handleTemplateImport = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setStatus("loading");
+    setErrorMessage("");
+    try {
+      const text = await file.text();
+      const template = JSON.parse(text) as TemplateExport;
+      const gmUid = crypto.randomUUID();
+      const newSessionId = await importTemplate(
+        template,
+        template.name,
+        gmUid,
+        adapter,
+      );
+      setIdentity({
+        uid: gmUid,
+        recoveryKey: "IMPRT001",
+        sessionId: newSessionId,
+        role: USER_ROLE.GAMEMAKER,
+      });
+      // useEffect navigates to /admin/:newSessionId
+    } catch {
+      setStatus("error");
+      setErrorMessage(
+        "Could not import template. Make sure it's a valid MesseBuddy template file.",
       );
     }
   };
@@ -284,6 +343,73 @@ const LandingPage = () => {
               >
                 Recover my progress
               </button>
+
+              {/* Demo shortcuts */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--space-3)",
+                  marginTop: "var(--space-2)",
+                }}
+              >
+                <div
+                  style={{
+                    flex: 1,
+                    height: "1px",
+                    background: "hsl(var(--color-border))",
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: "var(--text-xs)",
+                    color: "hsl(var(--color-muted-fg))",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  demo
+                </span>
+                <div
+                  style={{
+                    flex: 1,
+                    height: "1px",
+                    background: "hsl(var(--color-border))",
+                  }}
+                />
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "var(--space-2)",
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  style={{
+                    flex: 1,
+                    justifyContent: "center",
+                    fontSize: "var(--text-xs)",
+                    color: "hsl(var(--color-muted-fg))",
+                  }}
+                  onClick={handleDemoPlayer}
+                >
+                  As Employee
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  style={{
+                    flex: 1,
+                    justifyContent: "center",
+                    fontSize: "var(--text-xs)",
+                    color: "hsl(var(--color-muted-fg))",
+                  }}
+                  onClick={handleDemoAdmin}
+                >
+                  As Admin
+                </button>
+              </div>
             </>
           )}
 
@@ -426,6 +552,61 @@ const LandingPage = () => {
                   Back
                 </button>
               </div>
+
+              {/* Template import */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--space-3)",
+                  marginTop: "var(--space-2)",
+                }}
+              >
+                <div
+                  style={{
+                    flex: 1,
+                    height: "1px",
+                    background: "hsl(var(--color-border))",
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: "var(--text-xs)",
+                    color: "hsl(var(--color-muted-fg))",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  or
+                </span>
+                <div
+                  style={{
+                    flex: 1,
+                    height: "1px",
+                    background: "hsl(var(--color-border))",
+                  }}
+                />
+              </div>
+              <input
+                ref={templateFileRef}
+                type="file"
+                accept="application/json,.json"
+                style={{ display: "none" }}
+                onChange={(e) => void handleTemplateImport(e)}
+              />
+              <button
+                type="button"
+                className="btn btn--ghost"
+                style={{
+                  width: "100%",
+                  justifyContent: "center",
+                  fontSize: "var(--text-sm)",
+                  color: "hsl(var(--color-muted-fg))",
+                }}
+                disabled={status === "loading"}
+                onClick={() => templateFileRef.current?.click()}
+              >
+                {status === "loading" ? "Importing…" : "Import from template"}
+              </button>
             </>
           )}
 

@@ -1,3 +1,4 @@
+import mapBackground from "../../assets/map-background.jpg";
 import type {
   BuddyProfile,
   FormSchema,
@@ -20,7 +21,7 @@ const pb = (id: string) => ({ id, created: NOW, updated: NOW });
 export const MOCK_SESSION: Session = {
   ...pb("sess_mmt2026"),
   name: "Messe München Onboarding — Summer 2026",
-  bgImageUrl: "",
+  bgImageUrl: mapBackground,
   gameMakerId: "uid_gamemaker_peter",
 };
 
@@ -114,7 +115,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     milestoneId: "ms_team",
     title: "Meet Your Buddy",
     body:
-      "## Your First Check-In\n\nSchedule a 30-minute coffee chat with your assigned buddy. This is your chance to ask all the questions you haven't had the nerve to ask yet.\n\nYour buddy will scan a QR code to confirm the meeting happened.",
+      "## Your First Check-In\n\nSchedule a 30-minute coffee chat with your assigned buddy. This is your chance to ask all the questions you haven't had the nerve to ask yet.\n\nAt the end of your chat, your buddy will **scan the QR code** on your phone to confirm the meeting.\n\n> 📍 **Buddy Lounge, Building C — Floor 2**\n> Drop-in hours Mon–Fri, 09:00–17:00\n>\n> Or schedule via Slack — your buddy will suggest a time.",
     type: "text",
     difficulty: 2,
     xpValue: 29, // deriveXP(weights=[2,1,1,3], total=7): floor(100*2/7)=28, +1 remainder → 29
@@ -175,7 +176,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     milestoneId: "ms_settled",
     title: "Office Tour",
     body:
-      "## Find Your Way Around\n\nComplete a self-guided tour of the office. Check off the key locations: your desk, the main kitchen, emergency exits, and the product team area.\n\nYour buddy will confirm completion with a QR scan.",
+      "## Find Your Way Around\n\nComplete a self-guided tour and locate the following stops:\n\n- Your assigned desk\n- Main kitchen (Building A, Floor 1)\n- Nearest emergency exits\n- Product & Design team area (Building B, Floor 3)\n- IT Help Desk (Building A, Floor 0)\n\nWhen you're done, find your buddy — they'll **scan your QR code** to confirm.\n\n> 📍 **Start at Reception, Building A**\n> The front desk team can point you in the right direction.\n>\n> Estimated time: 20–30 minutes",
     type: "text",
     difficulty: 2,
     xpValue: 34, // deriveXP(weights=[2,2,2], total=6): floor(100*2/6)=33, +1 remainder (order 0) → 34
@@ -190,7 +191,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     milestoneId: "ms_settled",
     title: "IT Setup",
     body:
-      "## Get Your Devices Ready\n\nVisit IT support to collect your laptop and set up two-factor authentication on your accounts.",
+      "## Get Your Devices Ready\n\nVisit the IT Help Desk to collect your **laptop** and set up **two-factor authentication** on your accounts. Bring your employee badge — they'll need to verify your identity.\n\nOnce complete, your Game Master will mark this mission as approved.\n\n> 📍 **IT Help Desk — Building A, Ground Floor**\n> Open Monday–Friday, 08:00–18:00\n>\n> Walk-ins welcome. Average wait: 10–15 minutes.",
     type: "text",
     difficulty: 2,
     xpValue: 33, // floor(100*2/6)=33
@@ -296,11 +297,41 @@ export const MOCK_FORM_SCHEMAS: ReadonlyArray<FormSchema> = [
         placeholder: "List skills you'd be happy to share with colleagues",
       },
       {
-        id: "workStyle",
-        label: "My work style",
+        id: "workArrangement",
+        label: "Work arrangement",
+        type: "multiSelect",
+        required: false,
+        options: ["Mostly in the office", "Mostly remote", "Hybrid"],
+      },
+      {
+        id: "mentorValues",
+        label: "What I most value in a mentor",
+        type: "multiSelect",
+        required: false,
+        options: [
+          "Technical depth in my field",
+          "Leadership & career navigation",
+          "Similar career transition",
+          "Cross-cultural experience",
+          "A different perspective",
+          "Someone a few steps ahead",
+          "Emotional support",
+          "Social guidance",
+        ],
+      },
+      {
+        id: "mentorStyle",
+        label: "Preferred mentor interaction style",
+        type: "multiSelect",
+        required: false,
+        options: ["Scheduled regular sessions", "Informal, when needed", "Peer group mentoring"],
+      },
+      {
+        id: "catchUpAreas",
+        label: "What do you feel you need to catch up on?",
         type: "textarea",
         required: false,
-        placeholder: "How do you work best? Deep focus? Lots of collaboration?",
+        placeholder: "Areas, background knowledge, context you'd like to get up to speed on…",
       },
     ],
   },

@@ -235,8 +235,9 @@ const MapViewport = (props: MapViewportProps) => {
         {props.children}
       </div>
 
-      {/* Zoom controls — outside the canvas so they don't scale */}
+      {/* Zoom controls + overlay controls — outside the canvas so they don't scale */}
       <div className="map-zoom-controls" aria-label="Map zoom controls">
+        {props.overlayControls}
         <button
           type="button"
           className="map-zoom-btn"
@@ -254,9 +255,6 @@ const MapViewport = (props: MapViewportProps) => {
           <MdZoomOut size={20} aria-hidden="true" />
         </button>
       </div>
-
-      {/* Overlay controls rendered outside the canvas */}
-      {props.overlayControls}
     </div>
   );
 };

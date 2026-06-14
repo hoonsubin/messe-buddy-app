@@ -1,14 +1,12 @@
-// Phase 1 shell — logic wired in Phase 4.
 interface GridOverlayProps {
   readonly enabled: boolean;
   readonly columns: number;
   readonly rows: number;
-  readonly onToggle: () => void;
 }
 
-const GridOverlay = (props: GridOverlayProps) => (
-  <>
-    {props.enabled && (
+const GridOverlay = (props: GridOverlayProps) =>
+  props.enabled
+    ? (
       <svg
         className="grid-overlay"
         data-testid="grid-overlay"
@@ -20,22 +18,24 @@ const GridOverlay = (props: GridOverlayProps) => (
           opacity: 0.4,
         }}
       />
-    )}
-    <button
-      type="button"
-      className="btn btn--ghost"
-      onClick={props.onToggle}
-      aria-pressed={props.enabled}
-      style={{
-        position: "absolute",
-        insetBlockEnd: "var(--space-2)",
-        insetInlineEnd: "var(--space-2)",
-        fontSize: "var(--text-xs)",
-      }}
-    >
-      {props.enabled ? "Grid on" : "Grid off"}
-    </button>
-  </>
+    )
+    : null;
+
+export interface GridToggleButtonProps {
+  readonly enabled: boolean;
+  readonly onToggle: () => void;
+}
+
+export const GridToggleButton = (props: GridToggleButtonProps) => (
+  <button
+    type="button"
+    className="map-grid-btn"
+    onClick={props.onToggle}
+    aria-pressed={props.enabled}
+    aria-label={props.enabled ? "Hide grid" : "Show grid"}
+  >
+    {props.enabled ? "Grid on" : "Grid off"}
+  </button>
 );
 
 export default GridOverlay;

@@ -1,4 +1,5 @@
-// Phase 1 shell — SSE subscription wired in Phase 5.
+// Subscription is handled by ValidationDisplay (parent).
+// This component is purely presentational.
 interface PendingApprovalDisplayProps {
   readonly missionTitle: string;
   readonly onValidated: () => void;
@@ -23,15 +24,6 @@ const PendingApprovalDisplay = (props: PendingApprovalDisplayProps) => (
     >
       {props.missionTitle}
     </p>
-    <button
-      type="button"
-      className="btn btn--ghost"
-      onClick={props.onValidated}
-      style={{ display: "none" }}
-      aria-hidden="true"
-    >
-      Approved (internal)
-    </button>
   </div>
 );
 

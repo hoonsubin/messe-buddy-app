@@ -2,7 +2,7 @@ import type { Milestone } from "../../types/index.ts";
 import MapViewport from "../shared/MapViewport.tsx";
 import MilestoneNode from "../shared/MilestoneNode.tsx";
 import BackgroundImageUploader from "./BackgroundImageUploader.tsx";
-import GridOverlay from "./GridOverlay.tsx";
+import GridOverlay, { GridToggleButton } from "./GridOverlay.tsx";
 
 interface MilestoneMapEditorProps {
   readonly milestones: ReadonlyArray<Milestone>;
@@ -28,6 +28,9 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => (
     <MapViewport
       bgImageUrl={props.bgImageUrl}
       testId="milestone-map-editor-viewport"
+      overlayControls={
+        <GridToggleButton enabled={false} onToggle={() => undefined} />
+      }
     >
       {/* Draggable milestone nodes */}
       {props.milestones.map((ms) => (
@@ -45,12 +48,7 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => (
         />
       ))}
 
-      <GridOverlay
-        enabled={false}
-        columns={10}
-        rows={6}
-        onToggle={() => undefined}
-      />
+      <GridOverlay enabled={false} columns={10} rows={6} />
     </MapViewport>
 
     <div className="map-editor-toolbar">

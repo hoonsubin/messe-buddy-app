@@ -157,6 +157,27 @@ body {
   border-top: none;
 }
 
+.map-grid-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  background: hsl(var(--color-card));
+  border: 1px solid hsl(var(--color-border));
+  border-block-end: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: hsl(var(--color-fg));
+  transition: background var(--duration-fast);
+  line-height: 1;
+}
+
+.map-grid-btn:hover {
+  background: hsl(var(--color-secondary));
+}
+
 /* ── Milestone node (liquid-fill rectangle) ──────────────────────────────── */
 .milestone-node {
   position: absolute;
@@ -223,12 +244,18 @@ body {
   background-color: hsl(var(--color-muted));
 }
 
+/* wrapper must never intercept pointer events — it's purely decorative */
+.milestone-map__bg-wrapper {
+  pointer-events: none;
+}
+
 .milestone-map__bg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  pointer-events: none; /* decorative — must never block taps */
 }
 
 .milestone-node__progress-track {
@@ -1402,4 +1429,87 @@ textarea.form-input {
     order: -1;          /* sidebar is first column (left) on desktop */
     border-right: 1px solid hsl(var(--color-border));
   }
+}
+
+/* ── Prose (markdown-rendered mission body) ──────────────────────────────── */
+.prose {
+  font-size: var(--text-sm);
+  color: hsl(var(--color-fg));
+  line-height: var(--leading-relaxed);
+}
+.prose p { margin: 0 0 var(--space-3); }
+.prose p:last-child { margin-bottom: 0; }
+.prose h1, .prose h2, .prose h3 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-semibold);
+  margin: var(--space-4) 0 var(--space-2);
+  line-height: var(--leading-tight);
+}
+.prose h1 { font-size: var(--text-xl); }
+.prose h2 { font-size: var(--text-lg); }
+.prose h3 { font-size: var(--text-base); }
+.prose ul, .prose ol {
+  padding-left: var(--space-5);
+  margin: 0 0 var(--space-3);
+}
+.prose li { margin-bottom: var(--space-1); }
+.prose a {
+  color: hsl(var(--color-primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: hsl(var(--color-surface-2));
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-sm);
+}
+.prose strong { font-weight: var(--weight-semibold); }
+
+/* Location / info callout — rendered from markdown blockquote */
+.prose blockquote {
+  margin: var(--space-4) 0;
+  padding: var(--space-3) var(--space-4);
+  background: hsl(var(--color-secondary));
+  border-left: 3px solid hsl(var(--color-primary));
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: hsl(var(--color-fg));
+}
+.prose blockquote p {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+.prose blockquote p + p {
+  margin-top: var(--space-1);
+  color: hsl(var(--color-muted-fg));
+}
+
+/* ── Mission method badge ─────────────────────────────────────────────────── */
+.mission-method-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.2em var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.mission-method-badge--offline {
+  background: hsl(var(--color-status-progress) / 0.12);
+  color: hsl(var(--color-status-progress));
+}
+.mission-method-badge--approval {
+  background: hsl(35 90% 50% / 0.12);
+  color: hsl(35 80% 38%);
+}
+.mission-method-badge--link {
+  background: hsl(var(--color-primary) / 0.1);
+  color: hsl(var(--color-primary));
+}
+.mission-method-badge--self {
+  background: hsl(var(--color-status-complete) / 0.12);
+  color: hsl(142 60% 32%);
 }

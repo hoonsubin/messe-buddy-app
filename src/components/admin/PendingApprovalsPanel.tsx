@@ -1,9 +1,10 @@
-// Phase 1 shell — logic wired in Phase 4.
-import type { ProgressEvent } from "../../types/index.ts";
+import type { Mission, Player, ProgressEvent } from "../../types/index.ts";
 import ApprovalRequestCard from "./ApprovalRequestCard.tsx";
 
 interface PendingApprovalsPanelProps {
   readonly pendingEvents: ReadonlyArray<ProgressEvent>;
+  readonly players: ReadonlyArray<Player>;
+  readonly missions: ReadonlyArray<Mission>;
   readonly onApprove: (playerId: string, missionId: string) => void;
   readonly onReject: (playerId: string, missionId: string) => void;
 }
@@ -38,17 +39,20 @@ const PendingApprovalsPanel = (props: PendingApprovalsPanelProps) => (
             gap: "var(--space-3)",
           }}
         >
-          {props.pendingEvents.map((evt) => (
-            <ApprovalRequestCard
-              key={`${evt.playerId}::${evt.missionId}`}
-              playerName={evt.playerId}
-              missionTitle={evt.missionId}
-              xpValue={0}
-              onApprove={() => props.onApprove(evt.playerId, evt.missionId)}
-              onReject={() =>
-                props.onReject(evt.playerId, evt.missionId)}
-            />
-          ))}
+          {props.pendingEvents.map((evt) => {
+            const player = props.players.find((p) => p.id === evt.playerId);
+            const mission = props.missions.find((m) => m.id === evt.missionId);
+            return (
+              <ApprovalRequestCard
+                key={`${evt.playerId}::${evt.missionId}`}
+                playerName={player?.name || player?.uid || evt.playerId}
+                missionTitle={mission?.title ?? evt.missionId}
+                xpValue={mission?.xpValue ?? 0}
+                onApprove={() => props.onApprove(evt.playerId, evt.missionId)}
+                onReject={() => props.onReject(evt.playerId, evt.missionId)}
+              />
+            );
+          })}
         </div>
       )}
   </section>
