@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import type { Player } from "../types/index.ts";
+import { MISSION_TYPE } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { useIdentity } from "../hooks/useIdentity.ts";
 import { useSession } from "../hooks/useSession.ts";
@@ -17,6 +18,7 @@ import BuddyCard from "../components/player/BuddyCard.tsx";
 
 const PlayerCockpitPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
+  const navigate = useNavigate();
   const adapter = useAdapter();
   const { identity } = useIdentity();
 
@@ -92,6 +94,35 @@ const PlayerCockpitPage = () => {
       mp.milestoneId === selectedMilestoneId
     )
     : undefined;
+
+  // ── Mission click handler ──────────────────────────────────────────────
+  // Routes to the appropriate view based on mission type.
+  const handleMissionClick = useCallback(
+    (missionId: string) => {
+      const mission = missions.find((m) => m.id === missionId);
+      if (!mission) return;
+
+      if (mission.type === MISSION_TYPE.FORM) {
+        navigate(`/form/${missionId}`);
+      }
+      // Text/link missions open MissionDetailPopup (Phase 4a)
+      // For now, non-form missions are no-ops.
+    },
+    [missions, navigate],
+  );
+
+  // Sidebar mission click — same routing logic
+  const handleSidebarMissionClick = useCallback(
+    (missionId: string) => {
+      const mission = missions.find((m) => m.id === missionId);
+      if (!mission) return;
+
+      if (mission.type === MISSION_TYPE.FORM) {
+        navigate(`/form/${missionId}`);
+      }
+    },
+    [missions, navigate],
+  );
 
   // Loading state
   const isLoading = sessionLoading || playerLoading;
@@ -180,7 +211,7 @@ const PlayerCockpitPage = () => {
           currentXP={msProgress?.earnedXP ?? 0}
           xpThreshold={selectedMilestone.xpThreshold}
           onClose={() => setSelectedMilestoneId(null)}
-          onMissionClick={() => undefined}
+          onMissionClick={handleSidebarMissionClick}
         />
       )}
 
@@ -247,7 +278,7 @@ const PlayerCockpitPage = () => {
         <CurrentMissionsList
           missions={currentMissions}
           progressEvents={progressEvents}
-          onMissionClick={() => undefined}
+          onMissionClick={handleMissionClick}
           onMarkComplete={() => undefined}
         />
 

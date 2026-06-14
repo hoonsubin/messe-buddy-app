@@ -1,59 +1,356 @@
-// Phase 1 shell — form mission view. Submit logic wired in Phase 3.
-// TODO(Phase 4): wire with real identity and adapter data.
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import type { FormSchema, Mission, Player } from "../types/index.ts";
+import { useAdapter } from "../adapters/useAdapter.ts";
+import { useIdentity } from "../hooks/useIdentity.ts";
 import TopBar from "../components/shared/TopBar.tsx";
 import FormShell from "../components/form/FormShell.tsx";
-import {
-  MOCK_FORM_SCHEMAS,
-  MOCK_MISSIONS,
-  MOCK_PLAYERS,
-} from "../adapters/mock/mockData.ts";
 
-// Phase 1: hard-wire profile setup mission for visual shell preview.
-const MISSION = MOCK_MISSIONS[0]!;
-const SCHEMA = MOCK_FORM_SCHEMAS[0]!;
-// TODO(Phase 4): replace hard-wired player with identity-resolved player
-const PLAYER = MOCK_PLAYERS[1]!;
+const FormPage = () => {
+  const { missionId } = useParams<{ missionId: string }>();
+  const navigate = useNavigate();
+  const adapter = useAdapter();
+  const { identity } = useIdentity();
 
-const FormPage = () => (
-  <div
-    data-testid="form-page"
-    data-page="form"
-    style={{
-      display: "flex",
-      flexDirection: "column",
-      minHeight: "100dvh",
-      background: "hsl(var(--color-bg))",
-    }}
-  >
-    <TopBar
-      playerName={PLAYER.name}
-      totalXP={83}
-      role={PLAYER.role}
-    />
+  const sessionId = identity?.sessionId ?? "";
 
-    <main
+  // Resolve player PB record (upsertProgressEvent needs PB id, not UID)
+  const [player, setPlayer] = useState<Player | null>(null);
+  const [playerLoading, setPlayerLoading] = useState(true);
+
+  useEffect(() => {
+    if (!identity) {
+      setPlayerLoading(false);
+      return;
+    }
+    let cancelled = false;
+    const resolve = async () => {
+      try {
+        const p = await adapter.getPlayer(identity.uid);
+        if (!cancelled) setPlayer(p);
+      } catch {
+        // Player lookup failed — player stays null
+      } finally {
+        if (!cancelled) setPlayerLoading(false);
+      }
+    };
+    void resolve();
+    return () => {
+      cancelled = true;
+    };
+  }, [adapter, identity]);
+
+  // Fetch mission details from session missions list
+  const [mission, setMission] = useState<Mission | null>(null);
+  const [missionLoading, setMissionLoading] = useState(true);
+
+  useEffect(() => {
+    if (!sessionId || !missionId) {
+      setMissionLoading(false);
+      return;
+    }
+    let cancelled = false;
+    const fetch = async () => {
+      try {
+        const allMissions = await adapter.listMissions(sessionId);
+        if (!cancelled) {
+          setMission(allMissions.find((m) => m.id === missionId) ?? null);
+        }
+      } catch {
+        // Mission lookup failed
+      } finally {
+        if (!cancelled) setMissionLoading(false);
+      }
+    };
+    void fetch();
+    return () => {
+      cancelled = true;
+    };
+  }, [adapter, sessionId, missionId]);
+
+  // Form schema from adapter
+  const [formSchema, setFormSchema] = useState<FormSchema | null>(null);
+  const [schemaLoading, setSchemaLoading] = useState(true);
+  const [schemaError, setSchemaError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!missionId) return;
+    let cancelled = false;
+
+    const fetch = async () => {
+      setSchemaLoading(true);
+      setSchemaError(null);
+      try {
+        const schema = await adapter.getFormSchema(missionId);
+        if (!cancelled) setFormSchema(schema);
+      } catch (e) {
+        if (!cancelled) {
+          setSchemaError(
+            e instanceof Error ? e.message : "Failed to load form",
+          );
+        }
+      } finally {
+        if (!cancelled) setSchemaLoading(false);
+      }
+    };
+
+    void fetch();
+    return () => {
+      cancelled = true;
+    };
+  }, [adapter, missionId]);
+
+  // Form state
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDraft, setIsDraft] = useState(false);
+
+  // Pre-populate values from schema defaults (empty strings) when schema loads
+  useEffect(() => {
+    if (!formSchema) return;
+    const defaults: Record<string, string> = {};
+    for (const field of formSchema.fields) {
+      defaults[field.id] = "";
+    }
+    setValues(defaults);
+  }, [formSchema]);
+
+  // Field change handler
+  const handleFieldChange = useCallback(
+    (fieldId: string, value: string) => {
+      setValues((prev) => ({ ...prev, [fieldId]: value }));
+      // Clear error when user edits
+      setErrors((prev) => {
+        if (!prev[fieldId]) return prev;
+        const next = { ...prev };
+        delete next[fieldId];
+        return next;
+      });
+    },
+    [],
+  );
+
+  // Validate required fields, return true if valid
+  const validate = useCallback((): boolean => {
+    if (!formSchema) return false;
+
+    const newErrors: Record<string, string> = {};
+    for (const field of formSchema.fields) {
+      if (field.required && !values[field.id]?.trim()) {
+        newErrors[field.id] = `${field.label} is required`;
+      }
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [formSchema, values]);
+
+  // Submit handler — uses player.id (PB record ID) not identity.uid
+  const handleSubmit = useCallback(async () => {
+    if (!validate()) return;
+    if (!player || !missionId) return;
+
+    setIsSubmitting(true);
+    setIsDraft(false);
+    try {
+      await adapter.upsertProgressEvent(player.id, missionId, {
+        status: "autoApproved",
+        formResponse: values,
+      });
+
+      // Navigate back to cockpit after successful submission
+      if (sessionId) {
+        navigate(`/session/${sessionId}`, { replace: true });
+      }
+    } catch (e) {
+      setErrors((prev) => ({
+        ...prev,
+        _form: e instanceof Error ? e.message : "Submission failed",
+      }));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [validate, player, missionId, adapter, values, sessionId, navigate]);
+
+  // Save for later — just keep local state (persistence is Phase 4-3)
+  const handleSaveForLater = useCallback(() => {
+    setIsDraft(true);
+  }, []);
+
+  // Back navigation
+  const handleBack = useCallback(() => {
+    if (sessionId) {
+      navigate(`/session/${sessionId}`);
+    }
+  }, [sessionId, navigate]);
+
+  // Missing identity guard
+  if (!identity) {
+    return (
+      <div
+        data-testid="form-page"
+        data-page="form"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100dvh",
+          color: "hsl(var(--color-muted-fg))",
+          background: "hsl(var(--color-bg))",
+        }}
+      >
+        <p>Please sign in first.</p>
+      </div>
+    );
+  }
+
+  // Loading state
+  const isLoading = playerLoading || missionLoading || schemaLoading;
+  if (isLoading) {
+    return (
+      <div
+        data-testid="form-page"
+        data-page="form"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100dvh",
+          color: "hsl(var(--color-muted-fg))",
+          background: "hsl(var(--color-bg))",
+        }}
+      >
+        <p>Loading form…</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (schemaError) {
+    return (
+      <div
+        data-testid="form-page"
+        data-page="form"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100dvh",
+          color: "hsl(var(--color-muted-fg))",
+          background: "hsl(var(--color-bg))",
+          gap: "var(--space-4)",
+          padding: "var(--space-6)",
+        }}
+      >
+        <p style={{ color: "hsl(var(--color-destructive))" }}>
+          {schemaError}
+        </p>
+        {sessionId && (
+          <button
+            type="button"
+            className="btn btn--secondary"
+            onClick={handleBack}
+          >
+            ← Back to Dashboard
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // Not found state
+  if (!formSchema) {
+    return (
+      <div
+        data-testid="form-page"
+        data-page="form"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100dvh",
+          color: "hsl(var(--color-muted-fg))",
+          background: "hsl(var(--color-bg))",
+          gap: "var(--space-4)",
+          padding: "var(--space-6)",
+        }}
+      >
+        <p>No form schema found for this mission.</p>
+        {sessionId && (
+          <button
+            type="button"
+            className="btn btn--secondary"
+            onClick={handleBack}
+          >
+            ← Back to Dashboard
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      data-testid="form-page"
+      data-page="form"
       style={{
-        flex: 1,
-        paddingTop: "var(--topbar-h)",
         display: "flex",
-        justifyContent: "center",
-        padding:
-          "calc(var(--topbar-h) + var(--space-6)) var(--space-4) var(--space-8)",
+        flexDirection: "column",
+        minHeight: "100dvh",
+        background: "hsl(var(--color-bg))",
       }}
     >
-      <div style={{ width: "100%", maxWidth: "36rem" }}>
-        <FormShell
-          missionTitle={MISSION.title}
-          fields={SCHEMA.fields}
-          values={{}}
-          errors={{}}
-          isSubmitting={false}
-          onFieldChange={() => undefined}
-          onSubmit={() => undefined}
-        />
-      </div>
-    </main>
-  </div>
-);
+      <TopBar
+        playerName={player?.name || (identity.uid.slice(0, 6))}
+        totalXP={0}
+        role="player"
+      />
+
+      <main
+        style={{
+          flex: 1,
+          paddingTop: "var(--topbar-h)",
+          display: "flex",
+          justifyContent: "center",
+          padding:
+            "calc(var(--topbar-h) + var(--space-6)) var(--space-4) var(--space-8)",
+        }}
+      >
+        <div style={{ width: "100%", maxWidth: "36rem" }}>
+          {errors._form && (
+            <p
+              style={{
+                color: "hsl(var(--color-destructive))",
+                fontSize: "var(--text-sm)",
+                marginBottom: "var(--space-4)",
+                padding: "var(--space-3)",
+                background: "hsl(var(--color-destructive) / 0.08)",
+                borderRadius: "var(--radius-md)",
+              }}
+              role="alert"
+            >
+              {errors._form}
+            </p>
+          )}
+          <FormShell
+            missionTitle={mission?.title ?? "Form Mission"}
+            description={mission?.body}
+            fields={formSchema.fields}
+            values={values}
+            errors={errors}
+            isSubmitting={isSubmitting}
+            isDraft={isDraft}
+            onFieldChange={handleFieldChange}
+            onSubmit={handleSubmit}
+            onSaveForLater={handleSaveForLater}
+            onBack={handleBack}
+          />
+        </div>
+      </main>
+    </div>
+  );
+};
 
 export default FormPage;
