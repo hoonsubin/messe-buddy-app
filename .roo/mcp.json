@@ -13,7 +13,9 @@
 				"browser_type",
 				"browser_snapshot",
 				"browser_resize",
-				"browser_console_messages"
+				"browser_console_messages",
+				"browser_take_screenshot",
+				"browser_wait_for"
 			]
 		},
 		"puppeteer": {

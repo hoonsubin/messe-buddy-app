@@ -12,7 +12,6 @@ const QRScannerView = () => (
       display: "flex",
       flexDirection: "column",
       minHeight: "100dvh",
-      background: "hsl(var(--color-bg))",
     }}
   >
     <TopBar

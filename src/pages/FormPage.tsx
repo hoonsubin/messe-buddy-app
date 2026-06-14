@@ -1,4 +1,5 @@
 // Phase 1 shell — form mission view. Submit logic wired in Phase 3.
+// TODO(Phase 4): wire with real identity and adapter data.
 import TopBar from "../components/shared/TopBar.tsx";
 import FormShell from "../components/form/FormShell.tsx";
 import {
@@ -10,6 +11,7 @@ import {
 // Phase 1: hard-wire profile setup mission for visual shell preview.
 const MISSION = MOCK_MISSIONS[0]!;
 const SCHEMA = MOCK_FORM_SCHEMAS[0]!;
+// TODO(Phase 4): replace hard-wired player with identity-resolved player
 const PLAYER = MOCK_PLAYERS[1]!;
 
 const FormPage = () => (

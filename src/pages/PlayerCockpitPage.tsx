@@ -1,95 +1,173 @@
-import { useMemo, useState } from "react";
-import type { MilestoneProgress } from "../types/index.ts";
-import { MILESTONE_STATUS } from "../types/index.ts";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import type { Player } from "../types/index.ts";
+import { useAdapter } from "../adapters/useAdapter.ts";
+import { useIdentity } from "../hooks/useIdentity.ts";
+import { useSession } from "../hooks/useSession.ts";
+import { usePlayerProgress } from "../hooks/usePlayerProgress.ts";
+import { useBuddy } from "../hooks/useBuddy.ts";
+import { useResources } from "../hooks/useResources.ts";
+import BackgroundCanvas from "../components/shared/BackgroundCanvas.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
 import MilestoneMapViewer from "../components/player/MilestoneMapViewer.tsx";
 import MilestoneSidebarViewer from "../components/player/MilestoneSidebarViewer.tsx";
 import CurrentMissionsList from "../components/player/CurrentMissionsList.tsx";
 import ResourcesSection from "../components/player/ResourcesSection.tsx";
 import BuddyCard from "../components/player/BuddyCard.tsx";
-import {
-  MOCK_BUDDY_PROFILES,
-  MOCK_MILESTONES,
-  MOCK_MISSIONS,
-  MOCK_PLAYERS,
-  MOCK_PROGRESS_EVENTS,
-  MOCK_RESOURCES,
-  MOCK_SESSION,
-} from "../adapters/mock/mockData.ts";
-
-// Phase 1: hard-wire Sofia (player_sofia) for visual shell preview.
-const PLAYER = MOCK_PLAYERS[1]!;
-const BUDDY = MOCK_BUDDY_PROFILES[1]!;
-
-const COMPLETED_STATUSES = new Set(["completed", "autoApproved"] as const);
 
 const PlayerCockpitPage = () => {
-  // null = sidebar closed; string = milestone ID whose sidebar is open
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const adapter = useAdapter();
+  const { identity } = useIdentity();
+
+  // Resolve player record from identity UID → adapter
+  const [player, setPlayer] = useState<Player | null>(null);
+  const [playerLoading, setPlayerLoading] = useState(true);
+  const [playerError, setPlayerError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const resolve = async () => {
+      if (!identity) {
+        setPlayerLoading(false);
+        return;
+      }
+      setPlayerLoading(true);
+      setPlayerError(null);
+      try {
+        const p = await adapter.getPlayer(identity.uid);
+        if (!cancelled) setPlayer(p);
+      } catch (e) {
+        if (!cancelled) {
+          setPlayerError(e instanceof Error ? e : new Error(String(e)));
+        }
+      } finally {
+        if (!cancelled) setPlayerLoading(false);
+      }
+    };
+
+    void resolve();
+    return () => {
+      cancelled = true;
+    };
+  }, [adapter, identity]);
+
+  const playerId = player?.id ?? "";
+
+  // Fetch session data via hooks
+  const {
+    session,
+    milestones,
+    missions,
+    loading: sessionLoading,
+  } = useSession(sessionId ?? "");
+
+  const { buddy } = useBuddy(playerId);
+  const { playerProgress, progressEvents } = usePlayerProgress(
+    playerId,
+    milestones,
+    missions,
+  );
+  const { resources } = useResources(sessionId ?? "");
+
+  // Sidebar state
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(
     null,
   );
-
   const sidebarOpen = selectedMilestoneId !== null;
 
-  const currentMissions = MOCK_MISSIONS.filter((m) => m.isInCurrentMissions);
-  const visibleResources = MOCK_RESOURCES.filter((r) => r.isVisibleToPlayer);
-  const playerEvents = MOCK_PROGRESS_EVENTS.filter((e) =>
-    e.playerId === PLAYER.id
-  );
-
-  // Compute per-milestone progress from missions + progress events.
-  const milestoneProgress = useMemo((): ReadonlyArray<MilestoneProgress> => {
-    const eventByMission = new Map(playerEvents.map((e) => [e.missionId, e]));
-
-    return MOCK_MILESTONES.map((ms): MilestoneProgress => {
-      const msMissions = MOCK_MISSIONS.filter((m) => m.milestoneId === ms.id);
-      const completedMissions = msMissions.filter((m) => {
-        const ev = eventByMission.get(m.id);
-        return ev !== undefined &&
-          COMPLETED_STATUSES.has(ev.status as "completed" | "autoApproved");
-      });
-      const total = msMissions.length;
-      const percentComplete = total > 0 ? completedMissions.length / total : 0;
-      const earnedXP = Math.round(percentComplete * ms.xpThreshold);
-
-      const status = percentComplete >= 1
-        ? MILESTONE_STATUS.COMPLETED
-        : completedMissions.length > 0
-        ? MILESTONE_STATUS.IN_PROGRESS
-        : MILESTONE_STATUS.UPCOMING;
-
-      return {
-        milestoneId: ms.id,
-        status,
-        percentComplete,
-        earnedXP,
-        xpThreshold: ms.xpThreshold,
-        completedMissionIds: completedMissions.map((m) => m.id),
-      };
-    });
-  }, [playerEvents]);
-
+  // Derived data
+  const currentMissions = missions.filter((m) => m.isInCurrentMissions);
   const selectedMilestone = selectedMilestoneId !== null
-    ? MOCK_MILESTONES.find((m) => m.id === selectedMilestoneId)
+    ? milestones.find((m) => m.id === selectedMilestoneId) ?? undefined
     : undefined;
 
   const sidebarMissions = selectedMilestoneId !== null
-    ? MOCK_MISSIONS.filter((m) => m.milestoneId === selectedMilestoneId)
+    ? missions.filter((m) => m.milestoneId === selectedMilestoneId)
     : [];
+
+  const msProgress = selectedMilestoneId !== null && playerProgress !== null
+    ? playerProgress.milestoneProgress.find((mp) =>
+      mp.milestoneId === selectedMilestoneId
+    )
+    : undefined;
+
+  // Loading state
+  const isLoading = sessionLoading || playerLoading;
+
+  // Empty identity (should not happen in practice — LandingPage guards this)
+  if (!identity) {
+    return (
+      <div
+        data-testid="player-cockpit-page"
+        data-page="player-cockpit"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100dvh",
+          color: "hsl(var(--color-muted-fg))",
+        }}
+      >
+        <p>No identity found. Please return to the landing page.</p>
+      </div>
+    );
+  }
+
+  // Player resolution error state
+  if (playerError) {
+    return (
+      <div
+        data-testid="player-cockpit-page"
+        data-page="player-cockpit"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100dvh",
+          color: "hsl(var(--color-muted-fg))",
+        }}
+      >
+        <p>Could not load player data. Please try again.</p>
+      </div>
+    );
+  }
 
   return (
     <div
       data-testid="player-cockpit-page"
       data-page="player-cockpit"
-      style={{
-        minHeight: "100dvh",
-        background: "hsl(var(--color-bg))",
-      }}
+      style={{ minHeight: "100dvh" }}
     >
+      {/* Background layer */}
+      <BackgroundCanvas
+        imageUrl={session?.bgImageUrl ?? ""}
+        alt="Session background"
+      />
+
+      {isLoading && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "hsl(var(--color-bg))",
+            color: "hsl(var(--color-muted-fg))",
+            fontSize: "var(--text-sm)",
+          }}
+        >
+          Loading your journey…
+        </div>
+      )}
+
       <TopBar
-        playerName={PLAYER.name}
-        totalXP={83}
-        role={PLAYER.role}
+        playerName={player?.name ?? ""}
+        totalXP={playerProgress?.totalXP ?? 0}
+        role={player?.role ?? ""}
       />
 
       {/* Sidebar overlay */}
@@ -98,8 +176,8 @@ const PlayerCockpitPage = () => {
           milestoneId={selectedMilestone.id}
           milestoneName={selectedMilestone.name}
           missions={sidebarMissions}
-          progressEvents={playerEvents}
-          currentXP={49}
+          progressEvents={progressEvents}
+          currentXP={msProgress?.earnedXP ?? 0}
           xpThreshold={selectedMilestone.xpThreshold}
           onClose={() => setSelectedMilestoneId(null)}
           onMissionClick={() => undefined}
@@ -131,7 +209,7 @@ const PlayerCockpitPage = () => {
               lineHeight: "var(--leading-tight)",
             }}
           >
-            Welcome, {PLAYER.name.split(" ")[0]}.
+            Welcome{player?.name ? `, ${player.name.split(" ")[0]}` : ""}.
           </h1>
           <p
             style={{
@@ -155,9 +233,9 @@ const PlayerCockpitPage = () => {
             }}
           >
             <MilestoneMapViewer
-              milestones={MOCK_MILESTONES}
-              bgImageUrl={MOCK_SESSION.bgImageUrl}
-              milestoneProgress={milestoneProgress}
+              milestones={milestones}
+              bgImageUrl={session?.bgImageUrl ?? ""}
+              milestoneProgress={playerProgress?.milestoneProgress ?? []}
               playerXPercent={15}
               playerYPercent={35}
               onMilestoneClick={(id) => setSelectedMilestoneId(id)}
@@ -168,7 +246,7 @@ const PlayerCockpitPage = () => {
         {/* Current missions */}
         <CurrentMissionsList
           missions={currentMissions}
-          progressEvents={playerEvents}
+          progressEvents={progressEvents}
           onMissionClick={() => undefined}
           onMarkComplete={() => undefined}
         />
@@ -185,24 +263,41 @@ const PlayerCockpitPage = () => {
         >
           {/* Your Buddy */}
           <section aria-label="Your buddy">
-            <BuddyCard
-              name={BUDDY.name}
-              role={BUDDY.role}
-              {...(BUDDY.tenure !== undefined && { tenure: BUDDY.tenure })}
-              {...(BUDDY.avatarUrl !== undefined &&
-                { avatarUrl: BUDDY.avatarUrl })}
-              {...(BUDDY.contactUrl !== undefined &&
-                { contactUrl: BUDDY.contactUrl })}
-              {...(BUDDY.quote !== undefined && { quote: BUDDY.quote })}
-              {...(BUDDY.email !== undefined && { email: BUDDY.email })}
-              {...(BUDDY.phone !== undefined && { phone: BUDDY.phone })}
-            />
+            {buddy
+              ? (
+                <BuddyCard
+                  name={buddy.name}
+                  role={buddy.role}
+                  {...(buddy.tenure !== undefined && { tenure: buddy.tenure })}
+                  {...(buddy.avatarUrl !== undefined &&
+                    { avatarUrl: buddy.avatarUrl })}
+                  {...(buddy.contactUrl !== undefined &&
+                    { contactUrl: buddy.contactUrl })}
+                  {...(buddy.quote !== undefined && { quote: buddy.quote })}
+                  {...(buddy.email !== undefined && { email: buddy.email })}
+                  {...(buddy.phone !== undefined && { phone: buddy.phone })}
+                />
+              )
+              : !isLoading && (
+                <div className="card" style={{ padding: "var(--space-6)" }}>
+                  <p
+                    style={{
+                      fontSize: "var(--text-sm)",
+                      color: "hsl(var(--color-muted-fg))",
+                      textAlign: "center",
+                      margin: 0,
+                    }}
+                  >
+                    You'll be assigned a buddy soon.
+                  </p>
+                </div>
+              )}
           </section>
 
           {/* Resources */}
           <section aria-label="Resources">
             <ResourcesSection
-              resources={visibleResources}
+              resources={resources}
               onSearch={() => undefined}
             />
           </section>
