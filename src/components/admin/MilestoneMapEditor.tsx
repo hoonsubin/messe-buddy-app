@@ -25,7 +25,10 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => (
       onUpload={props.onUploadBackground}
     />
 
-    <MapViewport bgImageUrl={props.bgImageUrl} testId="milestone-map-editor-viewport">
+    <MapViewport
+      bgImageUrl={props.bgImageUrl}
+      testId="milestone-map-editor-viewport"
+    >
       {/* Draggable milestone nodes */}
       {props.milestones.map((ms) => (
         <MilestoneNode

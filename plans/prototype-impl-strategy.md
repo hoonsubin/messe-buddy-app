@@ -1,9 +1,9 @@
 # MesseBuddy — Implementation Strategy
-> **Scope:** First iteration interactable prototype for user testing, delivered at Phase 7  
-> **Target repo:** `~/Projects/messe-buddy-app/`  
-> **Spec authority:** `~/Projects/messe-buddy-app/SPECS.md`  
-> **Wireframe authority:** `~/Projects/MesseBuddy/docs/MesseBuddy_Wireframe.html`  
-> **Last updated:** 2026-06-13
+> **Scope:** First iteration interactable prototype for user testing, delivered at Phase 7
+> **Target repo:** `~/Projects/messe-buddy-app/`
+> **Spec authority:** `~/Projects/messe-buddy-app/SPECS.md`
+> **Wireframe authority:** `~/Projects/MesseBuddy/docs/MesseBuddy_Wireframe.html`
+> **Last updated:** 2026-06-14
 
 ---
 
@@ -37,37 +37,45 @@ When they conflict, the spec wins on behavior, the wireframe wins on appearance.
 
 ---
 
-## Project Structure (established in Phase 0, never restructured)
+## Project Structure (established in Phase 0, refined through Phase 4)
 
 ```
 src/
   types/            # All TS interfaces and union types — verbatim from SPECS.md
+    domain.ts       # PBRecord-extending interfaces: Session, Player, Milestone, etc.
+    unions.ts       # MissionType, MissionTag, ValidationMethod, etc. (const+keyof)
+    value-objects.ts # FieldSchema, QRPayload, ScanData, LocalIdentity
+    ephemeral.ts    # MilestoneProgress, PlayerProgress, DraftMission, TemplateRecord
+    exports.ts      # TemplateExport, FullSessionExport
+    index.ts        # Barrel re-export
   use-cases/        # Pure business logic: deriveXP, computeProgress, joinSession, etc.
   adapters/
     interface.ts    # AppAdapter interface — the single contract
-    mock/           # Mock implementation: mockData.ts + mockAdapter.ts
+    AdapterContext.tsx   # Context provider (swaps mock ↔ PB in one line)
+    AdapterContextValue.ts # Context value creation
+    useAdapter.ts   # Hook to consume AppAdapter
+    mock/           # Mock implementation: mockData.ts + mockAdapter.ts + index.ts
     pocketbase/     # Real PB adapter (Phase 7 only)
-  hooks/            # React hooks: useIdentity, useSession, usePlayerProgress, useChatStream
+  hooks/            # React hooks: useIdentity, useSession, usePlayerProgress, etc.
   components/
-    ui/             # Primitives: Button, Badge, Card, TextInput, Modal, Sheet
-    layout/         # TopBar, PageShell, BackgroundCanvas
-    milestone/      # MilestoneNode, MilestoneMapViewer, MilestoneMapEditor, GridOverlay
-    mission/        # MissionCard, MissionDetailPopup, ValidationDisplay, QRDisplay
+    shared/         # Cross-cutting: TopBar, BackgroundCanvas, MapViewport, MilestoneNode, MissionCard, TagBadge, XPBadge, SearchBar, RecoveryKeyModal, ResourceCard
+    player/         # Player-only: MilestoneMapViewer, MilestoneSidebarViewer, CurrentMissionsList, BuddyCard, MissionDetailPopup, ValidationDisplay, QRDisplay, PendingApprovalDisplay, ResourcesSection, ResourcesChat, ChatPanel, YouAreHereMarker, ProgressLegend
+    admin/          # Game-Master-only: MilestoneMapEditor, MilestoneSidebarEditor, GridOverlay, PlayerSelectorDropdown, PlayerProfileCard, PendingApprovalsPanel, ApprovalRequestCard, BuddyAssignmentForm, ResourcesEditor, MissionEditor, FormEditor, FormFieldEditor, MarkdownEditor, MissionTypeSelector, DifficultySelector, TagSelector, ValidationMethodSelector, SaveActions, SaveTemplateModal, TemplateLibrary, TemplateFields, BackgroundImageUploader
+    form/           # Form building: FormShell, FormField
+    layout/         # Route guards: RequireRole
     tutorial/       # TutorialOverlay, TutorialStep
-    admin/          # PlayerSelectorDropdown, PlayerProfileCard, PendingApprovalsPanel, MissionEditor
-    form/           # FormPage fields: FormField, DynamicForm
-  pages/
-    LandingPage/
-    PlayerCockpitPage/
-    AdminCockpitPage/
-    FormPage/
-    QRScannerView/
+    qr/             # QR scanning: CameraFeed, ValidationResult
+  pages/            # Route-level page components (flat .tsx files)
+    LandingPage.tsx
+    PlayerCockpitPage.tsx
+    AdminCockpitPage.tsx
+    FormPage.tsx
+    QRScannerView.tsx
   styles/
     tokens.css      # All CSS custom properties — derived from wireframe
-    reset.css       # Box model reset, base typography
-    global.css      # Body, root, scrollbar, selection styles
-  lib/
+  utils/
     qrPayload.ts    # Single encode/decode point for QR — see C-16
+  index.css         # Reset styles + global typography + component CSS
 ```
 
 ---
@@ -87,11 +95,11 @@ Transcribe verbatim from SPECS.md — every interface, every union type, every `
 - `exports.ts` — TemplateExport, FullSessionExport
 - `index.ts` — re-exports all of the above
 
-**0b. AppAdapter interface (`src/adapters/interface.ts`)**  
+**0b. AppAdapter interface (`src/adapters/interface.ts`)**
 The contract both mock and PB adapters must satisfy. Methods:
 ```
-Sessions: getSession, createSession
-Players: getPlayer, createPlayer, updatePlayer, getPlayerByRecoveryKey, listPlayers
+Sessions: getSession, createSession, updateSession
+Players: getPlayer, getPlayerById, createPlayer, updatePlayer, getPlayerByRecoveryKey, listPlayers
 Milestones: listMilestones, createMilestone, updateMilestone, deleteMilestone
 Missions: listMissions, createMission, updateMission, deleteMission
 FormSchemas: getFormSchema, upsertFormSchema
@@ -114,16 +122,16 @@ Pure functions, all with full TypeScript signatures. Implement now:
 `mockData.ts`: one Session, 3 Milestones, 10 Missions (mix of text/link/form; all three `validationMethod` types represented), 2 Players, buddy profiles, form schemas, resources, progress events.  
 `mockAdapter.ts`: implements `AppAdapter`; stores state in module-level Maps. `subscribeProgressEvent` uses `setTimeout` to simulate async approval after 4 seconds (for testing gmApprove flow without a real GM).
 
-**0e. Router + context (`src/App.tsx`, `src/main.tsx`)**  
+**0e. Router + context (`src/App.tsx`, `src/main.tsx`)**
 Wire `react-router-dom` v7. Routes:
 ```
 /                   → LandingPage (stub div)
 /session/:id        → PlayerCockpitPage (stub div)
 /admin/:id          → AdminCockpitPage (stub div)
 /form/:missionId    → FormPage (stub div)
-/scan               → QRScannerView (stub div)
+/qr/:missionId      → QRScannerView (stub div)
 ```
-`AdapterContext`: `React.createContext<AppAdapter>` — provided at root with `mockAdapter`. Components consume this; never import adapters directly.
+`AdapterContext` (split into `AdapterContextValue.ts` + `AdapterContext.tsx` + `useAdapter.ts`): provided at root with `mockAdapter`. Components consume `useAdapter()`; never import adapters directly.
 
 **0f. Identity hook (`src/hooks/useIdentity.ts`)**  
 Reads/writes `localStorage.getItem('mb_identity')` typed as `LocalIdentity | null`.
@@ -158,19 +166,19 @@ Derive from the wireframe's rendered palette, typography, and spacing. Define al
 - Border radii: sm / md / lg / full
 - Shadows and glassmorphism values matching wireframe
 
-**1b. Reset + global styles (`src/styles/`)**  
-Box model reset. Base font set to `--font-body`. `html { font-size: 16px }`. Body `margin: 0`, `background: var(--color-bg-primary)`. Import Google Fonts matching wireframe.
+**1b. Reset + global styles (`src/index.css`)**
+Box model reset, global typography, and all component CSS live in a single `index.css`. Import Google Fonts matching wireframe. Design tokens are in `src/styles/tokens.css`.
 
 **1c. LandingPage shell**  
 Full-bleed layout. Displays: brand logo/name, tagline copy from wireframe, four action areas (Join Session / Create Session / Recover Progress / Returning User redirect notice). No inputs wired. No onClick handlers. Visual matches wireframe landing screen.
 
-**1d. PlayerCockpitPage shell**  
-Scrollable single-column layout. Contains in order, all unstyled with placeholder text:
-- `TopBar` — fixed, shows logo, XP bar placeholder, avatar placeholder
-- `MilestoneMapViewer` container — correct aspect ratio, dark background (no image yet), shows three placeholder `MilestoneNode` circles at fixed positions
-- `CurrentMissionsList` container — horizontal scroll area with two placeholder `MissionCard` elements
-- `BuddyCard` container — avatar placeholder, name placeholder, contact placeholder
-- `ResourcesSection` container — search bar shell, two placeholder `ResourceCard` elements
+**1d. PlayerCockpitPage shell**
+Scrollable single-column layout. Contains in order, all with placeholder text:
+- `TopBar` (in `components/shared/`) — fixed, shows logo, XP bar placeholder, avatar placeholder
+- `MilestoneMapViewer` (in `components/player/`, uses shared `MapViewport`) — map viewport with pan/zoom, dark background (no image yet), shows three placeholder `MilestoneNode` circles at fixed positions
+- `CurrentMissionsList` (in `components/player/`) — scrollable list of mission rows, not `MissionCard` components
+- `BuddyCard` (in `components/player/`) — avatar placeholder, name placeholder, contact placeholder
+- `ResourcesSection` (in `components/player/`) — search bar shell, two placeholder `ResourceCard` elements
 
 **1e. AdminCockpitPage shell**  
 Denser layout than player cockpit. Contains in order:
@@ -185,22 +193,25 @@ Denser layout than player cockpit. Contains in order:
 - `ResourcesEditor` shell — table with placeholder rows
 - `SaveActions` shell — Save button, Save as Template button
 
-**1f. FormPage shell**  
-Full-page layout. Title placeholder. Two example field shells (text input, select). Submit button.
+**1f. FormPage shell**
+Full-page layout. Title placeholder. Two example field shells (text input, select) via `FormField`. Wrapped in `FormShell` component (not `DynamicForm`). Submit button.
 
 **1g. QRScannerView shell**  
 Full-screen dark background. Camera feed placeholder (a `<div>` with correct dimensions). `ValidationResult` panel placeholder below.
 
-**1h. All shared components — visual shells only**  
-Every component that will be used across multiple pages must have its full visual structure defined here, even if content is static. Key components:
-- `MilestoneNode` — circular node with status color variants (show one of each status in the map shell)
+**1h. All shared components — visual shells only**
+Every component that will be used across multiple pages must have its full visual structure defined here, even if content is static. Key components (all in `components/shared/` unless noted):
+- `MilestoneNode` — circular node with status color variants, liquid-fill progress indicator
+- `MapViewport` — shared pan/zoom/pinch viewport with zoom controls; used by both player and admin maps
 - `MissionCard` — full card with title, type icon placeholder, XP badge placeholder, tag chips placeholder, status indicator
 - `TopBar` — fixed, blur background, responsive
-- `BackgroundCanvas` — `position: fixed; inset: 0; z-index: 0; object-fit: cover`
-- `ValidationDisplay` — full-screen overlay shell with QRDisplay placeholder and PendingApprovalDisplay placeholder
-- `TutorialOverlay` — full-screen overlay shell with step indicator, highlight ring placeholder, CTA button
-- `TagBadge` — colored chip, one of each variant visible in storybook-style shell
+- `BackgroundCanvas` — wrapper for background images with `object-fit: cover`; used as fixed backdrop on player cockpit
+- `ValidationDisplay` (in `components/player/`) — full-screen overlay shell with QRDisplay placeholder and PendingApprovalDisplay placeholder
+- `TutorialOverlay` (in `components/tutorial/`) — full-screen overlay shell with step indicator, highlight ring placeholder, CTA button
+- `TagBadge` — colored chip, one of each variant visible
 - `XPBadge` — number + "XP" label, styled
+- `RecoveryKeyModal` — modal shown after join/create session
+- `SearchBar` — search input with icon
 
 **Exit condition:** `deno task dev` running. Every route renders its full shell. All components are visually consistent with the wireframe. The layout must work correctly at any viewport width — no `px`-based widths, positions, or breakpoint assumptions anywhere in the component shells. Zero TypeScript errors. Zero logic — no `useState`, no adapter calls, no `useEffect`.
 
@@ -245,19 +256,18 @@ Modal overlay shown immediately after `joinSession` or `createSession`. Monospac
 - `useBuddy(playerId)` — fetches BuddyProfile
 - `useResources(sessionId)` — fetches Resources filtered by `isVisibleToPlayer: true`
 
-**3b. PlayerCockpitPage — data wired**  
+**3b. PlayerCockpitPage — data wired**
 Replaces placeholder content with real data. No new component structure — the Phase 1 shells receive real props.
-- `TopBar` — real XP bar from `PlayerProgress.totalXP / (milestones.length * 100)`, player name, avatar
-- `BackgroundCanvas` — `session.bgImageUrl` (empty string for now → falls back to gradient)
-- `MilestoneMapViewer` — MilestoneNodes positioned at `{ left: m.xPercent%, top: m.yPercent% }`, status derived from `PlayerProgress.milestoneProgress`
-- `YouAreHereMarker` — positioned at the first `inProgress` milestone
-- `CurrentMissionsList` — missions where `isInCurrentMissions: true`, status from progress events
-- `MissionCard` — real mission data: title, type icon, XP, tags, status
+- `TopBar` — real player name, total XP, role from resolved Player record
+- `BackgroundCanvas` — `session.bgImageUrl` (empty string for now → falls back to gradient placeholder)
+- `MilestoneMapViewer` — uses shared `MapViewport` with pan/zoom; MilestoneNodes positioned at `xPercent`/`yPercent`, status and progress derived from `PlayerProgress.milestoneProgress`
+- `YouAreHereMarker` — positioned at fixed coordinates (15, 35). Derivation from first `inProgress` milestone is a future enhancement.
+- `CurrentMissionsList` — renders mission rows inline (title, description, tags, XP, status) — does NOT delegate to `MissionCard` component
 - `BuddyCard` — real buddy data or empty state
-- `ResourcesSection` — real resources, search filters by title and tags client-side
+- `ResourcesSection` — real resources, client-side search
 
-**3c. MilestoneSidebarViewer — wired**  
-Slide-in from right on MilestoneNode click. Shows real milestone name, XP, and its missions as MissionCards. Close button + tap-outside-to-close. No mission action yet — click on MissionCard is a no-op.
+**3c. MilestoneSidebarViewer — wired**
+Slide-in from left on MilestoneNode click. Shows real milestone name, XP progress bar, and its missions with status indicators. Tabs for Missions / Resources. Close button + tap-outside-to-close. No mission action yet — click on mission row is a no-op in Phase 3 (wired in Phase 4).
 
 **Exit condition:** Player cockpit shows real data from mock. Map nodes are positioned correctly. Clicking a milestone opens the sidebar with its missions. XP bar reflects mock progress state. All responsive at 390px.
 
@@ -289,19 +299,23 @@ Calls `upsertProgressEvent({ status: 'pendingApproval' })` → ValidationDisplay
 **`qr`:**  
 `qrPayload.ts` encodes `{ playerId, missionId, sessionId, xpValue, issuedAt }` with HMAC-SHA256 using `crypto.subtle` (C-16) → No PB write (C-07) → ValidationDisplay mounts showing QRDisplay (QR code rendered via `qrcode` lib) → opens `subscribeProgressEvent` SSE subscription → dismisses when `status: 'completed'` received.
 
-**4c. qrPayload.ts (`src/lib/qrPayload.ts`)**  
-Single encode/decode point. `encode(payload: QRPayload, sessionToken: string): Promise<string>` and `decode(raw: string, sessionToken: string): Promise<QRPayload>`. Both use `crypto.subtle` HMAC-SHA256. For the mock, session token is a constant string.
+**4c. qrPayload.ts (`src/utils/qrPayload.ts`)**
+Single encode/decode point. `encodeQRPayload(input: QRPayloadInput, secret: string): Promise<string>` and `decodeQRPayload(encoded: string, secret: string): Promise<QRPayload>`. Also exports `QRPayloadError` class. Both use `crypto.subtle` HMAC-SHA256. For the mock, session token is a constant string.
 
-**4d. FormPage — wired**  
-Route `/form/:missionId`. Loads FormSchema from adapter. Renders fields via `FieldSchema[]`:
+**4d. FormPage — wired**
+Route `/form/:missionId`. Resolves identity → player PB record, fetches `FormSchema` via `adapter.getFormSchema(missionId)`, fetches `Mission` via `adapter.listMissions(sessionId)`. Renders fields via `FieldSchema[]` through `FormShell` + `FormField`:
 - `text` → `<input type="text">`
 - `textarea` → `<textarea>`
 - `select` → `<select>` with options
-- `multiSelect` → checkbox group
+- `multiSelect` → chip toggle buttons (comma-joined string value)
 
-`required` validation before submit. On submit: `completeForm` use case → `upsertProgressEvent({ status: 'autoApproved', formResponse })`. For the Profile Setup Mission: also calls `adapter.updatePlayer` with fields extracted from `formResponse`. Navigate back to cockpit on success.
+Full form state management with `useState<Record<string, string>>` for values, required-field validation. On submit: calls `adapter.upsertProgressEvent(playerRecordId, missionId, { status: 'autoApproved', formResponse })` directly (no `completeForm` use case — `upsertProgressEvent` is the single write path per C-05/C-14). Navigate back to cockpit on success.
 
-**Exit condition:** All three validation paths are demonstrable with mock data. QR code renders and encodes correctly. gmApprove auto-resolves after 4s via mock timeout. Form submission updates player profile.
+`FormShell` renders: back-to-dashboard button (← Dashboard), mission title, description paragraph, fields, Submit button, and Save for Later button (local-only draft; persistence across sessions is Phase 8 polish).
+
+**Note:** The strategy originally specified calling `adapter.updatePlayer` for Profile Setup missions to extract profile fields. This is not yet implemented — FormPage only calls `upsertProgressEvent`. Adding profile extraction is a Phase 5 tutorial dependency.
+
+**Exit condition:** All three validation paths are demonstrable with mock data. QR code renders and encodes correctly (using `encodeQRPayload` / `decodeQRPayload`). gmApprove auto-resolves after 4s via mock timeout. Form submission writes progress event and navigates back to cockpit.
 
 ---
 
@@ -346,8 +360,10 @@ Real data from mock adapter populates Phase 1's admin shell:
 - `PlayerProfileCard` — selected player's name, role, team, XP, milestone progress
 - `PendingApprovalsPanel` — lists all `status: 'pendingApproval'` events; each ApprovalRequestCard shows player name, mission title, timestamp; **Approve** button → `upsertProgressEvent({ status: 'completed', validatedBy, validatedAt })` → card removes → mock subscription fires on player side
 
-**6b. MilestoneMapEditor — drag wired**  
-Drag MilestoneNodes to reposition. On drag end: compute `xPercent = pixelX / containerWidth * 100`, `yPercent = pixelY / containerHeight * 100` → update local DraftMilestone state. GridOverlay toggle snaps to nearest 10% grid point. Changes are batched — not written to adapter until Save.
+**6b. MilestoneMapEditor — drag wired**
+Uses shared `MapViewport` (same pan/zoom foundation as player map). Drag `MilestoneNode` (already has `draggable` prop + `onDragEnd` callback) to reposition within the viewport canvas. On drag end: compute `xPercent = pixelX / containerWidth * 100`, `yPercent = pixelY / containerHeight * 100` → update local DraftMilestone state. GridOverlay toggle snaps to nearest 10% grid point. Changes are batched — not written to adapter until Save.
+
+**Current status:** `MilestoneMapEditor` already uses shared `MapViewport` with draggable nodes. The drag→position calculation and GridOverlay snap are not yet wired; SaveActions are not yet hooked to adapter.
 
 **6c. MilestoneSidebarEditor — wired**  
 Opens on MilestoneNode click. Edit milestone name. Add Mission button → creates `DraftMission` in local state. Mission list shows MissionCards in `editable=true` mode → click opens MissionEditor.
@@ -426,7 +442,7 @@ Game Maker shares a session URL (e.g., `?session=<id>`). Landing Page reads the 
 If Phases 0–7 were done correctly, Phase 8 is mechanical:
 - **PWA:** Add `vite-plugin-pwa` to `vite.config.ts` + manifest JSON. Workbox CacheFirst for static assets, NetworkFirst for API reads.
 - **QRScannerView camera:** `getUserMedia({ video: { facingMode: 'environment' } })` → canvas frame → `jsqr` decode → `qrPayload.ts` decode. The page shell and `ValidationResult` component already exist from Phase 1.
-- **AI chatbot:** Implement `useChatStream` → SSE fetch to `VITE_LITELLM_URL/chat/completions`, model `policy-assistant`. Chat sheet shell already exists from Phase 1 TopBar.
+- **AI chatbot:** Implement `useChatStream` → SSE fetch to `VITE_LITELLM_URL/chat/completions`, model `policy-assistant`. The [`ChatPanel`](src/components/player/ChatPanel.tsx) component shell already exists.
 - **Accessibility audit:** Run Lighthouse. The component shells built in Phase 1 should already have semantic HTML; fix any contrast, ARIA, or focus-trap issues found.
 
 If any of these feel non-trivial, a prior phase was incomplete.
@@ -440,7 +456,7 @@ Use this exact format when handing a phase to a coding agent:
 ```
 You are implementing Phase N of the MesseBuddy PWA prototype.
 
-SPEC AUTHORITY: ~/Projects/MesseBuddy/SPECS.md (copy: ~/Projects/MesseBuddy/SPECS.md)
+SPEC AUTHORITY: ~/Projects/messe-buddy-app/SPECS.md
 WIREFRAME AUTHORITY: ~/Projects/MesseBuddy/docs/MesseBuddy_Wireframe.html
 IMPLEMENTATION STRATEGY: ~/Projects/messe-buddy-app/plans/prototype-impl-strategy.md
 TARGET REPO: ~/Projects/messe-buddy-app/
@@ -452,6 +468,12 @@ EXIT CONDITION: [exact verifiable outcome from this document]
 
 Before writing any code: read the relevant sections of SPECS.md. Do not infer data shapes — use the spec's exact interface definitions.
 Visual guidance: open and inspect the wireframe HTML file to match layout, colors, and component appearance.
+
+Key invariants from current implementation:
+- Maps: both MilestoneMapViewer and MilestoneMapEditor use shared MapViewport (src/components/shared/MapViewport.tsx) for identical pan/zoom behaviour.
+- FormPage: wired with identity + adapter; uses FormShell (with description, Save for Later, back nav). No 'completeForm' use case — form submissions go through upsertProgressEvent directly.
+- QR payload utilities are at src/utils/qrPayload.ts, not src/lib/.
+- ChatPanel is a standalone component in src/components/player/, not part of TopBar.
 ```
 
 ---
