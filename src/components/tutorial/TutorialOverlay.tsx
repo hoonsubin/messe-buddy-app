@@ -2,8 +2,11 @@
 // Mounts when player.tutorialComplete === false.
 // Renders a dim backdrop, a dynamic highlight ring around the target element,
 // and a TutorialStep card.
+//
+// Phase 5 additions: auto-scrolls the highlighted element into view on step
+// change so the spotlight ring is always visible.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import TutorialStep from "./TutorialStep.tsx";
 import type { TutorialStepData } from "./tutorialSteps.ts";
 
@@ -20,9 +23,12 @@ interface TutorialOverlayProps {
   readonly isVisible: boolean;
   readonly currentStepIndex: number; // 0-based
   readonly steps: ReadonlyArray<TutorialStepData>;
+  readonly playerName?: string;
   readonly onNext: () => void;
   readonly onSkip: () => void;
 }
+
+const SCROLL_SETTLE_MS = 350;
 
 const TutorialOverlay = (props: TutorialOverlayProps) => {
   const step = props.steps[props.currentStepIndex] ??
@@ -32,6 +38,10 @@ const TutorialOverlay = (props: TutorialOverlayProps) => {
   const [highlightRect, setHighlightRect] = useState<HighlightRect | null>(
     null,
   );
+
+  // Guard against recalculating for the same selector + step combination
+  // across StrictMode double-fire.
+  const lastSelectorRef = useRef<string | undefined>(undefined);
 
   const recalcHighlight = useCallback(() => {
     const selector = step.targetSelector;
@@ -58,10 +68,29 @@ const TutorialOverlay = (props: TutorialOverlayProps) => {
   }, [step.targetSelector]);
 
   // Recompute on step change — defer via rAF to avoid sync setState in effect.
+  // Also auto-scroll the target element into view so the highlight ring is visible.
   useEffect(() => {
-    const raf = requestAnimationFrame(recalcHighlight);
+    const selector = step.targetSelector;
+
+    // Skip if this is the same selector we already processed (StrictMode guard).
+    if (selector === lastSelectorRef.current) return;
+    lastSelectorRef.current = selector;
+
+    const raf = requestAnimationFrame(() => {
+      recalcHighlight();
+
+      // Auto-scroll the highlighted element into view.
+      if (selector) {
+        const el = document.querySelector(selector);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          // Recalc the highlight position after scroll settles.
+          setTimeout(recalcHighlight, SCROLL_SETTLE_MS);
+        }
+      }
+    });
     return () => cancelAnimationFrame(raf);
-  }, [recalcHighlight]);
+  }, [recalcHighlight, step.targetSelector]);
 
   // Recompute on resize and scroll
   useEffect(() => {
@@ -139,6 +168,7 @@ export const TutorialOverlayWithStep = (props: TutorialOverlayProps) => {
       <TutorialOverlay {...props} />
       <TutorialStep
         step={step}
+        playerName={props.playerName}
         onNext={props.onNext}
         onSkip={props.onSkip}
       />

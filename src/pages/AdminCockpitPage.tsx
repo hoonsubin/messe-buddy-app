@@ -18,6 +18,7 @@ import { MISSION_TYPE } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { useIdentity } from "../hooks/useIdentity.ts";
 import { useSession } from "../hooks/useSession.ts";
+import { useScrollCollapse } from "../hooks/useScrollCollapse.ts";
 import { computeProgress } from "../use-cases/computeProgress.ts";
 import { deriveXP } from "../use-cases/deriveXP.ts";
 import { exportTemplate } from "../use-cases/exportTemplate.ts";
@@ -107,6 +108,12 @@ const AdminCockpitPage = () => {
 
   // Session data via hooks
   const { session, milestones, missions } = useSession(sid);
+
+  // ── Scroll-collapse for the map panel (mobile only) ────────────────────────
+  // The actual scroll container is the sidebar div (overflow-y: auto inside the
+  // grid 1fr row) — not the outer <main>, which never overflows.
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const mapCollapsed = useScrollCollapse(sidebarRef);
 
   // ── Resources (admin view — all resources, not filtered) ────────────────────
 
@@ -819,7 +826,9 @@ const AdminCockpitPage = () => {
       style={{
         display: "flex",
         flexDirection: "column",
-        minHeight: "100dvh",
+        height: "100dvh",
+        paddingTop: "var(--topbar-h)",
+        overflow: "hidden",
         background: "hsl(var(--color-bg))",
       }}
     >
@@ -906,6 +915,7 @@ const AdminCockpitPage = () => {
       {activeTab === ADMIN_TABS.ACTIVE_SESSION && (
         <main
           className="admin-layout"
+          data-map-collapsed={mapCollapsed ? "true" : undefined}
           style={{ flex: 1 }}
         >
           {/* Map canvas */}
@@ -941,7 +951,7 @@ const AdminCockpitPage = () => {
           </div>
 
           {/* Sidebar panels */}
-          <div className="admin-layout__sidebar">
+          <div ref={sidebarRef} className="admin-layout__sidebar">
             <SessionInviteCard sessionId={sid} />
             {players.length > 0 && (
               <PlayerSelectorDropdown
@@ -1000,6 +1010,7 @@ const AdminCockpitPage = () => {
         <main
           style={{
             flex: 1,
+            overflowY: "auto",
             padding: "var(--space-6) var(--space-4)",
             maxWidth: "40rem",
             marginInline: "auto",
@@ -1021,6 +1032,7 @@ const AdminCockpitPage = () => {
         <main
           style={{
             flex: 1,
+            overflowY: "auto",
             padding: "var(--space-6) var(--space-4)",
             maxWidth: "48rem",
             marginInline: "auto",

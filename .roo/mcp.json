@@ -4,7 +4,9 @@
 			"command": "npx",
 			"args": [
 				"-y",
-				"@playwright/mcp@latest", "--browser=firefox", "--device=iPhone 15"
+				"@playwright/mcp@latest",
+				"--browser=firefox",
+				"--device=iPhone 15"
 			],
 			"alwaysAllow": [
 				"browser_navigate",
@@ -19,7 +21,8 @@
 				"browser_tabs",
 				"browser_close",
 				"browser_fill_form",
-				"browser_evaluate"
+				"browser_evaluate",
+				"browser_select_option"
 			]
 		},
 		"searxng": {

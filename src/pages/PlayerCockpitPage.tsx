@@ -22,11 +22,43 @@ import {
   TutorialOverlayWithStep,
 } from "../components/tutorial/TutorialOverlay.tsx";
 
-// Profile Setup mission ID from mock data — used for tutorial Step 1 routing.
+// Profile Setup mission ID from mock data — used for tutorial final-step routing.
 const PROFILE_MISSION_ID = "mission_profile";
 
-// sessionStorage key for tracking tutorial state across form navigation.
+// The 0-based index of the Profile step within PLACEHOLDER_STEPS.
+// Profile is the final step (step 5 of 5 → index 4).
+const PROFILE_STEP_INDEX = 4;
+
+// sessionStorage keys for tutorial state.
 const TUTORIAL_FORM_KEY = "mb_tutorial_form_pending";
+const TUTORIAL_STEP_KEY = "mb_tutorial_step";
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+/** Reads a persisted tutorial step index from sessionStorage, or 0 if absent. */
+const readPersistedStep = (): number => {
+  try {
+    const raw = sessionStorage.getItem(TUTORIAL_STEP_KEY);
+    if (raw === null) return 0;
+    const parsed = parseInt(raw, 10);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+  } catch {
+    return 0;
+  }
+};
+
+/** Persists the current tutorial step index to sessionStorage. */
+const persistStep = (stepIndex: number): void => {
+  sessionStorage.setItem(TUTORIAL_STEP_KEY, String(stepIndex));
+};
+
+/** Clears all tutorial-related sessionStorage keys. */
+const clearTutorialStorage = (): void => {
+  sessionStorage.removeItem(TUTORIAL_FORM_KEY);
+  sessionStorage.removeItem(TUTORIAL_STEP_KEY);
+};
+
+// ── Page ───────────────────────────────────────────────────────────────────────
 
 const PlayerCockpitPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -44,10 +76,11 @@ const PlayerCockpitPage = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
 
-  // On mount, check if tutorial should be shown.
-  // Also handles form round-trip: if sessionStorage has a pending tutorial
-  // marker, restore the tutorial state and advance past step 1 if profile
-  // is now complete.
+  // On mount, resolve player and determine tutorial state.
+  // Priority:
+  //   1. Form round-trip (mb_tutorial_form_pending)
+  //   2. Persisted step (mb_tutorial_step) — if tutorial not yet complete
+  //   3. Fresh start (step 0)
   useEffect(() => {
     let cancelled = false;
 
@@ -63,22 +96,30 @@ const PlayerCockpitPage = () => {
         if (cancelled) return;
         setPlayer(p);
 
-        // Check for pending tutorial form round-trip.
+        // Priority 1 — Form round-trip from the profile step.
         const formPending = sessionStorage.getItem(TUTORIAL_FORM_KEY);
         if (formPending !== null) {
           sessionStorage.removeItem(TUTORIAL_FORM_KEY);
-          // We were on step 1 (Profile) before navigating to the form.
-          // If profile is now complete, advance to step 2; otherwise stay.
           if (p?.profileComplete) {
-            setShowTutorial(true);
-            setTutorialStep(2);
+            // Profile submitted successfully — tutorial is done.
+            // FormPage already sets tutorialComplete on the record;
+            // we just need to dismiss the overlay and clean up.
+            clearTutorialStorage();
+            // showTutorial stays false — no overlay.
           } else {
+            // User navigated back without submitting — resume at profile step.
             setShowTutorial(true);
-            setTutorialStep(1);
+            setTutorialStep(PROFILE_STEP_INDEX);
+            persistStep(PROFILE_STEP_INDEX);
           }
-        } else if (p && !p.tutorialComplete) {
+          return;
+        }
+
+        // Priority 2 — Persisted step (page reload mid-tutorial).
+        if (p && !p.tutorialComplete) {
+          const persisted = readPersistedStep();
           setShowTutorial(true);
-          setTutorialStep(0);
+          setTutorialStep(persisted);
         }
         // If tutorialComplete === true, showTutorial stays false — no overlay.
       } catch (e) {
@@ -165,46 +206,38 @@ const PlayerCockpitPage = () => {
 
   // ── Tutorial handlers ──────────────────────────────────────────────────
 
-  // Step forward: if on step 1 (Profile), navigate to the profile form first.
-  // For all other steps, advance the tutorial step.
-  // For step 4 (Resources, index 4), mark tutorial complete.
+  // Step forward.
+  // Profile step (index 4): navigate to the profile form.
+  // All other steps: advance within the tutorial overlay.
   const handleTutorialNext = useCallback(() => {
-    if (tutorialStep === 1) {
-      // Save current tutorial state before navigating to form.
+    if (tutorialStep === PROFILE_STEP_INDEX) {
+      // Save tutorial state before navigating to the form.
       sessionStorage.setItem(TUTORIAL_FORM_KEY, "1");
       navigate(`/form/${PROFILE_MISSION_ID}`);
       return;
     }
 
     const nextStep = tutorialStep + 1;
-    if (nextStep >= PLACEHOLDER_STEPS.length) {
-      // Final step completed — mark tutorial as done.
-      if (playerId) {
-        adapter.updatePlayer(playerId, { tutorialComplete: true }).catch(
-          () => {
-            // Silent failure — user can continue anyway
-          },
-        );
-      }
-      setShowTutorial(false);
-      return;
-    }
+    // Safety: if we somehow reach beyond the steps array, stay put.
+    if (nextStep >= PLACEHOLDER_STEPS.length) return;
 
     setTutorialStep(nextStep);
-  }, [tutorialStep, playerId, adapter, navigate]);
+    persistStep(nextStep);
+  }, [tutorialStep, navigate]);
 
   // Skip tutorial — show confirmation dialog first.
   const handleTutorialSkip = useCallback(() => {
     setShowSkipConfirm(true);
   }, []);
 
-  // Confirm skip: persist tutorialComplete and dismiss.
+  // Confirm skip: persist tutorialComplete, clear storage, dismiss.
   const handleSkipConfirm = useCallback(() => {
     if (playerId) {
       adapter.updatePlayer(playerId, { tutorialComplete: true }).catch(() => {
         // Silent failure
       });
     }
+    clearTutorialStorage();
     setShowSkipConfirm(false);
     setShowTutorial(false);
   }, [playerId, adapter]);
@@ -216,8 +249,6 @@ const PlayerCockpitPage = () => {
 
   // ── Mission click handler ──────────────────────────────────────────────
   // Routes to the appropriate view based on mission type and completion status.
-  // Completed FORM missions open MissionDetailPopup (shows disabled state) rather
-  // than re-opening the form.
   const handleMissionClick = useCallback(
     (missionId: string) => {
       const mission = missions.find((m) => m.id === missionId);
@@ -228,7 +259,7 @@ const PlayerCockpitPage = () => {
         progress?.status === "completed";
 
       if (mission.type === MISSION_TYPE.FORM && !isCompleted) {
-        // If tutorial is active and we're clicking the profile mission,
+        // If tutorial is active and this is the profile mission,
         // store tutorial state so we resume on return.
         if (showTutorial && missionId === PROFILE_MISSION_ID) {
           sessionStorage.setItem(TUTORIAL_FORM_KEY, "1");
@@ -330,6 +361,7 @@ const PlayerCockpitPage = () => {
         isVisible={showTutorial}
         currentStepIndex={tutorialStep}
         steps={PLACEHOLDER_STEPS}
+        playerName={player?.name}
         onNext={handleTutorialNext}
         onSkip={handleTutorialSkip}
       />

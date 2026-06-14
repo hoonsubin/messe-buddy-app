@@ -322,16 +322,6 @@ const upsertProgressEvent = async (
     simulateGmApproval(key);
   }
 
-  // Tutorial support: when the profile form is submitted, mark
-  // profileComplete on the player so the tutorial can advance past step 1.
-  if (
-    missionId === "mission_profile" &&
-    event.status === "autoApproved" &&
-    player
-  ) {
-    players.set(playerId, { ...player, profileComplete: true });
-  }
-
   return event;
 };
 

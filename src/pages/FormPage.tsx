@@ -148,6 +148,60 @@ const FormPage = () => {
         formResponse: values,
       });
 
+      // When the profile form is submitted, mirror the relevant fields
+      // to the Player record so the TopBar, BuddyCard, and tutorial
+      // Welcome step show the player's actual name and role.
+      // Also mark profileComplete and tutorialComplete since the profile
+      // step is the final tutorial step (Phase 5).
+      if (missionId === "mission_profile") {
+        // Build a mutable patch object — Player fields are readonly so
+        // we construct with a Record<string, unknown> and cast at the call site.
+        const patch: Record<string, unknown> = {
+          profileComplete: true,
+          tutorialComplete: true,
+        };
+
+        if (values.name) patch["name"] = values.name;
+        if (values.preferredName !== undefined) {
+          patch["preferredName"] = values.preferredName || undefined;
+        }
+        if (values.pronouns !== undefined) {
+          patch["pronouns"] = values.pronouns || undefined;
+        }
+        if (values.role) patch["role"] = values.role;
+        if (values.team) patch["team"] = values.team;
+        if (values.location) patch["location"] = values.location;
+        if (values.timezone) patch["timezone"] = values.timezone;
+        if (values.workArrangement) {
+          patch["workStyle"] = values.workArrangement;
+        }
+        if (values.languages) {
+          patch["languages"] = values.languages
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+        if (values.skillsConfident) {
+          patch["skillsConfident"] = values.skillsConfident
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+        if (values.catchUpAreas) {
+          patch["skillsDevelop"] = values.catchUpAreas
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+
+        // Cast through unknown — updatePlayer accepts Partial<Omit<Player, keyof PBRecord>>
+        // and the runtime adapter applies only the provided keys.
+        await adapter.updatePlayer(
+          player.id,
+          patch as unknown as Partial<Omit<Player, "id" | "created" | "updated">>,
+        );
+      }
+
       // Navigate back to cockpit after successful submission
       if (sessionId) {
         navigate(`/session/${sessionId}`, { replace: true });

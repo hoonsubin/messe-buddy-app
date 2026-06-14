@@ -1330,10 +1330,39 @@ textarea.form-input {
 
 .admin-layout__map {
   order: -1;            /* map first on mobile */
-  min-height: 40svh;
+  height: 40svh;        /* explicit height enables CSS transition */
+  min-height: 0;        /* allow shrinking below 40svh when collapsed */
   position: relative;
   overflow: hidden;
   border-bottom: 1px solid hsl(var(--color-border));
+  transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: height;
+}
+
+/* Collapsed state — triggered by useScrollCollapse on the parent */
+.admin-layout[data-map-collapsed="true"] .admin-layout__map {
+  height: 20svh;
+}
+
+/* Gradient veil that fades in when map is collapsed, signalling "minimised" */
+.admin-layout__map::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 60%;
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--color-bg) / 0) 0%,
+    hsl(var(--color-bg) / 0.7) 100%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-layout[data-map-collapsed="true"] .admin-layout__map::after {
+  opacity: 1;
 }
 
 .admin-layout__sidebar {
@@ -1420,9 +1449,21 @@ textarea.form-input {
 
   .admin-layout__map {
     order: 1;           /* map is second column (right) on desktop */
+    height: 100%;       /* fill the grid cell */
+    min-height: unset;
     border-bottom: none;
     border-left: 1px solid hsl(var(--color-border));
-    min-height: unset;
+    transition: none;   /* no collapse animation on desktop */
+  }
+
+  /* Disable collapse on desktop — scrollTop won't change but be defensive */
+  .admin-layout[data-map-collapsed="true"] .admin-layout__map {
+    height: 100%;
+  }
+
+  /* Disable gradient veil on desktop */
+  .admin-layout__map::after {
+    display: none;
   }
 
   .admin-layout__sidebar {

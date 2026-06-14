@@ -1,6 +1,8 @@
 // Tutorial step definitions — shared between TutorialOverlay and PlayerCockpitPage.
 // Each step highlights a target region via `targetSelector` (CSS selector) and
 // renders an instructional card anchored near the highlight ring.
+//
+// Flow: Welcome → Map → Buddy → Resources → Profile (completes tutorial)
 
 export interface TutorialStepData {
   readonly stepNumber: number; // 1-based display index
@@ -12,6 +14,7 @@ export interface TutorialStepData {
 }
 
 export const PLACEHOLDER_STEPS: ReadonlyArray<TutorialStepData> = [
+  // Step 1 — Welcome (no highlight)
   {
     stepNumber: 1,
     totalSteps: 5,
@@ -21,17 +24,9 @@ export const PLACEHOLDER_STEPS: ReadonlyArray<TutorialStepData> = [
     ctaLabel: "Let's start",
     targetSelector: undefined,
   },
+  // Step 2 — The Journey Map
   {
     stepNumber: 2,
-    totalSteps: 5,
-    title: "Your Profile",
-    body:
-      "First, tell us a bit about yourself. Your buddy and team will use this to get to know you.",
-    ctaLabel: "Set up profile",
-    targetSelector: '[data-testid="current-missions-list"]',
-  },
-  {
-    stepNumber: 3,
     totalSteps: 5,
     title: "The Journey Map",
     body:
@@ -39,8 +34,9 @@ export const PLACEHOLDER_STEPS: ReadonlyArray<TutorialStepData> = [
     ctaLabel: "Got it",
     targetSelector: '[data-testid="milestone-map-viewer"]',
   },
+  // Step 3 — Your Buddy
   {
-    stepNumber: 4,
+    stepNumber: 3,
     totalSteps: 5,
     title: "Your Buddy",
     body:
@@ -48,13 +44,24 @@ export const PLACEHOLDER_STEPS: ReadonlyArray<TutorialStepData> = [
     ctaLabel: "Got it",
     targetSelector: ".buddy-card",
   },
+  // Step 4 — Resources & AI Q&A
   {
-    stepNumber: 5,
+    stepNumber: 4,
     totalSteps: 5,
     title: "Resources & AI Q&A",
     body:
       "Browse hand-picked resources for your first weeks. Have a question? Use the AI Q&A tab — it's trained on company policies and can give you instant answers.",
-    ctaLabel: "Start exploring",
+    ctaLabel: "Got it",
     targetSelector: ".resources-chat",
+  },
+  // Step 5 — Complete Your Profile (final step — submitting the form completes the tutorial)
+  {
+    stepNumber: 5,
+    totalSteps: 5,
+    title: "Complete Your Profile",
+    body:
+      "Now let's set up your profile. Your buddy and team will use this to get to know you. Click the mandatory Profile Setup mission below — it only takes a few minutes.",
+    ctaLabel: "Set up profile",
+    targetSelector: '[data-testid="current-missions-list"]',
   },
 ];
