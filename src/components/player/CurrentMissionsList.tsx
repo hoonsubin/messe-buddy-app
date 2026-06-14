@@ -16,7 +16,14 @@ interface CurrentMissionsListProps {
 
 /** Extracts the first plain-text sentence from a markdown body string. */
 const firstSentence = (body: string): string => {
-  const plain = body.replace(/^#+\s+.*$/m, "").trim();
+  const plain = body
+    .replace(/^#+\s+.*$/gm, "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/`(.+?)`/g, "$1")
+    .replace(/\[(.+?)\]\(.+?\)/g, "$1")
+    .replace(/^>\s*(.*)$/gm, "$1")
+    .trim();
   const sentence = plain.split(/\n|\.(?:\s|$)/)[0] ?? "";
   return sentence.trim();
 };

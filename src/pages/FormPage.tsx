@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import type { FormSchema, Mission, Player } from "../types/index.ts";
+import type { FormSchema, Player } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { useIdentity } from "../hooks/useIdentity.ts";
+import { useSession } from "../hooks/useSession.ts";
+import { usePlayerProgress } from "../hooks/usePlayerProgress.ts";
 import TopBar from "../components/shared/TopBar.tsx";
 import FormShell from "../components/form/FormShell.tsx";
 
@@ -40,33 +42,21 @@ const FormPage = () => {
     };
   }, [adapter, identity]);
 
-  // Fetch mission details from session missions list
-  const [mission, setMission] = useState<Mission | null>(null);
-  const [missionLoading, setMissionLoading] = useState(true);
+  // Fetch session data (missions + milestones) via shared hook
+  const {
+    milestones,
+    missions: sessionMissions,
+    loading: sessionLoading,
+  } = useSession(sessionId);
 
-  useEffect(() => {
-    if (!sessionId || !missionId) {
-      setMissionLoading(false);
-      return;
-    }
-    let cancelled = false;
-    const fetch = async () => {
-      try {
-        const allMissions = await adapter.listMissions(sessionId);
-        if (!cancelled) {
-          setMission(allMissions.find((m) => m.id === missionId) ?? null);
-        }
-      } catch {
-        // Mission lookup failed
-      } finally {
-        if (!cancelled) setMissionLoading(false);
-      }
-    };
-    void fetch();
-    return () => {
-      cancelled = true;
-    };
-  }, [adapter, sessionId, missionId]);
+  const mission = sessionMissions.find((m) => m.id === missionId) ?? null;
+
+  // Derive real player XP from progress events
+  const { playerProgress } = usePlayerProgress(
+    player?.id ?? "",
+    milestones,
+    sessionMissions,
+  );
 
   // Form schema from adapter
   const [formSchema, setFormSchema] = useState<FormSchema | null>(null);
@@ -205,7 +195,7 @@ const FormPage = () => {
   }
 
   // Loading state
-  const isLoading = playerLoading || missionLoading || schemaLoading;
+  const isLoading = playerLoading || sessionLoading || schemaLoading;
   if (isLoading) {
     return (
       <div
@@ -304,7 +294,7 @@ const FormPage = () => {
     >
       <TopBar
         playerName={player?.name || (identity.uid.slice(0, 6))}
-        totalXP={0}
+        totalXP={playerProgress?.totalXP ?? 0}
         role="player"
       />
 

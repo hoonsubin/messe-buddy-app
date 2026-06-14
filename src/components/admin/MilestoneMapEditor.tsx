@@ -1,7 +1,6 @@
 import type { Milestone } from "../../types/index.ts";
 import MapViewport from "../shared/MapViewport.tsx";
 import MilestoneNode from "../shared/MilestoneNode.tsx";
-import BackgroundImageUploader from "./BackgroundImageUploader.tsx";
 import GridOverlay, { GridToggleButton } from "./GridOverlay.tsx";
 
 interface MilestoneMapEditorProps {
@@ -20,11 +19,6 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => (
     data-testid="milestone-map-editor"
     style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}
   >
-    <BackgroundImageUploader
-      currentImageUrl={props.bgImageUrl}
-      onUpload={props.onUploadBackground}
-    />
-
     <MapViewport
       bgImageUrl={props.bgImageUrl}
       testId="milestone-map-editor-viewport"

@@ -128,14 +128,8 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Header row: method badge + close button */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+        {/* Fixed header: method badge + close button */}
+        <div className="modal__header">
           <span
             className={`mission-method-badge ${methodBadge.className}`}
             aria-label={methodBadge.label}
@@ -153,122 +147,116 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
           </button>
         </div>
 
-        {/* Title */}
-        <h2
-          id="mission-popup-title"
-          style={{
-            margin: "var(--space-3) 0 0",
-            fontSize: "var(--text-xl)",
-            fontWeight: "var(--weight-semibold)",
-            lineHeight: "var(--leading-tight)",
-          }}
-        >
-          {mission.title}
-        </h2>
+        {/* Scrollable body */}
+        <div className="modal__body">
+          {/* Title */}
+          <h2
+            id="mission-popup-title"
+            style={{
+              margin: "0 0 var(--space-3)",
+              fontSize: "var(--text-xl)",
+              fontWeight: "var(--weight-semibold)",
+              lineHeight: "var(--leading-tight)",
+            }}
+          >
+            {mission.title}
+          </h2>
 
-        {/* Meta row: XP + tags */}
-        <div
-          style={{
-            display: "flex",
-            gap: "var(--space-2)",
-            flexWrap: "wrap",
-            marginTop: "var(--space-3)",
-          }}
-        >
-          <XPBadge value={mission.xpValue} />
-          {mission.tags.map((t) => (
-            <TagBadge key={t} label={t} variant={t} />
-          ))}
-        </div>
-
-        {/* QR context hint — shown before the user triggers validation */}
-        {mission.validationMethod === "qr" && !showValidation && !isCompleted && (
+          {/* Meta row: XP + tags */}
           <div
             style={{
-              marginTop: "var(--space-4)",
-              padding: "var(--space-3)",
-              background: "hsl(var(--color-status-progress) / 0.08)",
-              borderRadius: "var(--radius-md)",
               display: "flex",
-              alignItems: "center",
               gap: "var(--space-2)",
-              fontSize: "var(--text-xs)",
-              color: "hsl(var(--color-status-progress))",
-              fontWeight: "var(--weight-medium)",
+              flexWrap: "wrap",
+              marginBottom: "var(--space-4)",
             }}
           >
-            <MdQrCode2 size={16} aria-hidden="true" />
-            Your buddy or Game Master will scan a QR code to confirm this.
+            <XPBadge value={mission.xpValue} />
+            {mission.tags.map((t) => (
+              <TagBadge key={t} label={t} variant={t} />
+            ))}
           </div>
-        )}
 
-        {/* Body — rendered as Markdown for text missions */}
-        {bodyHtml && !isLink && (
-          <div
-            className="prose"
-            style={{ marginTop: "var(--space-4)" }}
-            // eslint-disable-next-line react/no-danger
-            dangerouslySetInnerHTML={{ __html: bodyHtml }}
-          />
-        )}
-
-        {/* Link missions — show external URL + open button */}
-        {isLink && mission.externalUrl && (
-          <div
-            style={{
-              marginTop: "var(--space-4)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--space-3)",
-            }}
-          >
-            {bodyHtml && (
-              <div
-                className="prose"
-                dangerouslySetInnerHTML={{ __html: bodyHtml }}
-              />
-            )}
-            <a
-              href={mission.externalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn--secondary"
+          {/* QR context hint — shown before the user triggers validation */}
+          {mission.validationMethod === "qr" && !showValidation && !isCompleted && (
+            <div
               style={{
-                display: "inline-flex",
+                marginBottom: "var(--space-4)",
+                padding: "var(--space-3)",
+                background: "hsl(var(--color-status-progress) / 0.08)",
+                borderRadius: "var(--radius-md)",
+                display: "flex",
                 alignItems: "center",
                 gap: "var(--space-2)",
-                alignSelf: "flex-start",
+                fontSize: "var(--text-xs)",
+                color: "hsl(var(--color-status-progress))",
+                fontWeight: "var(--weight-medium)",
               }}
             >
-              <MdOpenInNew size={16} aria-hidden="true" />
-              Open Link
-            </a>
-          </div>
-        )}
+              <MdQrCode2 size={16} aria-hidden="true" />
+              Your buddy or Game Master will scan a QR code to confirm this.
+            </div>
+          )}
 
-        {/* Validation display (gmApprove / qr) mounts here once triggered */}
-        {showValidation && (
-          <div style={{ marginTop: "var(--space-4)" }}>
-            <ValidationDisplay
-              playerId={props.playerId}
-              missionId={mission.id}
-              sessionId={props.sessionId}
-              mission={mission}
-              onValidated={props.onValidated}
+          {/* Body — rendered as Markdown for text missions */}
+          {bodyHtml && !isLink && (
+            <div
+              className="prose"
+              // eslint-disable-next-line react/no-danger
+              dangerouslySetInnerHTML={{ __html: bodyHtml }}
             />
-          </div>
-        )}
+          )}
 
-        {/* Footer actions */}
+          {/* Link missions — show external URL + open button */}
+          {isLink && mission.externalUrl && (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--space-3)",
+              }}
+            >
+              {bodyHtml && (
+                <div
+                  className="prose"
+                  dangerouslySetInnerHTML={{ __html: bodyHtml }}
+                />
+              )}
+              <a
+                href={mission.externalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn--secondary"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "var(--space-2)",
+                  alignSelf: "flex-start",
+                }}
+              >
+                <MdOpenInNew size={16} aria-hidden="true" />
+                Open Link
+              </a>
+            </div>
+          )}
+
+          {/* Validation display (gmApprove / qr) mounts here once triggered */}
+          {showValidation && (
+            <div style={{ marginTop: "var(--space-4)" }}>
+              <ValidationDisplay
+                playerId={props.playerId}
+                missionId={mission.id}
+                sessionId={props.sessionId}
+                mission={mission}
+                onValidated={props.onValidated}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Fixed footer: action buttons */}
         {!showValidation && (
-          <div
-            style={{
-              marginTop: "var(--space-6)",
-              display: "flex",
-              gap: "var(--space-3)",
-              justifyContent: "flex-end",
-            }}
-          >
+          <div className="modal__footer">
             <button
               type="button"
               className="btn btn--ghost"

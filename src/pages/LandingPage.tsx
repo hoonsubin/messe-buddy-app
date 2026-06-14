@@ -20,7 +20,7 @@ type Status = "idle" | "loading" | "error";
 const LandingPage = () => {
   const navigate = useNavigate();
   const adapter = useAdapter();
-  const { identity } = useIdentity();
+  const { identity, setIdentity } = useIdentity();
 
   const [view, setView] = useState<View>("role-select");
   const [status, setStatus] = useState<Status>("idle");

@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import type { FormSchema, Player, ProgressEvent } from "../types/index.ts";
+import type {
+  FormSchema,
+  Milestone,
+  Player,
+  ProgressEvent,
+} from "../types/index.ts";
 import { MISSION_TYPE } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { useIdentity } from "../hooks/useIdentity.ts";
@@ -66,6 +71,11 @@ const AdminCockpitPage = () => {
 
   const selectedPlayer = players.find((p) => p.id === selectedPlayerId) ??
     null;
+
+  // Selected milestone (opens MilestoneSidebarEditor)
+  const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(
+    null,
+  );
 
   // ── Approval handlers ────────────────────────────────────────────────────
 
@@ -164,7 +174,10 @@ const AdminCockpitPage = () => {
           <MilestoneMapEditor
             milestones={milestones}
             bgImageUrl={session?.bgImageUrl ?? ""}
-            onMilestoneClick={() => undefined}
+            onMilestoneClick={(id) =>
+              setSelectedMilestone(
+                milestones.find((m) => m.id === id) ?? null,
+              )}
             onNodeDrop={() => undefined}
             onAddMilestone={() => undefined}
             onRename={() => undefined}
@@ -221,7 +234,7 @@ const AdminCockpitPage = () => {
 
       {/* Milestone/mission editor sidebar — hidden until milestone selected */}
       <MilestoneSidebarEditor
-        milestone={null}
+        milestone={selectedMilestone}
         missions={missions}
         activeMissionId={null}
         draft={null}
@@ -231,7 +244,7 @@ const AdminCockpitPage = () => {
         onDraftChange={() => undefined}
         onSave={() => undefined}
         onSaveAsTemplate={() => setSaveTemplateOpen(true)}
-        onDiscard={() => undefined}
+        onDiscard={() => setSelectedMilestone(null)}
         onAddMission={() => undefined}
       />
 

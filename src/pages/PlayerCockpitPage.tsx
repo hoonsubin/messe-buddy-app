@@ -66,11 +66,12 @@ const PlayerCockpitPage = () => {
   } = useSession(sessionId ?? "");
 
   const { buddy } = useBuddy(playerId);
-  const { playerProgress, progressEvents } = usePlayerProgress(
-    playerId,
-    milestones,
-    missions,
-  );
+  const { playerProgress, progressEvents, refresh: refreshProgress } =
+    usePlayerProgress(
+      playerId,
+      milestones,
+      missions,
+    );
   const { resources } = useResources(sessionId ?? "");
 
   // Sidebar state
@@ -99,20 +100,26 @@ const PlayerCockpitPage = () => {
     : undefined;
 
   // ── Mission click handler ──────────────────────────────────────────────
-  // Routes to the appropriate view based on mission type.
+  // Routes to the appropriate view based on mission type and completion status.
+  // Completed FORM missions open MissionDetailPopup (shows disabled state) rather
+  // than re-opening the form.
   const handleMissionClick = useCallback(
     (missionId: string) => {
       const mission = missions.find((m) => m.id === missionId);
       if (!mission) return;
 
-      if (mission.type === MISSION_TYPE.FORM) {
+      const progress = progressEvents.find((e) => e.missionId === missionId);
+      const isCompleted =
+        progress?.status === "autoApproved" ||
+        progress?.status === "completed";
+
+      if (mission.type === MISSION_TYPE.FORM && !isCompleted) {
         navigate(`/form/${missionId}`);
       } else {
-        // text / link missions open MissionDetailPopup
         setPopupMission(mission);
       }
     },
-    [missions, navigate],
+    [missions, progressEvents, navigate],
   );
 
   // Sidebar mission click — same routing logic
@@ -121,13 +128,18 @@ const PlayerCockpitPage = () => {
       const mission = missions.find((m) => m.id === missionId);
       if (!mission) return;
 
-      if (mission.type === MISSION_TYPE.FORM) {
+      const progress = progressEvents.find((e) => e.missionId === missionId);
+      const isCompleted =
+        progress?.status === "autoApproved" ||
+        progress?.status === "completed";
+
+      if (mission.type === MISSION_TYPE.FORM && !isCompleted) {
         navigate(`/form/${missionId}`);
       } else {
         setPopupMission(mission);
       }
     },
-    [missions, navigate],
+    [missions, progressEvents, navigate],
   );
 
   // Loading state
@@ -211,7 +223,10 @@ const PlayerCockpitPage = () => {
             progressEvents.find((e) => e.missionId === popupMission.id) ?? null
           }
           onClose={() => setPopupMission(null)}
-          onValidated={() => setPopupMission(null)}
+          onValidated={() => {
+            setPopupMission(null);
+            refreshProgress();
+          }}
         />
       )}
 
