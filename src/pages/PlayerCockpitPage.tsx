@@ -185,7 +185,6 @@ const PlayerCockpitPage = () => {
         >
           {/* Your Buddy */}
           <section aria-label="Your buddy">
-            <h2 className="section-label">Your Buddy</h2>
             <BuddyCard
               name={BUDDY.name}
               role={BUDDY.role}
@@ -202,7 +201,6 @@ const PlayerCockpitPage = () => {
 
           {/* Resources */}
           <section aria-label="Resources">
-            <h2 className="section-label">Resources</h2>
             <ResourcesSection
               resources={visibleResources}
               onSearch={() => undefined}

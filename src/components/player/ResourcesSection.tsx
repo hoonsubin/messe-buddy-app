@@ -4,6 +4,7 @@ import {
   MdDescription,
   MdEditNote,
   MdLink,
+  MdSearch,
   MdVideocam,
 } from "react-icons/md";
 import type { Resource } from "../../types/index.ts";
@@ -15,23 +16,26 @@ interface ResourcesSectionProps {
 
 const typeIcon = (type: string) => {
   switch (type) {
-    case "document": return <MdDescription size={18} aria-hidden="true" />;
-    case "guide": return <MdAssignment size={18} aria-hidden="true" />;
-    case "video": return <MdVideocam size={18} aria-hidden="true" />;
-    case "form": return <MdEditNote size={18} aria-hidden="true" />;
-    default: return <MdLink size={18} aria-hidden="true" />;
+    case "document":
+      return <MdDescription size={18} aria-hidden="true" />;
+    case "guide":
+      return <MdAssignment size={18} aria-hidden="true" />;
+    case "video":
+      return <MdVideocam size={18} aria-hidden="true" />;
+    case "form":
+      return <MdEditNote size={18} aria-hidden="true" />;
+    default:
+      return <MdLink size={18} aria-hidden="true" />;
   }
 };
-
-const typeLabel = (type: string): string =>
-  type.charAt(0).toUpperCase() + type.slice(1);
 
 const ResourcesSection = (props: ResourcesSectionProps) => {
   const [query, setQuery] = useState("");
 
   const filtered = query.trim()
     ? props.resources.filter((r) =>
-      r.title.toLowerCase().includes(query.toLowerCase())
+      r.title.toLowerCase().includes(query.toLowerCase()) ||
+      (r.description?.toLowerCase().includes(query.toLowerCase()) ?? false)
     )
     : props.resources;
 
@@ -42,18 +46,22 @@ const ResourcesSection = (props: ResourcesSectionProps) => {
 
   return (
     <div className="resources-section" data-testid="resources-section">
-      {/* Search bar */}
-      <input
-        type="search"
-        className="form-input"
-        placeholder="Search resources…"
-        value={query}
-        onChange={handleSearch}
-        aria-label="Search resources"
-        style={{ marginBottom: "var(--space-3)" }}
-      />
+      <p className="section-label" style={{ margin: 0 }}>Resources</p>
 
-      {/* 2-column grid */}
+      {/* Search bar */}
+      <div className="search-bar" role="search">
+        <MdSearch size={16} aria-hidden="true" />
+        <input
+          type="search"
+          className="search-bar__input"
+          placeholder="Search resources…"
+          value={query}
+          onChange={handleSearch}
+          aria-label="Search resources"
+        />
+      </div>
+
+      {/* Responsive grid: 2-col on ≥640px, 1-col on mobile */}
       <div className="resources-grid">
         {filtered.map((r) => (
           <a
@@ -67,8 +75,12 @@ const ResourcesSection = (props: ResourcesSectionProps) => {
             <div className="resource-card__icon" aria-hidden="true">
               {typeIcon(r.type)}
             </div>
-            <span className="resource-card__title">{r.title}</span>
-            <span className="resource-card__type">{typeLabel(r.type)}</span>
+            <div className="resource-card__body">
+              <span className="resource-card__title">{r.title}</span>
+              {r.description !== undefined && (
+                <span className="resource-card__desc">{r.description}</span>
+              )}
+            </div>
           </a>
         ))}
       </div>

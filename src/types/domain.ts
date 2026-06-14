@@ -100,6 +100,7 @@ export interface ProgressEvent extends PBRecord {
 export interface Resource extends PBRecord {
   readonly sessionId: string;
   readonly title: string;
+  readonly description?: string;
   readonly type: ResourceType;
   readonly url: string;
   readonly isVisibleToPlayer: boolean;

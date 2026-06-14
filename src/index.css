@@ -820,11 +820,44 @@ textarea.form-input {
   color: hsl(var(--color-primary));
 }
 
-/* ── Resources grid ──────────────────────────────────────────────────────── */
+/* ── Resources section container ─────────────────────────────────────────── */
+.resources-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background-color: hsl(var(--color-card));
+  border: 1px solid hsl(var(--color-border));
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Resources grid — 1 col on mobile, 2 col on wider viewports ──────────── */
 .resources-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+}
+
+@media (min-width: 640px) {
+  .resources-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Resource card body (title + description stacked) */
+.resource-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+  min-width: 0;
+}
+
+.resource-card__desc {
+  font-size: var(--text-xs);
+  color: hsl(var(--color-muted-fg));
+  line-height: var(--leading-snug);
 }
 
 /* ── Validation states ───────────────────────────────────────────────────── */

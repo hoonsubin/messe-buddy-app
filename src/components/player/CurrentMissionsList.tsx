@@ -1,4 +1,9 @@
-import { MdBolt, MdCalendarToday, MdCheck, MdChevronRight } from "react-icons/md";
+import {
+  MdBolt,
+  MdCalendarToday,
+  MdCheck,
+  MdChevronRight,
+} from "react-icons/md";
 import type { Mission, ProgressEvent } from "../../types/index.ts";
 import TagBadge from "../shared/TagBadge.tsx";
 
@@ -76,7 +81,10 @@ const CurrentMissionsList = (props: CurrentMissionsListProps) => {
                     <MdCalendarToday
                       size={12}
                       aria-hidden="true"
-                      style={{ verticalAlign: "middle", marginRight: "0.25rem" }}
+                      style={{
+                        verticalAlign: "middle",
+                        marginRight: "0.25rem",
+                      }}
                     />
                     {mission.suggestedDueDate}
                   </p>

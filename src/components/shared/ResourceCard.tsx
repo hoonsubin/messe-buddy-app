@@ -3,6 +3,7 @@ import { MdDescription } from "react-icons/md";
 
 interface ResourceCardProps {
   readonly title: string;
+  readonly description?: string;
   readonly type: string;
   readonly url: string;
 }
@@ -15,9 +16,15 @@ const ResourceCard = (props: ResourceCardProps) => (
     rel="noopener noreferrer"
     data-testid="resource-card"
   >
-    <div className="resource-card__icon" aria-hidden="true"><MdDescription size={20} /></div>
-    <span className="resource-card__title">{props.title}</span>
-    <span className="resource-card__type">{props.type}</span>
+    <div className="resource-card__icon" aria-hidden="true">
+      <MdDescription size={20} />
+    </div>
+    <div className="resource-card__body">
+      <span className="resource-card__title">{props.title}</span>
+      {props.description !== undefined && (
+        <span className="resource-card__desc">{props.description}</span>
+      )}
+    </div>
   </a>
 );
 

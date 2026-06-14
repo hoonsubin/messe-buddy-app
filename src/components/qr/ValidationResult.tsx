@@ -1,5 +1,10 @@
 // Phase 1 shell — shows scan result (success / invalid / error). Logic wired in Phase 5.
-import { MdCheck, MdClose, MdError, MdRadioButtonUnchecked } from "react-icons/md";
+import {
+  MdCheck,
+  MdClose,
+  MdError,
+  MdRadioButtonUnchecked,
+} from "react-icons/md";
 
 type ValidationState = "idle" | "success" | "invalid" | "error";
 
@@ -21,10 +26,14 @@ const STATE_CONFIG: Record<
 
 const getStateIcon = (state: ValidationState) => {
   switch (state) {
-    case "success": return MdCheck;
-    case "invalid": return MdClose;
-    case "error": return MdError;
-    case "idle": return MdRadioButtonUnchecked;
+    case "success":
+      return MdCheck;
+    case "invalid":
+      return MdClose;
+    case "error":
+      return MdError;
+    case "idle":
+      return MdRadioButtonUnchecked;
   }
 };
 

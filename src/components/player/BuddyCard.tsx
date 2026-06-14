@@ -23,6 +23,8 @@ const initials = (name: string): string =>
 
 const BuddyCard = (props: BuddyCardProps) => (
   <div className="buddy-card" data-testid="buddy-card">
+    <p className="section-label" style={{ margin: 0 }}>Your Buddy</p>
+
     {/* Identity row */}
     <div className="buddy-card__identity">
       <div className="buddy-card__avatar" aria-hidden="true">
