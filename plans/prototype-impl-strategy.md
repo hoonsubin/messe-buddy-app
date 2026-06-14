@@ -251,11 +251,10 @@ Replaces placeholder content with real data. No new component structure — the 
 - `BackgroundCanvas` — `session.bgImageUrl` (empty string for now → falls back to gradient)
 - `MilestoneMapViewer` — MilestoneNodes positioned at `{ left: m.xPercent%, top: m.yPercent% }`, status derived from `PlayerProgress.milestoneProgress`
 - `YouAreHereMarker` — positioned at the first `inProgress` milestone
-- `ProgressLegend` — real XP numbers per milestone
 - `CurrentMissionsList` — missions where `isInCurrentMissions: true`, status from progress events
 - `MissionCard` — real mission data: title, type icon, XP, tags, status
 - `BuddyCard` — real buddy data or empty state
-- `ResourcesSection` — real resources, search filters by title client-side
+- `ResourcesSection` — real resources, search filters by title and tags client-side
 
 **3c. MilestoneSidebarViewer — wired**  
 Slide-in from right on MilestoneNode click. Shows real milestone name, XP, and its missions as MissionCards. Close button + tap-outside-to-close. No mission action yet — click on MissionCard is a no-op.
