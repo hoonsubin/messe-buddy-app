@@ -7,17 +7,17 @@ interface BackgroundCanvasProps {
 
 const BackgroundCanvas = (props: BackgroundCanvasProps) => (
   <div className="milestone-map__bg-wrapper" data-testid="background-canvas">
-    {props.imageUrl ? (
-      <img
-        className="milestone-map__bg"
-        src={props.imageUrl}
-        alt={props.alt}
-        style={{ objectFit: props.objectFit ?? "cover" }}
-        aria-hidden="true"
-      />
-    ) : (
-      <div className="milestone-map__bg milestone-map__bg--placeholder" />
-    )}
+    {props.imageUrl
+      ? (
+        <img
+          className="milestone-map__bg"
+          src={props.imageUrl}
+          alt={props.alt}
+          style={{ objectFit: props.objectFit ?? "cover" }}
+          aria-hidden="true"
+        />
+      )
+      : <div className="milestone-map__bg milestone-map__bg--placeholder" />}
   </div>
 );
 

@@ -16,19 +16,22 @@ const hmacMessage = (
   playerId: string,
   missionId: string,
   sessionId: string,
-  issuedAt: number
+  issuedAt: number,
 ): string => {
   return `${playerId}${missionId}${sessionId}${issuedAt}`;
 };
 
-const computeHmac = async (message: string, secret: string): Promise<string> => {
+const computeHmac = async (
+  message: string,
+  secret: string,
+): Promise<string> => {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",
     enc.encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign"]
+    ["sign"],
   );
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode(message));
   return Array.from(new Uint8Array(sig))
@@ -39,7 +42,7 @@ const computeHmac = async (message: string, secret: string): Promise<string> => 
 const verifyHmac = async (
   message: string,
   secret: string,
-  expected: string
+  expected: string,
 ): Promise<boolean> => {
   const actual = await computeHmac(message, secret);
   // Constant-time comparison via subtle.verify is preferred; we use string
@@ -53,11 +56,16 @@ export type QRPayloadInput = Omit<QRPayload, "hmac">;
 
 export const encodeQRPayload = async (
   input: QRPayloadInput,
-  secret: string
+  secret: string,
 ): Promise<string> => {
   const hmac = await computeHmac(
-    hmacMessage(input.playerId, input.missionId, input.sessionId, input.issuedAt),
-    secret
+    hmacMessage(
+      input.playerId,
+      input.missionId,
+      input.sessionId,
+      input.issuedAt,
+    ),
+    secret,
   );
   const payload: QRPayload = { ...input, hmac };
   return btoa(JSON.stringify(payload));
@@ -74,7 +82,7 @@ export class QRPayloadError extends Error {
 
 export const decodeQRPayload = async (
   encoded: string,
-  secret: string
+  secret: string,
 ): Promise<QRPayload> => {
   let raw: unknown;
   try {
@@ -103,10 +111,10 @@ export const decodeQRPayload = async (
       candidate.playerId,
       candidate.missionId,
       candidate.sessionId,
-      candidate.issuedAt
+      candidate.issuedAt,
     ),
     secret,
-    candidate.hmac
+    candidate.hmac,
   );
 
   if (!valid) {
@@ -114,4 +122,4 @@ export const decodeQRPayload = async (
   }
 
   return candidate;
-}
+};

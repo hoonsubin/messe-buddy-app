@@ -6,12 +6,12 @@ export type * from "./exports.ts";
 
 // Also re-export const objects so components can use MISSION_TYPE.TEXT etc.
 export {
-  MISSION_TYPE,
-  MISSION_TAG,
-  VALIDATION_METHOD,
-  PROGRESS_STATUS,
-  MILESTONE_STATUS,
-  RESOURCE_TYPE,
   FIELD_TYPE,
+  MILESTONE_STATUS,
+  MISSION_TAG,
+  MISSION_TYPE,
+  PROGRESS_STATUS,
+  RESOURCE_TYPE,
   USER_ROLE,
+  VALIDATION_METHOD,
 } from "./unions.ts";

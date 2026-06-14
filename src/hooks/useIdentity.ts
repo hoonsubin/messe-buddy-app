@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import type { LocalIdentity } from "../types/index.ts";
 
 const IDENTITY_KEY = "mb_identity";
@@ -25,7 +25,7 @@ export interface UseIdentityResult {
 // (e.g. after joinSession or recoverIdentity use cases).
 export const useIdentity = (): UseIdentityResult => {
   const [identity, setIdentityState] = useState<LocalIdentity | null>(
-    readIdentity
+    readIdentity,
   );
 
   const setIdentity = useCallback((newIdentity: LocalIdentity) => {
@@ -43,4 +43,4 @@ export const useIdentity = (): UseIdentityResult => {
   }, []);
 
   return { identity, setIdentity, clearIdentity, refresh };
-}
+};

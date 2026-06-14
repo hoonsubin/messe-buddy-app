@@ -15,11 +15,18 @@ const QRDisplay = (props: QRDisplayProps) => (
       data-player={props.playerId}
       data-xp={props.xpValue}
     >
-      <span style={{ color: "var(--color-muted-fg)", fontSize: "var(--text-xs)" }}>
+      <span
+        style={{ color: "var(--color-muted-fg)", fontSize: "var(--text-xs)" }}
+      >
         QR code renders here
       </span>
     </div>
-    <p style={{ fontSize: "var(--text-sm)", color: "hsl(var(--color-muted-fg))" }}>
+    <p
+      style={{
+        fontSize: "var(--text-sm)",
+        color: "hsl(var(--color-muted-fg))",
+      }}
+    >
       Ask your buddy to scan this code
     </p>
     <button

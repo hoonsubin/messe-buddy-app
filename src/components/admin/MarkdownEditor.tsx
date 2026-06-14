@@ -11,7 +11,8 @@ const MarkdownEditor = (props: MarkdownEditorProps) => (
       className="markdown-editor__textarea"
       value={props.value}
       placeholder={props.placeholder}
-      onChange={(e) => props.onChange(e.target.value)}
+      onChange={(e) =>
+        props.onChange(e.target.value)}
       aria-label="Mission body (Markdown)"
     />
   </div>

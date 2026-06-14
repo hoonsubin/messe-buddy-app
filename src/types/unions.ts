@@ -47,8 +47,7 @@ export const RESOURCE_TYPE = {
   LINK: "link",
   DOCUMENT: "document",
 } as const;
-export type ResourceType =
-  (typeof RESOURCE_TYPE)[keyof typeof RESOURCE_TYPE];
+export type ResourceType = (typeof RESOURCE_TYPE)[keyof typeof RESOURCE_TYPE];
 
 export const FIELD_TYPE = {
   TEXT: "text",

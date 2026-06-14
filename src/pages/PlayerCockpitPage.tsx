@@ -8,13 +8,13 @@ import CurrentMissionsList from "../components/player/CurrentMissionsList.tsx";
 import ResourcesSection from "../components/player/ResourcesSection.tsx";
 import BuddyCard from "../components/player/BuddyCard.tsx";
 import {
-  MOCK_SESSION,
+  MOCK_BUDDY_PROFILES,
   MOCK_MILESTONES,
   MOCK_MISSIONS,
   MOCK_PLAYERS,
-  MOCK_BUDDY_PROFILES,
   MOCK_PROGRESS_EVENTS,
   MOCK_RESOURCES,
+  MOCK_SESSION,
 } from "../adapters/mock/mockData.ts";
 
 // Phase 1: hard-wire Sofia (player_sofia) for visual shell preview.
@@ -25,13 +25,17 @@ const COMPLETED_STATUSES = new Set(["completed", "autoApproved"] as const);
 
 const PlayerCockpitPage = () => {
   // null = sidebar closed; string = milestone ID whose sidebar is open
-  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(
+    null,
+  );
 
   const sidebarOpen = selectedMilestoneId !== null;
 
   const currentMissions = MOCK_MISSIONS.filter((m) => m.isInCurrentMissions);
   const visibleResources = MOCK_RESOURCES.filter((r) => r.isVisibleToPlayer);
-  const playerEvents = MOCK_PROGRESS_EVENTS.filter((e) => e.playerId === PLAYER.id);
+  const playerEvents = MOCK_PROGRESS_EVENTS.filter((e) =>
+    e.playerId === PLAYER.id
+  );
 
   // Compute per-milestone progress from missions + progress events.
   const milestoneProgress = useMemo((): ReadonlyArray<MilestoneProgress> => {
@@ -41,18 +45,18 @@ const PlayerCockpitPage = () => {
       const msMissions = MOCK_MISSIONS.filter((m) => m.milestoneId === ms.id);
       const completedMissions = msMissions.filter((m) => {
         const ev = eventByMission.get(m.id);
-        return ev !== undefined && COMPLETED_STATUSES.has(ev.status as "completed" | "autoApproved");
+        return ev !== undefined &&
+          COMPLETED_STATUSES.has(ev.status as "completed" | "autoApproved");
       });
       const total = msMissions.length;
       const percentComplete = total > 0 ? completedMissions.length / total : 0;
       const earnedXP = Math.round(percentComplete * ms.xpThreshold);
 
-      const status =
-        percentComplete >= 1
-          ? MILESTONE_STATUS.COMPLETED
-          : completedMissions.length > 0
-            ? MILESTONE_STATUS.IN_PROGRESS
-            : MILESTONE_STATUS.UPCOMING;
+      const status = percentComplete >= 1
+        ? MILESTONE_STATUS.COMPLETED
+        : completedMissions.length > 0
+        ? MILESTONE_STATUS.IN_PROGRESS
+        : MILESTONE_STATUS.UPCOMING;
 
       return {
         milestoneId: ms.id,
@@ -143,7 +147,13 @@ const PlayerCockpitPage = () => {
         {/* Milestones section */}
         <section aria-label="Milestones">
           <h2 className="section-label">Milestones</h2>
-          <div style={{ borderRadius: "var(--radius-lg)", overflow: "hidden", boxShadow: "var(--shadow-md)" }}>
+          <div
+            style={{
+              borderRadius: "var(--radius-lg)",
+              overflow: "hidden",
+              boxShadow: "var(--shadow-md)",
+            }}
+          >
             <MilestoneMapViewer
               milestones={MOCK_MILESTONES}
               bgImageUrl={MOCK_SESSION.bgImageUrl}
@@ -167,7 +177,8 @@ const PlayerCockpitPage = () => {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 18rem), 1fr))",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(min(100%, 18rem), 1fr))",
             gap: "var(--space-6)",
             alignItems: "start",
           }}
@@ -179,8 +190,10 @@ const PlayerCockpitPage = () => {
               name={BUDDY.name}
               role={BUDDY.role}
               {...(BUDDY.tenure !== undefined && { tenure: BUDDY.tenure })}
-              {...(BUDDY.avatarUrl !== undefined && { avatarUrl: BUDDY.avatarUrl })}
-              {...(BUDDY.contactUrl !== undefined && { contactUrl: BUDDY.contactUrl })}
+              {...(BUDDY.avatarUrl !== undefined &&
+                { avatarUrl: BUDDY.avatarUrl })}
+              {...(BUDDY.contactUrl !== undefined &&
+                { contactUrl: BUDDY.contactUrl })}
               {...(BUDDY.quote !== undefined && { quote: BUDDY.quote })}
               {...(BUDDY.email !== undefined && { email: BUDDY.email })}
               {...(BUDDY.phone !== undefined && { phone: BUDDY.phone })}

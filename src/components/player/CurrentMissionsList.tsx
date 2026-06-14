@@ -16,32 +16,44 @@ const firstSentence = (body: string): string => {
 };
 
 const CurrentMissionsList = (props: CurrentMissionsListProps) => {
-  const eventByMission = new Map(props.progressEvents.map((e) => [e.missionId, e]));
+  const eventByMission = new Map(
+    props.progressEvents.map((e) => [e.missionId, e]),
+  );
 
   if (props.missions.length === 0) return null;
 
   return (
     <section data-testid="current-missions-list" aria-label="Current missions">
       <h2 className="section-label">Current Missions</h2>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--space-3)",
+        }}
+      >
         {props.missions.map((mission) => {
           const event = eventByMission.get(mission.id);
-          const isCompleted =
-            event?.status === "completed" || event?.status === "autoApproved";
+          const isCompleted = event?.status === "completed" ||
+            event?.status === "autoApproved";
           const desc = firstSentence(mission.body);
 
           return (
             <button
               key={mission.id}
               type="button"
-              className={`mission-item${isCompleted ? " mission-item--completed" : ""}`}
+              className={`mission-item${
+                isCompleted ? " mission-item--completed" : ""
+              }`}
               data-testid="mission-item"
               data-mission-id={mission.id}
               onClick={() => props.onMissionClick(mission.id)}
             >
               {/* Checkbox indicator */}
               <div
-                className={`mission-item__check${isCompleted ? " mission-item__check--done" : ""}`}
+                className={`mission-item__check${
+                  isCompleted ? " mission-item__check--done" : ""
+                }`}
                 aria-hidden="true"
               >
                 {isCompleted && "✓"}
@@ -59,14 +71,26 @@ const CurrentMissionsList = (props: CurrentMissionsListProps) => {
                 <p className="mission-item__title">{mission.title}</p>
                 {desc && <p className="mission-item__desc">{desc}</p>}
                 {mission.suggestedDueDate !== undefined && (
-                  <p className="mission-item__due">📅 {mission.suggestedDueDate}</p>
+                  <p className="mission-item__due">
+                    📅 {mission.suggestedDueDate}
+                  </p>
                 )}
               </div>
 
               {/* XP + chevron */}
               <div className="mission-item__right">
-                <span className="mission-item__xp">⚡ {mission.xpValue} XP</span>
-                <span aria-hidden="true" style={{ color: "hsl(var(--color-muted-fg))", fontSize: "var(--text-sm)" }}>›</span>
+                <span className="mission-item__xp">
+                  ⚡ {mission.xpValue} XP
+                </span>
+                <span
+                  aria-hidden="true"
+                  style={{
+                    color: "hsl(var(--color-muted-fg))",
+                    fontSize: "var(--text-sm)",
+                  }}
+                >
+                  ›
+                </span>
               </div>
             </button>
           );

@@ -1,7 +1,11 @@
 // Phase 1 shell — form mission view. Submit logic wired in Phase 3.
 import TopBar from "../components/shared/TopBar.tsx";
 import FormShell from "../components/form/FormShell.tsx";
-import { MOCK_MISSIONS, MOCK_FORM_SCHEMAS, MOCK_PLAYERS } from "../adapters/mock/mockData.ts";
+import {
+  MOCK_FORM_SCHEMAS,
+  MOCK_MISSIONS,
+  MOCK_PLAYERS,
+} from "../adapters/mock/mockData.ts";
 
 // Phase 1: hard-wire profile setup mission for visual shell preview.
 const MISSION = MOCK_MISSIONS[0]!;
@@ -31,7 +35,8 @@ const FormPage = () => (
         paddingTop: "var(--topbar-h)",
         display: "flex",
         justifyContent: "center",
-        padding: "calc(var(--topbar-h) + var(--space-6)) var(--space-4) var(--space-8)",
+        padding:
+          "calc(var(--topbar-h) + var(--space-6)) var(--space-4) var(--space-8)",
       }}
     >
       <div style={{ width: "100%", maxWidth: "36rem" }}>

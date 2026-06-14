@@ -19,7 +19,9 @@ const WEIGHT_MAP: Readonly<Record<number, number>> = {
   5: 5,
 };
 
-export const deriveXP = (missions: ReadonlyArray<Mission>): ReadonlyArray<number> => {
+export const deriveXP = (
+  missions: ReadonlyArray<Mission>,
+): ReadonlyArray<number> => {
   if (missions.length === 0) return [];
 
   const weights = missions.map((m) => WEIGHT_MAP[m.difficulty] ?? 1);
@@ -27,7 +29,9 @@ export const deriveXP = (missions: ReadonlyArray<Mission>): ReadonlyArray<number
 
   if (totalWeight === 0) return missions.map(() => 0);
 
-  const xpValues = weights.map((w) => Math.floor((XP_THRESHOLD * w) / totalWeight));
+  const xpValues = weights.map((w) =>
+    Math.floor((XP_THRESHOLD * w) / totalWeight)
+  );
 
   const remainder = XP_THRESHOLD - xpValues.reduce((sum, v) => sum + v, 0);
 
@@ -52,4 +56,4 @@ export const deriveXP = (missions: ReadonlyArray<Mission>): ReadonlyArray<number
   }
 
   return result;
-}
+};

@@ -30,10 +30,17 @@ const QRScannerView = () => (
         flexDirection: "column",
         alignItems: "center",
         gap: "var(--space-6)",
-        padding: "calc(var(--topbar-h) + var(--space-6)) var(--space-4) var(--space-8)",
+        padding:
+          "calc(var(--topbar-h) + var(--space-6)) var(--space-4) var(--space-8)",
       }}
     >
-      <h1 style={{ margin: 0, fontSize: "var(--text-xl)", fontWeight: "var(--weight-semibold)" }}>
+      <h1
+        style={{
+          margin: 0,
+          fontSize: "var(--text-xl)",
+          fontWeight: "var(--weight-semibold)",
+        }}
+      >
         Scan QR Code
       </h1>
 
@@ -43,7 +50,11 @@ const QRScannerView = () => (
 
       <ValidationResult state="idle" />
 
-      <button type="button" className="btn btn--primary" style={{ width: "100%", maxWidth: "24rem" }}>
+      <button
+        type="button"
+        className="btn btn--primary"
+        style={{ width: "100%", maxWidth: "24rem" }}
+      >
         Start camera
       </button>
     </main>

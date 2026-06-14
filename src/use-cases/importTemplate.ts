@@ -14,7 +14,7 @@ export const importTemplate = async (
   template: TemplateExport,
   sessionName: string,
   gameMakerUid: string,
-  adapter: AppAdapter
+  adapter: AppAdapter,
 ): Promise<string> => {
   const session = await adapter.createSession(sessionName, gameMakerUid);
   const sessionId = session.id;
@@ -22,7 +22,7 @@ export const importTemplate = async (
   // 1. Milestones — sort by order, then register order → newId
   const milestoneIdByOrder = new Map<number, string>();
   const sortedMilestones = [...template.milestones].sort(
-    (a, b) => a.order - b.order
+    (a, b) => a.order - b.order,
   );
   for (const ms of sortedMilestones) {
     const created = await adapter.createMilestone({ ...ms, sessionId });
@@ -53,4 +53,4 @@ export const importTemplate = async (
   }
 
   return sessionId;
-}
+};

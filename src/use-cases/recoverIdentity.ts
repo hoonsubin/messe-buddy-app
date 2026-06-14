@@ -9,7 +9,7 @@ const IDENTITY_KEY = "mb_identity";
 export const recoverIdentity = async (
   recoveryKey: string,
   sessionId: string,
-  adapter: AppAdapter
+  adapter: AppAdapter,
 ): Promise<LocalIdentity> => {
   const player = await adapter.getPlayerByRecoveryKey(recoveryKey, sessionId);
   if (!player) {
@@ -25,4 +25,4 @@ export const recoverIdentity = async (
 
   localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
   return identity;
-}
+};

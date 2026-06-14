@@ -1,5 +1,5 @@
 import type { AppAdapter } from "../adapters/interface.ts";
-import type { LocalIdentity, Player, PBRecord } from "../types/index.ts";
+import type { LocalIdentity, PBRecord, Player } from "../types/index.ts";
 import { USER_ROLE } from "../types/index.ts";
 
 const IDENTITY_KEY = "mb_identity";
@@ -22,7 +22,7 @@ export interface JoinSessionResult {
 // filled in during the Tutorial's Profile Setup Mission.
 export const joinSession = async (
   sessionId: string,
-  adapter: AppAdapter
+  adapter: AppAdapter,
 ): Promise<JoinSessionResult> => {
   const uid = crypto.randomUUID();
   const recoveryKey = generateRecoveryKey();
@@ -56,12 +56,12 @@ export const joinSession = async (
 
   localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
   return { identity, player };
-}
+};
 
 // Creates a Game Maker identity (no Player record — GM uses the session itself).
 export const createGameMakerSession = async (
   sessionName: string,
-  adapter: AppAdapter
+  adapter: AppAdapter,
 ): Promise<LocalIdentity> => {
   const uid = crypto.randomUUID();
   const recoveryKey = generateRecoveryKey();
@@ -77,4 +77,4 @@ export const createGameMakerSession = async (
 
   localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
   return identity;
-}
+};

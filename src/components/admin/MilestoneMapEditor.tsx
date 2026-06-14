@@ -17,7 +17,10 @@ interface MilestoneMapEditorProps {
 }
 
 const MilestoneMapEditor = (props: MilestoneMapEditorProps) => (
-  <div data-testid="milestone-map-editor" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+  <div
+    data-testid="milestone-map-editor"
+    style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}
+  >
     <BackgroundImageUploader
       currentImageUrl={props.bgImageUrl}
       onUpload={props.onUploadBackground}
@@ -38,10 +41,19 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => (
           onDragEnd={(x, y) => props.onNodeDrop(ms.id, x, y)}
         />
       ))}
-      <GridOverlay enabled={false} columns={10} rows={6} onToggle={() => undefined} />
+      <GridOverlay
+        enabled={false}
+        columns={10}
+        rows={6}
+        onToggle={() => undefined}
+      />
     </div>
     <div className="map-editor-toolbar">
-      <button type="button" className="btn btn--secondary" onClick={props.onAddMilestone}>
+      <button
+        type="button"
+        className="btn btn--secondary"
+        onClick={props.onAddMilestone}
+      >
         + Add Milestone
       </button>
     </div>

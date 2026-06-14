@@ -25,9 +25,16 @@ const BuddyCard = (props: BuddyCardProps) => (
     <div className="buddy-card__identity">
       <div className="buddy-card__avatar" aria-hidden="true">
         {props.avatarUrl
-          ? <img src={props.avatarUrl} alt="" width="48" height="48" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          : initials(props.name)
-        }
+          ? (
+            <img
+              src={props.avatarUrl}
+              alt=""
+              width="48"
+              height="48"
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          )
+          : initials(props.name)}
       </div>
       <div>
         <p className="buddy-card__name">{props.name}</p>
@@ -44,10 +51,14 @@ const BuddyCard = (props: BuddyCardProps) => (
     )}
 
     {/* Contact links + CTA */}
-    {(props.email !== undefined || props.phone !== undefined || props.contactUrl !== undefined) && (
+    {(props.email !== undefined || props.phone !== undefined ||
+      props.contactUrl !== undefined) && (
       <div className="buddy-card__contacts">
         {props.email !== undefined && (
-          <a className="buddy-card__contact-link" href={`mailto:${props.email}`}>
+          <a
+            className="buddy-card__contact-link"
+            href={`mailto:${props.email}`}
+          >
             <span aria-hidden="true">✉</span>
             {props.email}
           </a>

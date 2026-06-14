@@ -1,4 +1,14 @@
-import type { PBRecord, Session, Milestone, Mission, FormSchema, Resource, Player, ProgressEvent, BuddyProfile } from "./domain.ts";
+import type {
+  BuddyProfile,
+  FormSchema,
+  Milestone,
+  Mission,
+  PBRecord,
+  Player,
+  ProgressEvent,
+  Resource,
+  Session,
+} from "./domain.ts";
 
 // Template export — structure only, no player data. (C-10)
 //

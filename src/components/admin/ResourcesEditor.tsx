@@ -1,5 +1,5 @@
 // Phase 1 shell — logic wired in Phase 4.
-import type { Resource, PBRecord } from "../../types/index.ts";
+import type { PBRecord, Resource } from "../../types/index.ts";
 import type { ResourceType } from "../../types/index.ts";
 import { RESOURCE_TYPE } from "../../types/index.ts";
 
@@ -11,12 +11,50 @@ interface ResourcesEditorProps {
 }
 
 const ResourcesEditor = (props: ResourcesEditorProps) => (
-  <div data-testid="resources-editor" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-    <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+  <div
+    data-testid="resources-editor"
+    style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
+  >
+    <ul
+      style={{
+        listStyle: "none",
+        padding: 0,
+        margin: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-2)",
+      }}
+    >
       {props.resources.map((r) => (
-        <li key={r.id} className="card" style={{ padding: "var(--space-3)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>{r.title} <span style={{ fontSize: "var(--text-xs)", color: "hsl(var(--color-muted-fg))" }}>({r.type})</span></span>
-          <button type="button" className="btn btn--ghost" onClick={() => props.onDelete(r.id)} aria-label={`Remove ${r.title}`}>✕</button>
+        <li
+          key={r.id}
+          className="card"
+          style={{
+            padding: "var(--space-3)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span>
+            {r.title}{" "}
+            <span
+              style={{
+                fontSize: "var(--text-xs)",
+                color: "hsl(var(--color-muted-fg))",
+              }}
+            >
+              ({r.type})
+            </span>
+          </span>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => props.onDelete(r.id)}
+            aria-label={`Remove ${r.title}`}
+          >
+            ✕
+          </button>
         </li>
       ))}
     </ul>
@@ -33,11 +71,22 @@ const ResourcesEditor = (props: ResourcesEditorProps) => (
         });
         (e.target as HTMLFormElement).reset();
       }}
-      style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-3)",
+      }}
     >
       <div className="form-field">
         <label className="form-label" htmlFor="res-title">Title</label>
-        <input id="res-title" name="title" className="form-input" type="text" required placeholder="Resource name" />
+        <input
+          id="res-title"
+          name="title"
+          className="form-input"
+          type="text"
+          required
+          placeholder="Resource name"
+        />
       </div>
       <div className="form-field">
         <label className="form-label" htmlFor="res-type">Type</label>
@@ -49,9 +98,18 @@ const ResourcesEditor = (props: ResourcesEditorProps) => (
       </div>
       <div className="form-field">
         <label className="form-label" htmlFor="res-url">URL</label>
-        <input id="res-url" name="url" className="form-input" type="url" required placeholder="https://..." />
+        <input
+          id="res-url"
+          name="url"
+          className="form-input"
+          type="url"
+          required
+          placeholder="https://..."
+        />
       </div>
-      <button type="submit" className="btn btn--secondary">+ Add resource</button>
+      <button type="submit" className="btn btn--secondary">
+        + Add resource
+      </button>
     </form>
   </div>
 );

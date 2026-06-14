@@ -3,12 +3,12 @@
 // renders an instructional card anchored near the highlight ring.
 
 export interface TutorialStepData {
-  readonly stepNumber: number;        // 1-based display index
+  readonly stepNumber: number; // 1-based display index
   readonly totalSteps: number;
   readonly title: string;
   readonly body: string;
   readonly ctaLabel: string;
-  readonly targetSelector?: string;   // CSS selector of the element to highlight
+  readonly targetSelector?: string; // CSS selector of the element to highlight
 }
 
 interface TutorialStepProps {
@@ -42,12 +42,24 @@ const TutorialStep = (props: TutorialStepProps) => (
     }}
   >
     {/* Step counter */}
-    <p style={{ fontSize: "var(--text-xs)", color: "hsl(var(--color-muted-fg))", margin: 0, fontWeight: "var(--weight-medium)" }}>
+    <p
+      style={{
+        fontSize: "var(--text-xs)",
+        color: "hsl(var(--color-muted-fg))",
+        margin: 0,
+        fontWeight: "var(--weight-medium)",
+      }}
+    >
       Step {props.step.stepNumber} of {props.step.totalSteps}
     </p>
 
     {/* Progress dots */}
-    <div style={{ display: "flex", gap: "var(--space-1)" }} role="progressbar" aria-valuenow={props.step.stepNumber} aria-valuemax={props.step.totalSteps}>
+    <div
+      style={{ display: "flex", gap: "var(--space-1)" }}
+      role="progressbar"
+      aria-valuenow={props.step.stepNumber}
+      aria-valuemax={props.step.totalSteps}
+    >
       {Array.from({ length: props.step.totalSteps }, (_, i) => (
         <div
           key={i}
@@ -64,19 +76,43 @@ const TutorialStep = (props: TutorialStepProps) => (
     </div>
 
     {/* Content */}
-    <h2 id="tutorial-step-title" style={{ margin: 0, fontSize: "var(--text-lg)", fontWeight: "var(--weight-semibold)" }}>
+    <h2
+      id="tutorial-step-title"
+      style={{
+        margin: 0,
+        fontSize: "var(--text-lg)",
+        fontWeight: "var(--weight-semibold)",
+      }}
+    >
       {props.step.title}
     </h2>
-    <p style={{ margin: 0, fontSize: "var(--text-sm)", color: "hsl(var(--color-muted-fg))", lineHeight: "var(--leading-relaxed)" }}>
+    <p
+      style={{
+        margin: 0,
+        fontSize: "var(--text-sm)",
+        color: "hsl(var(--color-muted-fg))",
+        lineHeight: "var(--leading-relaxed)",
+      }}
+    >
       {props.step.body}
     </p>
 
     {/* Actions */}
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "var(--space-2)" }}>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginTop: "var(--space-2)",
+      }}
+    >
       <button
         type="button"
         className="btn btn--ghost"
-        style={{ fontSize: "var(--text-xs)", color: "hsl(var(--color-muted-fg))" }}
+        style={{
+          fontSize: "var(--text-xs)",
+          color: "hsl(var(--color-muted-fg))",
+        }}
         onClick={props.onSkip}
       >
         Skip tutorial

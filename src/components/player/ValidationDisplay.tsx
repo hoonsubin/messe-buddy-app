@@ -14,25 +14,38 @@ const ValidationDisplay = (props: ValidationDisplayProps) => {
   const method = props.mission.validationMethod;
 
   return (
-    <div className="validation-display" data-testid="validation-display" data-method={method}>
-      {method === "qr" ? (
-        <QRDisplay
-          playerId={props.playerId}
-          missionId={props.missionId}
-          xpValue={props.mission.xpValue}
-          onValidated={props.onValidated}
-        />
-      ) : method === "gmApprove" ? (
-        <PendingApprovalDisplay
-          missionTitle={props.mission.title}
-          onValidated={props.onValidated}
-        />
-      ) : (
-        // selfApprove — handled by MissionDetailPopup's "Mark Complete" button
-        <p style={{ fontSize: "var(--text-sm)", color: "hsl(var(--color-muted-fg))" }}>
-          Mark as complete when ready.
-        </p>
-      )}
+    <div
+      className="validation-display"
+      data-testid="validation-display"
+      data-method={method}
+    >
+      {method === "qr"
+        ? (
+          <QRDisplay
+            playerId={props.playerId}
+            missionId={props.missionId}
+            xpValue={props.mission.xpValue}
+            onValidated={props.onValidated}
+          />
+        )
+        : method === "gmApprove"
+        ? (
+          <PendingApprovalDisplay
+            missionTitle={props.mission.title}
+            onValidated={props.onValidated}
+          />
+        )
+        : (
+          // selfApprove — handled by MissionDetailPopup's "Mark Complete" button
+          <p
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "hsl(var(--color-muted-fg))",
+            }}
+          >
+            Mark as complete when ready.
+          </p>
+        )}
     </div>
   );
 };

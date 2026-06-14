@@ -10,7 +10,13 @@ interface FormEditorProps {
 
 const FormEditor = (props: FormEditorProps) => (
   <div data-testid="form-editor" data-mission-id={props.missionId}>
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-3)",
+      }}
+    >
       {props.fields.map((field, i) => (
         <FormFieldEditor
           key={field.id}
@@ -20,7 +26,8 @@ const FormEditor = (props: FormEditorProps) => (
             next[i] = updated;
             props.onChange(next);
           }}
-          onDelete={() => props.onChange(props.fields.filter((_, j) => j !== i))}
+          onDelete={() =>
+            props.onChange(props.fields.filter((_, j) => j !== i))}
         />
       ))}
     </div>
@@ -37,8 +44,7 @@ const FormEditor = (props: FormEditorProps) => (
             type: "text",
             required: false,
           },
-        ])
-      }
+        ])}
     >
       + Add field
     </button>

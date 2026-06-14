@@ -24,8 +24,8 @@ const ResourcesSection = (props: ResourcesSectionProps) => {
 
   const filtered = query.trim()
     ? props.resources.filter((r) =>
-        r.title.toLowerCase().includes(query.toLowerCase())
-      )
+      r.title.toLowerCase().includes(query.toLowerCase())
+    )
     : props.resources;
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,7 +67,12 @@ const ResourcesSection = (props: ResourcesSectionProps) => {
       </div>
 
       {filtered.length === 0 && (
-        <p style={{ color: "hsl(var(--color-muted-fg))", fontSize: "var(--text-sm)" }}>
+        <p
+          style={{
+            color: "hsl(var(--color-muted-fg))",
+            fontSize: "var(--text-sm)",
+          }}
+        >
           No resources found.
         </p>
       )}

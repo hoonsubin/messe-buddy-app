@@ -1,12 +1,12 @@
 import type {
-  Session,
-  Player,
   BuddyProfile,
+  FormSchema,
   Milestone,
   Mission,
-  FormSchema,
+  Player,
   ProgressEvent,
   Resource,
+  Session,
 } from "../../types/index.ts";
 
 // Seed data for local development. Represents a Messe München onboarding session.
@@ -95,7 +95,8 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     sessionId: "sess_mmt2026",
     milestoneId: "ms_orientation",
     title: "Read the Company Handbook",
-    body: "## Company Handbook\n\nThe handbook covers our values, code of conduct, and key policies. Take your time reading through it — your buddy is here if you have questions.",
+    body:
+      "## Company Handbook\n\nThe handbook covers our values, code of conduct, and key policies. Take your time reading through it — your buddy is here if you have questions.",
     type: "link",
     externalUrl: "https://www.messe-muenchen.de/",
     difficulty: 3,
@@ -112,7 +113,8 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     sessionId: "sess_mmt2026",
     milestoneId: "ms_team",
     title: "Meet Your Buddy",
-    body: "## Your First Check-In\n\nSchedule a 30-minute coffee chat with your assigned buddy. This is your chance to ask all the questions you haven't had the nerve to ask yet.\n\nYour buddy will scan a QR code to confirm the meeting happened.",
+    body:
+      "## Your First Check-In\n\nSchedule a 30-minute coffee chat with your assigned buddy. This is your chance to ask all the questions you haven't had the nerve to ask yet.\n\nYour buddy will scan a QR code to confirm the meeting happened.",
     type: "text",
     difficulty: 2,
     xpValue: 29, // deriveXP(weights=[2,1,1,3], total=7): floor(100*2/7)=28, +1 remainder → 29
@@ -126,7 +128,8 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     sessionId: "sess_mmt2026",
     milestoneId: "ms_team",
     title: "Team Introduction Round",
-    body: "## Say Hello\n\nIntroduce yourself in the team Slack channel using the template pinned to `#introductions`. Include your name, role, and one fun fact.",
+    body:
+      "## Say Hello\n\nIntroduce yourself in the team Slack channel using the template pinned to `#introductions`. Include your name, role, and one fun fact.",
     type: "text",
     difficulty: 1,
     xpValue: 14, // floor(100*1/7)=14
@@ -171,7 +174,8 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     sessionId: "sess_mmt2026",
     milestoneId: "ms_settled",
     title: "Office Tour",
-    body: "## Find Your Way Around\n\nComplete a self-guided tour of the office. Check off the key locations: your desk, the main kitchen, emergency exits, and the product team area.\n\nYour buddy will confirm completion with a QR scan.",
+    body:
+      "## Find Your Way Around\n\nComplete a self-guided tour of the office. Check off the key locations: your desk, the main kitchen, emergency exits, and the product team area.\n\nYour buddy will confirm completion with a QR scan.",
     type: "text",
     difficulty: 2,
     xpValue: 34, // deriveXP(weights=[2,2,2], total=6): floor(100*2/6)=33, +1 remainder (order 0) → 34
@@ -185,7 +189,8 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     sessionId: "sess_mmt2026",
     milestoneId: "ms_settled",
     title: "IT Setup",
-    body: "## Get Your Devices Ready\n\nVisit IT support to collect your laptop and set up two-factor authentication on your accounts.",
+    body:
+      "## Get Your Devices Ready\n\nVisit IT support to collect your laptop and set up two-factor authentication on your accounts.",
     type: "text",
     difficulty: 2,
     xpValue: 33, // floor(100*2/6)=33
@@ -218,25 +223,112 @@ export const MOCK_FORM_SCHEMAS: ReadonlyArray<FormSchema> = [
     ...pb("schema_profile"),
     missionId: "mission_profile",
     fields: [
-      { id: "name", label: "Full Name", type: "text", required: true, placeholder: "e.g. Alex Müller" },
-      { id: "preferredName", label: "Preferred Name", type: "text", required: false, placeholder: "What should we call you?" },
-      { id: "pronouns", label: "Pronouns", type: "text", required: false, placeholder: "e.g. she/her, he/him, they/them" },
-      { id: "role", label: "Job Title", type: "text", required: true, placeholder: "e.g. Product Designer" },
-      { id: "team", label: "Team", type: "select", required: true, options: ["Product", "Engineering", "Design", "Marketing", "Operations", "HR", "Finance", "Legal"] },
-      { id: "location", label: "Primary Location", type: "text", required: true, placeholder: "e.g. Munich, Germany" },
-      { id: "timezone", label: "Timezone", type: "text", required: true, placeholder: "e.g. Europe/Berlin" },
-      { id: "languages", label: "Languages", type: "text", required: false, placeholder: "e.g. German, English, Spanish" },
-      { id: "skillsConfident", label: "Skills I'm confident in", type: "textarea", required: false, placeholder: "List skills you'd be happy to share with colleagues" },
-      { id: "workStyle", label: "My work style", type: "textarea", required: false, placeholder: "How do you work best? Deep focus? Lots of collaboration?" },
+      {
+        id: "name",
+        label: "Full Name",
+        type: "text",
+        required: true,
+        placeholder: "e.g. Alex Müller",
+      },
+      {
+        id: "preferredName",
+        label: "Preferred Name",
+        type: "text",
+        required: false,
+        placeholder: "What should we call you?",
+      },
+      {
+        id: "pronouns",
+        label: "Pronouns",
+        type: "text",
+        required: false,
+        placeholder: "e.g. she/her, he/him, they/them",
+      },
+      {
+        id: "role",
+        label: "Job Title",
+        type: "text",
+        required: true,
+        placeholder: "e.g. Product Designer",
+      },
+      {
+        id: "team",
+        label: "Team",
+        type: "select",
+        required: true,
+        options: [
+          "Product",
+          "Engineering",
+          "Design",
+          "Marketing",
+          "Operations",
+          "HR",
+          "Finance",
+          "Legal",
+        ],
+      },
+      {
+        id: "location",
+        label: "Primary Location",
+        type: "text",
+        required: true,
+        placeholder: "e.g. Munich, Germany",
+      },
+      {
+        id: "timezone",
+        label: "Timezone",
+        type: "text",
+        required: true,
+        placeholder: "e.g. Europe/Berlin",
+      },
+      {
+        id: "languages",
+        label: "Languages",
+        type: "text",
+        required: false,
+        placeholder: "e.g. German, English, Spanish",
+      },
+      {
+        id: "skillsConfident",
+        label: "Skills I'm confident in",
+        type: "textarea",
+        required: false,
+        placeholder: "List skills you'd be happy to share with colleagues",
+      },
+      {
+        id: "workStyle",
+        label: "My work style",
+        type: "textarea",
+        required: false,
+        placeholder: "How do you work best? Deep focus? Lots of collaboration?",
+      },
     ],
   },
   {
     ...pb("schema_first_week"),
     missionId: "mission_first_week",
     fields: [
-      { id: "goal1", label: "Goal 1", type: "text", required: true, placeholder: "What's the first thing you want to learn?" },
-      { id: "goal2", label: "Goal 2", type: "text", required: false, placeholder: "A second goal for the week" },
-      { id: "question", label: "Your biggest question right now", type: "textarea", required: false, placeholder: "What do you most need to understand?" },
+      {
+        id: "goal1",
+        label: "Goal 1",
+        type: "text",
+        required: true,
+        placeholder: "What's the first thing you want to learn?",
+      },
+      {
+        id: "goal2",
+        label: "Goal 2",
+        type: "text",
+        required: false,
+        placeholder: "A second goal for the week",
+      },
+      {
+        id: "question",
+        label: "Your biggest question right now",
+        type: "textarea",
+        required: false,
+        placeholder: "What do you most need to understand?",
+      },
     ],
   },
 ];
@@ -281,7 +373,8 @@ export const MOCK_PLAYERS: ReadonlyArray<Player> = [
     skillsConfident: ["User Research", "Figma", "Prototyping"],
     skillsDevelop: ["Front-end development", "Data analysis"],
     languages: ["English", "Mandarin", "German (beginner)"],
-    workStyle: "I work best with focused mornings and collaborative afternoons.",
+    workStyle:
+      "I work best with focused mornings and collaborative afternoons.",
   },
 ];
 
@@ -305,7 +398,8 @@ export const MOCK_BUDDY_PROFILES: ReadonlyArray<BuddyProfile> = [
     role: "Lead Designer",
     tenure: "6 years at Messe München",
     contactUrl: "https://slack.com/",
-    quote: "The best onboarding is the one that makes you feel like you already belong.",
+    quote:
+      "The best onboarding is the one that makes you feel like you already belong.",
     email: "lena.hoffmann@messe-muenchen.de",
     phone: "+49 89 949-21345",
   },

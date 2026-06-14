@@ -1,4 +1,11 @@
-import type { Session, Milestone, Mission, FormSchema, Resource, PBRecord } from "../types/index.ts";
+import type {
+  FormSchema,
+  Milestone,
+  Mission,
+  PBRecord,
+  Resource,
+  Session,
+} from "../types/index.ts";
 import type { TemplateExport } from "../types/index.ts";
 
 // Pure function — strips PB IDs and returns a portable TemplateExport. (C-10)
@@ -12,10 +19,10 @@ export const exportTemplate = (
   milestones: ReadonlyArray<Milestone>,
   missions: ReadonlyArray<Mission>,
   formSchemas: ReadonlyArray<FormSchema>,
-  resources: ReadonlyArray<Resource>
+  resources: ReadonlyArray<Resource>,
 ): TemplateExport => {
   const stripRecord = <T extends PBRecord>(
-    record: T
+    record: T,
   ): Omit<T, keyof PBRecord> => {
     // todo: remove this after further implementation
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -42,4 +49,4 @@ export const exportTemplate = (
     })),
     resources: resources.map(stripRecord),
   };
-}
+};

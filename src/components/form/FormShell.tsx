@@ -16,13 +16,29 @@ const FormShell = (props: FormShellProps) => (
   <form
     className="form-shell"
     data-testid="form-shell"
-    onSubmit={(e) => { e.preventDefault(); props.onSubmit(); }}
+    onSubmit={(e) => {
+      e.preventDefault();
+      props.onSubmit();
+    }}
   >
-    <h1 style={{ fontSize: "var(--text-xl)", fontWeight: "var(--weight-semibold)", margin: 0, marginBottom: "var(--space-6)" }}>
+    <h1
+      style={{
+        fontSize: "var(--text-xl)",
+        fontWeight: "var(--weight-semibold)",
+        margin: 0,
+        marginBottom: "var(--space-6)",
+      }}
+    >
       {props.missionTitle}
     </h1>
 
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-4)",
+      }}
+    >
       {props.fields.map((field) => (
         <FormField
           key={field.id}

@@ -6,7 +6,9 @@ interface TagBadgeProps {
 
 const TagBadge = (props: TagBadgeProps) => (
   <span
-    className={`tag-badge${props.variant ? ` tag-badge--${props.variant}` : ""}`}
+    className={`tag-badge${
+      props.variant ? ` tag-badge--${props.variant}` : ""
+    }`}
     data-testid="tag-badge"
   >
     {props.label}

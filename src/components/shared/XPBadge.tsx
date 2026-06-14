@@ -4,9 +4,13 @@ interface XPBadgeProps {
 }
 
 const XPBadge = (props: XPBadgeProps) => (
-  <span className="xp-badge" data-testid="xp-badge" aria-label={`${props.value} XP`}>
+  <span
+    className="xp-badge"
+    data-testid="xp-badge"
+    aria-label={`${props.value} XP`}
+  >
     +{props.value}
-    <span aria-hidden="true"> XP</span>
+    <span aria-hidden="true">XP</span>
   </span>
 );
 

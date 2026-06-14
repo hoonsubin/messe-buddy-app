@@ -15,8 +15,7 @@ interface MissionCardProps {
 }
 
 const MissionCard = (props: MissionCardProps) => {
-  const isCompleted =
-    props.progressEvent?.status === "completed" ||
+  const isCompleted = props.progressEvent?.status === "completed" ||
     props.progressEvent?.status === "autoApproved";
 
   return (
@@ -30,7 +29,13 @@ const MissionCard = (props: MissionCardProps) => {
         type="button"
         className="mission-card__title-btn"
         onClick={props.onClick}
-        style={{ background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          textAlign: "left",
+          padding: 0,
+        }}
       >
         <p className="mission-card__title">{props.mission.title}</p>
       </button>

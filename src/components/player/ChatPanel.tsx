@@ -14,12 +14,16 @@ interface ChatPanelProps {
 
 const ChatPanel = (props: ChatPanelProps) => (
   <div className="chat-panel" data-testid="chat-panel">
-    <div className="chat-panel__messages" aria-live="polite" aria-label="Chat messages">
+    <div
+      className="chat-panel__messages"
+      aria-live="polite"
+      aria-label="Chat messages"
+    >
       {props.messages.map((msg, i) => (
         <div key={i} className={`chat-message chat-message--${msg.role}`}>
           <div className="chat-message__bubble">
             {msg.content}
-            {msg.streaming && <span aria-hidden="true"> ▌</span>}
+            {msg.streaming && <span aria-hidden="true">▌</span>}
           </div>
         </div>
       ))}

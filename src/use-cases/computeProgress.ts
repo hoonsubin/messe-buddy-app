@@ -1,5 +1,5 @@
-import type { Mission, ProgressEvent, Milestone } from "../types/index.ts";
-import type { PlayerProgress, MilestoneProgress } from "../types/index.ts";
+import type { Milestone, Mission, ProgressEvent } from "../types/index.ts";
+import type { MilestoneProgress, PlayerProgress } from "../types/index.ts";
 import { MILESTONE_STATUS, PROGRESS_STATUS } from "../types/index.ts";
 
 // Derives PlayerProgress from ProgressEvents and Missions at read time.
@@ -19,7 +19,7 @@ export const computeProgress = (
   playerId: string,
   missions: ReadonlyArray<Mission>,
   milestones: ReadonlyArray<Milestone>,
-  progressEvents: ReadonlyArray<ProgressEvent>
+  progressEvents: ReadonlyArray<ProgressEvent>,
 ): PlayerProgress => {
   const eventByMission = new Map<string, ProgressEvent>();
   for (const e of progressEvents) {
@@ -51,8 +51,8 @@ export const computeProgress = (
     const status = isComplete
       ? MILESTONE_STATUS.COMPLETED
       : hasStarted
-        ? MILESTONE_STATUS.IN_PROGRESS
-        : MILESTONE_STATUS.UPCOMING;
+      ? MILESTONE_STATUS.IN_PROGRESS
+      : MILESTONE_STATUS.UPCOMING;
 
     return {
       milestoneId: ms.id,
@@ -72,4 +72,4 @@ export const computeProgress = (
     milestoneProgress,
     completedMissionIds,
   };
-}
+};

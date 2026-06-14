@@ -16,7 +16,15 @@ const ProgressLegend = (props: ProgressLegendProps) => (
     style={{ display: "flex", gap: "0.75rem", listStyle: "none", padding: 0 }}
   >
     {props.items.map((item) => (
-      <li key={item.label} style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "var(--text-xs)" }}>
+      <li
+        key={item.label}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.25rem",
+          fontSize: "var(--text-xs)",
+        }}
+      >
         <span
           aria-hidden="true"
           style={{

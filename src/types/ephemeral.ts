@@ -1,4 +1,9 @@
-import type { MilestoneStatus, MissionType, MissionTag, ValidationMethod } from "./unions.ts";
+import type {
+  MilestoneStatus,
+  MissionTag,
+  MissionType,
+  ValidationMethod,
+} from "./unions.ts";
 import type { FieldSchema } from "./value-objects.ts";
 
 // Derived at read time by computeProgress — never persisted. (C-11)

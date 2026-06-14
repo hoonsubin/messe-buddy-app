@@ -18,8 +18,13 @@ interface MilestoneSidebarViewerProps {
 
 const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
   const [activeTab, setActiveTab] = useState<SidebarTab>("missions");
-  const eventByMission = new Map(props.progressEvents.map((e) => [e.missionId, e]));
-  const pct = Math.min(Math.round((props.currentXP / props.xpThreshold) * 100), 100);
+  const eventByMission = new Map(
+    props.progressEvents.map((e) => [e.missionId, e]),
+  );
+  const pct = Math.min(
+    Math.round((props.currentXP / props.xpThreshold) * 100),
+    100,
+  );
 
   // Swipe-LEFT-to-close: sidebar is on the left, so swiping left (negative delta) closes it.
   const touchStartX = useRef<number | null>(null);
@@ -115,7 +120,9 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
             type="button"
             role="tab"
             aria-selected={activeTab === "missions"}
-            className={`sidebar-tab${activeTab === "missions" ? " sidebar-tab--active" : ""}`}
+            className={`sidebar-tab${
+              activeTab === "missions" ? " sidebar-tab--active" : ""
+            }`}
             onClick={() => setActiveTab("missions")}
           >
             Missions
@@ -124,7 +131,9 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
             type="button"
             role="tab"
             aria-selected={activeTab === "resources"}
-            className={`sidebar-tab${activeTab === "resources" ? " sidebar-tab--active" : ""}`}
+            className={`sidebar-tab${
+              activeTab === "resources" ? " sidebar-tab--active" : ""
+            }`}
             onClick={() => setActiveTab("resources")}
           >
             Resources
@@ -136,14 +145,19 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
           {activeTab === "missions" && (
             <>
               {props.missions.length === 0 && (
-                <p style={{ color: "hsl(var(--color-muted-fg))", fontSize: "var(--text-sm)" }}>
+                <p
+                  style={{
+                    color: "hsl(var(--color-muted-fg))",
+                    fontSize: "var(--text-sm)",
+                  }}
+                >
                   No missions yet.
                 </p>
               )}
               {props.missions.map((mission) => {
                 const event = eventByMission.get(mission.id);
-                const isCompleted =
-                  event?.status === "completed" || event?.status === "autoApproved";
+                const isCompleted = event?.status === "completed" ||
+                  event?.status === "autoApproved";
 
                 return (
                   <button
@@ -151,10 +165,18 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
                     type="button"
                     className="sidebar-mission-row"
                     onClick={() => props.onMissionClick(mission.id)}
-                    style={{ background: "none", border: "none", cursor: "pointer", width: "100%", padding: 0 }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      width: "100%",
+                      padding: 0,
+                    }}
                   >
                     <div
-                      className={`mission-item__check${isCompleted ? " mission-item__check--done" : ""}`}
+                      className={`mission-item__check${
+                        isCompleted ? " mission-item__check--done" : ""
+                      }`}
                       aria-hidden="true"
                       style={{ flexShrink: 0 }}
                     >
@@ -190,7 +212,12 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
           )}
 
           {activeTab === "resources" && (
-            <p style={{ color: "hsl(var(--color-muted-fg))", fontSize: "var(--text-sm)" }}>
+            <p
+              style={{
+                color: "hsl(var(--color-muted-fg))",
+                fontSize: "var(--text-sm)",
+              }}
+            >
               Resources for this milestone will appear here in a future sprint.
             </p>
           )}

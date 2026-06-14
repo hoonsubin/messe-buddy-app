@@ -1,25 +1,25 @@
 import type { AppAdapter } from "../interface.ts";
 import type {
-  Session,
-  Player,
   BuddyProfile,
+  FormSchema,
   Milestone,
   Mission,
-  FormSchema,
+  PBRecord,
+  Player,
   ProgressEvent,
   Resource,
-  PBRecord,
+  Session,
 } from "../../types/index.ts";
 import type { FieldSchema } from "../../types/index.ts";
 import {
-  MOCK_SESSION,
+  MOCK_BUDDY_PROFILES,
+  MOCK_FORM_SCHEMAS,
   MOCK_MILESTONES,
   MOCK_MISSIONS,
-  MOCK_FORM_SCHEMAS,
   MOCK_PLAYERS,
-  MOCK_BUDDY_PROFILES,
   MOCK_PROGRESS_EVENTS,
   MOCK_RESOURCES,
+  MOCK_SESSION,
 } from "./mockData.ts";
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -46,7 +46,9 @@ const subscriptions = new Map<string, Set<ProgressCallback>>();
   for (const m of MOCK_MISSIONS) missions.set(m.id, m);
   for (const s of MOCK_FORM_SCHEMAS) formSchemas.set(s.missionId, s);
   for (const p of MOCK_PLAYERS) players.set(p.id, p);
-  for (const b of MOCK_BUDDY_PROFILES) buddyProfiles.set(b.assignedToPlayerId, b);
+  for (const b of MOCK_BUDDY_PROFILES) {
+    buddyProfiles.set(b.assignedToPlayerId, b);
+  }
   for (const e of MOCK_PROGRESS_EVENTS) {
     progressEvents.set(`${e.playerId}::${e.missionId}`, e);
   }
@@ -76,7 +78,10 @@ const notify = (key: string, event: ProgressEvent): void => {
 
 // Simulates Game Maker approval — transitions pendingApproval → completed
 // after 4 seconds. Mirrors what the real PB SSE subscription does.
-const simulateGmApproval = (key: string, gmUid = "uid_gamemaker_peter"): void => {
+const simulateGmApproval = (
+  key: string,
+  gmUid = "uid_gamemaker_peter",
+): void => {
   setTimeout(() => {
     const existing = progressEvents.get(key);
     if (!existing || existing.status !== "pendingApproval") return;
@@ -91,7 +96,7 @@ const simulateGmApproval = (key: string, gmUid = "uid_gamemaker_peter"): void =>
     progressEvents.set(key, approved);
     notify(key, approved);
   }, 4000);
-}
+};
 
 // ── Session ───────────────────────────────────────────────────────────────────
 
@@ -103,7 +108,7 @@ const getSession = async (sessionId: string): Promise<Session> => {
 
 const createSession = async (
   name: string,
-  gameMakerUid: string
+  gameMakerUid: string,
 ): Promise<Session> => {
   const session: Session = {
     ...makeRecord(),
@@ -113,17 +118,17 @@ const createSession = async (
   };
   sessions.set(session.id, session);
   return session;
-}
+};
 
 const updateSession = async (
   sessionId: string,
-  patch: Partial<Omit<Session, keyof PBRecord>>
+  patch: Partial<Omit<Session, keyof PBRecord>>,
 ): Promise<Session> => {
   const existing = await getSession(sessionId);
   const updated: Session = { ...existing, ...patch, updated: now() };
   sessions.set(sessionId, updated);
   return updated;
-}
+};
 
 // ── Player ────────────────────────────────────────────────────────────────────
 
@@ -139,66 +144,68 @@ const getPlayerById = async (playerId: string): Promise<Player | null> => {
 };
 
 const createPlayer = async (
-  data: Omit<Player, keyof PBRecord>
+  data: Omit<Player, keyof PBRecord>,
 ): Promise<Player> => {
   const player: Player = { ...makeRecord(), ...data };
   players.set(player.id, player);
   return player;
-}
+};
 
 const updatePlayer = async (
   playerId: string,
-  patch: Partial<Omit<Player, keyof PBRecord>>
+  patch: Partial<Omit<Player, keyof PBRecord>>,
 ): Promise<Player> => {
   const existing = players.get(playerId);
   if (!existing) throw new Error(`Player not found: ${playerId}`);
   const updated: Player = { ...existing, ...patch, updated: now() };
   players.set(playerId, updated);
   return updated;
-}
+};
 
 const getPlayerByRecoveryKey = async (
   recoveryKey: string,
-  sessionId: string
+  sessionId: string,
 ): Promise<Player | null> => {
   for (const p of players.values()) {
     if (p.recoveryKey === recoveryKey && p.sessionId === sessionId) return p;
   }
   return null;
-}
+};
 
-const listPlayers = async (sessionId: string): Promise<ReadonlyArray<Player>> => {
+const listPlayers = async (
+  sessionId: string,
+): Promise<ReadonlyArray<Player>> => {
   return [...players.values()].filter((p) => p.sessionId === sessionId);
 };
 
 // ── Milestones ────────────────────────────────────────────────────────────────
 
 const listMilestones = async (
-  sessionId: string
+  sessionId: string,
 ): Promise<ReadonlyArray<Milestone>> => {
   return [...milestones.values()]
     .filter((m) => m.sessionId === sessionId)
     .sort((a, b) => a.order - b.order);
-}
+};
 
 const createMilestone = async (
-  data: Omit<Milestone, keyof PBRecord>
+  data: Omit<Milestone, keyof PBRecord>,
 ): Promise<Milestone> => {
   const ms: Milestone = { ...makeRecord(), ...data };
   milestones.set(ms.id, ms);
   return ms;
-}
+};
 
 const updateMilestone = async (
   milestoneId: string,
-  patch: Partial<Omit<Milestone, keyof PBRecord>>
+  patch: Partial<Omit<Milestone, keyof PBRecord>>,
 ): Promise<Milestone> => {
   const existing = milestones.get(milestoneId);
   if (!existing) throw new Error(`Milestone not found: ${milestoneId}`);
   const updated: Milestone = { ...existing, ...patch, updated: now() };
   milestones.set(milestoneId, updated);
   return updated;
-}
+};
 
 const deleteMilestone = async (milestoneId: string): Promise<void> => {
   milestones.delete(milestoneId);
@@ -207,31 +214,31 @@ const deleteMilestone = async (milestoneId: string): Promise<void> => {
 // ── Missions ──────────────────────────────────────────────────────────────────
 
 const listMissions = async (
-  sessionId: string
+  sessionId: string,
 ): Promise<ReadonlyArray<Mission>> => {
   return [...missions.values()]
     .filter((m) => m.sessionId === sessionId)
     .sort((a, b) => a.order - b.order);
-}
+};
 
 const createMission = async (
-  data: Omit<Mission, keyof PBRecord>
+  data: Omit<Mission, keyof PBRecord>,
 ): Promise<Mission> => {
   const mission: Mission = { ...makeRecord(), ...data };
   missions.set(mission.id, mission);
   return mission;
-}
+};
 
 const updateMission = async (
   missionId: string,
-  patch: Partial<Omit<Mission, keyof PBRecord>>
+  patch: Partial<Omit<Mission, keyof PBRecord>>,
 ): Promise<Mission> => {
   const existing = missions.get(missionId);
   if (!existing) throw new Error(`Mission not found: ${missionId}`);
   const updated: Mission = { ...existing, ...patch, updated: now() };
   missions.set(missionId, updated);
   return updated;
-}
+};
 
 const deleteMission = async (missionId: string): Promise<void> => {
   missions.delete(missionId);
@@ -245,7 +252,7 @@ const getFormSchema = async (missionId: string): Promise<FormSchema | null> => {
 
 const upsertFormSchema = async (
   missionId: string,
-  fields: ReadonlyArray<FieldSchema>
+  fields: ReadonlyArray<FieldSchema>,
 ): Promise<FormSchema> => {
   const existing = formSchemas.get(missionId);
   const schema: FormSchema = existing
@@ -253,7 +260,7 @@ const upsertFormSchema = async (
     : { ...makeRecord(), missionId, fields };
   formSchemas.set(missionId, schema);
   return schema;
-}
+};
 
 // ── Progress Events ───────────────────────────────────────────────────────────
 // C-05, C-14: upsertProgressEvent is the single write path.
@@ -261,7 +268,9 @@ const upsertFormSchema = async (
 const upsertProgressEvent = async (
   playerId: string,
   missionId: string,
-  patch: Partial<Omit<ProgressEvent, keyof PBRecord | "playerId" | "missionId" | "sessionId">>
+  patch: Partial<
+    Omit<ProgressEvent, keyof PBRecord | "playerId" | "missionId" | "sessionId">
+  >,
 ): Promise<ProgressEvent> => {
   const key = `${playerId}::${missionId}`;
   const existing = progressEvents.get(key);
@@ -288,10 +297,10 @@ const upsertProgressEvent = async (
   }
 
   return event;
-}
+};
 
 const listProgressEvents = async (
-  playerId: string
+  playerId: string,
 ): Promise<ReadonlyArray<ProgressEvent>> => {
   return [...progressEvents.values()].filter((e) => e.playerId === playerId);
 };
@@ -299,8 +308,8 @@ const listProgressEvents = async (
 const subscribeProgressEvent = (
   playerId: string,
   missionId: string,
-  callback: (event: ProgressEvent) => void
-): (() => void) => {
+  callback: (event: ProgressEvent) => void,
+): () => void => {
   const key = `${playerId}::${missionId}`;
   let subs = subscriptions.get(key);
   if (!subs) {
@@ -309,19 +318,19 @@ const subscribeProgressEvent = (
   }
   subs.add(callback);
   return () => subs?.delete(callback);
-}
+};
 
 // ── Buddy Profile ─────────────────────────────────────────────────────────────
 
 const getBuddyProfile = async (
-  playerId: string
+  playerId: string,
 ): Promise<BuddyProfile | null> => {
   return buddyProfiles.get(playerId) ?? null;
 };
 
 const upsertBuddyProfile = async (
   playerId: string,
-  data: Omit<BuddyProfile, keyof PBRecord | "assignedToPlayerId">
+  data: Omit<BuddyProfile, keyof PBRecord | "assignedToPlayerId">,
 ): Promise<BuddyProfile> => {
   const existing = buddyProfiles.get(playerId);
   const profile: BuddyProfile = existing
@@ -329,34 +338,34 @@ const upsertBuddyProfile = async (
     : { ...makeRecord(), ...data, assignedToPlayerId: playerId };
   buddyProfiles.set(playerId, profile);
   return profile;
-}
+};
 
 // ── Resources ─────────────────────────────────────────────────────────────────
 
 const listResources = async (
-  sessionId: string
+  sessionId: string,
 ): Promise<ReadonlyArray<Resource>> => {
   return [...resources.values()].filter((r) => r.sessionId === sessionId);
 };
 
 const createResource = async (
-  data: Omit<Resource, keyof PBRecord>
+  data: Omit<Resource, keyof PBRecord>,
 ): Promise<Resource> => {
   const resource: Resource = { ...makeRecord(), ...data };
   resources.set(resource.id, resource);
   return resource;
-}
+};
 
 const updateResource = async (
   resourceId: string,
-  patch: Partial<Omit<Resource, keyof PBRecord>>
+  patch: Partial<Omit<Resource, keyof PBRecord>>,
 ): Promise<Resource> => {
   const existing = resources.get(resourceId);
   if (!existing) throw new Error(`Resource not found: ${resourceId}`);
   const updated: Resource = { ...existing, ...patch, updated: now() };
   resources.set(resourceId, updated);
   return updated;
-}
+};
 
 const deleteResource = async (resourceId: string): Promise<void> => {
   resources.delete(resourceId);

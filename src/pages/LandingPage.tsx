@@ -1,8 +1,11 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useIdentity } from "../hooks/useIdentity.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
-import { joinSession, createGameMakerSession } from "../use-cases/joinSession.ts";
+import {
+  createGameMakerSession,
+  joinSession,
+} from "../use-cases/joinSession.ts";
 import { recoverIdentity } from "../use-cases/recoverIdentity.ts";
 import RecoveryKeyModal from "../components/shared/RecoveryKeyModal.tsx";
 import { USER_ROLE } from "../types/index.ts";
@@ -28,17 +31,18 @@ const LandingPage = () => {
   const [recoverySessionId, setRecoverySessionId] = useState("");
 
   // Set after a successful join/create — triggers the modal
-  const [pendingRecoveryKey, setPendingRecoveryKey] = useState<string | null>(null);
+  const [pendingRecoveryKey, setPendingRecoveryKey] = useState<string | null>(
+    null,
+  );
   // Set alongside pendingRecoveryKey so we know where to redirect on dismiss
   const [pendingRedirect, setPendingRedirect] = useState<string>("/");
 
   // Returning user: if identity exists in localStorage, route silently to cockpit
   useEffect(() => {
     if (!identity) return;
-    const dest =
-      identity.role === USER_ROLE.PLAYER
-        ? `/session/${identity.sessionId}`
-        : `/admin/${identity.sessionId}`;
+    const dest = identity.role === USER_ROLE.PLAYER
+      ? `/session/${identity.sessionId}`
+      : `/admin/${identity.sessionId}`;
     navigate(dest, { replace: true });
   }, [identity, navigate]);
 
@@ -57,7 +61,9 @@ const LandingPage = () => {
       setStatus("idle");
     } catch {
       setStatus("error");
-      setErrorMessage("Session not found. Check your session code and try again.");
+      setErrorMessage(
+        "Session not found. Check your session code and try again.",
+      );
     }
   };
 
@@ -66,7 +72,10 @@ const LandingPage = () => {
     setStatus("loading");
     setErrorMessage("");
     try {
-      const createdIdentity = await createGameMakerSession(sessionName.trim(), adapter);
+      const createdIdentity = await createGameMakerSession(
+        sessionName.trim(),
+        adapter,
+      );
       // Same reasoning: use case writes localStorage; setIdentity would race the modal.
       setPendingRedirect(`/admin/${createdIdentity.sessionId}`);
       setPendingRecoveryKey(createdIdentity.recoveryKey);
@@ -85,17 +94,18 @@ const LandingPage = () => {
       const recovered = await recoverIdentity(
         recoveryKey.trim().toUpperCase(),
         recoverySessionId.trim(),
-        adapter
+        adapter,
       );
       // recoverIdentity writes localStorage; navigate directly (no modal for recovery).
-      const dest =
-        recovered.role === USER_ROLE.PLAYER
-          ? `/session/${recovered.sessionId}`
-          : `/admin/${recovered.sessionId}`;
+      const dest = recovered.role === USER_ROLE.PLAYER
+        ? `/session/${recovered.sessionId}`
+        : `/admin/${recovered.sessionId}`;
       navigate(dest, { replace: true });
     } catch {
       setStatus("error");
-      setErrorMessage("No account found for that key and session. Check and try again.");
+      setErrorMessage(
+        "No account found for that key and session. Check and try again.",
+      );
     }
   };
 
@@ -132,7 +142,13 @@ const LandingPage = () => {
         }}
       >
         {/* Messe München logotype */}
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--space-3)",
+          }}
+        >
           <div
             aria-hidden="true"
             style={{
@@ -215,12 +231,21 @@ const LandingPage = () => {
               >
                 Join as
               </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-3)",
+                }}
+              >
                 <button
                   type="button"
                   className="btn btn--primary"
                   style={{ width: "100%", justifyContent: "center" }}
-                  onClick={() => { resetError(); setView("join"); }}
+                  onClick={() => {
+                    resetError();
+                    setView("join");
+                  }}
                 >
                   New Employee
                 </button>
@@ -228,7 +253,10 @@ const LandingPage = () => {
                   type="button"
                   className="btn btn--secondary"
                   style={{ width: "100%", justifyContent: "center" }}
-                  onClick={() => { resetError(); setView("create"); }}
+                  onClick={() => {
+                    resetError();
+                    setView("create");
+                  }}
                 >
                   Admin
                 </button>
@@ -249,7 +277,10 @@ const LandingPage = () => {
                   color: "hsl(var(--color-muted-fg))",
                   fontSize: "var(--text-sm)",
                 }}
-                onClick={() => { resetError(); setView("recover"); }}
+                onClick={() => {
+                  resetError();
+                  setView("recover");
+                }}
               >
                 Recover my progress
               </button>
@@ -278,7 +309,9 @@ const LandingPage = () => {
                 placeholder="Ask your Game Master for the code"
                 value={sessionCode}
                 onChange={(e) => setSessionCode(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") void handleJoin(); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void handleJoin();
+                }}
                 autoFocus
                 style={{ width: "100%", marginBottom: "var(--space-4)" }}
               />
@@ -294,7 +327,13 @@ const LandingPage = () => {
                   {errorMessage}
                 </p>
               )}
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-2)",
+                }}
+              >
                 <button
                   type="button"
                   className="btn btn--primary"
@@ -308,7 +347,10 @@ const LandingPage = () => {
                   type="button"
                   className="btn btn--ghost"
                   style={{ width: "100%", justifyContent: "center" }}
-                  onClick={() => { resetError(); setView("role-select"); }}
+                  onClick={() => {
+                    resetError();
+                    setView("role-select");
+                  }}
                 >
                   Back
                 </button>
@@ -338,7 +380,9 @@ const LandingPage = () => {
                 placeholder="e.g. Munich Onboarding June 2026"
                 value={sessionName}
                 onChange={(e) => setSessionName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") void handleCreate(); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void handleCreate();
+                }}
                 autoFocus
                 style={{ width: "100%", marginBottom: "var(--space-4)" }}
               />
@@ -354,7 +398,13 @@ const LandingPage = () => {
                   {errorMessage}
                 </p>
               )}
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-2)",
+                }}
+              >
                 <button
                   type="button"
                   className="btn btn--primary"
@@ -368,7 +418,10 @@ const LandingPage = () => {
                   type="button"
                   className="btn btn--ghost"
                   style={{ width: "100%", justifyContent: "center" }}
-                  onClick={() => { resetError(); setView("role-select"); }}
+                  onClick={() => {
+                    resetError();
+                    setView("role-select");
+                  }}
                 >
                   Back
                 </button>
@@ -426,7 +479,9 @@ const LandingPage = () => {
                 placeholder="Shared by your Game Master"
                 value={recoverySessionId}
                 onChange={(e) => setRecoverySessionId(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") void handleRecover(); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void handleRecover();
+                }}
                 style={{ width: "100%", marginBottom: "var(--space-4)" }}
               />
               {errorMessage && (
@@ -441,16 +496,20 @@ const LandingPage = () => {
                   {errorMessage}
                 </p>
               )}
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-2)",
+                }}
+              >
                 <button
                   type="button"
                   className="btn btn--primary"
                   style={{ width: "100%", justifyContent: "center" }}
-                  disabled={
-                    !recoveryKey.trim() ||
+                  disabled={!recoveryKey.trim() ||
                     !recoverySessionId.trim() ||
-                    status === "loading"
-                  }
+                    status === "loading"}
                   onClick={() => void handleRecover()}
                 >
                   {status === "loading" ? "Recovering…" : "Restore progress"}
@@ -459,7 +518,10 @@ const LandingPage = () => {
                   type="button"
                   className="btn btn--ghost"
                   style={{ width: "100%", justifyContent: "center" }}
-                  onClick={() => { resetError(); setView("role-select"); }}
+                  onClick={() => {
+                    resetError();
+                    setView("role-select");
+                  }}
                 >
                   Back
                 </button>

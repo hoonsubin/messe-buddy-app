@@ -12,7 +12,8 @@ const SearchBar = (props: SearchBarProps) => (
       className="search-bar__input"
       placeholder={props.placeholder}
       aria-label={props.placeholder}
-      onChange={(e) => props.onSearch(e.target.value)}
+      onChange={(e) =>
+        props.onSearch(e.target.value)}
     />
   </div>
 );

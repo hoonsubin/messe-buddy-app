@@ -27,7 +27,8 @@ interface MilestoneMapViewerProps {
 const dist = (a: Touch, b: Touch): number =>
   Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
 
-const clampScale = (s: number): number => Math.max(MIN_SCALE, Math.min(MAX_SCALE, s));
+const clampScale = (s: number): number =>
+  Math.max(MIN_SCALE, Math.min(MAX_SCALE, s));
 
 const MilestoneMapViewer = (props: MilestoneMapViewerProps) => {
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -38,7 +39,11 @@ const MilestoneMapViewer = (props: MilestoneMapViewerProps) => {
   //   panX = viewportW/2 - (canvasW * xPct/100) * S
   //   panY = viewportH/2 - (canvasH * yPct/100) * S
   // We compute this once after mount.
-  const [transform, setTransform] = useState<MapTransform>({ x: 0, y: 0, scale: DEFAULT_SCALE });
+  const [transform, setTransform] = useState<MapTransform>({
+    x: 0,
+    y: 0,
+    scale: DEFAULT_SCALE,
+  });
 
   // Initialise pan so the first milestone (or map center) is visible.
   useEffect(() => {
@@ -53,7 +58,7 @@ const MilestoneMapViewer = (props: MilestoneMapViewerProps) => {
       x: width / 2 - width * focalX * DEFAULT_SCALE,
       y: height / 2 - height * focalY * DEFAULT_SCALE,
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally runs once — milestones are stable mock data
 
   // Mutable drag/pinch state — stored in a ref to avoid stale closures inside the effect.
@@ -122,7 +127,9 @@ const MilestoneMapViewer = (props: MilestoneMapViewerProps) => {
         }));
       } else if (g.pinching && e.touches.length === 2) {
         const newDist = dist(e.touches[0]!, e.touches[1]!);
-        const newScale = clampScale(g.pinchStartScale * (newDist / g.pinchStartDist));
+        const newScale = clampScale(
+          g.pinchStartScale * (newDist / g.pinchStartDist),
+        );
         // Zoom toward the pinch midpoint
         const scaleRatio = newScale / cur.scale;
         const px = g.startClient.x;
@@ -169,12 +176,16 @@ const MilestoneMapViewer = (props: MilestoneMapViewerProps) => {
     if (!gesture.current.dragging) return;
     setTransform((prev) => ({
       ...prev,
-      x: gesture.current.startPan.x + (e.clientX - gesture.current.startClient.x),
-      y: gesture.current.startPan.y + (e.clientY - gesture.current.startClient.y),
+      x: gesture.current.startPan.x +
+        (e.clientX - gesture.current.startClient.x),
+      y: gesture.current.startPan.y +
+        (e.clientY - gesture.current.startClient.y),
     }));
   };
 
-  const handleMouseUp = () => { gesture.current.dragging = false; };
+  const handleMouseUp = () => {
+    gesture.current.dragging = false;
+  };
 
   // ── Zoom buttons ─────────────────────────────────────────────────────────
 
@@ -195,7 +206,9 @@ const MilestoneMapViewer = (props: MilestoneMapViewerProps) => {
     });
   };
 
-  const progressById = new Map(props.milestoneProgress.map((mp) => [mp.milestoneId, mp]));
+  const progressById = new Map(
+    props.milestoneProgress.map((mp) => [mp.milestoneId, mp]),
+  );
 
   return (
     <div
@@ -211,7 +224,8 @@ const MilestoneMapViewer = (props: MilestoneMapViewerProps) => {
       <div
         className="map-canvas"
         style={{
-          transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+          transform:
+            `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
         }}
       >
         {/* Background floor plan */}
@@ -229,8 +243,7 @@ const MilestoneMapViewer = (props: MilestoneMapViewerProps) => {
               className="map-canvas__bg"
               style={{ background: "hsl(var(--color-border) / 0.3)" }}
             />
-          )
-        }
+          )}
 
         {/* Milestone nodes */}
         {props.milestones.map((ms) => {
@@ -250,7 +263,8 @@ const MilestoneMapViewer = (props: MilestoneMapViewerProps) => {
         })}
 
         {/* Player location marker */}
-        {props.playerXPercent !== undefined && props.playerYPercent !== undefined && (
+        {props.playerXPercent !== undefined &&
+          props.playerYPercent !== undefined && (
           <YouAreHereMarker
             xPercent={props.playerXPercent}
             yPercent={props.playerYPercent}

@@ -9,7 +9,13 @@ import TemplateLibrary from "../components/admin/TemplateLibrary.tsx";
 import BuddyAssignmentForm from "../components/admin/BuddyAssignmentForm.tsx";
 import ResourcesEditor from "../components/admin/ResourcesEditor.tsx";
 import SaveTemplateModal from "../components/admin/SaveTemplateModal.tsx";
-import { MOCK_SESSION, MOCK_MILESTONES, MOCK_MISSIONS, MOCK_PLAYERS, MOCK_RESOURCES } from "../adapters/mock/mockData.ts";
+import {
+  MOCK_MILESTONES,
+  MOCK_MISSIONS,
+  MOCK_PLAYERS,
+  MOCK_RESOURCES,
+  MOCK_SESSION,
+} from "../adapters/mock/mockData.ts";
 
 // Phase 1: first player as default for visual shell preview.
 const PLAYER = MOCK_PLAYERS[0]!;
@@ -64,7 +70,13 @@ const AdminCockpitPage = () => (
         />
         <BuddyAssignmentForm
           players={MOCK_PLAYERS}
-          draft={{ sessionId: MOCK_SESSION.id, name: "", role: "", tenure: "", contactUrl: "" }}
+          draft={{
+            sessionId: MOCK_SESSION.id,
+            name: "",
+            role: "",
+            tenure: "",
+            contactUrl: "",
+          }}
           selectedPlayerId=""
           onPlayerChange={() => undefined}
           onDraftChange={() => undefined}

@@ -12,7 +12,8 @@ const PLACEHOLDER_STEPS: ReadonlyArray<TutorialStepData> = [
     stepNumber: 1,
     totalSteps: 4,
     title: "Welcome to MesseBuddy",
-    body: "Here's how your onboarding works. You'll complete missions to earn XP and unlock milestones.",
+    body:
+      "Here's how your onboarding works. You'll complete missions to earn XP and unlock milestones.",
     ctaLabel: "Let's start",
     targetSelector: undefined,
   },
@@ -20,7 +21,8 @@ const PLACEHOLDER_STEPS: ReadonlyArray<TutorialStepData> = [
     stepNumber: 2,
     totalSteps: 4,
     title: "Your Profile",
-    body: "First, tell us a bit about yourself. Your buddy and team will use this to get to know you.",
+    body:
+      "First, tell us a bit about yourself. Your buddy and team will use this to get to know you.",
     ctaLabel: "Set up profile",
     targetSelector: ".ms-strip",
   },
@@ -28,7 +30,8 @@ const PLACEHOLDER_STEPS: ReadonlyArray<TutorialStepData> = [
     stepNumber: 3,
     totalSteps: 4,
     title: "The Journey Map",
-    body: "Each milestone is a chapter of your onboarding. Complete missions within a milestone to unlock the next.",
+    body:
+      "Each milestone is a chapter of your onboarding. Complete missions within a milestone to unlock the next.",
     ctaLabel: "Got it",
     targetSelector: ".milestone-map",
   },
@@ -36,7 +39,8 @@ const PLACEHOLDER_STEPS: ReadonlyArray<TutorialStepData> = [
     stepNumber: 4,
     totalSteps: 4,
     title: "Your Buddy",
-    body: "Your buddy is your guide for the first weeks. Reach out any time — they're here to help.",
+    body:
+      "Your buddy is your guide for the first weeks. Reach out any time — they're here to help.",
     ctaLabel: "Done",
     targetSelector: ".buddy-card",
   },
@@ -44,7 +48,7 @@ const PLACEHOLDER_STEPS: ReadonlyArray<TutorialStepData> = [
 
 interface TutorialOverlayProps {
   readonly isVisible: boolean;
-  readonly currentStepIndex: number;  // 0-based
+  readonly currentStepIndex: number; // 0-based
   readonly onNext: () => void;
   readonly onSkip: () => void;
 }
@@ -52,7 +56,8 @@ interface TutorialOverlayProps {
 const TutorialOverlay = (props: TutorialOverlayProps) => {
   if (!props.isVisible) return null;
 
-  const step = PLACEHOLDER_STEPS[props.currentStepIndex] ?? PLACEHOLDER_STEPS[0]!;
+  const step = PLACEHOLDER_STEPS[props.currentStepIndex] ??
+    PLACEHOLDER_STEPS[0]!;
 
   return (
     <div
@@ -67,7 +72,7 @@ const TutorialOverlay = (props: TutorialOverlayProps) => {
         background: "hsl(var(--color-fg) / 0.55)",
         pointerEvents: "none",
       }}
-      aria-hidden="true"  /* TutorialStep dialog is the accessible focus target */
+      aria-hidden="true" /* TutorialStep dialog is the accessible focus target */
     >
       {/* Highlight ring placeholder — Phase 5 positions this over targetSelector */}
       <div
@@ -96,7 +101,8 @@ const TutorialOverlay = (props: TutorialOverlayProps) => {
 export const TutorialOverlayWithStep = (props: TutorialOverlayProps) => {
   if (!props.isVisible) return null;
 
-  const step = PLACEHOLDER_STEPS[props.currentStepIndex] ?? PLACEHOLDER_STEPS[0]!;
+  const step = PLACEHOLDER_STEPS[props.currentStepIndex] ??
+    PLACEHOLDER_STEPS[0]!;
 
   return (
     <>

@@ -11,7 +11,11 @@ interface TagSelectorProps {
 const ALL_TAGS = Object.values(MISSION_TAG) as MissionTag[];
 
 const TagSelector = (props: TagSelectorProps) => (
-  <div className="tag-selector" data-testid="tag-selector" style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+  <div
+    className="tag-selector"
+    data-testid="tag-selector"
+    style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}
+  >
     {ALL_TAGS.map((tag) => {
       const isSelected = props.selected.includes(tag);
       return (
@@ -20,11 +24,17 @@ const TagSelector = (props: TagSelectorProps) => (
           type="button"
           onClick={() =>
             props.onChange(
-              isSelected ? props.selected.filter((t) => t !== tag) : [...props.selected, tag]
-            )
-          }
+              isSelected
+                ? props.selected.filter((t) => t !== tag)
+                : [...props.selected, tag],
+            )}
           aria-pressed={isSelected}
-          style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+          }}
         >
           <TagBadge label={tag} variant={isSelected ? tag : undefined} />
         </button>

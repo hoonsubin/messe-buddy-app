@@ -13,7 +13,10 @@ interface MissionEditorProps {
 }
 
 const MissionEditor = (props: MissionEditorProps) => (
-  <div data-testid="mission-editor" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+  <div
+    data-testid="mission-editor"
+    style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}
+  >
     <div className="form-field">
       <label className="form-label" htmlFor="mission-title">Title</label>
       <input
@@ -21,7 +24,8 @@ const MissionEditor = (props: MissionEditorProps) => (
         className="form-input"
         type="text"
         value={props.draft.title}
-        onChange={(e) => props.onDraftChange({ ...props.draft, title: e.target.value })}
+        onChange={(e) =>
+          props.onDraftChange({ ...props.draft, title: e.target.value })}
         placeholder="Mission title"
       />
     </div>
@@ -48,7 +52,11 @@ const MissionEditor = (props: MissionEditorProps) => (
           className="form-input"
           type="url"
           value={props.draft.externalUrl ?? ""}
-          onChange={(e) => props.onDraftChange({ ...props.draft, externalUrl: e.target.value })}
+          onChange={(e) =>
+            props.onDraftChange({
+              ...props.draft,
+              externalUrl: e.target.value,
+            })}
           placeholder="https://..."
         />
       </div>
@@ -59,7 +67,8 @@ const MissionEditor = (props: MissionEditorProps) => (
       <DifficultySelector
         value={props.draft.difficulty}
         xpPreview={props.draft.xpValue}
-        onChange={(difficulty) => props.onDraftChange({ ...props.draft, difficulty })}
+        onChange={(difficulty) =>
+          props.onDraftChange({ ...props.draft, difficulty })}
       />
     </div>
 
@@ -74,13 +83,19 @@ const MissionEditor = (props: MissionEditorProps) => (
     <ValidationMethodSelector
       value={props.draft.validationMethod}
       hidden={props.draft.type === "form"}
-      onChange={(validationMethod) => props.onDraftChange({ ...props.draft, validationMethod })}
+      onChange={(validationMethod) =>
+        props.onDraftChange({ ...props.draft, validationMethod })}
     />
 
     {/* FormEditor rendered at page level when type="form"; shown here as slot marker */}
     {props.draft.type === "form" && (
       <div data-testid="form-editor-slot">
-        <p style={{ fontSize: "var(--text-sm)", color: "hsl(var(--color-muted-fg))" }}>
+        <p
+          style={{
+            fontSize: "var(--text-sm)",
+            color: "hsl(var(--color-muted-fg))",
+          }}
+        >
           Form fields are managed in the section below.
         </p>
         <FormEditor
