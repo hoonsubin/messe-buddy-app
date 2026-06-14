@@ -18,15 +18,31 @@ import ValidationDisplay from "./ValidationDisplay.tsx";
 /** Derive visual badge config from mission type + validation method. */
 const getMethodBadge = (mission: Mission) => {
   if (mission.type === MISSION_TYPE.LINK) {
-    return { label: "Link Mission", className: "mission-method-badge--link", Icon: MdOpenInNew };
+    return {
+      label: "Link Mission",
+      className: "mission-method-badge--link",
+      Icon: MdOpenInNew,
+    };
   }
   if (mission.validationMethod === "qr") {
-    return { label: "Offline Mission", className: "mission-method-badge--offline", Icon: MdLocationOn };
+    return {
+      label: "Offline Mission",
+      className: "mission-method-badge--offline",
+      Icon: MdLocationOn,
+    };
   }
   if (mission.validationMethod === "gmApprove") {
-    return { label: "Needs Approval", className: "mission-method-badge--approval", Icon: MdRateReview };
+    return {
+      label: "Needs Approval",
+      className: "mission-method-badge--approval",
+      Icon: MdRateReview,
+    };
   }
-  return { label: "Self-Complete", className: "mission-method-badge--self", Icon: MdTaskAlt };
+  return {
+    label: "Self-Complete",
+    className: "mission-method-badge--self",
+    Icon: MdTaskAlt,
+  };
 };
 
 interface MissionDetailPopupProps {
@@ -48,8 +64,7 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
   const [showValidation, setShowValidation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isCompleted =
-    props.progressEvent?.status === "completed" ||
+  const isCompleted = props.progressEvent?.status === "completed" ||
     props.progressEvent?.status === "autoApproved";
 
   // ── Swipe-down to close ──────────────────────────────────────────────────
@@ -100,16 +115,12 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
   }, [adapter, isCompleted, isSubmitting, mission, props]);
 
   // ── Render body ──────────────────────────────────────────────────────────
-  const bodyHtml = mission.body
-    ? (marked.parse(mission.body) as string)
-    : "";
+  const bodyHtml = mission.body ? (marked.parse(mission.body) as string) : "";
 
   const isLink = mission.type === MISSION_TYPE.LINK;
   const methodBadge = getMethodBadge(mission);
   const actionLabel = isLink
-    ? isCompleted
-      ? "Visited"
-      : "Mark as Visited"
+    ? isCompleted ? "Visited" : "Mark as Visited"
     : isCompleted
     ? "Completed"
     : "Mark Complete";
@@ -173,12 +184,17 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
           >
             <XPBadge value={mission.xpValue} />
             {mission.tags.map((t) => (
-              <TagBadge key={t} label={t} variant={t} />
+              <TagBadge
+                key={t}
+                label={t}
+                variant={t}
+              />
             ))}
           </div>
 
           {/* QR context hint — shown before the user triggers validation */}
-          {mission.validationMethod === "qr" && !showValidation && !isCompleted && (
+          {mission.validationMethod === "qr" && !showValidation &&
+            !isCompleted && (
             <div
               style={{
                 marginBottom: "var(--space-4)",
@@ -202,7 +218,6 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
           {bodyHtml && !isLink && (
             <div
               className="prose"
-              // eslint-disable-next-line react/no-danger
               dangerouslySetInnerHTML={{ __html: bodyHtml }}
             />
           )}

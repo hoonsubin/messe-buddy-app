@@ -33,7 +33,30 @@ const CurrentMissionsList = (props: CurrentMissionsListProps) => {
     props.progressEvents.map((e) => [e.missionId, e]),
   );
 
-  if (props.missions.length === 0) return null;
+  if (props.missions.length === 0) {
+    return (
+      <section
+        data-testid="current-missions-list"
+        aria-label="Current missions"
+      >
+        <h2 className="section-label">Current Missions</h2>
+        <div
+          className="card"
+          style={{ padding: "var(--space-6)", textAlign: "center" }}
+        >
+          <p
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "hsl(var(--color-muted-fg))",
+              margin: 0,
+            }}
+          >
+            You're all caught up! No missions right now.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section data-testid="current-missions-list" aria-label="Current missions">

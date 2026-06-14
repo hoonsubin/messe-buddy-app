@@ -14,7 +14,8 @@ interface ValidationDisplayProps {
 
 const ValidationDisplay = (props: ValidationDisplayProps) => {
   const adapter = useAdapter();
-  const method = props.mission.validationMethod;
+  const { playerId, missionId, sessionId, mission, onValidated } = props;
+  const method = mission.validationMethod;
 
   // ── gmApprove: subscribe and wait for completed status ──────────────────
   // Mock adapter auto-fires after 4 s via simulateGmApproval.
@@ -22,17 +23,17 @@ const ValidationDisplay = (props: ValidationDisplayProps) => {
     if (method !== "gmApprove") return;
 
     const unsubscribe = adapter.subscribeProgressEvent(
-      props.playerId,
-      props.missionId,
+      playerId,
+      missionId,
       (event: ProgressEvent) => {
         if (event.status === "completed" || event.status === "autoApproved") {
-          props.onValidated();
+          onValidated();
         }
       },
     );
 
     return unsubscribe;
-  }, [adapter, method, props.playerId, props.missionId, props.onValidated]);
+  }, [adapter, method, playerId, missionId, onValidated]);
 
   return (
     <div
@@ -43,18 +44,18 @@ const ValidationDisplay = (props: ValidationDisplayProps) => {
       {method === "qr"
         ? (
           <QRDisplay
-            playerId={props.playerId}
-            missionId={props.missionId}
-            sessionId={props.sessionId}
-            xpValue={props.mission.xpValue}
-            onValidated={props.onValidated}
+            playerId={playerId}
+            missionId={missionId}
+            sessionId={sessionId}
+            xpValue={mission.xpValue}
+            onValidated={onValidated}
           />
         )
         : method === "gmApprove"
         ? (
           <PendingApprovalDisplay
-            missionTitle={props.mission.title}
-            onValidated={props.onValidated}
+            missionTitle={mission.title}
+            onValidated={onValidated}
           />
         )
         : null}

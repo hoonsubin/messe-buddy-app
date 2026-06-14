@@ -9,6 +9,7 @@ import { usePlayerProgress } from "../hooks/usePlayerProgress.ts";
 import { useBuddy } from "../hooks/useBuddy.ts";
 import { useResources } from "../hooks/useResources.ts";
 import TopBar from "../components/shared/TopBar.tsx";
+import DailyPlanView from "../components/player/DailyPlanView.tsx";
 import MilestoneMapViewer from "../components/player/MilestoneMapViewer.tsx";
 import MilestoneSidebarViewer from "../components/player/MilestoneSidebarViewer.tsx";
 import MissionDetailPopup from "../components/player/MissionDetailPopup.tsx";
@@ -89,6 +90,22 @@ const PlayerCockpitPage = () => {
     ? milestones.find((m) => m.id === selectedMilestoneId) ?? undefined
     : undefined;
 
+  // Compute current player position based on the first in-progress milestone,
+  // falling back to the first milestone overall, then to a sensible default.
+  const currentMilestone = (() => {
+    if (!playerProgress || milestones.length === 0) return null;
+    const mpMap = new Map(
+      playerProgress.milestoneProgress.map((mp) => [mp.milestoneId, mp]),
+    );
+    // Prefer the first in-progress milestone.
+    for (const ms of milestones) {
+      const mp = mpMap.get(ms.id);
+      if (mp?.status === "inProgress") return ms;
+    }
+    // Fall back to the first milestone overall.
+    return milestones[0] ?? null;
+  })();
+
   const sidebarMissions = selectedMilestoneId !== null
     ? missions.filter((m) => m.milestoneId === selectedMilestoneId)
     : [];
@@ -109,8 +126,7 @@ const PlayerCockpitPage = () => {
       if (!mission) return;
 
       const progress = progressEvents.find((e) => e.missionId === missionId);
-      const isCompleted =
-        progress?.status === "autoApproved" ||
+      const isCompleted = progress?.status === "autoApproved" ||
         progress?.status === "completed";
 
       if (mission.type === MISSION_TYPE.FORM && !isCompleted) {
@@ -129,8 +145,7 @@ const PlayerCockpitPage = () => {
       if (!mission) return;
 
       const progress = progressEvents.find((e) => e.missionId === missionId);
-      const isCompleted =
-        progress?.status === "autoApproved" ||
+      const isCompleted = progress?.status === "autoApproved" ||
         progress?.status === "completed";
 
       if (mission.type === MISSION_TYPE.FORM && !isCompleted) {
@@ -219,9 +234,9 @@ const PlayerCockpitPage = () => {
           mission={popupMission}
           playerId={player.id}
           sessionId={sessionId ?? ""}
-          progressEvent={
-            progressEvents.find((e) => e.missionId === popupMission.id) ?? null
-          }
+          progressEvent={progressEvents.find((e) =>
+            e.missionId === popupMission.id
+          ) ?? null}
           onClose={() => setPopupMission(null)}
           onValidated={() => {
             setPopupMission(null);
@@ -282,6 +297,9 @@ const PlayerCockpitPage = () => {
           </p>
         </header>
 
+        {/* Today's missions — primary orientation surface */}
+        <DailyPlanView />
+
         {/* Milestones section */}
         <section aria-label="Milestones">
           <h2 className="section-label">Milestones</h2>
@@ -296,8 +314,8 @@ const PlayerCockpitPage = () => {
               milestones={milestones}
               bgImageUrl={session?.bgImageUrl ?? ""}
               milestoneProgress={playerProgress?.milestoneProgress ?? []}
-              playerXPercent={15}
-              playerYPercent={35}
+              playerXPercent={currentMilestone?.xPercent}
+              playerYPercent={currentMilestone?.yPercent}
               onMilestoneClick={(id) => setSelectedMilestoneId(id)}
             />
           </div>

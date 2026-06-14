@@ -76,12 +76,21 @@ const notify = (key: string, event: ProgressEvent): void => {
   for (const cb of subs) cb(event);
 };
 
+// Store the current GM UID so simulateGmApproval uses the active admin.
+let currentAdminUid = "uid_gamemaker_peter";
+
+/** Set the admin UID used for simulated approvals. Call from AdminCockpitPage. */
+export const setMockAdminUid = (uid: string): void => {
+  currentAdminUid = uid;
+};
+
 // Simulates Game Maker approval — transitions pendingApproval → completed
 // after 4 seconds. Mirrors what the real PB SSE subscription does.
 const simulateGmApproval = (
   key: string,
-  gmUid = "uid_gamemaker_peter",
+  gmUid?: string,
 ): void => {
+  const effectiveUid = gmUid ?? currentAdminUid;
   setTimeout(() => {
     const existing = progressEvents.get(key);
     if (!existing || existing.status !== "pendingApproval") return;
@@ -89,7 +98,7 @@ const simulateGmApproval = (
     const approved: ProgressEvent = {
       ...existing,
       status: "completed",
-      validatedBy: gmUid,
+      validatedBy: effectiveUid,
       validatedAt: now(),
       updated: now(),
     };

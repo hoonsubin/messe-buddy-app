@@ -16,13 +16,15 @@ export interface UseChatStreamReturn {
 }
 
 // Stub: returns empty state. Real implementation replaces this in Phase 6.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+/* eslint-disable @typescript-eslint/no-unused-vars */
 export const useChatStream = (_sessionId: string): UseChatStreamReturn => {
   // Phase 6: replace with useState + EventSource SSE implementation.
   return {
     messages: [],
     isStreaming: false,
-    send: (_content: string) => undefined,
+    send: (_content: string) => {
+      // no-op stub — wired in Phase 6
+    },
     clear: () => undefined,
   };
 };

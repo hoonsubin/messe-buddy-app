@@ -42,14 +42,16 @@ const LandingPage = () => {
   // Hidden file input for template import
   const templateFileRef = useRef<HTMLInputElement>(null);
 
-  // Returning user: if identity exists in localStorage, route silently to cockpit
+  // Returning user: if identity exists in localStorage, navigate to cockpit
+  // only if the user hasn't explicitly chosen a view (i.e. landing page loads
+  // and identity is present, but the user hasn't clicked any button yet).
   useEffect(() => {
-    if (!identity) return;
+    if (!identity || view !== "role-select") return;
     const dest = identity.role === USER_ROLE.PLAYER
       ? `/session/${identity.sessionId}`
       : `/admin/${identity.sessionId}`;
     navigate(dest, { replace: true });
-  }, [identity, navigate]);
+  }, [identity, navigate, view]);
 
   // ── handlers ────────────────────────────────────────────────────────────────
 

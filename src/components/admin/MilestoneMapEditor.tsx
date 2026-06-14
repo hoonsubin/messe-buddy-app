@@ -23,7 +23,10 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => (
       bgImageUrl={props.bgImageUrl}
       testId="milestone-map-editor-viewport"
       overlayControls={
-        <GridToggleButton enabled={false} onToggle={() => undefined} />
+        <GridToggleButton
+          enabled={false}
+          onToggle={() => undefined}
+        />
       }
     >
       {/* Draggable milestone nodes */}

@@ -92,6 +92,7 @@
   --sidebar-w:     22rem;     /* 352px — milestone/mission sidebar */
   --ms-strip-h:    7rem;      /* mission strip at bottom of player cockpit */
   --touch-target:  2.75rem;   /* 44px min touch target per WCAG */
+  --min-touch:     2.75rem;   /* alias for touch-target — used in components */
 
   /* ── Transitions ─────────────────────────────────────────────────────────── */
   --duration-fast:   150ms;

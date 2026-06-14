@@ -24,22 +24,16 @@ const STATE_CONFIG: Record<
   error: { label: "Scan error", colorVar: "--color-destructive" },
 };
 
-const getStateIcon = (state: ValidationState) => {
-  switch (state) {
-    case "success":
-      return MdCheck;
-    case "invalid":
-      return MdClose;
-    case "error":
-      return MdError;
-    case "idle":
-      return MdRadioButtonUnchecked;
-  }
+const STATE_ICON: Record<ValidationState, typeof MdCheck> = {
+  idle: MdRadioButtonUnchecked,
+  success: MdCheck,
+  invalid: MdClose,
+  error: MdError,
 };
 
 const ValidationResult = (props: ValidationResultProps) => {
   const cfg = STATE_CONFIG[props.state];
-  const StateIcon = getStateIcon(props.state);
+  const Icon = STATE_ICON[props.state];
   return (
     <div
       className="validation-display"
@@ -62,7 +56,7 @@ const ValidationResult = (props: ValidationResultProps) => {
           alignItems: "center",
         }}
       >
-        <StateIcon size={48} aria-hidden="true" />
+        <Icon size={48} aria-hidden="true" />
       </span>
       <p
         style={{

@@ -41,7 +41,9 @@ const PendingApprovalsPanel = (props: PendingApprovalsPanelProps) => (
         >
           {props.pendingEvents.map((evt) => {
             const player = props.players.find((p) => p.id === evt.playerId);
-            const mission = props.missions.find((m) => m.id === evt.missionId);
+            const mission = props.missions.find((m) =>
+              m.id === evt.missionId
+            );
             return (
               <ApprovalRequestCard
                 key={`${evt.playerId}::${evt.missionId}`}
@@ -49,7 +51,8 @@ const PendingApprovalsPanel = (props: PendingApprovalsPanelProps) => (
                 missionTitle={mission?.title ?? evt.missionId}
                 xpValue={mission?.xpValue ?? 0}
                 onApprove={() => props.onApprove(evt.playerId, evt.missionId)}
-                onReject={() => props.onReject(evt.playerId, evt.missionId)}
+                onReject={() =>
+                  props.onReject(evt.playerId, evt.missionId)}
               />
             );
           })}

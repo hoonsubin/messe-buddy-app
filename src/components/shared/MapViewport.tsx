@@ -34,23 +34,33 @@ const clampScale = (s: number): number =>
 const MapViewport = (props: MapViewportProps) => {
   const viewportRef = useRef<HTMLDivElement>(null);
 
-  const [transform, setTransform] = useState<MapTransform>({
-    x: 0,
-    y: 0,
-    scale: DEFAULT_SCALE,
-  });
-
-  // Initialise pan so the center of the canvas is visible.
-  useEffect(() => {
-    const el = viewportRef.current;
-    if (!el) return;
+  // Derive initial centered transform from the ref element once mounted.
+  const getCenteredTransform = (el: HTMLDivElement | null): MapTransform => {
+    if (!el) return { x: 0, y: 0, scale: DEFAULT_SCALE };
     const { width, height } = el.getBoundingClientRect();
-    setTransform({
+    return {
       scale: DEFAULT_SCALE,
       x: width / 2 - (width * DEFAULT_SCALE) / 2,
       y: height / 2 - (height * DEFAULT_SCALE) / 2,
-    });
-  }, []);
+    };
+  };
+
+  const [transform, setTransform] = useState<MapTransform>(() => {
+    // During SSR / initial render the ref is null — fall back to origin.
+    // The correct centered transform is applied via the callback ref below
+    // when the viewport mounts, before the first paint.
+    return { x: 0, y: 0, scale: DEFAULT_SCALE };
+  });
+
+  // Callback ref: fires synchronously during the commit phase, before paint.
+  // This eliminates the double-render from origin → centered that a useEffect
+  // would cause.
+  const viewportCallbackRef = (el: HTMLDivElement | null) => {
+    viewportRef.current = el;
+    if (el) {
+      setTransform(getCenteredTransform(el));
+    }
+  };
 
   // Mutable drag/pinch state — stored in a ref to avoid stale closures.
   const gesture = useRef({
@@ -198,7 +208,7 @@ const MapViewport = (props: MapViewportProps) => {
 
   return (
     <div
-      ref={viewportRef}
+      ref={viewportCallbackRef}
       className="map-viewport"
       data-testid={props.testId ?? "map-viewport"}
       onMouseDown={handleMouseDown}

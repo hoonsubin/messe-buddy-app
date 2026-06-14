@@ -17,6 +17,8 @@ const QRDisplay = (props: QRDisplayProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [encodeError, setEncodeError] = useState<string | null>(null);
 
+  const { playerId, missionId, sessionId, xpValue, onValidated } = props;
+
   // ── Encode payload and render QR canvas ────────────────────────────────
   useEffect(() => {
     let cancelled = false;
@@ -28,13 +30,13 @@ const QRDisplay = (props: QRDisplayProps) => {
         // For the mock, we use sessionId as the HMAC secret (C-16 note).
         const encoded = await encodeQRPayload(
           {
-            playerId: props.playerId,
-            missionId: props.missionId,
-            sessionId: props.sessionId,
-            xpValue: props.xpValue,
+            playerId,
+            missionId,
+            sessionId,
+            xpValue,
             issuedAt: Date.now(),
           },
-          props.sessionId,
+          sessionId,
         );
 
         if (!cancelled && canvasRef.current) {
@@ -57,27 +59,32 @@ const QRDisplay = (props: QRDisplayProps) => {
     return () => {
       cancelled = true;
     };
-  }, [props.playerId, props.missionId, props.sessionId, props.xpValue]);
+  }, [playerId, missionId, sessionId, xpValue]);
 
   // ── Subscribe for GM scan completion ───────────────────────────────────
   useEffect(() => {
     const unsubscribe = adapter.subscribeProgressEvent(
-      props.playerId,
-      props.missionId,
+      playerId,
+      missionId,
       (event: ProgressEvent) => {
         if (event.status === "completed" || event.status === "autoApproved") {
-          props.onValidated();
+          onValidated();
         }
       },
     );
     return unsubscribe;
-  }, [adapter, props.playerId, props.missionId, props.onValidated]);
+  }, [adapter, playerId, missionId, onValidated]);
 
   return (
     <div
       className="validation-display"
       data-testid="qr-display"
-      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "var(--space-4)",
+      }}
     >
       {encodeError
         ? (

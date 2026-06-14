@@ -324,14 +324,19 @@ export const MOCK_FORM_SCHEMAS: ReadonlyArray<FormSchema> = [
         label: "Preferred mentor interaction style",
         type: "multiSelect",
         required: false,
-        options: ["Scheduled regular sessions", "Informal, when needed", "Peer group mentoring"],
+        options: [
+          "Scheduled regular sessions",
+          "Informal, when needed",
+          "Peer group mentoring",
+        ],
       },
       {
         id: "catchUpAreas",
         label: "What do you feel you need to catch up on?",
         type: "textarea",
         required: false,
-        placeholder: "Areas, background knowledge, context you'd like to get up to speed on…",
+        placeholder:
+          "Areas, background knowledge, context you'd like to get up to speed on…",
       },
     ],
   },
