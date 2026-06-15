@@ -1,0 +1,40 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model VectorStore {
+  id           String   @id @default(cuid())
+  name         String
+  file_counts  Json?
+  status       String   @default("completed")
+  usage_bytes  Int?     @default(0)
+  created_at   DateTime @default(now())
+  expires_after Json?
+  expires_at   DateTime?
+  last_active_at DateTime?
+  metadata     Json?
+  embeddings   Embedding[]
+  
+  @@map("vector_stores")
+}
+
+model Embedding {
+  id              String      @id @default(cuid())
+  vector_store_id String
+  content         String
+  embedding       Unsupported("vector(768)")
+  metadata        Json?
+  created_at      DateTime    @default(now())
+  
+  vector_store    VectorStore @relation(fields: [vector_store_id], references: [id], onDelete: Cascade)
+  
+  @@map("embeddings")
+}
