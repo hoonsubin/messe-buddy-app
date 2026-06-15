@@ -20,7 +20,7 @@ export const useScrollCollapse = (
   const [collapsed, setCollapsed] = useState(false);
 
   const lastTopRef = useRef(0);
-  const lastTimeRef = useRef(performance.now());
+  const lastTimeRef = useRef(0);
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
