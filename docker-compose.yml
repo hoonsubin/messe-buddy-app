@@ -24,9 +24,12 @@
 #   The litellm-pgvector connector handles chunking, embedding, and storage.
 #   At query time, the pgvector connector retrieves relevant context and LiteLLM
 #   injects it into the prompt automatically — no PWA code changes required.
+#
+#   init-vector-store — one-shot bootstrap that creates the vector store in
+#     pgvector and registers it in LiteLLM's metadata. Exits after completion.
+#     Workaround for: https://github.com/BerriAI/litellm/issues/25947
 
 services:
-
   # ── PostgreSQL + pgvector — Unified database ─────────────────────────────────
   # Single PostgreSQL instance with the pgvector extension installed.
   # Serves two roles:
@@ -39,7 +42,7 @@ services:
     image: pgvector/pgvector:pg16
     container_name: messebuddy-postgres
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"       # Host port; disable for production
+      - "${POSTGRES_PORT:-5432}:5432" # Host port; disable for production
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-litellm}
       POSTGRES_USER: ${POSTGRES_USER:-litellm}
@@ -50,7 +53,11 @@ services:
       - litellm-internal
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-litellm} -d ${POSTGRES_DB:-litellm}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-litellm} -d ${POSTGRES_DB:-litellm}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -68,7 +75,8 @@ services:
   # EMBEDDING__MODEL must match a model_name registered in docker/litellm.yaml.
   # Default: openai/nomic-embed-text-v2-moe (768-dim MoE, routed via HoonLabs proxy).
   litellm-pgvector:
-    image: ghcr.io/berriai/litellm-pg-vector-store:latest
+    build:
+      context: ./docker/litellm-pgvector
     container_name: litellm-pgvector
     ports:
       - "8001:8001"
@@ -87,14 +95,24 @@ services:
       DB_FIELDS__EMBEDDING_FIELD: "embedding"
       DB_FIELDS__VECTOR_STORE_ID_FIELD: "vector_store_id"
       DB_FIELDS__CREATED_AT_FIELD: "created_at"
+    command: >
+      sh -c "python -m prisma db push --skip-generate && uvicorn main:app --host 0.0.0.0 --port 8001"
     depends_on:
       postgres:
+        condition: service_healthy
+      litellm:
         condition: service_healthy
     networks:
       - litellm-internal
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -126,10 +144,11 @@ services:
     image: ghcr.io/berriai/litellm:main-stable
     container_name: litellm
     ports:
-      - "4000:4000"              # Exposed for direct browser access (prototype)
+      - "4000:4000" # Exposed for direct browser access (prototype)
     volumes:
       - ./docker/litellm.yaml:/app/config.yaml:ro
-    command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "1"]
+    command:
+      ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "1"]
     environment:
       # Master key guards the proxy management endpoints (/health, /model/info…)
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-dev-change-in-production}
@@ -160,7 +179,7 @@ services:
 
     env_file:
       - path: .env
-        required: false         # Allow running without a .env file
+        required: false # Allow running without a .env file
     restart: unless-stopped
     depends_on:
       postgres:
@@ -169,11 +188,49 @@ services:
       - litellm-internal
       - litellm-external
     healthcheck:
-      test: ["CMD", "/app/.venv/bin/python3", "-c", "import urllib.request, json, sys; r = urllib.request.urlopen('http://localhost:4000/health/readiness'); data = json.loads(r.read()); sys.exit(0 if data.get('status') == 'healthy' else 1)"]
+      test:
+        [
+          "CMD",
+          "/app/.venv/bin/python3",
+          "-c",
+          "import urllib.request, json, sys; r = urllib.request.urlopen('http://localhost:4000/health/readiness'); data = json.loads(r.read()); sys.exit(0 if data.get('status') == 'healthy' else 1)",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  # ── Vector Store Initializer ──────────────────────────────────────────────────
+  # One-shot service that bootstraps the vector store in pgvector and
+  # registers it in LiteLLM's metadata so it appears in the Admin UI.
+  #
+  # Every step emits [OK] or [FAIL] — no silent failures.
+  # Exits non-zero if a required step fails so docker compose logs show the error.
+  #
+  # Workaround for LiteLLM bug: https://github.com/BerriAI/litellm/issues/25947
+  init-vector-store:
+    build:
+      context: ./docker/init-vector-store
+    container_name: messebuddy-init-vector-store
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-litellm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-litellm}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-dev-change-in-production}
+      VECTOR_STORE_ID: "messe-buddy-kb"
+      VECTOR_STORE_NAME: "messe-buddy-knowledge-base"
+    volumes:
+      - ./consume-docs:/consume-docs:ro   # Optional document ingestion
+    depends_on:
+      postgres:
+        condition: service_healthy
+      litellm-pgvector:
+        condition: service_healthy
+      litellm:
+        condition: service_healthy
+    networks:
+      - litellm-internal
+    restart: "no"                            # Runs once and exits
 
   # ── App (PWA + PocketBase) ──────────────────────────────────────────────────
   app:
@@ -186,10 +243,10 @@ services:
         VITE_LITELLM_URL: ${VITE_LITELLM_URL:-http://localhost:4000}
         PB_VERSION: ${PB_VERSION:-0.23.0}
     ports:
-      - "${APP_PORT:-80}:80"     # PWA
-      - "8090:8090"              # PocketBase REST + SSE + admin UI (/_/)
+      - "${APP_PORT:-80}:80" # PWA
+      - "8090:8090" # PocketBase REST + SSE + admin UI (/_/)
     volumes:
-      - pb_data:/pb_data         # PocketBase SQLite DB + file storage
+      - pb_data:/pb_data # PocketBase SQLite DB + file storage
     restart: unless-stopped
     depends_on:
       litellm:
@@ -199,7 +256,7 @@ services:
 
   # ── Redis (LiteLLM cache / rate-limit state) ────────────────────────────────
   redis:
-    image: redis:8.6-trixie
+    image: redis:8.8-trixie
     container_name: litellm-redis
     restart: unless-stopped
     command: >
@@ -227,6 +284,6 @@ volumes:
 networks:
   litellm-internal:
     driver: bridge
-    internal: true               # postgres, connector & redis not exposed to host
+    internal: true # postgres, connector & redis not exposed to host
   litellm-external:
     driver: bridge
