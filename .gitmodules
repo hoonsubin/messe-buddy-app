@@ -1,0 +1,3 @@
+[submodule "docker/litellm-pgvector"]
+	path = docker/litellm-pgvector
+	url = https://github.com/BerriAI/litellm-pgvector.git

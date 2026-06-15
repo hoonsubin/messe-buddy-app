@@ -1,9 +1,12 @@
 # MesseBuddy — Docker Compose
 #
 # Services:
-#   app       — nginx (PWA :80) + PocketBase (:8090) in one container
-#   litellm   — LiteLLM proxy (:4000), OpenAI-compatible /chat/completions
-#   pgvector  — PostgreSQL + pgvector extension (:5432), vector store for RAG
+#   app              — nginx (PWA :80) + PocketBase (:8090) in one container
+#   litellm          — LiteLLM proxy (:4000), database mode + native pgvector RAG
+#   litellm-pgvector — PG Vector store connector (:8001), document upload + search
+#   litellm-db       — PostgreSQL for LiteLLM metadata (virtual keys, spend, config)
+#   vector-db        — PostgreSQL + pgvector for RAG document embeddings
+#   redis            — LiteLLM cache / rate-limit state
 #
 # Quick start:
 #   cp .env.example .env          # fill in OPENAI_API_KEY (or another provider)
@@ -15,97 +18,244 @@
 # These URLs are baked into the JS bundle at build time via VITE_* build args.
 # To override for a remote deployment, pass them as --build-arg at image build time.
 #
-# The chatbot RAG pipeline:
-#   useChatStream (PWA) → LiteLLM proxy → pgvector (semantic search) → AI Provider
-# To update the knowledge base: re-embed and re-ingest documents into pgvector.
-# No PWA code changes required.
+# RAG knowledge base:
+#   Documents are managed via the LiteLLM Admin UI at http://localhost:4000/ui.
+#   The litellm-pgvector connector handles chunking, embedding, and storage.
+#   At query time, the pgvector connector retrieves relevant context and LiteLLM
+#   injects it into the prompt automatically — no PWA code changes required.
+#
+#   init-vector-store — one-shot bootstrap that creates the vector store in
+#     pgvector and registers it in LiteLLM's metadata. Exits after completion.
+#     Workaround for: https://github.com/BerriAI/litellm/issues/25947
 
 services:
-
-  # ── pgvector — Vector store for RAG ────────────────────────────────────────
-  # PostgreSQL with pgvector extension. Stores embedded company documents
-  # (policies, onboarding guides, FAQs). LiteLLM queries it at request time
-  # to retrieve relevant chunks and augment the prompt before forwarding to
-  # the configured AI provider.
-  pgvector:
+  # ── PostgreSQL (LiteLLM metadata) ──────────────────────────────────────────
+  # Stores virtual keys, spend logs, model configurations, API key management,
+  # and team/org settings for the LiteLLM proxy.
+  #
+  # Separated from the vector store database to avoid Prisma schema conflicts
+  # between LiteLLM's own migrations and the pgvector connector's schema.
+  litellm-db:
     image: pgvector/pgvector:pg16
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432" # Host port; disable for production
     environment:
-      POSTGRES_DB: ${PGVECTOR_DB:-litellm_rag}
-      POSTGRES_USER: ${PGVECTOR_USER:-litellm}
-      POSTGRES_PASSWORD: ${PGVECTOR_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-litellm}
+      POSTGRES_USER: ${POSTGRES_USER:-litellm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
     volumes:
-      - pgvector_data:/var/lib/postgresql/data
+      - litellm_db_data:/var/lib/postgresql/data
+    networks:
+      - litellm-internal
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${PGVECTOR_USER:-litellm} -d ${PGVECTOR_DB:-litellm_rag}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-litellm} -d ${POSTGRES_DB:-litellm}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 15s
 
-  # ── Document Ingestion (one-shot job) ─────────────────────────────────────
-  # Runs once at startup, embeds all files in consume-docs/, stores chunks
-  # in pgvector, then exits. Never restarts automatically.
-  #
-  # To update the knowledge base after adding/editing documents:
-  #   docker compose run --rm ingest
-  # No proxy restart required.
-  ingest:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.ingest
-    volumes:
-      - ./consume-docs:/docs:ro          # Source documents (read-only)
+  # ── PostgreSQL + pgvector (Vector store) ───────────────────────────────────
+  # Dedicated database for the litellm-pgvector connector.
+  # Stores only the vector_stores and embeddings tables — no LiteLLM metadata.
+  # Separating this from the LiteLLM metadata database prevents Prisma schema
+  # conflicts: `prisma db push` in the connector only sees its own tables.
+  vector-db:
+    image: pgvector/pgvector:pg16
     environment:
-      PGVECTOR_CONNECTION_STRING: postgresql://${PGVECTOR_USER:-litellm}:${PGVECTOR_PASSWORD:-changeme}@pgvector:5432/${PGVECTOR_DB:-litellm_rag}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
-      DOCS_DIR: /docs
-    env_file:
-      - path: .env
-        required: false
-    restart: "no"                        # One-shot; re-run manually to re-ingest
-    depends_on:
-      pgvector:
-        condition: service_healthy
-
-  # ── LiteLLM Proxy ──────────────────────────────────────────────────────────
-  # Abstraction layer between the PWA and upstream AI providers.
-  # Exposes a single OpenAI-compatible /chat/completions endpoint.
-  # Handles model routing, provider auth, RAG (pgvector semantic search),
-  # and system prompt injection. Swap providers or update embedded documents
-  # by editing docker/litellm.yaml — no PWA code change required.
-  litellm:
-    image: ghcr.io/berriai/litellm:main-stable
-    ports:
-      - "4000:4000"                 # Exposed for direct browser access (prototype)
+      POSTGRES_DB: ${POSTGRES_VECTOR_DB:-litellm_vector}
+      POSTGRES_USER: ${POSTGRES_USER:-litellm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
     volumes:
-      - ./docker/litellm.yaml:/app/config.yaml:ro
-      - ./docker/rag_hook.py:/app/rag_hook.py:ro   # RAG + document-only enforcement hook
-    command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "1"]
-    environment:
-      # Master key guards the proxy management endpoints (/health, /model/info…)
-      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-dev-change-in-production}
-      # Provider API keys — set via .env file
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      # pgvector connection — must match the pgvector service above
-      PGVECTOR_CONNECTION_STRING: postgresql://${PGVECTOR_USER:-litellm}:${PGVECTOR_PASSWORD:-changeme}@pgvector:5432/${PGVECTOR_DB:-litellm_rag}
-    env_file:
-      - path: .env
-        required: false             # Allow running without a .env file
+      - vector_db_data:/var/lib/postgresql/data
+    networks:
+      - litellm-internal
     restart: unless-stopped
-    depends_on:
-      pgvector:
-        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-litellm} -d ${POSTGRES_VECTOR_DB:-litellm_vector}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ── PG Vector Store Connector ────────────────────────────────────────────────
+  # OpenAI-compatible /v1/vector_stores/* endpoints backed by PGVector.
+  # LiteLLM routes document uploads and RAG queries through this service.
+  #
+  # Documents uploaded via Admin UI or POST /document/upload flow through
+  # this connector: chunk → embed → store in pgvector.
+  # At query time, LiteLLM calls this connector's search endpoint to retrieve
+  # relevant chunks before calling the upstream LLM.
+  #
+  # EMBEDDING__MODEL must match a model_name registered in docker/litellm.yaml.
+  # Default: nomic-embed-text-v2-moe (768-dim MoE, routed via HoonLabs proxy).
+  litellm-pgvector:
+    build:
+      context: ./docker/litellm-pgvector
+    container_name: litellm-pgvector
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./docker/patches/litellm-pgvector/embedding_service.py:/app/embedding_service.py:ro
+      - ./docker/patches/litellm-pgvector/main.py:/app/main.py:ro
+      - ./docker/patches/litellm-pgvector/enable_vector_ext.py:/app/enable_vector_ext.py:ro
+      - ./docker/patches/litellm-pgvector/prisma/schema.prisma:/app/prisma/schema.prisma:ro
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-litellm}:${POSTGRES_PASSWORD:-changeme}@vector-db:5432/${POSTGRES_VECTOR_DB:-litellm_vector}
+      SERVER_API_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
+      EMBEDDING__MODEL: ${EMBEDDING_MODEL:-nomic-embed-text-v2-moe}
+      EMBEDDING__BASE_URL: http://litellm:4000
+      EMBEDDING__API_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
+      EMBEDDING__DIMENSIONS: ${EMBEDDING_DIM:-768}
+      HOST: "0.0.0.0"
+      PORT: "8001"
+      DB_FIELDS__ID_FIELD: "id"
+      DB_FIELDS__CONTENT_FIELD: "content"
+      DB_FIELDS__METADATA_FIELD: "metadata"
+      DB_FIELDS__EMBEDDING_FIELD: "embedding"
+      DB_FIELDS__VECTOR_STORE_ID_FIELD: "vector_store_id"
+      DB_FIELDS__CREATED_AT_FIELD: "created_at"
+    command: >
+      sh -c "python enable_vector_ext.py && python -m prisma db push --skip-generate && uvicorn main:app --host 0.0.0.0 --port 8001"
+    depends_on:
+      vector-db:
+        condition: service_healthy
+    networks:
+      - litellm-internal
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 20s
+      start_period: 15s
+
+  # ── LiteLLM Proxy ────────────────────────────────────────────────────────────
+  # Abstraction layer between the PWA and upstream AI providers.
+  # Exposes a single OpenAI-compatible /chat/completions endpoint.
+  #
+  # Database mode (enabled via DATABASE_URL):
+  #   - Stores virtual keys, spend logs, and model configurations in PostgreSQL
+  #   - Enables the LiteLLM Admin UI for managing models, keys, and documents
+  #
+  # Native RAG with pgvector:
+  #   - vector_store_registry in litellm.yaml configures the pgvector connector
+  #   - vector_store_ids on the model makes RAG always-on (no PWA changes)
+  #   - Users upload documents via the Admin UI or POST /document/upload
+  #   - The litellm-pgvector connector chunks, embeds, and stores documents
+  #   - At query time, relevant chunks are retrieved and injected into the prompt
+  #
+  # Swap providers or update system prompts by editing docker/litellm.yaml —
+  # no PWA code change required.
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: litellm
+    ports:
+      - "4000:4000" # Exposed for direct browser access (prototype)
+    volumes:
+      - ./docker/litellm.yaml:/app/config.yaml:ro
+    command:
+      ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "1"]
+    environment:
+      # Master key guards the proxy management endpoints (/health, /model/info…)
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
+      UI_USERNAME: ${UI_USERNAME:-admin}
+      #UI_PASSWORD defaults to LITELLM_MASTER_KEY
+
+      # HoonLabs upstream LiteLLM proxy key
+      LLM_PROXY_KEY: ${LLM_PROXY_KEY:-}
+
+      # Embedding model for RAG — must match a model_name in litellm.yaml
+      # Default: nomic-embed-text-v2-moe (768-dim MoE, routed via HoonLabs proxy)
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text-v2-moe}
+      PG_VECTOR_API_BASE: http://litellm-pgvector:8001
+      PG_VECTOR_API_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
+
+      # ── Database mode ─────────────────────────────────────────────────────
+      # PostgreSQL connection for LiteLLM metadata only (virtual keys, spend
+      # logs, model configs). The vector store has its own separate database.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-litellm}:${POSTGRES_PASSWORD:-changeme}@litellm-db:5432/${POSTGRES_DB:-litellm}
+
+      # ── Redis (in-memory cache, rate-limit state) ─────────────────────────
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
+
+    env_file:
+      - path: .env
+        required: false # Allow running without a .env file
+    restart: unless-stopped
+    depends_on:
+      litellm-db:
+        condition: service_healthy
+    networks:
+      - litellm-internal
+      - litellm-external
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/app/.venv/bin/python3",
+          "-c",
+          "import urllib.request, json, sys; r = urllib.request.urlopen('http://localhost:4000/health/readiness'); data = json.loads(r.read()); sys.exit(0 if data.get('status') == 'healthy' else 1)",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── Vector Store Initializer ──────────────────────────────────────────────────
+  # One-shot service that bootstraps the vector store in pgvector and
+  # registers it in LiteLLM's metadata so it appears in the Admin UI.
+  #
+  # Every step emits [OK] or [FAIL] — no silent failures.
+  # Exits non-zero if a required step fails so docker compose logs show the error.
+  #
+  # Workaround for LiteLLM bug: https://github.com/BerriAI/litellm/issues/25947
+  init-vector-store:
+    build:
+      context: ./docker/init-vector-store
+    container_name: messebuddy-init-vector-store
+    environment:
+      POSTGRES_VECTOR_DB: ${POSTGRES_VECTOR_DB:-litellm_vector}
+      POSTGRES_VECTOR_HOST: vector-db
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
+      #OPENAI_API_KEY: sk-placeholder
+      VECTOR_STORE_ID: "messe-buddy-kb"
+      VECTOR_STORE_NAME: "messe-buddy-knowledge-base"
+      # LiteLLM database credentials (for seed_master_key step)
+      POSTGRES_USER: ${POSTGRES_USER:-litellm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-litellm}
+      LITELLM_DB_HOST: litellm-db
+    volumes:
+      - ./consume-docs:/consume-docs:ro # Optional document ingestion
+    depends_on:
+      vector-db:
+        condition: service_healthy
+      litellm-pgvector:
+        condition: service_healthy
+      litellm:
+        condition: service_healthy
+      litellm-db:
+        condition: service_healthy
+    networks:
+      - litellm-internal
+    restart: "no" # Runs once and exits
 
   # ── App (PWA + PocketBase) ──────────────────────────────────────────────────
   app:
@@ -118,17 +268,49 @@ services:
         VITE_LITELLM_URL: ${VITE_LITELLM_URL:-http://localhost:4000}
         PB_VERSION: ${PB_VERSION:-0.23.0}
     ports:
-      - "${APP_PORT:-80}:80"        # PWA
-      - "8090:8090"                 # PocketBase REST + SSE + admin UI (/_/)
+      - "${APP_PORT:-80}:80" # PWA
+      - "8090:8090" # PocketBase REST + SSE + admin UI (/_/)
     volumes:
-      - pb_data:/pb_data            # PocketBase SQLite DB + file storage
+      - pb_data:/pb_data # PocketBase SQLite DB + file storage
     restart: unless-stopped
     depends_on:
-      litellm:
-        condition: service_started
+      init-vector-store:
+        condition: service_completed_successfully
+    networks:
+      - litellm-external
+
+  # ── Redis (LiteLLM cache / rate-limit state) ────────────────────────────────
+  redis:
+    image: redis:8.8-trixie
+    container_name: litellm-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-changeme}
+      --maxmemory 512mb
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-changeme}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - litellm-internal
 
 volumes:
   pb_data:
     driver: local
-  pgvector_data:
+  litellm_db_data:
     driver: local
+  vector_db_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  litellm-internal:
+    driver: bridge
+    internal: true # postgres, connector & redis not exposed to host
+  litellm-external:
+    driver: bridge

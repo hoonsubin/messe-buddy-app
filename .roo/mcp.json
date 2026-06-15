@@ -22,7 +22,9 @@
 				"browser_close",
 				"browser_fill_form",
 				"browser_evaluate",
-				"browser_select_option"
+				"browser_select_option",
+				"browser_network_request",
+				"browser_press_key"
 			]
 		},
 		"searxng": {
@@ -32,7 +34,7 @@
 				"mcp-searxng"
 			],
 			"env": {
-				"SEARXNG_URL": "http://searxng:8888"
+				"SEARXNG_URL": "https://search.hoonlabs.xyz"
 			},
 			"alwaysAllow": [
 				"searxng_web_search",

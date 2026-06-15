@@ -1,29 +1,27 @@
 # LiteLLM Proxy Configuration — MesseBuddy
 #
-# This file is the ONLY place an admin needs to touch to:
-#   1. Switch AI providers (OpenAI → Anthropic → Azure → any OpenAI-compatible)
-#   2. Update the chatbot's knowledge base (re-run the ingest service)
-#   3. Tune RAG strictness (RAG_TOP_K, RAG_MIN_SIMILARITY via .env)
-#
-# The PWA (useChatStream hook) always calls the same endpoint with the same
-# request shape. It is unaware of which provider or documents are in use.
-#
-# Docs: https://docs.litellm.ai/docs/proxy/config
+# Docs: https://docs.litellm.ai/docs/proxy/configs
+#       https://docs.litellm.ai/docs/completion/knowledgebase
 
 model_list:
-  # ── OpenAI ───────────────────────────────────────────────────────────────────
+  # ── OpenAI (direct) ──────────────────────────────────────────────────────────
   # "policy-assistant" is the stable alias the PWA sends.
+  # vector_store_ids makes RAG always-on for this model — every request
+  # includes relevant document context automatically.
   # To swap providers: change the litellm_params block below. Never touch PWA code.
   - model_name: policy-assistant
     litellm_params:
-      model: openai/gpt-4o-mini
-      api_key: os.environ/OPENAI_API_KEY
+      model: openai/ibm/granite-4.0-h-tiny
+      api_base: https://litellm.hoonlabs.xyz/v1
+      api_key: os.environ/LLM_PROXY_KEY
+      vector_store_ids: ["messe-buddy-kb"]
 
   # ── Anthropic (uncomment to use instead) ────────────────────────────────────
   # - model_name: policy-assistant
   #   litellm_params:
   #     model: anthropic/claude-haiku-4-5-20251001
   #     api_key: os.environ/ANTHROPIC_API_KEY
+  #     vector_store_ids: ["messe-buddy-kb"]
 
   # ── Azure OpenAI (uncomment to use instead) ──────────────────────────────────
   # - model_name: policy-assistant
@@ -32,40 +30,61 @@ model_list:
   #     api_base: os.environ/AZURE_API_BASE
   #     api_key: os.environ/AZURE_API_KEY
   #     api_version: "2024-02-15-preview"
+  #     vector_store_ids: ["messe-buddy-kb"]
 
-  # ── Ollama / local model (uncomment to use instead) ──────────────────────────
-  # - model_name: policy-assistant
-  #   litellm_params:
-  #     model: ollama/llama3
-  #     api_base: http://host.docker.internal:11434
+  # ── HoonLabs LiteLLM Proxy ──────────────────────────────────────────────────
+  # Upstream LiteLLM proxy at https://litellm.hoonlabs.xyz.
+  # API key stored in LLM_PROXY_KEY environment variable.
+  # All models use openai/ provider prefix since the upstream is
+  # an OpenAI-compatible LiteLLM proxy.
 
-
-# ── RAG + document-only enforcement guardrail ──────────────────────────────────
-# rag_hook.py is mounted into the container at /app/rag_hook.py.
-# LiteLLM loads it as "rag_hook.RAGHook" (module.ClassName).
-#
-# `mode: "pre_call"` → runs async_pre_call_hook before the LLM call.
-# `default_on: true` → applies to ALL requests. The PWA sends standard
-#   OpenAI-shaped requests; no "guardrails" field needed in the request body.
-#
-# What the hook does:
-#   1. Embeds the user's message via EMBEDDING_MODEL.
-#   2. Queries pgvector for top RAG_TOP_K chunks above RAG_MIN_SIMILARITY.
-#   3a. Chunks found → injects them into the system prompt and forwards to LLM.
-#   3b. No chunks → returns a canned refusal; upstream LLM never called.
-#
-# To update knowledge base: add/edit files in consume-docs/, then:
-#   docker compose run --rm ingest
-# No proxy restart required.
-#
-# To tune retrieval: edit RAG_TOP_K and RAG_MIN_SIMILARITY in .env, then:
-#   docker compose up -d litellm
-guardrails:
-  - guardrail_name: "rag-enforcer"
+  # Chat: DeepSeek v4 Flash
+  - model_name: deepseek-v4-flash
     litellm_params:
-      guardrail: rag_hook.RAGHook      # <module>.<ClassName> — loaded from /app/
-      mode: "pre_call"                 # runs async_pre_call_hook
-      default_on: true                 # applies to every request; no client change needed
+      model: openai/deepseek/deepseek-v4-flash
+      api_base: https://litellm.hoonlabs.xyz/v1
+      api_key: os.environ/LLM_PROXY_KEY
+
+  # Chat: IBM Granite 4.0 H Tiny
+  - model_name: ibm-granite-tiny
+    litellm_params:
+      model: openai/ibm/granite-4.0-h-tiny
+      api_base: https://litellm.hoonlabs.xyz/v1
+      api_key: os.environ/LLM_PROXY_KEY
+
+  # Embedding: Nomic Embed Text v2 MoE (768 dim, Matryoshka-capable)
+  # Used by init-vector-store for document ingestion.
+  # The pgvector connector (litellm-pgvector) calls the remote HoonLabs proxy
+  # directly for embeddings at runtime; init-vector-store calls local LiteLLM.
+  # The model_name MUST match EMBEDDING_MODEL env var (default: nomic-embed-text-v2-moe).
+  - model_name: nomic-embed-text-v2-moe
+    litellm_params:
+      model: openai/nomic-ai/embed-text-v2-moe
+      api_base: https://litellm.hoonlabs.xyz/v1
+      api_key: os.environ/LLM_PROXY_KEY
+
+  # Reranker: BGE Reranker v2 M3 (for result re-ranking in RAG pipelines)
+  - model_name: bge-reranker-v2-m3
+    litellm_params:
+      model: openai/gpustack/bge-reranker-v2-m3
+      api_base: https://litellm.hoonlabs.xyz/v1
+      api_key: os.environ/LLM_PROXY_KEY
+
+
+# ── Vector Store Registry ─────────────────────────────────────────────────────
+# Configured to use the litellm-pgvector connector service.
+# Documents uploaded via Admin UI or POST /document/upload are routed through
+# this connector: chunk → embed → store in pgvector.
+# At query time, LiteLLM calls the connector's search endpoint to retrieve
+# relevant chunks, then injects them into the prompt before calling the LLM.
+vector_store_registry:
+  - vector_store_name: "messe-buddy-knowledge-base"
+    litellm_params:
+      vector_store_id: "messe-buddy-kb"
+      custom_llm_provider: "pg_vector"
+      api_base: os.environ/PG_VECTOR_API_BASE
+      api_key: os.environ/PG_VECTOR_API_KEY
+      vector_store_description: "MesseBuddy onboarding and company documents"
 
 
 # ── Router settings ────────────────────────────────────────────────────────────
@@ -75,15 +94,14 @@ router_settings:
 
 # ── General settings ───────────────────────────────────────────────────────────
 general_settings:
-  # Base system prompt. The RAG hook appends retrieved document context after
-  # this. Two-layer enforcement: this prompt forbids general knowledge; the
-  # hook's similarity threshold blocks requests with no matching context at all.
+  # Base system prompt. LiteLLM's vector store integration prepends retrieved
+  # document context before this prompt automatically in the final LLM call.
   default_system_prompt: |
     You are a document-based onboarding assistant for new employees at Messe München,
     integrated into the MesseBuddy onboarding platform.
 
     STRICT RULES — follow these without exception:
-    - Answer ONLY from company documents explicitly provided to you in this conversation.
+    - Answer ONLY from company documents provided to you in this conversation.
     - Do NOT use general knowledge, training data, or any information not in the provided documents.
     - If the provided documents do not contain a clear answer, say: "That information is not in the documents I have access to. Please contact HR or your manager."
     - Do NOT speculate, infer beyond what is written, or fill gaps with general knowledge.
@@ -94,6 +112,9 @@ general_settings:
 
   # Guards the proxy management endpoints (/health, /model/info, etc.)
   master_key: os.environ/LITELLM_MASTER_KEY
+
+  # For internal development purposes
+  allow_client_side_credentials: true
 
   # Drop unknown parameters so the PWA can send standard OpenAI-shaped requests
   drop_params: true
