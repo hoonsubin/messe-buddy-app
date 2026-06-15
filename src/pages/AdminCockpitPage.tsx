@@ -404,6 +404,17 @@ const AdminCockpitPage = () => {
     setDraftMilestones((prev) => [...prev, dm]);
   }, []);
 
+  const handleAddMilestoneAt = useCallback(
+    (xPercent: number, yPercent: number) => {
+      const id = makeId();
+      const dm = defaultDraftMilestone(id, "New Milestone", xPercent, yPercent);
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore readonly constraint — we manage state immutably
+      setDraftMilestones((prev) => [...prev, dm]);
+    },
+    [],
+  );
+
   const handleRenameMilestone = useCallback(
     (id: string, name: string) => {
       setDraftMilestones((prev) =>
@@ -636,9 +647,7 @@ const AdminCockpitPage = () => {
 
   const handleMissionReorder = useCallback(
     (missionId: string, newOrder: number) => {
-      setMissionOrderChanges((prev) =>
-        new Map(prev).set(missionId, newOrder)
-      );
+      setMissionOrderChanges((prev) => new Map(prev).set(missionId, newOrder));
     },
     [],
   );
@@ -980,6 +989,7 @@ const AdminCockpitPage = () => {
               }}
               onNodeDrop={handleNodeDrop}
               onAddMilestone={handleAddMilestone}
+              onAddMilestoneAt={handleAddMilestoneAt}
               onRename={handleRenameMilestone}
               onDelete={handleDeleteMilestone}
               onUploadBackground={() => undefined}

@@ -122,12 +122,14 @@ const simulateGmApproval = (
 // ── Session ───────────────────────────────────────────────────────────────────
 
 const getSession = async (sessionId: string): Promise<Session> => {
+  await Promise.resolve();
   const s = sessions.get(sessionId);
   if (!s) throw new Error(`Session not found: ${sessionId}`);
   return s;
 };
 
 const listSessions = async (): Promise<ReadonlyArray<Session>> => {
+  await Promise.resolve();
   return [...sessions.values()];
 };
 
@@ -135,6 +137,7 @@ const createSession = async (
   name: string,
   gameMakerUid: string,
 ): Promise<Session> => {
+  await Promise.resolve();
   const session: Session = {
     ...makeRecord(),
     name,
@@ -159,6 +162,7 @@ const updateSession = async (
 // ── Player ────────────────────────────────────────────────────────────────────
 
 const getPlayer = async (uid: string): Promise<Player | null> => {
+  await Promise.resolve();
   for (const p of players.values()) {
     if (p.uid === uid) return p;
   }
@@ -166,12 +170,14 @@ const getPlayer = async (uid: string): Promise<Player | null> => {
 };
 
 const getPlayerById = async (playerId: string): Promise<Player | null> => {
+  await Promise.resolve();
   return players.get(playerId) ?? null;
 };
 
 const createPlayer = async (
   data: Omit<Player, keyof PBRecord>,
 ): Promise<Player> => {
+  await Promise.resolve();
   const player: Player = { ...makeRecord(), ...data };
   players.set(player.id, player);
   return player;
@@ -181,6 +187,7 @@ const updatePlayer = async (
   playerId: string,
   patch: Partial<Omit<Player, keyof PBRecord>>,
 ): Promise<Player> => {
+  await Promise.resolve();
   const existing = players.get(playerId);
   if (!existing) throw new Error(`Player not found: ${playerId}`);
   const updated: Player = { ...existing, ...patch, updated: now() };
@@ -192,6 +199,7 @@ const getPlayerByRecoveryKey = async (
   recoveryKey: string,
   sessionId: string,
 ): Promise<Player | null> => {
+  await Promise.resolve();
   for (const p of players.values()) {
     if (p.recoveryKey === recoveryKey && p.sessionId === sessionId) return p;
   }
@@ -201,6 +209,7 @@ const getPlayerByRecoveryKey = async (
 const listPlayers = async (
   sessionId: string,
 ): Promise<ReadonlyArray<Player>> => {
+  await Promise.resolve();
   return [...players.values()].filter((p) => p.sessionId === sessionId);
 };
 
@@ -209,6 +218,7 @@ const listPlayers = async (
 const listMilestones = async (
   sessionId: string,
 ): Promise<ReadonlyArray<Milestone>> => {
+  await Promise.resolve();
   return [...milestones.values()]
     .filter((m) => m.sessionId === sessionId)
     .sort((a, b) => a.order - b.order);
@@ -217,6 +227,7 @@ const listMilestones = async (
 const createMilestone = async (
   data: Omit<Milestone, keyof PBRecord>,
 ): Promise<Milestone> => {
+  await Promise.resolve();
   const ms: Milestone = { ...makeRecord(), ...data };
   milestones.set(ms.id, ms);
   return ms;
@@ -226,6 +237,7 @@ const updateMilestone = async (
   milestoneId: string,
   patch: Partial<Omit<Milestone, keyof PBRecord>>,
 ): Promise<Milestone> => {
+  await Promise.resolve();
   const existing = milestones.get(milestoneId);
   if (!existing) throw new Error(`Milestone not found: ${milestoneId}`);
   const updated: Milestone = { ...existing, ...patch, updated: now() };
@@ -234,6 +246,7 @@ const updateMilestone = async (
 };
 
 const deleteMilestone = async (milestoneId: string): Promise<void> => {
+  await Promise.resolve();
   milestones.delete(milestoneId);
 };
 
@@ -242,6 +255,7 @@ const deleteMilestone = async (milestoneId: string): Promise<void> => {
 const listMissions = async (
   sessionId: string,
 ): Promise<ReadonlyArray<Mission>> => {
+  await Promise.resolve();
   return [...missions.values()]
     .filter((m) => m.sessionId === sessionId)
     .sort((a, b) => a.order - b.order);
@@ -250,6 +264,7 @@ const listMissions = async (
 const createMission = async (
   data: Omit<Mission, keyof PBRecord>,
 ): Promise<Mission> => {
+  await Promise.resolve();
   const mission: Mission = { ...makeRecord(), ...data };
   missions.set(mission.id, mission);
   return mission;
@@ -259,6 +274,7 @@ const updateMission = async (
   missionId: string,
   patch: Partial<Omit<Mission, keyof PBRecord>>,
 ): Promise<Mission> => {
+  await Promise.resolve();
   const existing = missions.get(missionId);
   if (!existing) throw new Error(`Mission not found: ${missionId}`);
   const updated: Mission = { ...existing, ...patch, updated: now() };
@@ -267,12 +283,14 @@ const updateMission = async (
 };
 
 const deleteMission = async (missionId: string): Promise<void> => {
+  await Promise.resolve();
   missions.delete(missionId);
 };
 
 // ── Form Schema ───────────────────────────────────────────────────────────────
 
 const getFormSchema = async (missionId: string): Promise<FormSchema | null> => {
+  await Promise.resolve();
   return formSchemas.get(missionId) ?? null;
 };
 
@@ -280,6 +298,7 @@ const upsertFormSchema = async (
   missionId: string,
   fields: ReadonlyArray<FieldSchema>,
 ): Promise<FormSchema> => {
+  await Promise.resolve();
   const existing = formSchemas.get(missionId);
   const schema: FormSchema = existing
     ? { ...existing, fields, updated: now() }
@@ -298,6 +317,7 @@ const upsertProgressEvent = async (
     Omit<ProgressEvent, keyof PBRecord | "playerId" | "missionId" | "sessionId">
   >,
 ): Promise<ProgressEvent> => {
+  await Promise.resolve();
   const key = `${playerId}::${missionId}`;
   const existing = progressEvents.get(key);
 
@@ -328,6 +348,7 @@ const upsertProgressEvent = async (
 const listProgressEvents = async (
   playerId: string,
 ): Promise<ReadonlyArray<ProgressEvent>> => {
+  await Promise.resolve();
   return [...progressEvents.values()].filter((e) => e.playerId === playerId);
 };
 
@@ -351,6 +372,7 @@ const subscribeProgressEvent = (
 const getBuddyProfile = async (
   playerId: string,
 ): Promise<BuddyProfile | null> => {
+  await Promise.resolve();
   return buddyProfiles.get(playerId) ?? null;
 };
 
@@ -358,6 +380,7 @@ const upsertBuddyProfile = async (
   playerId: string,
   data: Omit<BuddyProfile, keyof PBRecord | "assignedToPlayerId">,
 ): Promise<BuddyProfile> => {
+  await Promise.resolve();
   const existing = buddyProfiles.get(playerId);
   const profile: BuddyProfile = existing
     ? { ...existing, ...data, assignedToPlayerId: playerId, updated: now() }
@@ -371,12 +394,14 @@ const upsertBuddyProfile = async (
 const listResources = async (
   sessionId: string,
 ): Promise<ReadonlyArray<Resource>> => {
+  await Promise.resolve();
   return [...resources.values()].filter((r) => r.sessionId === sessionId);
 };
 
 const createResource = async (
   data: Omit<Resource, keyof PBRecord>,
 ): Promise<Resource> => {
+  await Promise.resolve();
   const resource: Resource = { ...makeRecord(), ...data };
   resources.set(resource.id, resource);
   return resource;
@@ -386,6 +411,7 @@ const updateResource = async (
   resourceId: string,
   patch: Partial<Omit<Resource, keyof PBRecord>>,
 ): Promise<Resource> => {
+  await Promise.resolve();
   const existing = resources.get(resourceId);
   if (!existing) throw new Error(`Resource not found: ${resourceId}`);
   const updated: Resource = { ...existing, ...patch, updated: now() };
@@ -394,16 +420,19 @@ const updateResource = async (
 };
 
 const deleteResource = async (resourceId: string): Promise<void> => {
+  await Promise.resolve();
   resources.delete(resourceId);
 };
 
 // ── Templates ─────────────────────────────────────────────────────────────────
 
 const listTemplates = async (): Promise<ReadonlyArray<TemplateExport>> => {
+  await Promise.resolve();
   return [...templates.values()];
 };
 
 const saveTemplate = async (template: TemplateExport): Promise<void> => {
+  await Promise.resolve();
   templates.set(template.name, template);
 };
 

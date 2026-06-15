@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  MdChevronRight,
-  MdDragIndicator,
-  MdExpandMore,
-} from "react-icons/md";
+import { MdChevronRight, MdDragIndicator, MdExpandMore } from "react-icons/md";
 import type { Milestone, Mission } from "../../types/index.ts";
 import { MISSION_TYPE } from "../../types/index.ts";
 
@@ -79,7 +75,7 @@ const AdminMissionsList = (props: AdminMissionsListProps) => {
 
   // Groups computed from props — seed local order state on first render
   const [groups, setGroups] = useState<MissionGroup[]>(() =>
-    buildGroups(missions, milestones),
+    buildGroups(missions, milestones)
   );
 
   // Track which groups are collapsed
@@ -298,14 +294,20 @@ const AdminMissionsList = (props: AdminMissionsListProps) => {
                   <MdChevronRight
                     size={16}
                     aria-hidden="true"
-                    style={{ flexShrink: 0, color: "hsl(var(--color-muted-fg))" }}
+                    style={{
+                      flexShrink: 0,
+                      color: "hsl(var(--color-muted-fg))",
+                    }}
                   />
                 )
                 : (
                   <MdExpandMore
                     size={16}
                     aria-hidden="true"
-                    style={{ flexShrink: 0, color: "hsl(var(--color-muted-fg))" }}
+                    style={{
+                      flexShrink: 0,
+                      color: "hsl(var(--color-muted-fg))",
+                    }}
                   />
                 )}
               <span style={{ flex: 1 }}>{group.milestone.name}</span>
@@ -316,8 +318,7 @@ const AdminMissionsList = (props: AdminMissionsListProps) => {
                   fontWeight: "var(--weight-normal)",
                 }}
               >
-                {missionCount}{" "}
-                {missionCount === 1 ? "mission" : "missions"}
+                {missionCount} {missionCount === 1 ? "mission" : "missions"}
               </span>
             </button>
 
@@ -373,9 +374,7 @@ const AdminMissionsList = (props: AdminMissionsListProps) => {
                         alignItems: "center",
                         gap: "var(--space-2)",
                         padding: "var(--space-2) var(--space-3)",
-                        cursor: onMissionClick
-                          ? "pointer"
-                          : "grab",
+                        cursor: onMissionClick ? "pointer" : "grab",
                         borderBottom:
                           "1px solid hsl(var(--color-border) / 0.5)",
                         transition: "background 0.15s",
@@ -413,8 +412,7 @@ const AdminMissionsList = (props: AdminMissionsListProps) => {
                           flexShrink: 0,
                           display: "flex",
                           alignItems: "center",
-                          color:
-                            "hsl(var(--color-muted-fg))",
+                          color: "hsl(var(--color-muted-fg))",
                           cursor: "grab",
                         }}
                       >
@@ -430,8 +428,7 @@ const AdminMissionsList = (props: AdminMissionsListProps) => {
                           color: "#fff",
                           background: typeColor,
                           borderRadius: "var(--radius-sm)",
-                          padding:
-                            "0.1rem var(--space-2)",
+                          padding: "0.1rem var(--space-2)",
                           lineHeight: "1.4",
                           textTransform: "uppercase",
                           letterSpacing: "0.04em",
@@ -460,8 +457,7 @@ const AdminMissionsList = (props: AdminMissionsListProps) => {
                         style={{
                           flexShrink: 0,
                           fontSize: "var(--text-xs)",
-                          color:
-                            "hsl(var(--color-muted-fg))",
+                          color: "hsl(var(--color-muted-fg))",
                           fontWeight: "var(--weight-medium)",
                         }}
                       >

@@ -8,7 +8,7 @@ interface SessionInviteCardProps {
 const SessionInviteCard = ({ sessionId }: SessionInviteCardProps) => {
   const [copied, setCopied] = useState(false);
 
-  const joinUrl = `${window.location.origin}/`;
+  const joinUrl = `${globalThis.location.origin}/`;
 
   const handleCopyCode = async () => {
     try {
