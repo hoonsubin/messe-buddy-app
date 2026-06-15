@@ -64,6 +64,9 @@ services:
   # this connector: chunk → embed → store in pgvector.
   # At query time, LiteLLM calls this connector's search endpoint to retrieve
   # relevant chunks before calling the upstream LLM.
+  #
+  # EMBEDDING__MODEL must match a model_name registered in docker/litellm.yaml.
+  # Default: openai/nomic-embed-text-v2-moe (768-dim MoE, routed via HoonLabs proxy).
   litellm-pgvector:
     image: ghcr.io/berriai/litellm-pg-vector-store:latest
     container_name: litellm-pgvector
@@ -72,10 +75,10 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-litellm}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-litellm}
       SERVER_API_KEY: ${LITELLM_MASTER_KEY:-sk-dev-change-in-production}
-      EMBEDDING__MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      EMBEDDING__MODEL: ${EMBEDDING_MODEL:-openai/nomic-embed-text-v2-moe}
       EMBEDDING__BASE_URL: "http://litellm:4000"
       EMBEDDING__API_KEY: ${LITELLM_MASTER_KEY:-sk-dev-change-in-production}
-      EMBEDDING__DIMENSIONS: ${EMBEDDING_DIM:-1536}
+      EMBEDDING__DIMENSIONS: ${EMBEDDING_DIM:-768}
       HOST: "0.0.0.0"
       PORT: "8001"
       DB_FIELDS__ID_FIELD: "id"
@@ -112,6 +115,11 @@ services:
   #   - The litellm-pgvector connector chunks, embeds, and stores documents
   #   - At query time, relevant chunks are retrieved and injected into the prompt
   #
+  # Configured providers:
+  #   - OpenAI (direct, via OPENAI_API_KEY)
+  #   - Anthropic (optional, via ANTHROPIC_API_KEY)
+  #   - HoonLabs LiteLLM proxy (via LLM_PROXY_KEY) — embedding, chat, reranker
+  #
   # Swap providers or update system prompts by editing docker/litellm.yaml —
   # no PWA code change required.
   litellm:
@@ -132,8 +140,12 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
-      # Embedding model for RAG
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      # HoonLabs upstream LiteLLM proxy key
+      LLM_PROXY_KEY: ${LLM_PROXY_KEY:-}
+
+      # Embedding model for RAG — must match a model_name in litellm.yaml
+      # Default: nomic-embed-text-v2-moe (768-dim MoE, routed via HoonLabs proxy)
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-openai/nomic-embed-text-v2-moe}
 
       # ── Database mode ─────────────────────────────────────────────────────
       # Single PostgreSQL connection string. The same database serves BOTH

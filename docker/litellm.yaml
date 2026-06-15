@@ -26,7 +26,7 @@
 #       https://docs.litellm.ai/docs/completion/knowledgebase
 
 model_list:
-  # ── OpenAI ───────────────────────────────────────────────────────────────────
+  # ── OpenAI (direct) ──────────────────────────────────────────────────────────
   # "policy-assistant" is the stable alias the PWA sends.
   # vector_store_ids makes RAG always-on for this model — every request
   # includes relevant document context automatically.
@@ -52,6 +52,42 @@ model_list:
   #     api_key: os.environ/AZURE_API_KEY
   #     api_version: "2024-02-15-preview"
   #     vector_store_ids: ["messe-buddy-kb"]
+
+  # ── HoonLabs LiteLLM Proxy ──────────────────────────────────────────────────
+  # Upstream LiteLLM proxy at https://litellm.hoonlabs.xyz.
+  # API key stored in LLM_PROXY_KEY environment variable.
+  # All models use openai/ provider prefix since the upstream is
+  # an OpenAI-compatible LiteLLM proxy.
+
+  # Chat: DeepSeek v4 Flash
+  - model_name: deepseek-v4-flash
+    litellm_params:
+      model: openai/deepseek/deepseek-v4-flash
+      api_base: https://litellm.hoonlabs.xyz/v1
+      api_key: os.environ/LLM_PROXY_KEY
+
+  # Chat: IBM Granite 4.0 H Tiny
+  - model_name: ibm-granite-tiny
+    litellm_params:
+      model: openai/ibm/granite-4.0-h-tiny
+      api_base: https://litellm.hoonlabs.xyz/v1
+      api_key: os.environ/LLM_PROXY_KEY
+
+  # Embedding: Nomic Embed Text v2 MoE (768 dim, Matryoshka-capable)
+  # Used by the litellm-pgvector connector for document ingestion and RAG retrieval.
+  # The model_name MUST match EMBEDDING_MODEL env var (default: openai/nomic-embed-text-v2-moe).
+  - model_name: openai/nomic-embed-text-v2-moe
+    litellm_params:
+      model: openai/nomic-ai/embed-text-v2-moe
+      api_base: https://litellm.hoonlabs.xyz/v1
+      api_key: os.environ/LLM_PROXY_KEY
+
+  # Reranker: BGE Reranker v2 M3 (for result re-ranking in RAG pipelines)
+  - model_name: bge-reranker-v2-m3
+    litellm_params:
+      model: openai/gpustack/bge-reranker-v2-m3
+      api_base: https://litellm.hoonlabs.xyz/v1
+      api_key: os.environ/LLM_PROXY_KEY
 
 
 # ── Vector Store Registry ─────────────────────────────────────────────────────
