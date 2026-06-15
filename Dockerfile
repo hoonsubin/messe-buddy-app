@@ -10,7 +10,7 @@ COPY deno.json deno.lock ./
 COPY scripts/ scripts/
 
 # Pre-fetch all npm dependencies declared in deno.json imports
-RUN deno install --entrypoint deno.json
+RUN deno install
 
 # Copy source
 COPY . .

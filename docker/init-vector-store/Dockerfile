@@ -14,9 +14,8 @@
 FROM python:3.13-slim-bookworm
 
 # psycopg2-binary bundles its own libpq — no postgresql-client needed
-RUN pip install --no-cache-dir \
-    psycopg2-binary \
-    requests
+COPY requirements.txt /scripts/requirements.txt
+RUN pip install --no-cache-dir -r /scripts/requirements.txt
 
 COPY init.py /scripts/init.py
 

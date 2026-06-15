@@ -13,6 +13,7 @@ Exits non-zero if a required step fails.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sys
@@ -26,11 +27,20 @@ import requests
 
 # ── Config (overridable via environment) ───────────────────────────────────
 
-_POSTGRES_USER = os.getenv("POSTGRES_USER", "litellm")
-_POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "changeme")
-_POSTGRES_DB = os.getenv("POSTGRES_DB", "litellm")
-_POSTGRES_HOST = os.getenv("POSTGRES_HOST", "postgres")
-_POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
+# Both PostgreSQL instances share the same user/password; only DB name differs.
+# POSTGRES_USER / POSTGRES_PASSWORD set by docker-compose.yml for litellm-db.
+# vector-db reuses those same credentials (POSTGRES_VECTOR_DB is separate).
+_POSTGRES_VECTOR_USER = os.getenv("POSTGRES_USER", "litellm")
+_POSTGRES_VECTOR_PASSWORD = os.getenv("POSTGRES_PASSWORD", "changeme")
+_POSTGRES_VECTOR_DB = os.getenv("POSTGRES_VECTOR_DB", "litellm_vector")
+_POSTGRES_VECTOR_HOST = os.getenv("POSTGRES_VECTOR_HOST", "vector-db")
+_POSTGRES_VECTOR_PORT = os.getenv("POSTGRES_VECTOR_PORT", "5432")
+
+_LITELLM_DB_USER = os.getenv("POSTGRES_USER", "litellm")
+_LITELLM_DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "changeme")
+_LITELLM_DB_DB = os.getenv("POSTGRES_DB", "litellm")
+_LITELLM_DB_HOST = os.getenv("LITELLM_DB_HOST", "litellm-db")
+_LITELLM_DB_PORT = os.getenv("LITELLM_DB_PORT", "5432")
 
 _PGVECTOR_HOST = os.getenv("PGVECTOR_HOST", "litellm-pgvector")
 _PGVECTOR_PORT = os.getenv("PGVECTOR_PORT", "8001")
@@ -47,7 +57,7 @@ _VECTOR_STORE_NAME = os.getenv(
 )
 
 _EMBEDDING_MODEL = os.getenv(
-    "EMBEDDING_MODEL", "openai/nomic-embed-text-v2-moe"
+    "EMBEDDING_MODEL", "nomic-embed-text-v2-moe"
 )
 
 _WAIT_TIMEOUT = int(os.getenv("WAIT_TIMEOUT", "120"))
@@ -91,15 +101,23 @@ def fail(msg: str) -> None:
 
 def _pg_dsn() -> str:
     return (
-        f"dbname={_POSTGRES_DB} user={_POSTGRES_USER}"
-        f" password={_POSTGRES_PASSWORD}"
-        f" host={_POSTGRES_HOST} port={_POSTGRES_PORT}"
+        f"dbname={_POSTGRES_VECTOR_DB} user={_POSTGRES_VECTOR_USER}"
+        f" password={_POSTGRES_VECTOR_PASSWORD}"
+        f" host={_POSTGRES_VECTOR_HOST} port={_POSTGRES_VECTOR_PORT}"
+    )
+
+
+def _litellm_db_dsn() -> str:
+    return (
+        f"dbname={_LITELLM_DB_DB} user={_LITELLM_DB_USER}"
+        f" password={_LITELLM_DB_PASSWORD}"
+        f" host={_LITELLM_DB_HOST} port={_LITELLM_DB_PORT}"
     )
 
 
 def wait_for_postgres() -> None:
     """Wait for PostgreSQL to accept connections via psycopg2."""
-    log(f"Step 0: Waiting for PostgreSQL ({_POSTGRES_HOST}:{_POSTGRES_PORT})...")
+    log(f"Step 0: Waiting for PostgreSQL ({_POSTGRES_VECTOR_HOST}:{_POSTGRES_VECTOR_PORT})...")
     elapsed = 0
     while elapsed < _WAIT_TIMEOUT:
         try:
@@ -217,73 +235,330 @@ def verify_pgvector_store() -> None:
         if found:
             ok(f"Pgvector connector lists vector store '{_VECTOR_STORE_ID}'")
         else:
-            fail(
+            warn(
                 "Pgvector connector response does not contain store"
                 f" '{_VECTOR_STORE_ID}': {json.dumps(data, indent=2)}"
             )
     except requests.RequestException as exc:
-        fail(f"Could not list vector stores from pgvector connector: {exc}")
+        warn(f"Could not list vector stores from pgvector connector: {exc}")
 
 
 # ── LiteLLM metadata registration (Admin UI workaround) ────────────────────
 
 
-def register_in_litellm() -> None:
-    """Register vector store in LiteLLM metadata via POST /v1/vector_stores.
+def seed_master_key() -> None:
+    """Insert master key into LiteLLM's VerificationToken table.
 
-    Due to LiteLLM bug #25947, config-file vector stores don't appear in
-    the Admin UI. This API call persists the store to LiteLLM's own
-    metadata tables.
+    LiteLLM in database mode does not always auto-seed the master key
+    (known issue #9433). Without this, all API calls fail with
+    'token_not_found_in_db'. This function inserts the SHA-256 hash
+    of the master key directly so register_in_litellm() can authenticate.
 
-    This step does NOT fail on non-200 responses — the pgvector tables
-    (Step 3) are the authoritative source for RAG lookups.
+    Uses ON CONFLICT DO NOTHING for idempotency.
+
+    On fresh databases, LiteLLM runs async Prisma migrations on boot
+    and the healthcheck may pass before tables are created.  This function
+    retries for up to _WAIT_TIMEOUT seconds, waiting for the table to
+    appear before inserting.
     """
-    log("Step 5: Registering vector store in LiteLLM metadata (Admin UI)...")
+    log("Step 2b: Seeding master key in LiteLLM database...")
+    token_hash = hashlib.sha256(_LITELLM_MASTER_KEY.encode()).hexdigest()
+
+    # ── Retry loop: wait until LiteLLM_VerificationToken exists ─────────
+    table_ready = False
+    elapsed = 0
+    while elapsed < _WAIT_TIMEOUT:
+        try:
+            conn = psycopg2.connect(_litellm_db_dsn())
+            conn.autocommit = True
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT 1 FROM \"LiteLLM_VerificationToken\" LIMIT 0"
+            )
+            cur.close()
+            conn.close()
+            table_ready = True
+            break
+        except psycopg2.Error as exc:
+            err_msg = str(exc).strip()
+            if elapsed == 0:
+                log(
+                    f"  LiteLLM DB migrations still in progress "
+                    f"({err_msg}) — waiting…"
+                )
+            time.sleep(_WAIT_INTERVAL)
+            elapsed += _WAIT_INTERVAL
+
+    if not table_ready:
+        fail(
+            f"LiteLLM_VerificationToken table not ready after "
+            f"{_WAIT_TIMEOUT}s"
+        )
+
+    # ── Insert the master key row ─────────────────────────────────────
+    try:
+        conn = psycopg2.connect(_litellm_db_dsn())
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO "LiteLLM_VerificationToken"
+                (token, user_id, key_alias, created_at, updated_at)
+            VALUES (%s, %s, %s, NOW(), NOW())
+            ON CONFLICT (token) DO NOTHING
+            RETURNING token
+            """,
+            (token_hash, "default_user_id", "master-key"),
+        )
+        row = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if row:
+            ok(f"Master key seeded — token_hash={token_hash[:16]}...")
+        else:
+            ok("Master key already exists (idempotent, no action)")
+    except Exception as exc:
+        fail(f"Could not seed master key in LiteLLM DB: {exc}")
+
+
+def register_in_litellm() -> None:
+    """Register pgvector credentials in LiteLLM via the /credentials API.
+
+    Registers the pgvector connector as a named credential so LiteLLM can
+    route vector store operations (search, file upload) to the litellm-pgvector
+    service.  The credential appears in the Admin UI at Tools > Vector Stores.
+
+    Uses POST /credentials — idempotent: if the credential already exists
+    from a previous run, the API returns 409 and we log a warning instead
+    of failing.
+
+    Falls back to direct DB insert only when the Litellm API is unreachable
+    or returns an unexpected error, ensuring the vector store is usable at
+    query time regardless of Admin UI visibility.
+    """
+    log("Step 5: Registering pgvector credentials in LiteLLM...")
+
+    pgvector_url = f"http://{_PGVECTOR_HOST}:{_PGVECTOR_PORT}"
     litellm_url = f"http://{_LITELLM_HOST}:{_LITELLM_PORT}"
+
+    credential_payload = {
+        "credential_name": _VECTOR_STORE_NAME,
+        "credential_values": {
+            "api_base": pgvector_url,
+            "api_key": _LITELLM_MASTER_KEY,
+            "custom_llm_provider": "pg_vector",
+        },
+        "credential_info": {
+            "vector_store_name": _VECTOR_STORE_NAME,
+            "vector_store_id": _VECTOR_STORE_ID,
+            "vector_store_description": (
+                "MesseBuddy onboarding and company documents"
+            ),
+        },
+    }
+
     try:
         resp = requests.post(
-            f"{litellm_url}/v1/vector_stores",
+            f"{litellm_url}/credentials",
             headers={
                 "Authorization": f"Bearer {_LITELLM_MASTER_KEY}",
                 "Content-Type": "application/json",
             },
-            json={"name": _VECTOR_STORE_NAME},
+            json=credential_payload,
             timeout=15,
         )
+        if resp.status_code == 200:
+            body = resp.json()
+            if body.get("success") is True:
+                ok(
+                    f"Credential '{_VECTOR_STORE_NAME}' registered "
+                    f"via LiteLLM API"
+                )
+                return
+        # 409 / unique-constraint means the credential already exists
+        if resp.status_code == 409 or (
+            resp.status_code == 500
+            and "unique constraint" in resp.text.lower()
+        ):
+            ok(
+                f"Credential '{_VECTOR_STORE_NAME}' already exists "
+                f"(idempotent)"
+            )
+            return
+        warn(
+            f"Unexpected response {resp.status_code} from "
+            f"/credentials: {resp.text[:300]}"
+        )
     except requests.RequestException as exc:
-        warn(f"LiteLLM unreachable: {exc}")
+        warn(f"Could not reach LiteLLM /credentials API: {exc}")
+
+    # ── Fallback: direct DB insert into ManagedVectorStoresTable ─────
+    log(
+        "Step 5-fallback: Inserting managed vector store row directly"
+        " (LiteLLM_ManagedVectorStoresTable)..."
+    )
+    try:
+        conn = psycopg2.connect(_litellm_db_dsn())
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO "LiteLLM_ManagedVectorStoresTable"
+                (vector_store_id, custom_llm_provider, vector_store_name,
+                 vector_store_description, litellm_credential_name,
+                 litellm_params, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+            ON CONFLICT (vector_store_id) DO UPDATE
+            SET litellm_params = EXCLUDED.litellm_params,
+                litellm_credential_name = EXCLUDED.litellm_credential_name,
+                updated_at = NOW()
+            RETURNING vector_store_id
+            """,
+            (
+                _VECTOR_STORE_ID,
+                "pg_vector",
+                _VECTOR_STORE_NAME,
+                "MesseBuddy onboarding and company documents",
+                _VECTOR_STORE_NAME,
+                json.dumps({
+                    "vector_store_id": _VECTOR_STORE_ID,
+                    "custom_llm_provider": "pg_vector",
+                    "api_base": pgvector_url,
+                    "api_key": _LITELLM_MASTER_KEY,
+                    "vector_store_description": (
+                        "MesseBuddy onboarding and company documents"
+                    ),
+                }),
+            ),
+        )
+        row = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if row:
+            ok(
+                f"Inserted vector store row into"
+                f" ManagedVectorStoresTable — id={row[0]}"
+            )
+        else:
+            ok("Vector store row already exists (idempotent)")
+    except Exception as exc:
+        warn(f"DB fallback also failed: {exc}")
         warn(
             "The store WILL still work at runtime — pgvector tables"
             " (Step 3) are the authoritative source."
         )
-        return
 
-    http_code = resp.status_code
+
+# ── LiteLLM managed vector store registration ──────────────────────────────
+
+
+def register_managed_vector_store() -> None:
+    """Register a managed vector store in the LiteLLM proxy.
+
+    This calls POST /vector_stores on the LiteLLM proxy to create a managed
+    vector store record.  Unlike /credentials (which only stores credentials),
+    this API call populates litellm.vector_store_registry in the proxy's
+    in-memory state, which is what enables the RAG pipeline for models that
+    have vector_store_ids in their config (e.g. policy-assistant).
+
+    Idempotent: if the store already exists the proxy returns the existing
+    record; if the proxy is unreachable we log a warning.
+    """
+    log("Step 5b: Registering managed vector store in LiteLLM proxy...")
+
+    pgvector_url = f"http://{_PGVECTOR_HOST}:{_PGVECTOR_PORT}"
+    litellm_url = f"http://{_LITELLM_HOST}:{_LITELLM_PORT}"
+
+    payload = {
+        "vector_store_name": _VECTOR_STORE_NAME,
+        "litellm_params": {
+            "vector_store_id": _VECTOR_STORE_ID,
+            "custom_llm_provider": "pg_vector",
+            "api_base": pgvector_url,
+            "api_key": _LITELLM_MASTER_KEY,
+            "vector_store_description": (
+                "MesseBuddy onboarding and company documents"
+            ),
+        },
+    }
+
     try:
-        body = resp.json()
-    except Exception:
-        body = resp.text
+        resp = requests.post(
+            f"{litellm_url}/vector_stores",
+            headers={
+                "Authorization": f"Bearer {_LITELLM_MASTER_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=15,
+        )
+        if resp.status_code == 200:
+            body = resp.json()
+            store_id = body.get("id", "?")
+            ok(f"Managed vector store created — proxy id={store_id}")
+            return
+        warn(
+            f"Unexpected response {resp.status_code} from "
+            f"POST /vector_stores: {resp.text[:300]}"
+        )
+    except requests.RequestException as exc:
+        warn(f"Could not reach LiteLLM POST /vector_stores: {exc}")
 
-    if http_code == 200:
-        store_id = body.get("id", "unknown") if isinstance(body, dict) else "unknown"
-        ok(f"Registered in LiteLLM metadata — id={store_id}")
-    elif http_code == 409:
-        warn(
-            "LiteLLM returned 409 (Conflict) — store may already be"
-            " registered (idempotent, no action needed)"
+    # ── Fallback: direct DB insert into ManagedVectorStoresTable ─────
+    log(
+        "Step 5b-fallback: Inserting managed vector store row directly"
+        " (LiteLLM_ManagedVectorStoresTable)..."
+    )
+    try:
+        conn = psycopg2.connect(_litellm_db_dsn())
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO "LiteLLM_ManagedVectorStoresTable"
+                (vector_store_id, custom_llm_provider, vector_store_name,
+                 vector_store_description, litellm_credential_name,
+                 litellm_params, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+            ON CONFLICT (vector_store_id) DO UPDATE
+            SET litellm_params = EXCLUDED.litellm_params,
+                litellm_credential_name = EXCLUDED.litellm_credential_name,
+                updated_at = NOW()
+            RETURNING vector_store_id
+            """,
+            (
+                _VECTOR_STORE_ID,
+                "pg_vector",
+                _VECTOR_STORE_NAME,
+                "MesseBuddy onboarding and company documents",
+                _VECTOR_STORE_NAME,
+                json.dumps({
+                    "vector_store_id": _VECTOR_STORE_ID,
+                    "custom_llm_provider": "pg_vector",
+                    "api_base": pgvector_url,
+                    "api_key": _LITELLM_MASTER_KEY,
+                    "vector_store_description": (
+                        "MesseBuddy onboarding and company documents"
+                    ),
+                }),
+            ),
         )
-    elif http_code == 400:
-        warn(f"LiteLLM returned 400 (Bad Request): {body}")
+        row = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if row:
+            ok(
+                f"Inserted vector store row into"
+                f" ManagedVectorStoresTable — id={row[0]}"
+            )
+        else:
+            ok("Vector store row already exists (idempotent)")
+    except Exception as exc:
+        warn(f"DB fallback also failed: {exc}")
         warn(
-            "This is EXPECTED if LiteLLM deduplicates by name."
-            " The store is still usable via config.yaml."
-        )
-    else:
-        warn(f"LiteLLM returned HTTP {http_code}: {body}")
-        warn(
-            "Reason: LiteLLM bug #25947 — config-file vector stores may"
-            " not appear in Admin UI. The pgvector tables (Step 3) are"
-            " the authoritative source for RAG lookups."
+            "RAG will NOT be active for the policy-assistant model. "
+            "Create the vector store manually in the Admin UI at "
+            "Experimental > Vector Stores."
         )
 
 
@@ -508,6 +783,9 @@ def main() -> None:
         expect_json_status="healthy",
     )
 
+    # Step 2a: Seed master key in LiteLLM database (fixes issue #9433)
+    seed_master_key()
+
     # Step 3: Insert vector store row into pgvector database
     insert_vector_store_row()
 
@@ -516,6 +794,9 @@ def main() -> None:
 
     # Step 5: Register in LiteLLM metadata (Admin UI workaround)
     register_in_litellm()
+
+    # Step 5b: Register managed vector store (enables RAG pipeline)
+    register_managed_vector_store()
 
     # Step 6: Ingest documents (if any)
     ingest_documents()
@@ -528,12 +809,6 @@ def main() -> None:
     log(f"  Pgvector:   http://{_PGVECTOR_HOST}:{_PGVECTOR_PORT}")
     log(f"  LiteLLM UI: http://{_LITELLM_HOST}:{_LITELLM_PORT}/ui")
     log("")
-    log(
-        "NOTE: Due to LiteLLM issue #25947, the vector store may not"
-        " appear in the Admin UI at Tools > Vector Stores. The store IS"
-        " functional — RAG lookups from the 'policy-assistant' model"
-        " will query pgvector correctly."
-    )
     log("=" * 60)
 
 

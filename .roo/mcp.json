@@ -22,7 +22,9 @@
 				"browser_close",
 				"browser_fill_form",
 				"browser_evaluate",
-				"browser_select_option"
+				"browser_select_option",
+				"browser_network_request",
+				"browser_press_key"
 			]
 		},
 		"searxng": {
