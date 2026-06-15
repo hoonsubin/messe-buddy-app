@@ -1,0 +1,186 @@
+// Phase 6 — wired resources editor with visibility toggles.
+import { MdCheckBox, MdCheckBoxOutlineBlank, MdClose } from "react-icons/md";
+import type { PBRecord, Resource } from "../../types/index.ts";
+import type { ResourceType } from "../../types/index.ts";
+import { RESOURCE_TYPE } from "../../types/index.ts";
+
+interface ResourcesEditorProps {
+  readonly resources: ReadonlyArray<Resource>;
+  readonly onAdd: (data: Omit<Resource, keyof PBRecord>) => void;
+  readonly onDelete: (resourceId: string) => void;
+  readonly onToggleVisibility: (resourceId: string, visible: boolean) => void;
+  readonly sessionId: string;
+}
+
+const ResourcesEditor = (props: ResourcesEditorProps) => (
+  <div
+    data-testid="resources-editor"
+    style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
+  >
+    <h3
+      style={{
+        margin: 0,
+        fontFamily: "var(--font-display)",
+        fontSize: "var(--text-base)",
+        fontWeight: "var(--weight-semibold)",
+        color: "hsl(var(--color-fg))",
+      }}
+    >
+      Resources
+    </h3>
+    <ul
+      style={{
+        listStyle: "none",
+        padding: 0,
+        margin: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-2)",
+      }}
+    >
+      {props.resources.map((r) => (
+        <li
+          key={r.id}
+          className="card"
+          style={{
+            padding: "var(--space-3)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "var(--space-2)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--space-3)",
+              flex: 1,
+              minWidth: 0,
+            }}
+          >
+            {/* Visibility toggle */}
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+              aria-label={`Toggle visibility for ${r.title}`}
+            >
+              <input
+                type="checkbox"
+                checked={r.isVisibleToPlayer}
+                onChange={(e) =>
+                  props.onToggleVisibility(r.id, e.target.checked)}
+                style={{ display: "none" }}
+              />
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  fontSize: "var(--text-lg)",
+                  color: r.isVisibleToPlayer
+                    ? "hsl(var(--color-status-complete))"
+                    : "hsl(var(--color-muted-fg))",
+                }}
+              >
+                {r.isVisibleToPlayer
+                  ? <MdCheckBox />
+                  : <MdCheckBoxOutlineBlank />}
+              </span>
+            </label>
+            <div style={{ minWidth: 0 }}>
+              <span
+                style={{
+                  fontSize: "var(--text-sm)",
+                  fontWeight: "var(--weight-medium)",
+                  color: "hsl(var(--color-fg))",
+                  display: "block",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {r.title}
+              </span>
+              <span
+                style={{
+                  fontSize: "var(--text-xs)",
+                  color: "hsl(var(--color-muted-fg))",
+                }}
+              >
+                {r.type}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => props.onDelete(r.id)}
+            aria-label={`Remove ${r.title}`}
+            style={{ flexShrink: 0 }}
+          >
+            <MdClose size={16} aria-hidden="true" />
+          </button>
+        </li>
+      ))}
+    </ul>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const fd = new FormData(e.currentTarget);
+        props.onAdd({
+          sessionId: props.sessionId,
+          title: fd.get("title") as string,
+          type: fd.get("type") as ResourceType,
+          url: fd.get("url") as string,
+          isVisibleToPlayer: true,
+        });
+        (e.target as HTMLFormElement).reset();
+      }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-3)",
+      }}
+    >
+      <div className="form-field">
+        <label className="form-label" htmlFor="res-title">Title</label>
+        <input
+          id="res-title"
+          name="title"
+          className="form-input"
+          type="text"
+          required
+          placeholder="Resource name"
+        />
+      </div>
+      <div className="form-field">
+        <label className="form-label" htmlFor="res-type">Type</label>
+        <select id="res-type" name="type" className="form-input">
+          {(Object.values(RESOURCE_TYPE) as ResourceType[]).map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+      </div>
+      <div className="form-field">
+        <label className="form-label" htmlFor="res-url">URL</label>
+        <input
+          id="res-url"
+          name="url"
+          className="form-input"
+          type="url"
+          required
+          placeholder="https://..."
+        />
+      </div>
+      <button type="submit" className="btn btn--secondary">
+        + Add resource
+      </button>
+    </form>
+  </div>
+);
+
+export default ResourcesEditor;

@@ -1,0 +1,44 @@
+{
+	"mcpServers": {
+		"playwright": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"@playwright/mcp@latest",
+				"--browser=firefox",
+				"--device=iPhone 15"
+			],
+			"alwaysAllow": [
+				"browser_navigate",
+				"browser_install",
+				"browser_click",
+				"browser_type",
+				"browser_snapshot",
+				"browser_resize",
+				"browser_console_messages",
+				"browser_take_screenshot",
+				"browser_wait_for",
+				"browser_tabs",
+				"browser_close",
+				"browser_fill_form",
+				"browser_evaluate",
+				"browser_select_option"
+			]
+		},
+		"searxng": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"mcp-searxng"
+			],
+			"env": {
+				"SEARXNG_URL": "http://searxng:8888"
+			},
+			"alwaysAllow": [
+				"searxng_web_search",
+				"web_url_read"
+			],
+			"disabled": false
+		}
+	}
+}

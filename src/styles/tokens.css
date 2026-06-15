@@ -1,0 +1,102 @@
+/*
+ * MesseBuddy Design Tokens
+ * Extracted from wireframe CSS custom properties.
+ *
+ * Color values are in HSL channel format (no hsl() wrapper) so they can be
+ * composed with alpha: hsl(var(--primary) / 0.2).
+ *
+ * Sizing and spacing use rem throughout. No px except 1px borders.
+ */
+
+:root {
+  /* ── Colors ──────────────────────────────────────────────────────────────── */
+  --color-bg:               220 43% 97%;   /* very light blue-gray */
+  --color-fg:               221 61% 14%;   /* dark navy */
+  --color-card:               0  0% 100%;  /* white */
+  --color-card-fg:          221 61% 14%;
+  --color-popover:            0  0% 100%;
+  --color-popover-fg:       221 61% 14%;
+  --color-primary:          227 59% 27%;   /* deep blue */
+  --color-primary-fg:         0  0% 100%;
+  --color-secondary:        220 50% 95%;
+  --color-secondary-fg:     221 61% 14%;
+  --color-muted:            220 43% 96%;
+  --color-muted-fg:         214 19% 45%;
+  --color-accent:           227 59% 27%;
+  --color-accent-fg:          0  0% 100%;
+  --color-destructive:      353 78% 44%;   /* red */
+  --color-destructive-fg:     0  0% 100%;
+  --color-border:           217 37% 89%;
+  --color-input:            217 37% 89%;
+  --color-ring:             227 59% 27%;
+
+  /* XP progress ring colour */
+  --color-xp-ring:          227 59% 27%;
+  --color-xp-ring-track:    217 37% 89%;
+
+  /* Status colours */
+  --color-status-upcoming:  214 19% 65%;
+  --color-status-progress:  227 59% 55%;
+  --color-status-complete:  142 71% 45%;
+
+  /* ── Typography ──────────────────────────────────────────────────────────── */
+  --font-sans:   "DM Sans", system-ui, sans-serif;
+  --font-display:"Playfair Display", Georgia, serif;
+  --font-mono:   "DM Mono", "Courier New", monospace;
+
+  --text-xs:   0.75rem;    /* 12px */
+  --text-sm:   0.875rem;   /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg:   1.125rem;   /* 18px */
+  --text-xl:   1.25rem;    /* 20px */
+  --text-2xl:  1.5rem;     /* 24px */
+  --text-3xl:  1.875rem;   /* 30px */
+
+  --leading-tight:  1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed:1.75;
+
+  --weight-normal:  400;
+  --weight-medium:  500;
+  --weight-semibold:600;
+
+  /* ── Spacing ─────────────────────────────────────────────────────────────── */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* ── Radii ───────────────────────────────────────────────────────────────── */
+  --radius-sm: 0.25rem;
+  --radius:    0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
+
+  /* ── Shadows ─────────────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px hsl(var(--color-fg) / 0.06);
+  --shadow:    0 1px 3px hsl(var(--color-fg) / 0.08),
+               0 1px 2px hsl(var(--color-fg) / 0.06);
+  --shadow-md: 0 4px 6px hsl(var(--color-fg) / 0.07),
+               0 2px 4px hsl(var(--color-fg) / 0.06);
+  --shadow-lg: 0 10px 15px hsl(var(--color-fg) / 0.08),
+               0 4px 6px hsl(var(--color-fg) / 0.05);
+
+  /* ── Layout ──────────────────────────────────────────────────────────────── */
+  --topbar-h:      3.5rem;    /* 56px — fixed top bar height */
+  --sidebar-w:     22rem;     /* 352px — milestone/mission sidebar */
+  --ms-strip-h:    7rem;      /* mission strip at bottom of player cockpit */
+  --touch-target:  2.75rem;   /* 44px min touch target per WCAG */
+  --min-touch:     2.75rem;   /* alias for touch-target — used in components */
+
+  /* ── Transitions ─────────────────────────────────────────────────────────── */
+  --duration-fast:   150ms;
+  --duration-normal: 250ms;
+  --duration-slow:   400ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}

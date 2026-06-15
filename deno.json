@@ -25,6 +25,13 @@
   "imports": {
     "react": "npm:react@^19.2.6",
     "react-dom": "npm:react-dom@^19.2.6",
+    "react-icons": "npm:react-icons@^5.6.0",
+    "react-router-dom": "npm:react-router-dom@^7.6.2",
+    "pocketbase": "npm:pocketbase@^0.26.0",
+    "qrcode": "npm:qrcode@^1.5.4",
+    "jsqr": "npm:jsqr@^1.4.0",
+    "marked": "npm:marked@^15.0.12",
+    "@types/qrcode": "npm:@types/qrcode@^1.5.5",
     "@eslint/js": "npm:@eslint/js@^10.0.1",
     "@std/fs": "https://deno.land/std@0.208.0/fs/mod.ts",
     "@types/node": "npm:@types/node@^24.12.3",

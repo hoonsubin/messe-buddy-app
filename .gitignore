@@ -30,4 +30,5 @@ deno.lock
 
 .act.secrets
 .env
-consume-docs/
+consume-docs/**
+.playwright-mcp
