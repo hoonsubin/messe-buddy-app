@@ -2,13 +2,22 @@
 #
 # This file is the ONLY place an admin needs to touch to:
 #   1. Switch AI providers (OpenAI → Anthropic → Azure → any OpenAI-compatible)
-#   2. Update the chatbot's knowledge base (re-run the ingest service)
+#   2. Configure models and their parameters
 #   3. Tune RAG strictness (RAG_TOP_K, RAG_MIN_SIMILARITY via .env)
+#   4. Adjust the default system prompt
+#
+# Database mode is enabled via the DATABASE_URL environment variable (set in
+# docker-compose.yml). This provides:
+#   - Virtual key management via Admin UI
+#   - Spend tracking and budget management
+#   - Model configuration persistence
+#   - Native RAG document management (upload/manage via Admin UI or API)
 #
 # The PWA (useChatStream hook) always calls the same endpoint with the same
 # request shape. It is unaware of which provider or documents are in use.
 #
-# Docs: https://docs.litellm.ai/docs/proxy/config
+# Docs: https://docs.litellm.ai/docs/proxy/configs
+#       https://docs.litellm.ai/docs/proxy/virtual_keys
 
 model_list:
   # ── OpenAI ───────────────────────────────────────────────────────────────────
@@ -54,9 +63,9 @@ model_list:
 #   3a. Chunks found → injects them into the system prompt and forwards to LLM.
 #   3b. No chunks → returns a canned refusal; upstream LLM never called.
 #
-# To update knowledge base: add/edit files in consume-docs/, then:
-#   docker compose run --rm ingest
-# No proxy restart required.
+# Documents are managed via the LiteLLM Admin UI or POST /document/upload API.
+# Add/update documents there — they are automatically chunked, embedded, and
+# stored in the pgvector-backed database.
 #
 # To tune retrieval: edit RAG_TOP_K and RAG_MIN_SIMILARITY in .env, then:
 #   docker compose up -d litellm
@@ -97,3 +106,34 @@ general_settings:
 
   # Drop unknown parameters so the PWA can send standard OpenAI-shaped requests
   drop_params: true
+
+  # ── Database mode settings ──────────────────────────────────────────────────
+  # The DATABASE_URL is provided via environment variable in docker-compose.yml.
+  # These settings fine-tune the database connection behavior.
+
+  # Connection pool per worker for Prisma client to PostgreSQL (default: 10)
+  database_connection_pool_limit: 10
+
+  # Connection timeout in seconds (default: 10)
+  database_connect_timeout: 10
+
+  # Socket timeout in seconds (default: 30)
+  database_socket_timeout: 30
+
+  # ── Native RAG with pgvector ────────────────────────────────────────────────
+  # LiteLLM's native RAG feature uses the same pgvector-enabled database to
+  # store and retrieve document embeddings. Documents are uploaded via the
+  # Admin UI or POST /document/upload and are automatically processed.
+  #
+  # The embedding model used for both ingestion and query-time retrieval.
+  # Must match the model used by the ingest script if that fallback is used.
+  embedding_model: os.environ/EMBEDDING_MODEL
+
+  # When enabled, LiteLLM uses pgvector for document storage and retrieval
+  # via its native RAG pipeline, using the DATABASE_URL connection.
+  # The vector extension table is managed automatically by LiteLLM.
+  #
+  # NOTE: The custom rag_hook.py guardrail handles the query-time retrieval
+  # logic (embed user query, search pgvector, inject context). The native
+  # LiteLLM RAG pipeline is used for document management (upload, chunk,
+  # embed, store) via the Admin UI and API.

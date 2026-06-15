@@ -36,8 +36,6 @@ import os
 import asyncio
 from typing import Literal, Optional, Union
 
-import psycopg2
-import openai
 from litellm.integrations.custom_guardrail import CustomGuardrail
 from litellm.caching.caching import DualCache
 from litellm.proxy._types import UserAPIKeyAuth
@@ -63,6 +61,7 @@ NO_DOCS_RESPONSE = (
 # ── Internal helpers (synchronous — run via asyncio.to_thread) ─────────────────
 
 def _embed(text: str) -> list[float]:
+    import openai
     client = openai.OpenAI(api_key=OPENAI_API_KEY)
     resp = client.embeddings.create(model=EMBEDDING_MODEL, input=[text])
     return resp.data[0].embedding
@@ -73,6 +72,8 @@ def _retrieve(query: str) -> list[tuple[str, str, float]]:
     Returns (source_file, chunk_text, similarity_score) for chunks that
     meet or exceed MIN_SIMILARITY, ordered by relevance (best first).
     """
+    import psycopg2
+
     emb = _embed(query)
     emb_str = "[" + ",".join(str(x) for x in emb) + "]"
 

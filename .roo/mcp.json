@@ -32,11 +32,10 @@
 				"mcp-searxng"
 			],
 			"env": {
-				"SEARXNG_URL": "http://searxng:8888"
+				"SEARXNG_URL": "https://search.hoonlabs.xyz"
 			},
 			"alwaysAllow": [
-				"searxng_web_search",
-				"web_url_read"
+				"searxng_web_search"
 			],
 			"disabled": false
 		}
