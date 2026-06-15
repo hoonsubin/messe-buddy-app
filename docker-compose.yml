@@ -174,7 +174,6 @@ services:
       UI_USERNAME: ${UI_USERNAME:-admin}
       #UI_PASSWORD defaults to LITELLM_MASTER_KEY
 
-
       # HoonLabs upstream LiteLLM proxy key
       LLM_PROXY_KEY: ${LLM_PROXY_KEY:-}
 
@@ -242,7 +241,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-litellm}
       LITELLM_DB_HOST: litellm-db
     volumes:
-      - ./consume-docs:/consume-docs:ro   # Optional document ingestion
+      - ./consume-docs:/consume-docs:ro # Optional document ingestion
     depends_on:
       vector-db:
         condition: service_healthy
@@ -254,7 +253,7 @@ services:
         condition: service_healthy
     networks:
       - litellm-internal
-    restart: "no"                            # Runs once and exits
+    restart: "no" # Runs once and exits
 
   # ── App (PWA + PocketBase) ──────────────────────────────────────────────────
   app:
