@@ -1,12 +1,13 @@
 # MesseBuddy — Docker Compose
 #
 # Services:
-#   app       — nginx (PWA :80) + PocketBase (:8090) in one container
-#   litellm   — LiteLLM proxy (:4000), database mode + native pgvector RAG
-#   postgres  — Single PostgreSQL instance with pgvector, serves:
-#               1) LiteLLM metadata (virtual keys, spend logs, model config)
-#               2) Vector store for RAG document chunks
-#   redis     — LiteLLM cache / rate-limit state
+#   app              — nginx (PWA :80) + PocketBase (:8090) in one container
+#   litellm          — LiteLLM proxy (:4000), database mode + native pgvector RAG
+#   litellm-pgvector — PG Vector store connector (:8001), document upload + search
+#   postgres         — Single PostgreSQL instance with pgvector, serves:
+#                      1) LiteLLM metadata (virtual keys, spend logs, model config)
+#                      2) Vector store for RAG document embeddings
+#   redis            — LiteLLM cache / rate-limit state
 #
 # Quick start:
 #   cp .env.example .env          # fill in OPENAI_API_KEY (or another provider)
@@ -19,15 +20,10 @@
 # To override for a remote deployment, pass them as --build-arg at image build time.
 #
 # RAG knowledge base:
-#   LiteLLM manages documents natively via:
-#     - Admin UI at http://localhost:4000/ui
-#     - POST /document/upload API endpoint
-#   Documents are chunked, embedded, and stored in the pgvector-enabled PostgreSQL
-#   automatically. No separate ingestion container needed.
-#
-#   Alternatively, use the manual ingest script:
-#     docker compose run --rm ingest
-#   This reads files from consume-docs/ and embeds them directly into pgvector.
+#   Documents are managed via the LiteLLM Admin UI at http://localhost:4000/ui.
+#   The litellm-pgvector connector handles chunking, embedding, and storage.
+#   At query time, the pgvector connector retrieves relevant context and LiteLLM
+#   injects it into the prompt automatically — no PWA code changes required.
 
 services:
 
@@ -60,37 +56,46 @@ services:
       retries: 5
       start_period: 15s
 
-  # ── Document Ingestion (one-shot, run on demand) ─────────────────────────────
-  # Optional manual ingestion container. Reads all supported files from
-  # consume-docs/, chunks them, embeds via the configured embedding model,
-  # and stores the result in the pgvector-backed database.
+  # ── PG Vector Store Connector ────────────────────────────────────────────────
+  # OpenAI-compatible /v1/vector_stores/* endpoints backed by PGVector.
+  # LiteLLM routes document uploads and RAG queries through this service.
   #
-  # To update the knowledge base after adding/editing documents:
-  #   docker compose run --rm ingest
-  #
-  # NOTE: This is a fallback for bulk ingestion. For ongoing document management,
-  # use the LiteLLM Admin UI at http://localhost:4000/ui or the
-  # POST /document/upload API — no container needed.
-  ingest:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.ingest
-    profiles:
-      - manual                    # Only started when explicitly requested
-    volumes:
-      - ./consume-docs:/docs:ro  # Source documents (read-only)
+  # Documents uploaded via Admin UI or POST /document/upload flow through
+  # this connector: chunk → embed → store in pgvector.
+  # At query time, LiteLLM calls this connector's search endpoint to retrieve
+  # relevant chunks before calling the upstream LLM.
+  litellm-pgvector:
+    image: ghcr.io/berriai/litellm-pg-vector-store:latest
+    container_name: litellm-pgvector
+    ports:
+      - "8001:8001"
     environment:
-      PGVECTOR_CONNECTION_STRING: postgresql://${POSTGRES_USER:-litellm}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-litellm}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
-      DOCS_DIR: /docs
-    env_file:
-      - path: .env
-        required: false
-    restart: "no"                # One-shot; re-run manually to re-ingest
+      DATABASE_URL: postgresql://${POSTGRES_USER:-litellm}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-litellm}
+      SERVER_API_KEY: ${LITELLM_MASTER_KEY:-sk-dev-change-in-production}
+      EMBEDDING__MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      EMBEDDING__BASE_URL: "http://litellm:4000"
+      EMBEDDING__API_KEY: ${LITELLM_MASTER_KEY:-sk-dev-change-in-production}
+      EMBEDDING__DIMENSIONS: ${EMBEDDING_DIM:-1536}
+      HOST: "0.0.0.0"
+      PORT: "8001"
+      DB_FIELDS__ID_FIELD: "id"
+      DB_FIELDS__CONTENT_FIELD: "content"
+      DB_FIELDS__METADATA_FIELD: "metadata"
+      DB_FIELDS__EMBEDDING_FIELD: "embedding"
+      DB_FIELDS__VECTOR_STORE_ID_FIELD: "vector_store_id"
+      DB_FIELDS__CREATED_AT_FIELD: "created_at"
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - litellm-internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   # ── LiteLLM Proxy ────────────────────────────────────────────────────────────
   # Abstraction layer between the PWA and upstream AI providers.
@@ -99,12 +104,12 @@ services:
   # Database mode (enabled via DATABASE_URL):
   #   - Stores virtual keys, spend logs, and model configurations in PostgreSQL
   #   - Enables the LiteLLM Admin UI for managing models, keys, and documents
-  #   - Persists RAG document embeddings via pgvector in the same PostgreSQL
   #
   # Native RAG with pgvector:
-  #   - embedding_model in general_settings configures automatic embedding
+  #   - vector_store_registry in litellm.yaml configures the pgvector connector
+  #   - vector_store_ids on the model makes RAG always-on (no PWA changes)
   #   - Users upload documents via the Admin UI or POST /document/upload
-  #   - LiteLLM chunks, embeds, and stores documents automatically
+  #   - The litellm-pgvector connector chunks, embeds, and stores documents
   #   - At query time, relevant chunks are retrieved and injected into the prompt
   #
   # Swap providers or update system prompts by editing docker/litellm.yaml —
@@ -116,7 +121,6 @@ services:
       - "4000:4000"              # Exposed for direct browser access (prototype)
     volumes:
       - ./docker/litellm.yaml:/app/config.yaml:ro
-      - ./docker/rag_hook.py:/app/rag_hook.py:ro  # Custom RAG guardrail
     command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "1"]
     environment:
       # Master key guards the proxy management endpoints (/health, /model/info…)
@@ -128,20 +132,14 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
-      # Embedding model for RAG (used by both litellm.yaml and rag_hook.py)
+      # Embedding model for RAG
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
 
       # ── Database mode ─────────────────────────────────────────────────────
       # Single PostgreSQL connection string. The same database serves BOTH
       # LiteLLM metadata (virtual keys, spend logs, model configs) AND
-      # the pgvector vector store for RAG document chunks.
+      # the pgvector vector store for RAG document chunks (via the connector).
       DATABASE_URL: postgresql://${POSTGRES_USER:-litellm}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-litellm}
-
-      # Legacy pgvector connection string (kept for rag_hook.py compatibility)
-      PGVECTOR_CONNECTION_STRING: postgresql://${POSTGRES_USER:-litellm}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-litellm}
-
-      # Store model config in database (required for Admin UI model management)
-      STORE_MODEL_IN_DB: True
 
       # ── Redis (in-memory cache, rate-limit state) ─────────────────────────
       REDIS_HOST: redis
@@ -217,6 +215,6 @@ volumes:
 networks:
   litellm-internal:
     driver: bridge
-    internal: true               # postgres & redis not exposed to host
+    internal: true               # postgres, connector & redis not exposed to host
   litellm-external:
     driver: bridge

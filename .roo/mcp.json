@@ -35,7 +35,8 @@
 				"SEARXNG_URL": "https://search.hoonlabs.xyz"
 			},
 			"alwaysAllow": [
-				"searxng_web_search"
+				"searxng_web_search",
+				"web_url_read"
 			],
 			"disabled": false
 		}
