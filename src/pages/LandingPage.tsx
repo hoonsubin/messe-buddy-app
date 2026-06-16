@@ -1,252 +1,42 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useIdentity } from "../hooks/useIdentity.ts";
-import { useAdapter } from "../adapters/useAdapter.ts";
-import {
-  createGameMakerSession,
-  joinSession,
-} from "../use-cases/joinSession.ts";
-import { recoverIdentity } from "../use-cases/recoverIdentity.ts";
-import { importTemplate } from "../use-cases/importTemplate.ts";
-import type { Player, TemplateExport } from "../types/index.ts";
 import RecoveryKeyModal from "../components/shared/RecoveryKeyModal.tsx";
 import NameCaptureModal from "../components/shared/NameCaptureModal.tsx";
-import { USER_ROLE } from "../types/index.ts";
-
-type View = "role-select" | "join" | "create" | "recover" | "templates";
-type Status = "idle" | "loading" | "error";
-
-// ── Page ──────────────────────────────────────────────────────────────────────
-
-// Module-level guard to prevent double-navigation under React 18+ StrictMode.
-// Unlike useRef (which is re-initialized on StrictMode unmount/remount), a
-// module-level variable survives remount and prevents the second effect fire
-// from calling navigate() - which would otherwise throw a SecurityError:
-// "Too many calls to Location or History APIs within a short timeframe."
-let hasNavigated = false;
+import { useLandingFlow } from "../hooks/useLandingFlow.ts";
+import type { LandingView } from "../hooks/useLandingFlow.ts";
 
 const LandingPage = () => {
-  const navigate = useNavigate();
-  const adapter = useAdapter();
-  const { identity, setIdentity } = useIdentity();
+  const {
+    view,
+    status,
+    errorMessage,
+    sessionCode,
+    sessionName,
+    recoveryKey,
+    recoverySessionId,
+    templates,
+    pendingRecoveryKey,
+    pendingPlayer,
+    templateFileRef,
+    setView,
+    setSessionCode,
+    setSessionName,
+    setRecoveryKey,
+    setRecoverySessionId,
+    resetError,
+    handleJoin,
+    handleCreate,
+    handleRecover,
+    handleNameSubmit,
+    handleDemoPlayer,
+    handleDemoAdmin,
+    handleLoadTemplateFromStore,
+    handleTemplateImport,
+    handleRecoveryKeyDismiss,
+  } = useLandingFlow();
 
-  const [view, setView] = useState<View>("role-select");
-  const [status, setStatus] = useState<Status>("idle");
-  const [errorMessage, setErrorMessage] = useState("");
-
-  // Controlled inputs
-  const [sessionCode, setSessionCode] = useState("");
-  const [sessionName, setSessionName] = useState("");
-  const [recoveryKey, setRecoveryKey] = useState("");
-  const [recoverySessionId, setRecoverySessionId] = useState("");
-  const [templates, setTemplates] = useState<ReadonlyArray<TemplateExport>>([]);
-
-  // Set after a successful join/create - triggers the modal
-  const [pendingRecoveryKey, setPendingRecoveryKey] = useState<string | null>(
-    null,
-  );
-  // Set alongside pendingRecoveryKey so we know where to redirect on dismiss
-  const [pendingRedirect, setPendingRedirect] = useState<string>("/");
-  // Player awaiting a name — gates the name-capture step before the recovery key
-  const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
-
-  // Hidden file input for template import
-  const templateFileRef = useRef<HTMLInputElement>(null);
-
-  // Returning user: if identity exists in localStorage, navigate to cockpit
-  // only if the user hasn't explicitly chosen a view (i.e. landing page loads
-  // and identity is present, but the user hasn't clicked any button yet).
-  // Uses module-level hasNavigated (not useRef) to survive StrictMode remount.
-  useEffect(() => {
-    if (!identity || view !== "role-select") return;
-    if (hasNavigated) return;
-    hasNavigated = true;
-    const dest = identity.role === USER_ROLE.PLAYER
-      ? `/session/${identity.sessionId}`
-      : `/admin/${identity.sessionId}`;
-    try {
-      navigate(dest, { replace: true });
-    } catch {
-      // Suppress SecurityError from react-router when navigate() is called
-      // too rapidly (StrictMode double-fire safety net).
-    }
-  }, [identity, navigate, view]);
-
-  // Fetch templates when entering templates view
-  useEffect(() => {
-    if (view !== "templates") return;
-    void adapter.listTemplates().then(setTemplates);
-  }, [adapter, view]);
-
-  // ── handlers ────────────────────────────────────────────────────────────────
-
-  const handleJoin = async () => {
-    if (!sessionCode.trim()) return;
-    setStatus("loading");
-    setErrorMessage("");
-    try {
-      const result = await joinSession(sessionCode.trim(), adapter);
-      // joinSession already writes to localStorage - do NOT call setIdentity here,
-      // which would fire the returning-user useEffect and navigate before the modal renders.
-      setPendingRedirect(`/session/${result.identity.sessionId}`);
-      // Capture the player's name before revealing the recovery key.
-      setPendingPlayer(result.player);
-      setStatus("idle");
-    } catch {
-      setStatus("error");
-      setErrorMessage(
-        "Session not found. Check your session code and try again.",
-      );
-    }
+  const goToView = (next: LandingView) => {
+    resetError();
+    setView(next);
   };
-
-  // Persist the name entered in the capture step, then reveal the recovery key.
-  const handleNameSubmit = async (name: string) => {
-    if (!pendingPlayer) return;
-    setStatus("loading");
-    setErrorMessage("");
-    try {
-      await adapter.updatePlayer(pendingPlayer.id, { name });
-      setPendingRecoveryKey(pendingPlayer.recoveryKey);
-      setPendingPlayer(null);
-      setStatus("idle");
-    } catch {
-      setStatus("error");
-      setErrorMessage("Could not save your name. Please try again.");
-    }
-  };
-
-  const handleCreate = async () => {
-    if (!sessionName.trim()) return;
-    setStatus("loading");
-    setErrorMessage("");
-    try {
-      const createdIdentity = await createGameMakerSession(
-        sessionName.trim(),
-        adapter,
-      );
-      // Same reasoning: use case writes localStorage; setIdentity would race the modal.
-      setPendingRedirect(`/admin/${createdIdentity.sessionId}`);
-      setPendingRecoveryKey(createdIdentity.recoveryKey);
-      setStatus("idle");
-    } catch {
-      setStatus("error");
-      setErrorMessage("Could not create session. Please try again.");
-    }
-  };
-
-  const handleRecover = async () => {
-    if (!recoveryKey.trim() || !recoverySessionId.trim()) return;
-    setStatus("loading");
-    setErrorMessage("");
-    try {
-      const recovered = await recoverIdentity(
-        recoveryKey.trim().toUpperCase(),
-        recoverySessionId.trim(),
-        adapter,
-      );
-      // recoverIdentity writes localStorage; navigate directly (no modal for recovery).
-      const dest = recovered.role === USER_ROLE.PLAYER
-        ? `/session/${recovered.sessionId}`
-        : `/admin/${recovered.sessionId}`;
-      navigate(dest, { replace: true });
-    } catch {
-      setStatus("error");
-      setErrorMessage(
-        "No account found for that key and session. Check and try again.",
-      );
-    }
-  };
-
-  // ── demo shortcuts ────────────────────────────────────────────────────────
-
-  const handleDemoPlayer = () => {
-    setIdentity({
-      uid: "uid_sofia_002",
-      recoveryKey: "SOFIA026",
-      sessionId: "sess_mmt2026",
-      role: USER_ROLE.PLAYER,
-    });
-    // useEffect above navigates to /session/sess_mmt2026
-  };
-
-  const handleDemoAdmin = () => {
-    setIdentity({
-      uid: "uid_gamemaker_peter",
-      recoveryKey: "DEMO1234",
-      sessionId: "sess_mmt2026",
-      role: USER_ROLE.GAMEMAKER,
-    });
-    // useEffect above navigates to /admin/sess_mmt2026
-  };
-
-  const handleLoadTemplateFromStore = async (templateName: string) => {
-    const template = templates.find((t) => t.name === templateName);
-    if (!template) return;
-    setStatus("loading");
-    setErrorMessage("");
-    try {
-      const gmUid = crypto.randomUUID();
-      const newSessionId = await importTemplate(
-        template,
-        template.name,
-        gmUid,
-        adapter,
-      );
-      setIdentity({
-        uid: gmUid,
-        recoveryKey: "TMPL0001",
-        sessionId: newSessionId,
-        role: USER_ROLE.GAMEMAKER,
-      });
-    } catch {
-      setStatus("error");
-      setErrorMessage("Could not import template. Please try again.");
-    }
-  };
-
-  const handleTemplateImport = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setStatus("loading");
-    setErrorMessage("");
-    try {
-      const text = await file.text();
-      const template = JSON.parse(text) as TemplateExport;
-      const gmUid = crypto.randomUUID();
-      const newSessionId = await importTemplate(
-        template,
-        template.name,
-        gmUid,
-        adapter,
-      );
-      setIdentity({
-        uid: gmUid,
-        recoveryKey: "IMPRT001",
-        sessionId: newSessionId,
-        role: USER_ROLE.GAMEMAKER,
-      });
-      // useEffect navigates to /admin/:newSessionId
-    } catch {
-      setStatus("error");
-      setErrorMessage(
-        "Could not import template. Make sure it's a valid MesseBuddy template file.",
-      );
-    }
-  };
-
-  const handleRecoveryKeyDismiss = () => {
-    navigate(pendingRedirect, { replace: true });
-  };
-
-  const resetError = () => {
-    setErrorMessage("");
-    setStatus("idle");
-  };
-
-  // ── shared shell ────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -284,20 +74,14 @@ const LandingPage = () => {
                 <button
                   type="button"
                   className="btn btn--primary landing__btn-full"
-                  onClick={() => {
-                    resetError();
-                    setView("join");
-                  }}
+                  onClick={() => goToView("join")}
                 >
                   New Employee
                 </button>
                 <button
                   type="button"
                   className="btn btn--secondary landing__btn-full"
-                  onClick={() => {
-                    resetError();
-                    setView("create");
-                  }}
+                  onClick={() => goToView("create")}
                 >
                   Admin
                 </button>
@@ -306,10 +90,7 @@ const LandingPage = () => {
               <button
                 type="button"
                 className="btn btn--ghost landing__btn-muted"
-                onClick={() => {
-                  resetError();
-                  setView("recover");
-                }}
+                onClick={() => goToView("recover")}
               >
                 Recover my progress
               </button>
@@ -374,10 +155,7 @@ const LandingPage = () => {
                 <button
                   type="button"
                   className="btn btn--ghost landing__btn-full"
-                  onClick={() => {
-                    resetError();
-                    setView("role-select");
-                  }}
+                  onClick={() => goToView("role-select")}
                 >
                   Back
                 </button>
@@ -420,10 +198,7 @@ const LandingPage = () => {
                 <button
                   type="button"
                   className="btn btn--ghost landing__btn-full"
-                  onClick={() => {
-                    resetError();
-                    setView("role-select");
-                  }}
+                  onClick={() => goToView("role-select")}
                 >
                   Back
                 </button>
@@ -454,10 +229,7 @@ const LandingPage = () => {
                 type="button"
                 className="btn btn--ghost landing__btn-muted"
                 disabled={status === "loading"}
-                onClick={() => {
-                  resetError();
-                  setView("templates");
-                }}
+                onClick={() => goToView("templates")}
               >
                 Browse Templates
               </button>
@@ -507,10 +279,7 @@ const LandingPage = () => {
               <button
                 type="button"
                 className="btn btn--ghost landing__back-btn"
-                onClick={() => {
-                  resetError();
-                  setView("create");
-                }}
+                onClick={() => goToView("create")}
               >
                 Back
               </button>
@@ -568,10 +337,7 @@ const LandingPage = () => {
                 <button
                   type="button"
                   className="btn btn--ghost landing__btn-full"
-                  onClick={() => {
-                    resetError();
-                    setView("role-select");
-                  }}
+                  onClick={() => goToView("role-select")}
                 >
                   Back
                 </button>
