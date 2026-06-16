@@ -79,10 +79,12 @@ Before writing ANY implementation code for a new screen, page, or feature:
 | Path | Component | Role |
 |------|-----------|------|
 | `/` | [`LandingPage`](src/pages/LandingPage.tsx:1) | Public |
+| `/join/:sessionId` | [`LandingPage`](src/pages/LandingPage.tsx:1) | Public (invite prefill) |
 | `/session/:sessionId` | [`PlayerCockpitPage`](src/pages/PlayerCockpitPage.tsx:1) | Player |
 | `/admin/:sessionId` | [`AdminCockpitPage`](src/pages/AdminCockpitPage.tsx:1) | GameMaker |
+| `/admin/:sessionId/scan` | [`QRScannerView`](src/pages/QRScannerView.tsx:1) | GameMaker |
+| `/validate/:sessionId` | [`ValidationPage`](src/pages/ValidationPage.tsx:1) | GameMaker |
 | `/form/:missionId` | [`FormPage`](src/pages/FormPage.tsx:1) | Player |
-| `/qr/:missionId` | [`QRScannerView`](src/pages/QRScannerView.tsx:1) | GameMaker |
 
 ---
 
