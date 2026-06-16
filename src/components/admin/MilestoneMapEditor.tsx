@@ -47,6 +47,7 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
     onRename,
     onDelete,
     onMilestoneClick,
+    onUploadBackground,
   } = props;
 
   const [gridEnabled, setGridEnabled] = useState(false);

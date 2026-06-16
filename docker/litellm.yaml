@@ -94,8 +94,11 @@ router_settings:
 
 # ── General settings ───────────────────────────────────────────────────────────
 general_settings:
-  # Base system prompt. LiteLLM's vector store integration prepends retrieved
-  # document context before this prompt automatically in the final LLM call.
+  # ⚠️ NOTE: `default_system_prompt` is NOT a supported LiteLLM setting — the
+  # proxy ignores it. The PWA injects this system prompt itself as the first
+  # message (see src/config/llm.ts → LLM_SYSTEM_PROMPT). Kept here only as the
+  # canonical reference text; keep the two in sync. RAG (vector_store_ids on the
+  # model) is injected server-side regardless.
   default_system_prompt: |
     You are a document-based onboarding assistant for new employees at Messe München,
     integrated into the MesseBuddy onboarding platform.

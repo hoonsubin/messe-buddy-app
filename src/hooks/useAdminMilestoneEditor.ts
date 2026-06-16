@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type {
-  DraftMilestone,
-  DraftMission,
-  Milestone,
-} from "../types/index.ts";
+import type { DraftMilestone, Milestone } from "../types/index.ts";
 import type { AppAdapter } from "../adapters/interface.ts";
 import { makeId } from "../utils/id.ts";
 

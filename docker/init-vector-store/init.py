@@ -72,6 +72,18 @@ _SUPPORTED_EXTENSIONS = os.getenv(
     ".txt,.md,.csv,.html,.json,.xml,.yaml,.yml",
 ).split(",")
 
+# Front-end virtual key: minted at runtime and written to a shared volume the
+# app container reads at startup. Scoped to the chat model + budget-capped so
+# it is safe(ish) to expose at the proxy edge.
+_RUNTIME_DIR = os.getenv("RUNTIME_DIR", "/runtime")
+_VIRTUAL_KEY_ALIAS = os.getenv("VIRTUAL_KEY_ALIAS", "messebuddy-pwa")
+_VIRTUAL_KEY_MODELS = [
+    m.strip()
+    for m in os.getenv("VIRTUAL_KEY_MODELS", "policy-assistant").split(",")
+    if m.strip()
+]
+_VIRTUAL_KEY_BUDGET = float(os.getenv("VIRTUAL_KEY_BUDGET", "5"))
+
 # ── Logging helpers ────────────────────────────────────────────────────────
 
 
@@ -760,6 +772,71 @@ def ingest_documents() -> None:
         ok("Documents ingested")
 
 
+# ── Front-end virtual key provisioning ─────────────────────────────────────
+
+
+def generate_virtual_key() -> None:
+    """Mint a scoped, budget-capped virtual key for the PWA and write it to the
+    shared runtime volume.
+
+    The app container's entrypoint reads /runtime/virtual_key at startup and
+    injects it into the nginx /llm proxy — so the key is created at runtime
+    (after the proxy is healthy) rather than baked into the image at build time.
+
+    Idempotency relies on the shared volume persisting alongside the LiteLLM DB:
+    if a valid key file already exists, it is reused. On a clean volume (fresh
+    `docker compose up --build`) a new key is minted.
+    """
+    log("Step 7: Provisioning front-end virtual key...")
+    litellm_url = f"http://{_LITELLM_HOST}:{_LITELLM_PORT}"
+    auth = {"Authorization": f"Bearer {_LITELLM_MASTER_KEY}"}
+    key_file = Path(_RUNTIME_DIR) / "virtual_key"
+
+    # Reuse an existing, still-valid key.
+    if key_file.is_file():
+        existing = key_file.read_text().strip()
+        if existing:
+            try:
+                resp = requests.get(
+                    f"{litellm_url}/key/info",
+                    headers=auth,
+                    params={"key": existing},
+                    timeout=10,
+                )
+                if resp.status_code == 200:
+                    ok("Reusing existing virtual key (idempotent)")
+                    return
+            except requests.RequestException:
+                pass
+            warn("Existing virtual key invalid — minting a replacement")
+
+    payload = {
+        "key_alias": _VIRTUAL_KEY_ALIAS,
+        "models": _VIRTUAL_KEY_MODELS,
+        "max_budget": _VIRTUAL_KEY_BUDGET,
+    }
+    try:
+        resp = requests.post(
+            f"{litellm_url}/key/generate",
+            headers={**auth, "Content-Type": "application/json"},
+            json=payload,
+            timeout=15,
+        )
+        resp.raise_for_status()
+        key = resp.json().get("key")
+        if not key:
+            fail(f"/key/generate returned no key: {resp.text[:300]}")
+        Path(_RUNTIME_DIR).mkdir(parents=True, exist_ok=True)
+        key_file.write_text(key)
+        ok(
+            f"Virtual key provisioned → {key_file} "
+            f"(alias={_VIRTUAL_KEY_ALIAS}, models={_VIRTUAL_KEY_MODELS}, "
+            f"budget={_VIRTUAL_KEY_BUDGET})"
+        )
+    except requests.RequestException as exc:
+        fail(f"Could not generate virtual key: {exc}")
+
+
 # ── Main ───────────────────────────────────────────────────────────────────
 
 
@@ -800,6 +877,9 @@ def main() -> None:
 
     # Step 6: Ingest documents (if any)
     ingest_documents()
+
+    # Step 7: Mint the front-end virtual key onto the shared runtime volume
+    generate_virtual_key()
 
     # ── Done ────────────────────────────────────────────────────────────────
     log("=" * 60)

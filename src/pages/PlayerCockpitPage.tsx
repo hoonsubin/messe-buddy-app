@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { Mission, Player } from "../types/index.ts";
 import { MISSION_TYPE } from "../types/index.ts";
@@ -9,15 +9,14 @@ import { usePlayerProgress } from "../hooks/usePlayerProgress.ts";
 import { useBuddy } from "../hooks/useBuddy.ts";
 import { useResources } from "../hooks/useResources.ts";
 import { useTutorial } from "../hooks/useTutorial.ts";
-import { getDailyMissions } from "../use-cases/getDailyMissions.ts";
 import ConfirmDialog from "../components/shared/ConfirmDialog.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
-import DailyPlanView from "../components/player/DailyPlanView.tsx";
+import AssistantChatCard from "../components/player/AssistantChatCard.tsx";
 import MilestoneMapViewer from "../components/player/MilestoneMapViewer.tsx";
 import MilestoneSidebarViewer from "../components/player/MilestoneSidebarViewer.tsx";
 import MissionDetailPopup from "../components/player/MissionDetailPopup.tsx";
 import CurrentMissionsList from "../components/player/CurrentMissionsList.tsx";
-import ResourcesChat from "../components/player/ResourcesChat.tsx";
+import ResourcesSection from "../components/player/ResourcesSection.tsx";
 import BuddyCard from "../components/player/BuddyCard.tsx";
 import {
   PLACEHOLDER_STEPS,
@@ -124,10 +123,6 @@ const PlayerCockpitPage = () => {
   );
 
   // ── Derived data ───────────────────────────────────────────────────────────
-  const dailyMissions = useMemo(
-    () => playerProgress ? getDailyMissions(playerProgress, missions) : [],
-    [playerProgress, missions],
-  );
   const currentMissions = missions.filter((m) => m.isInCurrentMissions);
   const selectedMilestone = selectedMilestoneId !== null
     ? milestones.find((m) => m.id === selectedMilestoneId) ?? undefined
@@ -311,8 +306,10 @@ const PlayerCockpitPage = () => {
           </p>
         </header>
 
-        {/* Today's missions */}
-        <DailyPlanView missions={dailyMissions} />
+        {/* AI policy assistant — collapsible (collapsed by default) */}
+        <AssistantChatCard
+          {...(buddy?.name !== undefined && { buddyName: buddy.name })}
+        />
 
         {/* Milestones section */}
         <section aria-label="Milestones">
@@ -343,52 +340,43 @@ const PlayerCockpitPage = () => {
           onMarkComplete={() => undefined}
         />
 
-        {/* Buddy + Resources */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(min(100%, 18rem), 1fr))",
-            gap: "var(--space-6)",
-            alignItems: "start",
-          }}
-        >
-          <section aria-label="Your buddy">
-            {buddy
-              ? (
-                <BuddyCard
-                  name={buddy.name}
-                  role={buddy.role}
-                  {...(buddy.tenure !== undefined && { tenure: buddy.tenure })}
-                  {...(buddy.avatarUrl !== undefined &&
-                    { avatarUrl: buddy.avatarUrl })}
-                  {...(buddy.contactUrl !== undefined &&
-                    { contactUrl: buddy.contactUrl })}
-                  {...(buddy.quote !== undefined && { quote: buddy.quote })}
-                  {...(buddy.email !== undefined && { email: buddy.email })}
-                  {...(buddy.phone !== undefined && { phone: buddy.phone })}
-                />
-              )
-              : !isLoading && (
-                <div className="card" style={{ padding: "var(--space-6)" }}>
-                  <p
-                    style={{
-                      fontSize: "var(--text-sm)",
-                      color: "hsl(var(--color-muted-fg))",
-                      textAlign: "center",
-                      margin: 0,
-                    }}
-                  >
-                    You'll be assigned a buddy soon.
-                  </p>
-                </div>
-              )}
-          </section>
+        {/* Your buddy */}
+        <section aria-label="Your buddy">
+          {buddy
+            ? (
+              <BuddyCard
+                name={buddy.name}
+                role={buddy.role}
+                {...(buddy.tenure !== undefined && { tenure: buddy.tenure })}
+                {...(buddy.avatarUrl !== undefined &&
+                  { avatarUrl: buddy.avatarUrl })}
+                {...(buddy.contactUrl !== undefined &&
+                  { contactUrl: buddy.contactUrl })}
+                {...(buddy.quote !== undefined && { quote: buddy.quote })}
+                {...(buddy.email !== undefined && { email: buddy.email })}
+                {...(buddy.phone !== undefined && { phone: buddy.phone })}
+              />
+            )
+            : !isLoading && (
+              <div className="card" style={{ padding: "var(--space-6)" }}>
+                <p
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "hsl(var(--color-muted-fg))",
+                    textAlign: "center",
+                    margin: 0,
+                  }}
+                >
+                  You'll be assigned a buddy soon.
+                </p>
+              </div>
+            )}
+        </section>
 
-          <section aria-label="Resources">
-            <ResourcesChat resources={resources} />
-          </section>
-        </div>
+        {/* Resources — standalone block at the bottom (no tabs) */}
+        <section aria-label="Resources">
+          <ResourcesSection resources={resources} onSearch={() => undefined} />
+        </section>
       </main>
     </div>
   );

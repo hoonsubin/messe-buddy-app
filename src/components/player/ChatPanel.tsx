@@ -1,27 +1,66 @@
-// Phase 1 shell — LiteLLM streaming wired in Phase 6.
-// ChatMessage type deferred to Phase 8; local shape used here.
-import { useRef } from "react";
+// AI policy assistant chat surface. Renders a welcome state with suggested
+// prompts when empty, the conversation otherwise. Streaming, typing indicator,
+// and stop/send affordances are driven by props from the chat hook
+// (useChat → live stream or mock).
+import { useEffect, useRef } from "react";
+import { MdAutoAwesome, MdSend, MdStop } from "react-icons/md";
+import type { ChatMessage } from "../../hooks/useChat.ts";
+import { renderMarkdown } from "../../utils/markdown.ts";
 
-interface ChatMessageData {
-  readonly role: "user" | "assistant";
-  readonly content: string;
-  readonly streaming?: boolean;
-}
+const DEFAULT_PROMPTS: ReadonlyArray<string> = [
+  "How many vacation days do I get?",
+  "Can I work from home?",
+  "How do I expense a purchase?",
+];
+
+const MAX_TEXTAREA_PX = 120;
 
 interface ChatPanelProps {
-  readonly messages: ReadonlyArray<ChatMessageData>;
+  readonly messages: ReadonlyArray<ChatMessage>;
   readonly isStreaming: boolean;
   readonly onSend: (text: string) => void;
+  readonly onStop: () => void;
+  readonly buddyName?: string;
+  readonly suggestedPrompts?: ReadonlyArray<string>;
 }
 
 const ChatPanel = (props: ChatPanelProps) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = () => {
-    const value = inputRef.current?.value.trim() ?? "";
-    if (!value) return;
+  const prompts = props.suggestedPrompts ?? DEFAULT_PROMPTS;
+  const isEmpty = props.messages.length === 0;
+  const last = props.messages[props.messages.length - 1];
+  // Show bouncing dots only before the first token of the current answer.
+  const showTyping = props.isStreaming && last?.role === "assistant" &&
+    last.content === "";
+
+  // Auto-scroll to the latest content as it streams in.
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: "end" });
+  }, [props.messages, props.isStreaming]);
+
+  const autosize = () => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, MAX_TEXTAREA_PX)}px`;
+  };
+
+  const submit = () => {
+    const el = inputRef.current;
+    const value = el?.value.trim() ?? "";
+    if (!value || props.isStreaming) return;
     props.onSend(value);
-    if (inputRef.current) inputRef.current.value = "";
+    if (el) {
+      el.value = "";
+      el.style.height = "auto";
+    }
+  };
+
+  const handleChip = (text: string) => {
+    if (props.isStreaming) return;
+    props.onSend(text);
   };
 
   return (
@@ -31,45 +70,131 @@ const ChatPanel = (props: ChatPanelProps) => {
         aria-live="polite"
         aria-label="Chat messages"
       >
-        {props.messages.map((msg, i) => (
-          <div key={i} className={`chat-message chat-message--${msg.role}`}>
-            <div className="chat-message__bubble">
-              {msg.content}
-              {msg.streaming && <span aria-hidden="true">▌</span>}
+        {isEmpty
+          ? (
+            <div className="chat-empty">
+              <div className="chat-empty__avatar" aria-hidden="true">
+                <MdAutoAwesome size={26} />
+              </div>
+              <p className="chat-empty__title">Ask about company policies</p>
+              <p className="chat-empty__scope">
+                I answer quick questions straight from the official docs. For
+                anything personal,{" "}
+                <span className="chat-empty__buddy">
+                  {props.buddyName ?? "your buddy"} is your buddy
+                </span>.
+              </p>
+              <div className="chat-empty__chips">
+                {prompts.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    className="chat-chip"
+                    onClick={() => handleChip(p)}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-        {props.isStreaming && props.messages.length === 0 && (
-          <div className="chat-message chat-message--assistant">
-            <div className="chat-message__bubble">
-              <span aria-hidden="true">▌</span>
-              <span className="visually-hidden">Thinking…</span>
+          )
+          : (
+            props.messages.map((msg, i) => (
+              msg.role === "user"
+                ? (
+                  <div
+                    key={i}
+                    className="chat-message chat-message--user"
+                  >
+                    <div className="chat-message__bubble">{msg.content}</div>
+                  </div>
+                )
+                : (
+                  <div
+                    key={i}
+                    className="chat-row chat-row--assistant"
+                  >
+                    <div className="chat-avatar" aria-hidden="true">
+                      <MdAutoAwesome size={16} />
+                    </div>
+                    <div
+                      className={`chat-message__bubble chat-message__bubble--assistant${
+                        msg.isError ? " chat-message__bubble--error" : ""
+                      }`}
+                    >
+                      {msg.isError
+                        ? msg.content
+                        : (
+                          <div
+                            className="chat-markdown"
+                            dangerouslySetInnerHTML={{
+                              __html: renderMarkdown(msg.content),
+                            }}
+                          />
+                        )}
+                      {msg.streaming && msg.content !== "" && (
+                        <span className="chat-cursor" aria-hidden="true">
+                          ▌
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+            ))
+          )}
+
+        {showTyping && (
+          <div className="chat-row chat-row--assistant">
+            <div className="chat-avatar" aria-hidden="true">
+              <MdAutoAwesome size={16} />
+            </div>
+            <div className="chat-typing" aria-label="Assistant is typing">
+              <span className="chat-typing__dot" />
+              <span className="chat-typing__dot" />
+              <span className="chat-typing__dot" />
             </div>
           </div>
         )}
+
+        <div ref={endRef} />
       </div>
+
       <div className="chat-panel__input-row">
-        <input
+        <textarea
           ref={inputRef}
-          type="text"
-          className="form-input"
-          placeholder="Ask a question…"
+          rows={1}
+          className="chat-input"
+          placeholder="Ask about a policy…"
           aria-label="Chat message"
+          onInput={autosize}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
-              handleSend();
+              e.preventDefault();
+              submit();
             }
           }}
-          style={{ flex: 1 }}
         />
-        <button
-          type="button"
-          className="btn btn--primary"
-          aria-label="Send"
-          onClick={handleSend}
-        >
-          Send
-        </button>
+        {props.isStreaming
+          ? (
+            <button
+              type="button"
+              className="chat-send chat-send--stop"
+              aria-label="Stop generating"
+              onClick={props.onStop}
+            >
+              <MdStop size={20} />
+            </button>
+          )
+          : (
+            <button
+              type="button"
+              className="chat-send"
+              aria-label="Send"
+              onClick={submit}
+            >
+              <MdSend size={18} />
+            </button>
+          )}
       </div>
     </div>
   );

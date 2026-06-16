@@ -15,6 +15,10 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Runtime config (overwritten by the container entrypoint); a classic
+         script so it runs before the deferred module bundle, making
+         window.__MB_CONFIG__ available at import time. -->
+    <script src="/config.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

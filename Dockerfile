@@ -15,13 +15,13 @@ RUN deno install
 # Copy source
 COPY . .
 
-# Build args are baked into the JS bundle by Vite at build time.
-# Set these to the public-facing URLs the browser will reach.
+# PocketBase URL is still baked at build time (same-origin /api in practice).
+# The LLM endpoint + virtual key are NOT build args — they are injected at
+# RUNTIME via /config.js and the nginx /llm proxy (see docker/entrypoint.sh),
+# because the virtual key does not exist until init-vector-store runs.
 ARG VITE_PB_URL=http://localhost:8090
-ARG VITE_LITELLM_URL=http://localhost:4000
 
-RUN VITE_PB_URL=${VITE_PB_URL} VITE_LITELLM_URL=${VITE_LITELLM_URL} \
-    deno task build
+RUN VITE_PB_URL=${VITE_PB_URL} deno task build
 
 
 # ─── Stage 2: Runtime ──────────────────────────────────────────────────────────
@@ -39,6 +39,7 @@ RUN apt-get update \
         curl \
         ca-certificates \
         unzip \
+        gettext-base \
     && rm -rf /var/lib/apt/lists/*
 
 # Download PocketBase binary
@@ -53,9 +54,12 @@ RUN curl -fsSL \
 # PWA static files
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Configuration
-COPY docker/nginx.conf /etc/nginx/sites-available/default
+# Configuration. nginx.conf is a TEMPLATE — entrypoint.sh renders it at startup
+# (envsubst ${KEY}) into the live config so the runtime virtual key is injected.
+COPY docker/nginx.conf /etc/nginx/sites-available/default.template
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # PocketBase data directory (mount a named volume here in production)
 VOLUME ["/pb_data"]
@@ -63,4 +67,4 @@ VOLUME ["/pb_data"]
 # nginx (PWA) :80  |  PocketBase :8090
 EXPOSE 80 8090
 
-CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["/entrypoint.sh"]

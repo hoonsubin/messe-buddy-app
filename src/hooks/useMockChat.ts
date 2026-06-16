@@ -1,18 +1,22 @@
-import { useCallback, useState } from "react";
-import type { ChatMessage } from "./useChatStream.ts";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { ChatMessage, UseChatReturn } from "./useChatStream.ts";
 
 // ── Keyword-matched policy responses ──────────────────────────────────────
 const POLICY_RESPONSES: Readonly<Record<string, string>> = {
   "home office":
     "Our home office policy allows employees to work remotely up to 3 days per week. You'll need manager approval for full-time remote arrangements. All remote work equipment (monitor, keyboard, headset) can be ordered through the IT portal during your first week.",
+  "work from home":
+    "Our home office policy allows employees to work remotely up to 3 days per week. You'll need manager approval for full-time remote arrangements. All remote work equipment (monitor, keyboard, headset) can be ordered through the IT portal during your first week.",
+  "from home":
+    "Our home office policy allows employees to work remotely up to 3 days per week. You'll need manager approval for full-time remote arrangements. All remote work equipment (monitor, keyboard, headset) can be ordered through the IT portal during your first week.",
   remote:
     "Our home office policy allows employees to work remotely up to 3 days per week. You'll need manager approval for full-time remote arrangements. All remote work equipment (monitor, keyboard, headset) can be ordered through the IT portal during your first week.",
   vacation:
-    "You're entitled to 25 vacation days per year, accrued monthly. Vacation requests should be submitted through the HR portal at least 2 weeks in advance. Unused days can be carried over up to 5 days into the next year.",
+    "You're entitled to **25 vacation days per year**, accrued monthly. A few things to know:\n\n- Submit requests through the **HR portal** at least 2 weeks in advance\n- Up to **5 unused days** can be carried into the next year\n- Public holidays are additional and don't count against your allowance",
   holiday:
-    "You're entitled to 25 vacation days per year, accrued monthly. Vacation requests should be submitted through the HR portal at least 2 weeks in advance. Unused days can be carried over up to 5 days into the next year.",
+    "You're entitled to **25 vacation days per year**, accrued monthly. A few things to know:\n\n- Submit requests through the **HR portal** at least 2 weeks in advance\n- Up to **5 unused days** can be carried into the next year\n- Public holidays are additional and don't count against your allowance",
   leave:
-    "You're entitled to 25 vacation days per year, accrued monthly. Vacation requests should be submitted through the HR portal at least 2 weeks in advance. Unused days can be carried over up to 5 days into the next year.",
+    "You're entitled to **25 vacation days per year**, accrued monthly. A few things to know:\n\n- Submit requests through the **HR portal** at least 2 weeks in advance\n- Up to **5 unused days** can be carried into the next year\n- Public holidays are additional and don't count against your allowance",
   expense:
     "Expense reports are submitted through the finance portal. Receipts are required for purchases over €25. Reimbursements are processed within 2 weeks. The corporate credit card is available for frequent travelers — speak with your manager to request one.",
   reimburse:
@@ -26,12 +30,10 @@ const POLICY_RESPONSES: Readonly<Record<string, string>> = {
 };
 
 const FALLBACK_RESPONSE =
-  "I don't have a specific answer for that, but you can find it in the Resources section below.";
+  "I don't have a specific answer for that — try one of the suggested questions, or check the Resources block below.";
 
 const TYPING_DELAY_MIN_MS = 800;
 const TYPING_DELAY_MAX_MS = 1200;
-
-// ── Helpers ────────────────────────────────────────────────────────────────
 
 function matchResponse(query: string): string {
   const lower = query.toLowerCase();
@@ -46,53 +48,78 @@ function randomDelayMs(): number {
     Math.random() * (TYPING_DELAY_MAX_MS - TYPING_DELAY_MIN_MS);
 }
 
-// ── Types ──────────────────────────────────────────────────────────────────
-
-export interface UseMockChatOptions {
-  readonly resources?: ReadonlyArray<
-    { readonly id: string; readonly title: string }
-  >;
-}
-
-export interface UseMockChatReturn {
-  readonly messages: ReadonlyArray<ChatMessage>;
-  readonly isStreaming: boolean;
-  readonly send: (text: string) => void;
-  readonly clear: () => void;
-}
-
-// ── Hook ───────────────────────────────────────────────────────────────────
-
-/* eslint-disable @typescript-eslint/no-unused-vars */
-export function useMockChat(
-  _options?: UseMockChatOptions,
-): UseMockChatReturn {
+// Mock chat that mirrors the live hook's shape (UseChatReturn) so the two are
+// interchangeable. Appends an empty streaming placeholder, then fills it after a
+// short delay — exercising the same typing-indicator path as the real stream.
+export function useMockChat(): UseChatReturn {
   const [messages, setMessages] = useState<ReadonlyArray<ChatMessage>>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const streamingRef = useRef(false);
+
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
 
   const send = useCallback((text: string) => {
     const trimmed = text.trim();
-    if (trimmed.length === 0) return;
+    if (trimmed.length === 0 || streamingRef.current) return;
 
     const userMsg: ChatMessage = { role: "user", content: trimmed };
-    setMessages((prev) => [...prev, userMsg]);
+    const placeholder: ChatMessage = {
+      role: "assistant",
+      content: "",
+      streaming: true,
+    };
+    setMessages((prev) => [...prev, userMsg, placeholder]);
     setIsStreaming(true);
+    streamingRef.current = true;
 
-    const delay = randomDelayMs();
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       const response = matchResponse(trimmed);
-      const assistantMsg: ChatMessage = {
-        role: "assistant",
-        content: response,
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
+      setMessages((prev) => {
+        const next = prev.slice();
+        const last = next[next.length - 1]!;
+        next[next.length - 1] = {
+          ...last,
+          content: response,
+          streaming: false,
+        };
+        return next;
+      });
       setIsStreaming(false);
-    }, delay);
+      streamingRef.current = false;
+      timerRef.current = null;
+    }, randomDelayMs());
+  }, []);
+
+  const stop = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
+    setMessages((prev) => {
+      if (prev.length === 0) return prev;
+      const next = prev.slice();
+      const last = next[next.length - 1]!;
+      if (last.role === "assistant" && last.streaming) {
+        next[next.length - 1] = {
+          ...last,
+          content: last.content || "(stopped)",
+          streaming: false,
+        };
+      }
+      return next;
+    });
+    setIsStreaming(false);
+    streamingRef.current = false;
   }, []);
 
   const clear = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
     setMessages([]);
+    setIsStreaming(false);
+    streamingRef.current = false;
   }, []);
 
-  return { messages, isStreaming, send, clear };
+  return { messages, isStreaming, error: null, send, stop, clear };
 }

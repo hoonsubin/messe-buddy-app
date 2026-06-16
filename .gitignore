@@ -32,3 +32,5 @@ deno.lock
 .env
 consume-docs/**
 .playwright-mcp
+
+__pycache__

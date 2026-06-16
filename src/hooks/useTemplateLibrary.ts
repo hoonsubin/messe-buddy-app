@@ -40,7 +40,6 @@ interface UseTemplateLibraryResult {
  * - Deletes templates from the store
  */
 export const useTemplateLibrary = ({
-  sid,
   active,
   session,
   milestones,

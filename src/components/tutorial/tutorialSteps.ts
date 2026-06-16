@@ -44,15 +44,15 @@ export const PLACEHOLDER_STEPS: ReadonlyArray<TutorialStepData> = [
     ctaLabel: "Got it",
     targetSelector: ".buddy-card",
   },
-  // Step 4 — Resources & AI Q&A
+  // Step 4 — AI policy assistant
   {
     stepNumber: 4,
     totalSteps: 5,
-    title: "Resources & AI Q&A",
+    title: "Ask about policies",
     body:
-      "Browse hand-picked resources for your first weeks. Have a question? Use the AI Q&A tab — it's trained on company policies and can give you instant answers.",
+      "Have a quick question about company policies — vacation, hours, expenses? Open the assistant at the top of the page for instant answers drawn straight from the official documents. For anything personal, your buddy is still your best contact. Hand-picked resources are in the block at the bottom.",
     ctaLabel: "Got it",
-    targetSelector: ".resources-chat",
+    targetSelector: ".assistant-chat-card",
   },
   // Step 5 — Complete Your Profile (final step — submitting the form completes the tutorial)
   {
