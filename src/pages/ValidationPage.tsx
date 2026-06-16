@@ -256,7 +256,9 @@ const ValidationPage = () => {
                   <dt style={{ color: "hsl(var(--color-muted-fg))" }}>
                     Milestone
                   </dt>
-                  <dd style={{ margin: 0, fontWeight: "var(--weight-semibold)" }}>
+                  <dd
+                    style={{ margin: 0, fontWeight: "var(--weight-semibold)" }}
+                  >
                     {milestoneName}
                   </dd>
                 </>

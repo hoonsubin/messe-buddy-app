@@ -47,9 +47,7 @@ const QRScannerView = () => {
     setCameraActive(false);
   }, []);
 
-  const scanState: ScanState = cameraActive
-    ? "scanning"
-    : validationState;
+  const scanState: ScanState = cameraActive ? "scanning" : validationState;
 
   return (
     <div
