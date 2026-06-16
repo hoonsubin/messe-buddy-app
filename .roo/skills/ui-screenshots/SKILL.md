@@ -59,7 +59,7 @@ cropped.save("screenshot-final.png")
 1. Take the raw screenshot
 2. View it to see actual pixel positions
 3. Crop with PIL based on what you see
-4. View the result — if not right, re-crop (instant, no re-screenshot needed)
+4. View the result - if not right, re-crop (instant, no re-screenshot needed)
 
 ### 3. Iterate on crop, not on capture
 
@@ -96,13 +96,13 @@ img.crop((0, 900, 920, 1600)).save("screenshot-main.png")
 
 ## Guidelines
 
-1. **Always capture before state BEFORE making any changes** — if you forget, you have to revert code to get a before shot
-2. **Before/after pairs must use the same viewport width and crop** — otherwise the comparison is useless
+1. **Always capture before state BEFORE making any changes** - if you forget, you have to revert code to get a before shot
+2. **Before/after pairs must use the same viewport width and crop** - otherwise the comparison is useless
 3. **To get a "before" after you already changed code**: use `git checkout HEAD~1 -- <files>` to revert, screenshot, then `git checkout HEAD -- <files>` to restore
-4. **For interactive states**: capture before AND after for each state — don't assume the "normal" before covers all cases
+4. **For interactive states**: capture before AND after for each state - don't assume the "normal" before covers all cases
 5. **Use `device_scale_factor=1`** in Playwright to force 1x pixels so screenshots match what users see at 100% zoom
-6. **Charts need extra wait time** — Plotly, D3, etc. render asynchronously; 4s minimum after networkidle
-7. **Narrow viewport reveals rendering bugs** — some border/alignment issues only appear at specific widths
+6. **Charts need extra wait time** - Plotly, D3, etc. render asynchronously; 4s minimum after networkidle
+7. **Narrow viewport reveals rendering bugs** - some border/alignment issues only appear at specific widths
 
 ## Non-Web App Screenshots
 
@@ -162,7 +162,7 @@ capture_window('Visual Studio Code', 'vscode-capture.png')
 
 ### Electron apps (VS Code, etc.)
 
-**Node.js Playwright only** — Python Playwright has no `electron` API. Captures via CDP (Chrome DevTools Protocol), not from the screen — works even while minimized.
+**Node.js Playwright only** - Python Playwright has no `electron` API. Captures via CDP (Chrome DevTools Protocol), not from the screen - works even while minimized.
 
 ```javascript
 const { _electron: electron } = require('playwright');
@@ -173,7 +173,7 @@ const app = await electron.launch({
 const window = await app.firstWindow();
 await window.waitForLoadState('domcontentloaded');
 
-// Minimize immediately — captures still work via CDP
+// Minimize immediately - captures still work via CDP
 await app.evaluate(({ BrowserWindow }) => {
     BrowserWindow.getAllWindows()[0].minimize();
 });

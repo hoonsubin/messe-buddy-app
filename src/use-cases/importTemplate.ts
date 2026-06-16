@@ -19,7 +19,7 @@ export const importTemplate = async (
   const session = await adapter.createSession(sessionName, gameMakerUid);
   const sessionId = session.id;
 
-  // 1. Milestones — sort by order, then register order → newId
+  // 1. Milestones - sort by order, then register order → newId
   const milestoneIdByOrder = new Map<number, string>();
   const sortedMilestones = [...template.milestones].sort(
     (a, b) => a.order - b.order,
@@ -29,7 +29,7 @@ export const importTemplate = async (
     milestoneIdByOrder.set(ms.order, created.id);
   }
 
-  // 2. Missions — _milestoneOrder was embedded at export time (see exportTemplate.ts)
+  // 2. Missions - _milestoneOrder was embedded at export time (see exportTemplate.ts)
   const missionIdByOrder = new Map<number, string>();
   for (const { _milestoneOrder, ...missionData } of template.missions) {
     const newMilestoneId = milestoneIdByOrder.get(_milestoneOrder) ?? "";
@@ -41,7 +41,7 @@ export const importTemplate = async (
     missionIdByOrder.set(missionData.order, created.id);
   }
 
-  // 3. FormSchemas — _missionOrder was embedded at export time (see exportTemplate.ts)
+  // 3. FormSchemas - _missionOrder was embedded at export time (see exportTemplate.ts)
   for (const { _missionOrder, ...schemaData } of template.formSchemas) {
     const newMissionId = missionIdByOrder.get(_missionOrder) ?? "";
     await adapter.upsertFormSchema(newMissionId, schemaData.fields);

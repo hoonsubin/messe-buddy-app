@@ -5,7 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MesseBuddy</title>
-    <!-- Inter — clean grotesque, close match to MM corporate type -->
+    <!-- Inter - clean grotesque, close match to MM corporate type -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -15,6 +15,10 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Runtime config (overwritten by the container entrypoint); a classic
+         script so it runs before the deferred module bundle, making
+         window.__MB_CONFIG__ available at import time. -->
+    <script src="/config.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

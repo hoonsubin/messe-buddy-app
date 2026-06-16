@@ -64,7 +64,7 @@ export interface AppAdapter {
     fields: ReadonlyArray<FieldSchema>,
   ): Promise<FormSchema>;
 
-  // ProgressEvents — all writes go through upsertProgressEvent (C-05, C-14)
+  // ProgressEvents - all writes go through upsertProgressEvent (C-05, C-14)
   upsertProgressEvent(
     playerId: string,
     missionId: string,
@@ -102,4 +102,5 @@ export interface AppAdapter {
   // Templates
   listTemplates(): Promise<ReadonlyArray<TemplateExport>>;
   saveTemplate(template: TemplateExport): Promise<void>;
+  deleteTemplate(name: string): Promise<void>;
 }

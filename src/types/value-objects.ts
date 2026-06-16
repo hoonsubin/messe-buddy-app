@@ -1,6 +1,6 @@
 import type { FieldType, UserRole } from "./unions.ts";
 
-// Client-only value objects — never persisted to PocketBase.
+// Client-only value objects - never persisted to PocketBase.
 
 export interface FieldSchema {
   readonly id: string;
@@ -11,7 +11,7 @@ export interface FieldSchema {
   readonly options?: ReadonlyArray<string>; // select / multiSelect only
 }
 
-// QR strategy only — used when mission.validationMethod = 'qr'. (C-07, C-16)
+// QR strategy only - used when mission.validationMethod = 'qr'. (C-07, C-16)
 // hmac = HMAC-SHA256(playerId + missionId + sessionId + issuedAt, sessionSecret)
 // Never transmitted to the player device; computed by GM and verified at scan time.
 export interface QRPayload {
@@ -23,7 +23,7 @@ export interface QRPayload {
   readonly hmac: string; // hex-encoded HMAC-SHA256 (C-16)
 }
 
-// Decoded and enriched after QR scan — shown in ValidationResult.
+// Decoded and enriched after QR scan - shown in ValidationResult.
 export interface ScanData {
   readonly playerId: string;
   readonly missionId: string;

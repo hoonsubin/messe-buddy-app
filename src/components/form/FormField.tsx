@@ -71,7 +71,7 @@ const FormField = (props: FormFieldProps) => {
           required={field.required}
           onChange={(e) => onChange(e.target.value)}
         >
-          <option value="">— select —</option>
+          <option value="">- select -</option>
           {field.options?.map((opt) => (
             <option key={opt} value={opt}>{opt}</option>
           ))}

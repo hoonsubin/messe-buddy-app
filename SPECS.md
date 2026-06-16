@@ -1,7 +1,7 @@
-# MesseBuddy — Project Specification
+# MesseBuddy - Project Specification
 
 > **Status:** Pre-implementation baseline · Sprint 3 entry point **Last
-> updated:** 2026-06-12 **Authors:** Group 3 — Alisa Diakova · Hoon Kim ·
+> updated:** 2026-06-12 **Authors:** Group 3 - Alisa Diakova · Hoon Kim ·
 > Kseniya Tsiabus · Luis Müller **External PO:** Peter Tubak (Messe München)
 > **Course:** Management & Digital Technologies II · LMU Munich School of
 > Management · Summer Term 2026
@@ -20,7 +20,7 @@ in Google Drive.
 
 **For new agent sessions:** paste this document as context before asking
 implementation questions. All terminology, data shapes, component names, and
-constraints are defined here. Do not infer from external knowledge — use this
+constraints are defined here. Do not infer from external knowledge - use this
 document.
 
 **Append-only sections** are marked `[APPEND-ONLY]`. Add new entries; never
@@ -53,7 +53,7 @@ chosen per Mission by the Game Maker.
 - Not an HRM dashboard or replacement for existing HR tooling
 - Not a native mobile app (PWA only)
 - Not an SSO or identity management system (prototype scope)
-- Not a replacement for company documentation — it links to existing resources
+- Not a replacement for company documentation - it links to existing resources
 
 ## Technology should create conditions for human connection, not replace it.
 
@@ -64,16 +64,16 @@ This glossary is authoritative.
 | Term                   | Definition                                                                                                                                                                                                                                                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Session**            | One onboarding journey instance. Has a unique ID, a Game Maker, and a set of Players.                                                                                                                                                                                                                                    |
-| **Milestone**          | A top-level grouping on the map — analogous to a hall or room. Contains Missions. Represented as a node on the Milestone Map.                                                                                                                                                                                            |
+| **Milestone**          | A top-level grouping on the map - analogous to a hall or room. Contains Missions. Represented as a node on the Milestone Map.                                                                                                                                                                                            |
 | **Mission**            | An individual task item within a Milestone. The atomic unit of work for a Player.                                                                                                                                                                                                                                        |
 | **Player**             | A new employee going through an onboarding journey. Has read-only access to the cockpit.                                                                                                                                                                                                                                 |
-| **Game Maker**         | The admin who configures the session — sets up Milestones, Missions, and validates completions.                                                                                                                                                                                                                          |
+| **Game Maker**         | The admin who configures the session - sets up Milestones, Missions, and validates completions.                                                                                                                                                                                                                          |
 | **XP**                 | Experience points earned by completing Missions. Each Milestone has an `xpThreshold` of 100.                                                                                                                                                                                                                             |
 | **Validation Method**  | The mechanism by which a Mission completion is confirmed. One of: `gmApprove` (Game Maker approves directly in admin cockpit), `selfApprove` (Player self-marks, immediately approved), or `qr` (Player generates a QR code, Game Maker physically scans it). Set per Mission by the Game Maker; default is `gmApprove`. |
 | **Validation Request** | The transient state after a Player marks a non-`selfApprove` Mission complete. The Mission enters `pendingApproval` status and a `ValidationDisplay` is shown until the Game Maker acts.                                                                                                                                 |
 | **Validation**         | An app mechanism that allows the game maker or another player to verify that a mission as been completed. Need for XP distribution.                                                                                                                                                                                      |
-| **Current Missions**   | A curated list of Missions the Game Maker has surfaced to the Player's main view — not all Missions are in this list by default.                                                                                                                                                                                         |
-| **Buddy**              | A company-assigned mentor figure displayed on the Player's cockpit. Not a system user — their info is manually entered by the Game Maker.                                                                                                                                                                                |
+| **Current Missions**   | A curated list of Missions the Game Maker has surfaced to the Player's main view - not all Missions are in this list by default.                                                                                                                                                                                         |
+| **Buddy**              | A company-assigned mentor figure displayed on the Player's cockpit. Not a system user - their info is manually entered by the Game Maker.                                                                                                                                                                                |
 | **Template**           | A named, portable snapshot of a Session's structure (Milestones, Missions, Resources) with no player data. Used to bootstrap new sessions.                                                                                                                                                                               |
 | **Recovery Key**       | An 8-character alphanumeric token shown to a user on first join, used to restore their identity if localStorage is cleared.                                                                                                                                                                                              |
 
@@ -88,10 +88,10 @@ Rationale for each choice is in the Decision Log (Section 13).
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Frontend   | React + Vite (PWA via `vite-plugin-pwa` / Workbox)                                                                           |
 | Language   | TypeScript strict mode                                                                                                       |
-| Backend    | PocketBase — single Go binary providing REST, SSE, file storage, SQLite, and an admin UI                                     |
-| AI Gateway | LiteLLM Proxy — internally deployed, OpenAI-compatible `/chat/completions`; provider abstraction layer; RAG via pgvector     |
-| Vector DB  | pgvector (PostgreSQL + pgvector extension) — stores embedded company documents; queried by LiteLLM at request time           |
-| Hosting    | `docker compose` — three services: `app` (nginx + PocketBase), `litellm` (LiteLLM proxy), `pgvector` (vector store)          |
+| Backend    | PocketBase - single Go binary providing REST, SSE, file storage, SQLite, and an admin UI                                     |
+| AI Gateway | LiteLLM Proxy - internally deployed, OpenAI-compatible `/chat/completions`; provider abstraction layer; RAG via pgvector     |
+| Vector DB  | pgvector (PostgreSQL + pgvector extension) - stores embedded company documents; queried by LiteLLM at request time           |
+| Hosting    | `docker compose` - three services: `app` (nginx + PocketBase), `litellm` (LiteLLM proxy), `pgvector` (vector store)          |
 | Local dev  | `deno task dev` + `./pocketbase serve` on `:8090` + `litellm --config docker/litellm.yaml --port 4000` + pgvector on `:5432` |
 
 ## Docker & Deployment
@@ -105,27 +105,27 @@ docker compose up --build
 | Service    | Image / Build                         | Port(s)                           | Process(es)                      | Persistent data        |
 | ---------- | ------------------------------------- | --------------------------------- | -------------------------------- | ---------------------- |
 | `app`      | Built from `Dockerfile`               | `:80` (PWA), `:8090` (PocketBase) | nginx + PocketBase (supervisord) | `pb_data` volume       |
-| `litellm`  | `ghcr.io/berriai/litellm:main-stable` | `:4000`                           | LiteLLM proxy                    | —                      |
+| `litellm`  | `ghcr.io/berriai/litellm:main-stable` | `:4000`                           | LiteLLM proxy                    | -                      |
 | `pgvector` | `pgvector/pgvector:pg16`              | `:5432`                           | PostgreSQL + pgvector extension  | `pgvector_data` volume |
 
 ### Build Pipeline (Dockerfile)
 
-Multi-stage build — Deno never touches the production image:
+Multi-stage build - Deno never touches the production image:
 
 ```
-Stage 1 — builder (denoland/deno:2.4.2)
+Stage 1 - builder (denoland/deno:2.4.2)
   deno install                    # pre-fetch all npm imports from deno.json
   deno task build                 # tsc + vite build → dist/
   VITE_PB_URL and VITE_LITELLM_URL baked into the JS bundle as build args
 
-Stage 2 — runtime (debian:bookworm-slim)
+Stage 2 - runtime (debian:bookworm-slim)
   nginx         serves dist/ on :80; proxies /api/ and /_/ to PocketBase
   PocketBase    serves REST + SSE on :8090; data stored in /pb_data
   supervisord   manages both processes; logs to stdout/stderr
 ```
 
 **Key constraint:** `VITE_PB_URL` and `VITE_LITELLM_URL` are Vite build-time
-variables — they are frozen into the JS bundle at image build time. For a
+variables - they are frozen into the JS bundle at image build time. For a
 non-localhost deployment, pass them as build args:
 
 ```sh
@@ -169,7 +169,7 @@ docker compose up --build
 | `/api/*`, `/_/*`  | `http://127.0.0.1:8090` | PocketBase REST, SSE, and admin UI         |
 | `/*` (everything) | `/usr/share/nginx/html` | PWA static files; fallback to `index.html` |
 
-LiteLLM is **not** proxied through nginx — the browser reaches it directly on
+LiteLLM is **not** proxied through nginx - the browser reaches it directly on
 `:4000`. `VITE_LITELLM_URL=http://localhost:4000` is baked into the bundle.
 
 ### pgvector Data Persistence
@@ -197,12 +197,12 @@ To back up: `docker cp $(docker compose ps -q app):/pb_data ./pb_data_backup`
 The model name `policy-assistant` is the identifier the PWA's `useChatStream`
 hook sends in the `model` field. The proxy resolves it to the upstream model
 configured in `litellm.yaml`. To change the underlying provider or model, edit
-the `litellm_params` block — no PWA code change required.
+the `litellm_params` block - no PWA code change required.
 
 **RAG pipeline:** LiteLLM queries pgvector for relevant document chunks before
 forwarding the request to the upstream provider. Retrieved chunks are injected
 into the prompt at the proxy layer. To update the knowledge base, re-embed and
-re-ingest the documents — the PWA and its API calls remain unchanged.
+re-ingest the documents - the PWA and its API calls remain unchanged.
 
 The `default_system_prompt` in `litellm.yaml` sets the chatbot's persona and
 scope. Retrieved document chunks are appended to this prompt automatically.
@@ -303,7 +303,7 @@ import).
 
 ### Player Cockpit
 
-The Player's primary view — read-only. Components in render order:
+The Player's primary view - read-only. Components in render order:
 
 - `TopBar`
 - `TutorialOverlay` (first login only)
@@ -350,12 +350,12 @@ and routes to one of three strategies based on `mission.validationMethod`:
 
 1. Player marks Mission complete → `upsertProgressEvent` called immediately with
    `status: autoApproved`
-2. No `ValidationDisplay` shown — cockpit updates inline
+2. No `ValidationDisplay` shown - cockpit updates inline
 
-**`qr` (alternative — retained for physical co-location contexts)**
+**`qr` (alternative - retained for physical co-location contexts)**
 
 1. Player marks Mission complete → `ValidationDisplay` mounts showing QR code
-2. QR encodes: `{ playerId, missionId, sessionId, xpValue }` — client-side, no
+2. QR encodes: `{ playerId, missionId, sessionId, xpValue }` - client-side, no
    server call
 3. `ValidationDisplay` opens SSE subscription on `progress_events` for
    `(playerId, missionId)`
@@ -375,7 +375,7 @@ fetch. Everything else in the app is fetched once on mount.
 
 ### Admin Cockpit
 
-The Game Maker's primary view — read-write. Components in render order:
+The Game Maker's primary view - read-write. Components in render order:
 
 - `TopBar`
 - `PlayerSelectorDropdown`
@@ -396,7 +396,7 @@ Milestone node placement.
 
 ## Use Cases
 
-Use cases are the application's named operations. Business logic belongs here —
+Use cases are the application's named operations. Business logic belongs here -
 not in components, not in PB queries. Each use case is a pure function or a
 small module. Components call use cases; use cases call adapters.
 
@@ -405,14 +405,14 @@ flexible as possible for the users.
 
 | Use case              | Inputs                                | Output                | Side effects                |
 | --------------------- | ------------------------------------- | --------------------- | --------------------------- |
-| `deriveXP`            | `Mission[]`                           | `number[]` (xpValues) | None — pure function        |
-| `computeProgress`     | `ProgressEvent[]`, `Mission[]`        | `PlayerProgress`      | None — pure function        |
+| `deriveXP`            | `Mission[]`                           | `number[]` (xpValues) | None - pure function        |
+| `computeProgress`     | `ProgressEvent[]`, `Mission[]`        | `PlayerProgress`      | None - pure function        |
 | `upsertProgressEvent` | `playerId`, `missionId`, `patch`      | `ProgressEvent`       | PATCH or POST to PB         |
 | `validateMission`     | `ScanData`, `gameMakerUid`            | `ProgressEvent`       | Calls `upsertProgressEvent` |
 | `completeForm`        | `missionId`, `formResponse`           | `ProgressEvent`       | Calls `upsertProgressEvent` |
 | `joinSession`         | `sessionId`                           | `LocalIdentity`       | Writes `localStorage`       |
 | `recoverIdentity`     | `recoveryKey`, `sessionId`            | `LocalIdentity`       | Writes `localStorage`       |
-| `exportTemplate`      | `Session`, `Milestone[]`, `Mission[]` | `TemplateExport`      | None — pure function        |
+| `exportTemplate`      | `Session`, `Milestone[]`, `Mission[]` | `TemplateExport`      | None - pure function        |
 | `importTemplate`      | `TemplateExport`                      | `sessionId`           | POST chain to PB            |
 
 > **`upsertProgressEvent` is the single write path for all ProgressEvent
@@ -449,8 +449,8 @@ behavior.
 | `MilestoneNode`    | Both map views              | `draggable: boolean`  | Single component; two actors. Acceptable for prototype. Split if edit behavior grows. |
 | `MissionCard`      | Both cockpits + sidebars    | `editable: boolean`   | Same trade-off as above.                                                              |
 | `BackgroundCanvas` | Both map views              | `imageUrl: string`    | Pure rendering; no role-specific logic.                                               |
-| `TagBadge`         | Mission cards, detail popup | `variant: MissionTag` | —                                                                                     |
-| `XPBadge`          | Mission cards               | `value: number`       | —                                                                                     |
+| `TagBadge`         | Mission cards, detail popup | `variant: MissionTag` | -                                                                                     |
+| `XPBadge`          | Mission cards               | `value: number`       | -                                                                                     |
 
 ### Player Cockpit Component Tree
 
@@ -525,7 +525,7 @@ QRScannerView                         [only reachable when validationMethod = 'q
 
 ### Conventions
 
-- **No TypeScript `enum`** — use `const` object + `keyof` union:
+- **No TypeScript `enum`** - use `const` object + `keyof` union:
   ```ts
   export const MISSION_TYPE = {
     TEXT: "text",
@@ -536,7 +536,7 @@ QRScannerView                         [only reachable when validationMethod = 'q
   ```
 - **Optional fields** typed as `T | undefined`, never assumed present without a
   guard
-- **`strict: true`** throughout — `arr[i]` is `T | undefined`
+- **`strict: true`** throughout - `arr[i]` is `T | undefined`
 - **Immutability:** all interface fields are `readonly`; collections are
   `ReadonlyArray<T>`
 - **`interface`** for object contracts; **`type`** for unions, intersections,
@@ -556,10 +556,10 @@ type ProgressStatus =
   | "pendingApproval"
   | "completed"
   | "autoApproved";
-//   pending         — no Player action yet
-//   pendingApproval — Player marked complete, awaiting GM action (gmApprove path)
-//   completed       — GM confirmed (gmApprove or qr path)
-//   autoApproved    — form submit or selfApprove path; no GM action required
+//   pending         - no Player action yet
+//   pendingApproval - Player marked complete, awaiting GM action (gmApprove path)
+//   completed       - GM confirmed (gmApprove or qr path)
+//   autoApproved    - form submit or selfApprove path; no GM action required
 type MilestoneStatus = "upcoming" | "inProgress" | "completed";
 type ResourceType = "guide" | "video" | "link" | "document";
 type FieldType = "text" | "textarea" | "select" | "multiSelect";
@@ -578,7 +578,7 @@ interface FieldSchema {
   readonly options?: ReadonlyArray<string>; // select / multiSelect only
 }
 
-// QR-strategy specific — only used when mission.validationMethod = 'qr'
+// QR-strategy specific - only used when mission.validationMethod = 'qr'
 interface QRPayload {
   readonly playerId: string;
   readonly missionId: string;
@@ -620,7 +620,7 @@ All persistent types extend `PBRecord`.
 ### Adapter Boundary Types
 
 Raw shapes as returned by the PB SDK (JSON string fields). These exist **only
-inside the PB adapter module** — never imported by components or use cases.
+inside the PB adapter module** - never imported by components or use cases.
 
 ```ts
 interface FormSchemaRaw extends PBRecord {
@@ -661,7 +661,7 @@ interface Player extends PBRecord {
   readonly preferredName?: string;
   readonly pronouns?: string;
   readonly avatarUrl?: string; // PB file ref
-  readonly role: string; // job title, e.g. "Senior Engineer" — not an access control role; see SessionRole for UserRole
+  readonly role: string; // job title, e.g. "Senior Engineer" - not an access control role; see SessionRole for UserRole
   readonly team: string;
   readonly startDate: string;
   readonly location: string;
@@ -783,14 +783,14 @@ interface TemplateRecord {
 
 | Collection        | Key indexes                                         | Constraints                                    |
 | ----------------- | --------------------------------------------------- | ---------------------------------------------- |
-| `sessions`        | `gameMakerId`                                       | —                                              |
-| `players`         | `uid` (unique), `recoveryKey` (unique), `sessionId` | —                                              |
-| `milestones`      | `sessionId`, `order`                                | —                                              |
-| `missions`        | `milestoneId`, `sessionId`, `order`                 | —                                              |
+| `sessions`        | `gameMakerId`                                       | -                                              |
+| `players`         | `uid` (unique), `recoveryKey` (unique), `sessionId` | -                                              |
+| `milestones`      | `sessionId`, `order`                                | -                                              |
+| `missions`        | `milestoneId`, `sessionId`, `order`                 | -                                              |
 | `form_schemas`    | `missionId` (unique)                                | One schema per mission                         |
 | `progress_events` | `(playerId, missionId)` composite                   | App-layer uniqueness via `upsertProgressEvent` |
-| `buddy_profiles`  | `assignedToPlayerId`                                | —                                              |
-| `resources`       | `sessionId`                                         | —                                              |
+| `buddy_profiles`  | `assignedToPlayerId`                                | -                                              |
+| `resources`       | `sessionId`                                         | -                                              |
 
 ### Field Type Notes
 
@@ -824,7 +824,7 @@ the single enforcement point for C-05.
 - `xpThreshold` = **100 per Milestone**, fixed constant
 - `xpValue` per Mission is derived at **save time** by `deriveXP` and stored in
   `missions.xpValue`
-- `PlayerProgress.earnedXP` is computed at **read time** by `computeProgress` —
+- `PlayerProgress.earnedXP` is computed at **read time** by `computeProgress` -
   retroactive difficulty changes affect earned XP
 - Rounding remainder distributed to highest-difficulty Missions first (then
   `mission.order` as tiebreaker)
@@ -951,9 +951,9 @@ interface FullSessionExport {
 | C-02 | Progress is always recoverable                                                                                                                                                                                                          | `recoveryKey` stored in PB, shown once on first join                                                  |
 | C-03 | No auth system required                                                                                                                                                                                                                 | Pocketbase auth collections unused in prototype                                                       |
 | C-04 | `xpThreshold` is always 100 per Milestone                                                                                                                                                                                               | Constant; not stored as a variable field                                                              |
-| C-05 | One `ProgressEvent` per `(playerId, missionId)`                                                                                                                                                                                         | Enforced at `upsertProgressEvent` — the single write path                                             |
+| C-05 | One `ProgressEvent` per `(playerId, missionId)`                                                                                                                                                                                         | Enforced at `upsertProgressEvent` - the single write path                                             |
 | C-06 | Form missions always `autoApproved`, regardless of `validationMethod`                                                                                                                                                                   | `autoApproved` status set on submit; `ValidationDisplay` never mounts for `form` type                 |
-| C-07 | The `qr` validation path holds no SSE subscription at any point — it is fully offline (HMAC verify → GM confirm → PB write). The `gmApprove` path may use polling or SSE in `ValidationDisplay` while waiting for approval (see OD-09). | Enforced by `ValidationDisplay`: no `pb.collection().subscribe()` call when `validationMethod = 'qr'` |
+| C-07 | The `qr` validation path holds no SSE subscription at any point - it is fully offline (HMAC verify → GM confirm → PB write). The `gmApprove` path may use polling or SSE in `ValidationDisplay` while waiting for approval (see OD-09). | Enforced by `ValidationDisplay`: no `pb.collection().subscribe()` call when `validationMethod = 'qr'` |
 | C-08 | Milestone positions are percentage-based                                                                                                                                                                                                | `xPercent`/`yPercent` 0–100, never pixels                                                             |
 | C-09 | `MilestoneNode` and `MissionCard` are shared components                                                                                                                                                                                 | `draggable` and `editable` boolean props; see D-007 for trade-off                                     |
 | C-10 | Templates strip all PBRecord IDs on export                                                                                                                                                                                              | Import creates fresh records; never reuse IDs across sessions                                         |
@@ -974,7 +974,7 @@ interface FullSessionExport {
 | OD-03 | Should `MilestoneNode` fill color use a gradient (0–100%) or step thresholds (0%, 25%, 50%, 75%, 100%)?                                                                                                     | Visual design only                                                         | Sprint 2       |
 | OD-04 | Does the `ResourcesSection` support metadata filtering (type, tags) or free-text search only?                                                                                                               | `SearchBar` complexity                                                     | Sprint 2       |
 | OD-05 | Should the Game Maker be able to create multiple Buddy profiles per session (a pool), or one per player only?                                                                                               | `BuddyProfile` schema impact                                               | Sprint 3       |
-| OD-06 | What is the offline behavior for form submission — queue and sync, or block until online?                                                                                                                   | Service Worker strategy                                                    | Sprint 3       |
+| OD-06 | What is the offline behavior for form submission - queue and sync, or block until online?                                                                                                                   | Service Worker strategy                                                    | Sprint 3       |
 | OD-07 | In production, should `xpValue` be re-derived from `missions.xpValue` at scan time rather than trusted from the QR payload?                                                                                 | Security; out of scope for prototype; applies only to `qr` method          | Post-prototype |
 | OD-08 | Should `validationMethod` be configurable at session level (all missions inherit a session-wide default), or per-mission only?                                                                              | Game Maker UX and template design complexity                               | Sprint 3       |
 | OD-09 | For `gmApprove` missions, should `ValidationDisplay` use polling or SSE to detect approval? SSE keeps the existing real-time pattern but extends the subscription scope.                                    | Real-time UX vs. infrastructure simplicity                                 | Sprint 3       |

@@ -1,6 +1,7 @@
 import os
 import asyncio
 import time
+import httpx
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -25,6 +26,43 @@ from config import settings
 from embedding_service import embedding_service
 
 load_dotenv()
+
+# ── Reranking config ────────────────────────────────────────────────────────
+# A cross-encoder reranks the over-fetched candidate pool before chunks are
+# returned to LiteLLM for prompt injection. The rerank call goes to the same
+# LiteLLM gateway as embeddings (settings.embedding base_url + master key), so
+# RERANK__MODEL must match a rerank-capable model_name in docker/litellm.yaml
+# (registered with the hosted_vllm/ provider, which exposes /rerank).
+RERANK_ENABLED = os.getenv("RERANK__ENABLED", "true").lower() == "true"
+RERANK_MODEL = os.getenv("RERANK__MODEL", "bge-reranker-v2-m3")
+RERANK_CANDIDATES = int(os.getenv("RERANK__CANDIDATES", "30"))
+
+
+async def _rerank_documents(query: str, documents: List[str], top_n: int):
+    """Reorder candidate documents via LiteLLM's Cohere-style /rerank endpoint.
+
+    Returns the raw results list: [{"index": int, "relevance_score": float}, ...]
+    ordered most-relevant first. Raises on transport/HTTP errors so the caller
+    can fall back to vector-similarity order.
+    """
+    base = settings.embedding.base_url
+    key = settings.embedding.api_key
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        resp = await client.post(
+            f"{base}/rerank",
+            headers={
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": RERANK_MODEL,
+                "query": query,
+                "documents": documents,
+                "top_n": top_n,
+            },
+        )
+        resp.raise_for_status()
+        return resp.json().get("results", [])
 
 app = FastAPI(
     title="OpenAI Vector Stores API",
@@ -252,8 +290,12 @@ async def search_vector_store(
         query_vector_str = "[" + ",".join(map(str, query_embedding)) + "]"
         
         # Build the raw SQL query for vector similarity search
-        limit = min(request.limit or 20, 100)  # Cap at 100 results
-        
+        limit = min(request.limit or 20, 100)  # final number of chunks to return
+        # When reranking, over-fetch a larger candidate pool so the cross-encoder
+        # has more to choose from; otherwise fetch exactly `limit`.
+        fetch_limit = min(max(limit, RERANK_CANDIDATES), 100) if RERANK_ENABLED \
+            else limit
+
         # Base query with vector similarity using cosine distance
         # Use configurable field names
         fields = settings.db_fields
@@ -286,19 +328,51 @@ async def search_vector_store(
         if filter_conditions:
             base_query += " AND " + " AND ".join(filter_conditions)
         
-        # Add ordering and limit
-        final_query = base_query + f" ORDER BY distance ASC LIMIT {limit}"
-        
+        # Add ordering and limit (fetch the candidate pool)
+        final_query = base_query + f" ORDER BY distance ASC LIMIT {fetch_limit}"
+
         # Execute the query
         results = await db.query_raw(final_query, *query_params)
-        
+
+        # ── Rerank stage ────────────────────────────────────────────────────
+        # Reorder the candidate pool with the cross-encoder, then keep the top
+        # `limit`. Any rerank failure falls back to vector-similarity order so
+        # search never breaks.
+        if RERANK_ENABLED and len(results) > 1:
+            try:
+                ranked = await _rerank_documents(
+                    request.query,
+                    [row[fields.content_field] for row in results],
+                    limit,
+                )
+                # Reorder by reranker relevance. We deliberately do NOT use the
+                # reranker's raw score as the returned `score`: BGE cross-encoder
+                # logits can be negative, and LiteLLM filters such chunks out of
+                # the RAG context (→ the model sees no documents). The reranker
+                # controls ORDER only; the positive cosine similarity below stays
+                # the returned score.
+                reordered = []
+                for item in ranked:
+                    idx = item.get("index")
+                    if idx is None or idx < 0 or idx >= len(results):
+                        continue
+                    reordered.append(results[idx])
+                results = reordered or results[:limit]
+            except Exception:
+                import traceback
+                traceback.print_exc()
+                results = results[:limit]
+        else:
+            results = results[:limit]
+
         # Convert results to SearchResult objects
         search_results = []
         for row in results:
-            # Convert distance to similarity score (1 - normalized_distance)
-            # Cosine distance ranges from 0 (identical) to 2 (opposite)
+            # Cosine distance → positive 0-1 similarity. Kept as the returned
+            # score so LiteLLM injects the chunk (reranker logits can be
+            # negative and would be filtered out); reranking only sets order.
             similarity_score = max(0, 1 - (row['distance'] / 2))
-            
+
             # Extract filename from metadata or use a default
             metadata = row[fields.metadata_field] or {}
             filename = metadata.get('filename', 'document.txt')

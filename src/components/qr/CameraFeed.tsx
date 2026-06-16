@@ -1,4 +1,4 @@
-// CameraFeed — activates device camera for QR scanning via jsqr.
+// CameraFeed - activates device camera for QR scanning via jsqr.
 import { useCallback, useEffect, useRef } from "react";
 // jsqr is CJS default-export only. With verbatimModuleSyntax + bundler
 // resolution the default import resolves to the module namespace at the
@@ -133,7 +133,7 @@ const CameraFeed = (props: CameraFeedProps) => {
       const name = err instanceof DOMException ? err.name : "";
       if (name === "NotAllowedError" || name === "PermissionDeniedError") {
         props.onError?.(
-          "Camera access required — please allow camera permissions in your browser settings.",
+          "Camera access required - please allow camera permissions in your browser settings.",
         );
       } else if (
         name === "NotFoundError" || name === "DevicesNotFoundError"

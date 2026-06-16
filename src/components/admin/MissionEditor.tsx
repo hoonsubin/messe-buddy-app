@@ -1,17 +1,41 @@
 import { useMemo, useState } from "react";
 import { marked } from "marked";
-import type { DraftMission, MissionTag } from "../../types/index.ts";
+import type {
+  DraftMission,
+  MissionTag,
+  MissionType,
+  ValidationMethod,
+} from "../../types/index.ts";
 import { MISSION_TYPE, VALIDATION_METHOD } from "../../types/index.ts";
 import MarkdownEditor from "./MarkdownEditor.tsx";
-import DifficultySelector from "./DifficultySelector.tsx";
 import TagSelector from "./TagSelector.tsx";
-import MissionTypeSelector from "./MissionTypeSelector.tsx";
-import ValidationMethodSelector from "./ValidationMethodSelector.tsx";
 import FormEditor from "./FormEditor.tsx";
+import SegmentGroup from "../shared/SegmentGroup.tsx";
+import XpSelector from "../shared/XpSelector.tsx";
+
+// ── Option lists ───────────────────────────────────────────────────────────────
+
+const MISSION_TYPE_OPTIONS: ReadonlyArray<
+  { value: MissionType; label: string }
+> = [
+  { value: MISSION_TYPE.TEXT, label: "Text" },
+  { value: MISSION_TYPE.LINK, label: "Link" },
+  { value: MISSION_TYPE.FORM, label: "Form" },
+];
+
+const VALIDATION_OPTIONS: ReadonlyArray<
+  { value: ValidationMethod; label: string }
+> = [
+  { value: VALIDATION_METHOD.GM_APPROVE, label: "GM approve" },
+  { value: VALIDATION_METHOD.SELF_APPROVE, label: "Self approve" },
+  { value: VALIDATION_METHOD.QR, label: "QR scan" },
+];
+
+// ── Types ──────────────────────────────────────────────────────────────────────
 
 interface MissionEditorProps {
   readonly draft: DraftMission;
-  readonly xpPreview: number;
+  readonly xpPreview: number; // kept for compat; no longer shown (XP is direct)
   readonly onDraftChange: (draft: DraftMission) => void;
 }
 
@@ -102,18 +126,23 @@ const MissionEditor = (props: MissionEditorProps) => {
       </div>
 
       {/* Mission type */}
-      <MissionTypeSelector
-        value={props.draft.type ?? MISSION_TYPE.TEXT}
-        onChange={(type) =>
-          props.onDraftChange({
-            ...props.draft,
-            type,
-            // Auto-set validationMethod to gmApprove when type is form (C-06)
-            validationMethod: type === "form"
-              ? VALIDATION_METHOD.GM_APPROVE
-              : props.draft.validationMethod,
-          })}
-      />
+      <div className="form-field">
+        <label className="form-label">Mission type</label>
+        <SegmentGroup
+          options={MISSION_TYPE_OPTIONS}
+          value={props.draft.type ?? MISSION_TYPE.TEXT}
+          label="Mission type"
+          onChange={(type) =>
+            props.onDraftChange({
+              ...props.draft,
+              type: type as MissionType,
+              // Auto-set validationMethod to gmApprove when type is form (C-06)
+              validationMethod: type === "form"
+                ? VALIDATION_METHOD.GM_APPROVE
+                : props.draft.validationMethod,
+            })}
+        />
+      </div>
 
       {/* External URL (link type only) */}
       {props.draft.type === MISSION_TYPE.LINK && (
@@ -136,14 +165,13 @@ const MissionEditor = (props: MissionEditorProps) => {
         </div>
       )}
 
-      {/* Difficulty with XP preview */}
+      {/* XP value — direct Fibonacci selection */}
       <div className="form-field">
-        <label className="form-label">Difficulty</label>
-        <DifficultySelector
-          value={props.draft.difficulty ?? 1}
-          xpPreview={props.xpPreview}
-          onChange={(difficulty) =>
-            props.onDraftChange({ ...props.draft, difficulty })}
+        <label className="form-label">XP</label>
+        <XpSelector
+          value={props.draft.xpValue ?? 1}
+          onChange={(xpValue) =>
+            props.onDraftChange({ ...props.draft, xpValue })}
         />
       </div>
 
@@ -175,13 +203,22 @@ const MissionEditor = (props: MissionEditorProps) => {
         />
       </div>
 
-      {/* Validation method — disabled when type is form (C-06) */}
-      <ValidationMethodSelector
-        value={props.draft.validationMethod ?? VALIDATION_METHOD.GM_APPROVE}
-        hidden={props.draft.type === MISSION_TYPE.FORM}
-        onChange={(validationMethod) =>
-          props.onDraftChange({ ...props.draft, validationMethod })}
-      />
+      {/* Validation method - hidden when type is form (C-06) */}
+      {props.draft.type !== MISSION_TYPE.FORM && (
+        <div className="form-field">
+          <label className="form-label">Validation</label>
+          <SegmentGroup
+            options={VALIDATION_OPTIONS}
+            value={props.draft.validationMethod ?? VALIDATION_METHOD.GM_APPROVE}
+            label="Validation method"
+            onChange={(validationMethod) =>
+              props.onDraftChange({
+                ...props.draft,
+                validationMethod: validationMethod as ValidationMethod,
+              })}
+          />
+        </div>
+      )}
 
       {/* isInCurrentMissions toggle */}
       <div
@@ -217,7 +254,7 @@ const MissionEditor = (props: MissionEditorProps) => {
         </label>
       </div>
 
-      {/* FormEditor — shown when type is form */}
+      {/* FormEditor - shown when type is form */}
       {props.draft.type === MISSION_TYPE.FORM && (
         <div data-testid="form-editor-slot">
           <p

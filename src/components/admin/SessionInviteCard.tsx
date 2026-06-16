@@ -1,24 +1,71 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MdCheck, MdContentCopy, MdPersonAdd } from "react-icons/md";
 
 interface SessionInviteCardProps {
   readonly sessionId: string;
 }
 
+// Load qrcode.js from CDN and generate a QR code into a canvas element.
+// Returns a cleanup function that removes the canvas content.
+function renderQRCode(canvas: HTMLCanvasElement, url: string): void {
+  // Use the global QRCode constructor if the script has already loaded.
+  if (
+    typeof (globalThis as Record<string, unknown>)["QRCode"] !== "undefined"
+  ) {
+    const QRCode = (globalThis as Record<string, unknown>)["QRCode"] as new (
+      el: HTMLElement,
+      opts: Record<string, unknown>,
+    ) => unknown;
+    new QRCode(canvas, {
+      text: url,
+      width: 160,
+      height: 160,
+      colorDark: "#1a2744",
+      colorLight: "#ffffff",
+      correctLevel: 1, // L
+    });
+    return;
+  }
+
+  // Script not yet loaded — inject it and retry on load.
+  const existing = document.getElementById("qrcode-js-cdn");
+  const script = existing ??
+    Object.assign(document.createElement("script"), {
+      id: "qrcode-js-cdn",
+      src:
+        "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js",
+    });
+
+  script.addEventListener("load", () => renderQRCode(canvas, url), {
+    once: true,
+  });
+
+  if (!existing) document.head.appendChild(script);
+}
+
 const SessionInviteCard = ({ sessionId }: SessionInviteCardProps) => {
   const [copied, setCopied] = useState(false);
+  const qrContainerRef = useRef<HTMLDivElement>(null);
 
-  const joinUrl = `${globalThis.location.origin}/`;
+  const joinUrl = `${globalThis.location.origin}/join/${sessionId}`;
 
-  const handleCopyCode = async () => {
+  // Render QR code into the container div
+  useEffect(() => {
+    const container = qrContainerRef.current;
+    if (!container || !sessionId) return;
+    // Clear any previous QR code
+    container.innerHTML = "";
+    renderQRCode(container as unknown as HTMLCanvasElement, joinUrl);
+  }, [joinUrl, sessionId]);
+
+  const handleCopyUrl = async () => {
     try {
-      await navigator.clipboard.writeText(sessionId);
+      await navigator.clipboard.writeText(joinUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for environments without clipboard API
       const el = document.createElement("textarea");
-      el.value = sessionId;
+      el.value = joinUrl;
       document.body.appendChild(el);
       el.select();
       document.execCommand("copy");
@@ -60,51 +107,58 @@ const SessionInviteCard = ({ sessionId }: SessionInviteCardProps) => {
         </h3>
       </header>
 
-      <p
-        style={{
-          margin: 0,
-          fontSize: "var(--text-sm)",
-          color: "hsl(var(--color-muted-fg))",
-        }}
+      {/* QR code */}
+      <div
+        style={{ display: "flex", justifyContent: "center" }}
+        aria-label={`QR code for join URL: ${joinUrl}`}
       >
-        Share this code with the new hire. They'll enter it on the{" "}
-        <strong>New Employee</strong> login screen at{" "}
-        <span style={{ fontFamily: "monospace" }}>{joinUrl}</span>
-      </p>
+        <div
+          ref={qrContainerRef}
+          style={{
+            width: "10rem",
+            height: "10rem",
+            borderRadius: "var(--radius)",
+            overflow: "hidden",
+            border: "1px solid hsl(var(--color-border))",
+            background: "#fff",
+          }}
+        />
+      </div>
 
+      {/* URL display + copy button */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           gap: "var(--space-2)",
           background: "hsl(var(--color-secondary))",
-          borderRadius: "var(--radius-md)",
+          borderRadius: "var(--radius)",
           padding: "var(--space-2) var(--space-3)",
           border: "1px solid hsl(var(--color-border))",
         }}
       >
         <span
-          aria-label="Session join code"
+          aria-label="Session join URL"
           style={{
             flex: 1,
-            fontFamily: "monospace",
-            fontSize: "var(--text-base)",
-            fontWeight: "var(--weight-semibold)",
+            fontFamily: "var(--font-mono)",
+            fontSize: "var(--text-xs)",
             color: "hsl(var(--color-fg))",
-            letterSpacing: "0.05em",
+            wordBreak: "break-all",
             userSelect: "all",
           }}
         >
-          {sessionId}
+          {joinUrl}
         </span>
         <button
           type="button"
           className="btn btn--ghost"
-          aria-label={copied ? "Copied!" : "Copy session code"}
-          onClick={() => void handleCopyCode()}
+          aria-label={copied ? "Copied!" : "Copy join URL"}
+          onClick={() => void handleCopyUrl()}
           style={{
             minWidth: "var(--min-touch)",
             minHeight: "var(--min-touch)",
+            flexShrink: 0,
             display: "flex",
             alignItems: "center",
             gap: "var(--space-1)",

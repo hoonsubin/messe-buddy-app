@@ -1,9 +1,15 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { LocalIdentity } from "../types/index.ts";
+import {
+  clearEphemeralIdentity,
+  readEphemeralIdentity,
+} from "./ephemeralIdentityStore.ts";
 
 const IDENTITY_KEY = "mb_identity";
 
 const readIdentity = (): LocalIdentity | null => {
+  const ephemeral = readEphemeralIdentity();
+  if (ephemeral) return ephemeral;
   try {
     const raw = localStorage.getItem(IDENTITY_KEY);
     if (!raw) return null;
@@ -28,6 +34,14 @@ export const useIdentity = (): UseIdentityResult => {
     readIdentity,
   );
 
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === IDENTITY_KEY) setIdentityState(readIdentity());
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
+
   const setIdentity = useCallback((newIdentity: LocalIdentity) => {
     localStorage.setItem(IDENTITY_KEY, JSON.stringify(newIdentity));
     setIdentityState(newIdentity);
@@ -35,6 +49,7 @@ export const useIdentity = (): UseIdentityResult => {
 
   const clearIdentity = useCallback(() => {
     localStorage.removeItem(IDENTITY_KEY);
+    clearEphemeralIdentity();
     setIdentityState(null);
   }, []);
 

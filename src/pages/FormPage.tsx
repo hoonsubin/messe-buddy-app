@@ -6,6 +6,7 @@ import { useIdentity } from "../hooks/useIdentity.ts";
 import { useSession } from "../hooks/useSession.ts";
 import { usePlayerProgress } from "../hooks/usePlayerProgress.ts";
 import TopBar from "../components/shared/TopBar.tsx";
+import FetchErrorPanel from "../components/shared/FetchErrorPanel.tsx";
 import FormShell from "../components/form/FormShell.tsx";
 
 const FormPage = () => {
@@ -31,7 +32,7 @@ const FormPage = () => {
         const p = await adapter.getPlayer(identity.uid);
         if (!cancelled) setPlayer(p);
       } catch {
-        // Player lookup failed — player stays null
+        // Player lookup failed - player stays null
       } finally {
         if (!cancelled) setPlayerLoading(false);
       }
@@ -47,6 +48,8 @@ const FormPage = () => {
     milestones,
     missions: sessionMissions,
     loading: sessionLoading,
+    error: sessionError,
+    refresh: refreshSession,
   } = useSession(sessionId);
 
   const mission = sessionMissions.find((m) => m.id === missionId) ?? null;
@@ -135,7 +138,7 @@ const FormPage = () => {
     return Object.keys(newErrors).length === 0;
   }, [formSchema, values]);
 
-  // Submit handler — uses player.id (PB record ID) not identity.uid
+  // Submit handler - uses player.id (PB record ID) not identity.uid
   const handleSubmit = useCallback(async () => {
     if (!validate()) return;
     if (!player || !missionId) return;
@@ -154,7 +157,7 @@ const FormPage = () => {
       // Also mark profileComplete and tutorialComplete since the profile
       // step is the final tutorial step (Phase 5).
       if (missionId === "mission_profile") {
-        // Build a mutable patch object — Player fields are readonly so
+        // Build a mutable patch object - Player fields are readonly so
         // we construct with a Record<string, unknown> and cast at the call site.
         const patch: Record<string, unknown> = {
           profileComplete: true,
@@ -194,7 +197,7 @@ const FormPage = () => {
             .filter(Boolean);
         }
 
-        // Cast through unknown — updatePlayer accepts Partial<Omit<Player, keyof PBRecord>>
+        // Cast through unknown - updatePlayer accepts Partial<Omit<Player, keyof PBRecord>>
         // and the runtime adapter applies only the provided keys.
         await adapter.updatePlayer(
           player.id,
@@ -218,7 +221,7 @@ const FormPage = () => {
     }
   }, [validate, player, missionId, adapter, values, sessionId, navigate]);
 
-  // Save for later — just keep local state (persistence is Phase 4-3)
+  // Save for later - just keep local state (persistence is Phase 4-3)
   const handleSaveForLater = useCallback(() => {
     setIsDraft(true);
   }, []);
@@ -247,6 +250,21 @@ const FormPage = () => {
       >
         <p>Please sign in first.</p>
       </div>
+    );
+  }
+
+  if (sessionError && !sessionLoading) {
+    return (
+      <FetchErrorPanel
+        message="Could not load session data. Please try again."
+        onRetry={refreshSession}
+        testId="form-page"
+        page="form"
+        {...(sessionId && {
+          onBack: () => navigate(`/session/${sessionId}`),
+          backLabel: "← Back to Dashboard",
+        })}
+      />
     );
   }
 

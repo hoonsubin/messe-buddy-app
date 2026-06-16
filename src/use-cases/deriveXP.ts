@@ -1,7 +1,7 @@
 import type { Mission } from "../types/index.ts";
 
 // XP derivation algorithm from SPECS.md §XP Derivation.
-// Pure function — no side effects, no adapter calls.
+// Pure function - no side effects, no adapter calls.
 //
 // Constraints:
 //  - xpThreshold is always 100 per Milestone (C-04)

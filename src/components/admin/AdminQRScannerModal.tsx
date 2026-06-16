@@ -1,4 +1,4 @@
-// AdminQRScannerModal — modal overlay for GM QR scanning with camera,
+// AdminQRScannerModal - modal overlay for GM QR scanning with camera,
 // jsqr decode, payload validation against context, and Simulate Scan.
 import { useCallback, useRef, useState } from "react";
 import { MdClose } from "react-icons/md";
@@ -52,7 +52,7 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
       } catch (err: unknown) {
         const message = err instanceof QRPayloadError
           ? `Invalid QR: ${err.message}`
-          : "Failed to decode QR code — please try again.";
+          : "Failed to decode QR code - please try again.";
         setValidationState("invalid");
         setErrorMessage(message);
         return;
@@ -65,12 +65,12 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
       ) {
         setValidationState("invalid");
         setErrorMessage(
-          "QR code doesn't match this request — please verify the correct mission QR is being scanned.",
+          "QR code doesn't match this request - please verify the correct mission QR is being scanned.",
         );
         return;
       }
 
-      // Success — write progress event
+      // Success - write progress event
       try {
         await props.onValidate(decoded.playerId, decoded.missionId);
         setValidationState("success");
@@ -83,7 +83,7 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
         }, 2000);
       } catch {
         setValidationState("error");
-        setErrorMessage("Failed to save validation result — please try again.");
+        setErrorMessage("Failed to save validation result - please try again.");
       }
     },
     [props],
@@ -97,7 +97,7 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
     setCameraActive(false);
   }, []);
 
-  // ── Simulate Scan — build mock payload and feed through decode flow ──────────
+  // ── Simulate Scan - build mock payload and feed through decode flow ──────────
 
   const handleSimulate = useCallback(async () => {
     if (!props.context || !props.sessionId) return;

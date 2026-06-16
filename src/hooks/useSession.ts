@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Milestone, Mission, Session } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 
@@ -8,6 +8,8 @@ export interface UseSessionResult {
   readonly missions: ReadonlyArray<Mission>;
   readonly loading: boolean;
   readonly error: Error | null;
+  /** Force a re-fetch of session data (e.g. after transient network failure). */
+  readonly refresh: () => void;
 }
 
 // Fetches Session + Milestones + Missions for a session ID.
@@ -18,6 +20,9 @@ export const useSession = (sessionId: string): UseSessionResult => {
   const [missions, setMissions] = useState<ReadonlyArray<Mission>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,7 +57,7 @@ export const useSession = (sessionId: string): UseSessionResult => {
     return () => {
       cancelled = true;
     };
-  }, [adapter, sessionId]);
+  }, [adapter, sessionId, refreshKey]);
 
-  return { session, milestones, missions, loading, error };
+  return { session, milestones, missions, loading, error, refresh };
 };

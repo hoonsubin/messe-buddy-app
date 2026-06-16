@@ -1,4 +1,4 @@
-// Phase 1 shell — logic wired in Phase 4.
+// Phase 1 shell - logic wired in Phase 4.
 import type { MissionType } from "../../types/index.ts";
 import { MISSION_TYPE } from "../../types/index.ts";
 

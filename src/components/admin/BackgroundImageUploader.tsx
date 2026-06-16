@@ -1,4 +1,4 @@
-// Phase 1 shell — upload logic wired in Phase 4.
+// Phase 1 shell - upload logic wired in Phase 4.
 interface BackgroundImageUploaderProps {
   readonly currentImageUrl: string;
   readonly onUpload: (file: File) => void;

@@ -1,4 +1,4 @@
-// Phase 1 shell — hidden when mission.type = "form" (C-06). Logic wired in Phase 4.
+// Phase 1 shell - hidden when mission.type = "form" (C-06). Logic wired in Phase 4.
 import type { ValidationMethod } from "../../types/index.ts";
 import { VALIDATION_METHOD } from "../../types/index.ts";
 

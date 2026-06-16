@@ -1,4 +1,4 @@
-# LiteLLM Proxy Configuration — MesseBuddy
+# LiteLLM Proxy Configuration - MesseBuddy
 #
 # Docs: https://docs.litellm.ai/docs/proxy/configs
 #       https://docs.litellm.ai/docs/completion/knowledgebase
@@ -6,7 +6,7 @@
 model_list:
   # ── OpenAI (direct) ──────────────────────────────────────────────────────────
   # "policy-assistant" is the stable alias the PWA sends.
-  # vector_store_ids makes RAG always-on for this model — every request
+  # vector_store_ids makes RAG always-on for this model - every request
   # includes relevant document context automatically.
   # To swap providers: change the litellm_params block below. Never touch PWA code.
   - model_name: policy-assistant
@@ -38,13 +38,6 @@ model_list:
   # All models use openai/ provider prefix since the upstream is
   # an OpenAI-compatible LiteLLM proxy.
 
-  # Chat: DeepSeek v4 Flash
-  - model_name: deepseek-v4-flash
-    litellm_params:
-      model: openai/deepseek/deepseek-v4-flash
-      api_base: https://litellm.hoonlabs.xyz/v1
-      api_key: os.environ/LLM_PROXY_KEY
-
   # Chat: IBM Granite 4.0 H Tiny
   - model_name: ibm-granite-tiny
     litellm_params:
@@ -53,20 +46,20 @@ model_list:
       api_key: os.environ/LLM_PROXY_KEY
 
   # Embedding: Nomic Embed Text v2 MoE (768 dim, Matryoshka-capable)
-  # Used by init-vector-store for document ingestion.
-  # The pgvector connector (litellm-pgvector) calls the remote HoonLabs proxy
-  # directly for embeddings at runtime; init-vector-store calls local LiteLLM.
-  # The model_name MUST match EMBEDDING_MODEL env var (default: nomic-embed-text-v2-moe).
   - model_name: nomic-embed-text-v2-moe
     litellm_params:
       model: openai/nomic-ai/embed-text-v2-moe
       api_base: https://litellm.hoonlabs.xyz/v1
       api_key: os.environ/LLM_PROXY_KEY
 
-  # Reranker: BGE Reranker v2 M3 (for result re-ranking in RAG pipelines)
+  # Reranker: BGE Reranker v2 M3 (cross-encoder, used by the pgvector connector
+  # to re-rank retrieved chunks before they're injected into the prompt).
+  # NOTE: provider MUST be `hosted_vllm/` — it exposes LiteLLM's `/rerank`
+  # endpoint. The `openai/` provider does NOT support rerank. The upstream
+  # (litellm.hoonlabs.xyz) serves this model from a vLLM rerank runtime.
   - model_name: bge-reranker-v2-m3
     litellm_params:
-      model: openai/gpustack/bge-reranker-v2-m3
+      model: hosted_vllm/gpustack/bge-reranker-v2-m3
       api_base: https://litellm.hoonlabs.xyz/v1
       api_key: os.environ/LLM_PROXY_KEY
 
@@ -94,13 +87,16 @@ router_settings:
 
 # ── General settings ───────────────────────────────────────────────────────────
 general_settings:
-  # Base system prompt. LiteLLM's vector store integration prepends retrieved
-  # document context before this prompt automatically in the final LLM call.
+  # ⚠️ NOTE: `default_system_prompt` is NOT a supported LiteLLM setting - the
+  # proxy ignores it. The PWA injects this system prompt itself as the first
+  # message (see src/config/llm.ts → LLM_SYSTEM_PROMPT). Kept here only as the
+  # canonical reference text; keep the two in sync. RAG (vector_store_ids on the
+  # model) is injected server-side regardless.
   default_system_prompt: |
     You are a document-based onboarding assistant for new employees at Messe München,
     integrated into the MesseBuddy onboarding platform.
 
-    STRICT RULES — follow these without exception:
+    STRICT RULES - follow these without exception:
     - Answer ONLY from company documents provided to you in this conversation.
     - Do NOT use general knowledge, training data, or any information not in the provided documents.
     - If the provided documents do not contain a clear answer, say: "That information is not in the documents I have access to. Please contact HR or your manager."

@@ -1,12 +1,10 @@
 # AGENTS.md
 
-This file provides guidance to AI coding agents when working with this repository. It complements [`README.md`](README.md:1) with agent-specific technical context. The authoritative project specification is [`SPECS.md`](SPECS.md:1) — read it before making architectural decisions.
+Agent guidance for this repository. Complements [`README.md`](README.md:1). Read [`SPECS.md`](SPECS.md:1) before making architectural decisions.
 
 ---
 
-## Project Overview
-
-MesseBuddy is a **mobile-first Progressive Web App (PWA)** that gamifies corporate onboarding. Players navigate an interactive map of office spaces (Milestones), each containing activities (Missions) to complete. A Game Maker admin configures the experience and validates progress.
+## Project Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -14,106 +12,210 @@ MesseBuddy is a **mobile-first Progressive Web App (PWA)** that gamifies corpora
 | Runtime | Deno 2.8+ (replaces Node/npm entirely) |
 | Backend | PocketBase (Go binary, REST + SSE + SQLite) |
 | AI Gateway | LiteLLM Proxy (OpenAI-compatible `/chat/completions`) |
-| Vector DB | PostgreSQL + pgvector extension |
-| Package Manager | Deno's native npm import resolution (`nodeModulesDir: "auto"`) |
+| Vector DB | PostgreSQL + pgvector |
+| Package Manager | Deno npm resolution (`nodeModulesDir: "auto"`) |
 
-**Key non-obvious facts:**
-- **No auth system** — identity is UID-based, stored in `localStorage` as [`mb_identity`](src/hooks/useIdentity.ts:4). The `role` field is client-stored and **not** server-validated.
-- **No tests exist yet** — adding tests is a high-priority future task. When added, use `Deno.test`, co-locate as `*.test.ts`/`.tsx`, and use [`mockAdapter`](src/adapters/mock/mockAdapter.ts:367) as test fixtures.
-- **The [`pocketbase/` adapter directory](src/adapters/pocketbase/) is empty** — only the mock adapter exists. Implementing a real PocketBase adapter is the next major architectural step.
+**Prerequisites:** Node.js 24, Deno 2.8+, Docker Desktop, LLM provider API key.
+
+**Non-obvious facts:**
+- **No auth system** - identity is UID-based, stored in `localStorage` as [`mb_identity`](src/hooks/useIdentity.ts:4). `role` is client-stored, **not** server-validated.
+- **No tests yet** - when adding, use `Deno.test`, co-locate as `*.test.ts`/`.tsx`, fixture via [`mockAdapter`](src/adapters/mock/mockAdapter.ts:367).
+- **Only mock adapter exists** - [`src/adapters/pocketbase/`](src/adapters/pocketbase/) is empty. PB adapter is the next major architectural step.
 
 ---
 
 ## Commands
 
-All commands run through **Deno** (not npm). Tasks defined in [`deno.json`](deno.json:2).
+All through **Deno** (not npm). Tasks in [`deno.json`](deno.json:2).
 
 ```sh
-deno install                  # Pre-fetch all npm dependencies
-deno task dev                 # Start Vite dev server with HMR (all network interfaces)
-deno task build               # Type check + production build → dist/
-deno task lint                # ESLint
-deno task preview             # Preview production build locally
+deno install            # Pre-fetch npm dependencies
+deno task dev           # Vite dev server + HMR (all interfaces)
+deno task build         # Type check + production build → dist/
+deno task lint          # ESLint
+deno task preview       # Preview production build locally
 ```
-
-**Prerequisites:** Node.js 24, Deno 2.8+, Docker Desktop, an LLM provider API key.
 
 ---
 
-## Architecture (Non-Obvious)
+## Architecture
 
 ### Adapter Pattern
-All data access goes through [`AppAdapter`](src/adapters/interface.ts:17). Components and use cases never call PocketBase directly. Swapping implementations is a **one-line change** in the provider ([`AdapterContext.tsx`](src/adapters/AdapterContext.tsx:13)).
+Data access flows through [`AppAdapter`](src/adapters/interface.ts:17). Components never call PocketBase. Swapping adapters is a **one-line change** in [`AdapterContext.tsx`](src/adapters/AdapterContext.tsx:13).
 
 ```
-Component → Use Case → AppAdapter → MockAdapter (currently) / PocketBaseAdapter (future)
+Component → Use Case → AppAdapter → MockAdapter (current) / PocketBaseAdapter (future)
 ```
 
 ### Key Design Constraints
+All 17 in [`SPECS.md`](SPECS.md:946). Critical subset:
 
 | # | Constraint |
 |---|-----------|
-| C-03 | **No auth system** — identity is UID-based, stored in `localStorage` as `mb_identity`. |
-| C-05 | **One ProgressEvent per `(playerId, missionId)`** — enforced at the single upsert point (`upsertProgressEvent`). |
-| C-07 | **QR validation is fully offline** — HMAC verify → GM confirm → PB write. |
-| C-08 | **Milestone positions are percentage-based** — `xPercent`/`yPercent` range 0–100. |
-| C-11 | **Progress is never snapshotted** — `computeProgress` re-derives at read time. Retroactive difficulty changes affect earned XP. |
-| C-12 | **No TypeScript `enum`** — use `const` object + `keyof` union. |
-| C-13 | **No component calls `JSON.parse`** on a PB record field — parsing happens inside the adapter. |
-| C-16 | **`qrPayload.ts` is the single encode/decode point** — HMAC-SHA256 with session secret. |
+| C-03 | No auth - UID in `localStorage` as `mb_identity` |
+| C-05 | One `ProgressEvent` per `(playerId, missionId)` - enforced at single upsert point |
+| C-07 | QR validation fully offline: HMAC verify → GM confirm → PB write |
+| C-08 | Milestone positions are percentage-based (`xPercent`/`yPercent` 0–100) |
+| C-11 | Progress never snapshotted - `computeProgress` re-derives at read time |
+| C-12 | No TypeScript `enum` - use `const` object + `keyof` union |
+| C-13 | No component calls `JSON.parse` on PB fields - parsing inside adapter |
+| C-16 | [`qrPayload.ts`](src/utils/qrPayload.ts:1) is single encode/decode point (HMAC-SHA256) |
 
-All 17 constraints in [`SPECS.md`](SPECS.md:946).
+## UI Development Workflow
 
-### Route Structure
+Before writing ANY implementation code for a new screen, page, or feature:
 
-| Path | Component | Access |
-|------|-----------|--------|
+1. Use `superdesign` tools to iterate on visual design if needed
+2. Only proceed to implementation after the user confirms the wireframe
+3. Store approved wireframe artifacts in `./design/` folder
+4. Reference the wireframe during implementation for layout/component decisions
+
+### Design Consistency
+- Always check `./design/` for prior wireframes before starting adjacent screens
+- Maintain a design token vocabulary defined in [`design/design-tokens.md`](design/design-tokens.md)
+
+### Routes
+
+| Path | Component | Role |
+|------|-----------|------|
 | `/` | [`LandingPage`](src/pages/LandingPage.tsx:1) | Public |
-| `/session/:sessionId` | [`PlayerCockpitPage`](src/pages/PlayerCockpitPage.tsx:1) | Player role |
-| `/admin/:sessionId` | [`AdminCockpitPage`](src/pages/AdminCockpitPage.tsx:1) | GameMaker role |
+| `/session/:sessionId` | [`PlayerCockpitPage`](src/pages/PlayerCockpitPage.tsx:1) | Player |
+| `/admin/:sessionId` | [`AdminCockpitPage`](src/pages/AdminCockpitPage.tsx:1) | GameMaker |
 | `/form/:missionId` | [`FormPage`](src/pages/FormPage.tsx:1) | Player |
 | `/qr/:missionId` | [`QRScannerView`](src/pages/QRScannerView.tsx:1) | GameMaker |
 
 ---
 
-## Code Style (Non-Obvious Only)
+## Code Style
 
-- **`verbatimModuleSyntax`** is enabled — use `import type` for type-only imports. Never mix runtime and type imports in one statement.
-- **No `enum`** — use `const` object + `keyof` union. Pattern: `export const FOO = { A: "a" } as const; export type Foo = (typeof FOO)[keyof typeof FOO];` ([`src/types/unions.ts`](src/types/unions.ts:4)).
-- **All interface fields are `readonly`**; arrays are `ReadonlyArray<T>`. Mutations go through the adapter only.
+- **`verbatimModuleSyntax`** - use `import type` for type-only imports. Never mix runtime + type in one statement.
+- **No `enum`** - pattern: `export const FOO = { A: "a" } as const; export type Foo = (typeof FOO)[keyof typeof FOO];` ([`src/types/unions.ts`](src/types/unions.ts:4))
+- **Interface fields** are `readonly`; arrays `ReadonlyArray<T>`. Mutations via adapter only.
 - **`interface`** for object contracts; **`type`** for unions, intersections, aliases.
-- **Imports** come from Deno's import map in [`deno.json`](deno.json:25) — never from `package.json`. Internal imports use **`.ts`/`.tsx` extensions** (no extension omission).
-- **Barrel exports** from [`src/types/index.ts`](src/types/index.ts:1) re-export both types and const objects (so `MISSION_TYPE.TEXT` works in components).
-- **Formatter:** `deno fmt` (2-space indent, 80-char width, semicolons, double quotes). Only `src/` is formatted — files outside are excluded.
+- **Imports** from Deno import map ([`deno.json`](deno.json:25)), never `package.json`. Internal imports use **`.ts`/`.tsx` extensions**.
+- **Barrel exports** in [`src/types/index.ts`](src/types/index.ts:1) - re-exports types + const objects.
+- **Formatter:** `deno fmt` (2-space indent, 80-char width, semicolons, double quotes). Only `src/` formatted.
+- **Components:** keep <200 lines; extract reusable pieces to `src/components/` or `src/utils/`. One responsibility per file. See [`ConfirmSheet`](src/components/admin/ConfirmSheet.tsx), [`DraftRestoreBanner`](src/components/admin/DraftRestoreBanner.tsx), [`MissionListView`](src/components/admin/MissionListView.tsx) as reference.
+
+### React Hooks & Lifecycle (All Modes)
+
+**Async effect cleanup completeness.** Every effect that launches async work must cancel it in cleanup:
+- `fetch` with `ReadableStream` body → `AbortController.signal` + `controller.abort()` in cleanup
+- `async/await` chains → boolean `cancelled` flag, checked after each `await`
+- `setTimeout`/`setInterval` → `clearTimeout`/`clearInterval` in cleanup
+- Long-running loops (nested async fetches) → check cancellation flag between each iteration
+
+**Closure freshness vs. callback stability trade-off.** A `useCallback` that reads state/props must either:
+- Include them in deps (freshness at cost of recreation), OR
+- Use the **Latest Ref Pattern**: `useRef + useEffect` sync to read latest values with a stable callback identity. Use this when callbacks are passed to memoized children or stored across renders.
+
+**Data-fetching resilience.** Every hook that fetches on mount should expose a `refresh` callback (increment a counter state → trigger the effect again via dependency). Without this, transient network failures trap the user in an error state until page reload.
+
+**External store synchronization.** `localStorage` initializers in `useState(reader())` are correct for mount-time, but cross-tab changes require a `window` `"storage"` event listener. Never read `localStorage`/`sessionStorage` during render - use an effect.
+
+**Callback wrapping pattern.** When a hook returns callbacks that re-create on every state change (volatile identity), callers should wrap them inline: `onClick={() => cb()}`. This guarantees the child component always invokes the latest version without requiring the child to re-render on every parent state change.
+---
+
+## Testing & Debugging
+
+### UI Smoke Tests (Mandatory after any UI change)
+Use Playwright MCP (`playwright` server in [`.cursor/mcp.json`](.cursor/mcp.json:1) - Firefox, iPhone 15 profile) or `browser_snapshot` / `browser_take_screenshot` to verify:
+- Component renders without error
+- Core interactions (click, input, navigation) work
+- No console errors or broken layout
+- **Mobile-first viewport** (390×844). Resize to user's viewport if different.
+- Test user-facing flow, not just implementation detail
+- Save screenshots to `.playwright-mcp/`
+
+**Never force-click.** Obscured/off-screen elements are real UX bugs - fix at CSS/component level.
+
+### Layout Debugging
+- Obscured, off-screen, or edge-clipped elements are in-scope defects
+- Use `browser_evaluate` to measure positions and CSS before proposing fixes
+- Fix root cause, not symptoms
 
 ---
 
-## Non-Obvious Gotchas
+## PocketBase Server
 
-- **Mock adapter simulates GM approval with a 4-second `setTimeout`** ([`mockAdapter.ts`](src/adapters/mock/mockAdapter.ts:79)). Events with `status: "pendingApproval"` auto-transition to `completed` after 4s with `validatedBy: "uid_gamemaker_peter"`.
-- **Form missions always `autoApproved`** regardless of `validationMethod` (C-06). The `ValidationDisplay` never mounts for `type: "form"`.
-- **SSE subscription is only held by `ValidationDisplay`** and only when `validationMethod = 'qr'` (C-07). Everything else is fetched once on mount.
-- **Template export embeds `_milestoneOrder` and `_missionOrder`** ([`exportTemplate.ts`](src/use-cases/exportTemplate.ts:27)). These are import-remapping keys for reconstructing FK references after PB IDs are stripped during import ([`importTemplate.ts`](src/use-cases/importTemplate.ts:13)).
-- **`useChatStream` is a Phase 1 stub** ([`useChatStream.ts`](src/hooks/useChatStream.ts:20)) — returns empty state. Real AI streaming will be wired in Phase 6.
-- **Build-time env vars** (`VITE_PB_URL`, `VITE_LITELLM_URL`) are frozen in the JS bundle at build time. Runtime env changes won't affect them — you must rebuild.
-- **`consume-docs/`** feeds the RAG ingestion pipeline. Documents placed there are chunked, embedded, and stored in pgvector.
-- Use the PlayWright MCP tool for testing. Always view from the user's perspective. All screenshots must be saved in `.playwright-mcp`
+Custom Go wrapper at [`server/`](server/).
+
+| Path | Purpose |
+|------|---------|
+| [`server/go.mod`](server/go.mod:1) | Go module `messe-buddy-pb`, requires Go ≥ 1.25.0 |
+| [`server/main.go`](server/main.go:1) | Entry: embeds `pb_migrations`, auto-migrate, `qrSecret` hook |
+| [`server/pb_migrations/`](server/pb_migrations/) | Go migration files via `init()` → `m.Register(...)` |
+
+### Creating Migrations
+1. New file in `server/pb_migrations/` (e.g. `003_new_feature.go`)
+2. `core.NewBaseCollection(name)` for collections
+3. `collection.Fields.Add(...)` with typed field structs
+4. `app.Save(collection)` per collection (v0.39+ API - single-arg only)
+5. Unique indexes: `collection.AddIndex(name, unique, columnsExpr, optWhereExpr)` (not `TextField.Unique`)
+6. `setPublicRules(collection)` to clear API rules (C-03: no auth)
+
+**Key PB v0.39.4 API changes from ≤v0.22:**
+
+| Old | New |
+|-----|-----|
+| `&core.TextField{Unique: true}` | `collection.AddIndex(...)` |
+| `app.Save(c1, c2, c3)` | `app.Save(c1); app.Save(c2); app.Save(c3)` |
+| `core.UrlField` | `core.URLField` |
+| `core.JsonField` | `core.JSONField` |
+
+### Build & Run
+```sh
+docker compose build app   # Build app service (includes Go compile)
+docker compose up app       # Full stack, migrations auto-applied
+```
+
+`PB_AUTO_MIGRATE=true` (default in [`docker-compose.yml`](docker-compose.yml:297)). Set to `"false"` after initial deploy.
+
+### Schema
+All 9 collections documented in [`docs/pb-schema.md`](docs/pb-schema.md:1).
 
 ---
 
 ## Environment Variables
 
-See [`.env.example`](.env.example:1) for all configurable variables. `VITE_PB_URL` and `VITE_LITELLM_URL` are **build-time** variables.
+See [`.env.example`](.env.example:1). `VITE_PB_URL` and `VITE_LITELLM_URL` are **build-time** - frozen in JS bundle, require rebuild to change.
+
+---
+
+## Non-Obvious Gotchas
+
+- **Mock adapter** simulates GM approval with 4s `setTimeout` ([`mockAdapter.ts`](src/adapters/mock/mockAdapter.ts:79)): `pendingApproval` auto-transitions to `completed` after 4s.
+- **Form missions** always `autoApproved` regardless of `validationMethod` (C-06). `ValidationDisplay` never mounts for `type: "form"`.
+- **SSE subscription** only held by `ValidationDisplay` and only when `validationMethod = 'qr'` (C-07). Everything else fetched once on mount.
+- **Template export** embeds `_milestoneOrder`/`_missionOrder` ([`exportTemplate.ts`](src/use-cases/exportTemplate.ts:27)) - FK remapping keys for import ([`importTemplate.ts`](src/use-cases/importTemplate.ts:13)).
+- **`useChatStream`** is a Phase 1 stub ([`useChatStream.ts`](src/hooks/useChatStream.ts:20)) - returns empty state.
+- **`consume-docs/`** feeds the RAG pipeline - documents chunked, embedded, stored in pgvector.
+
+---
+
+## Research Before Implementation
+
+**Verify external API/SDK/CLI behavior and industry best-practices.** Do not infer without reliable external evidence.
+
+Use `searxng_web_search` before:
+- Integrating any external API/SDK/CLI not verified this session
+- Choosing library versions, Docker tags, Go module versions
+- Writing code against unread interfaces/structs
+- Debugging unfamiliar error strings (search verbatim)
+- Auditing code smells or framework-specific gotchas (e.g., React 19 hooks and component life-cycles)
+
+Follow up with `web_url_read` at pkg.go.dev, `raw.githubusercontent.com`, or official docs. **Source of truth is live documentation, not LLM training data.**
 
 ---
 
 ## Reference
 
-- **Authoritative spec:** [`SPECS.md`](SPECS.md:1)
-- **Adapter contract:** [`src/adapters/interface.ts`](src/adapters/interface.ts:17)
-- **Union types (no enums):** [`src/types/unions.ts`](src/types/unions.ts:4)
-- **Domain types:** [`src/types/domain.ts`](src/types/domain.ts:1)
-- **Mock adapter:** [`src/adapters/mock/mockAdapter.ts`](src/adapters/mock/mockAdapter.ts:367)
-- **QR payload encode/decode:** [`src/utils/qrPayload.ts`](src/utils/qrPayload.ts:1)
-- **Docker Compose config:** [`docker-compose.yml`](docker-compose.yml:1)
-- **README (human audience):** [`README.md`](README.md:1)
+- [`SPECS.md`](SPECS.md:1) - authoritative spec
+- [`src/adapters/interface.ts`](src/adapters/interface.ts:17) - adapter contract
+- [`src/types/unions.ts`](src/types/unions.ts:4) - union types (no enums)
+- [`src/types/domain.ts`](src/types/domain.ts:1) - domain types
+- [`src/adapters/mock/mockAdapter.ts`](src/adapters/mock/mockAdapter.ts:367) - mock adapter
+- [`src/utils/qrPayload.ts`](src/utils/qrPayload.ts:1) - QR encode/decode
+- [`docker-compose.yml`](docker-compose.yml:1) - Docker Compose
+- [`docs/pb-schema.md`](docs/pb-schema.md:1) - PocketBase schema
+- [`.roo/skills/`](.roo/skills) - Agent Skill files

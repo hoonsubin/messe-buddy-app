@@ -3,12 +3,13 @@ import type { MilestoneProgress, PlayerProgress } from "../types/index.ts";
 import { MILESTONE_STATUS, PROGRESS_STATUS } from "../types/index.ts";
 
 // Derives PlayerProgress from ProgressEvents and Missions at read time.
-// Pure function — no side effects, no adapter calls. (C-11)
+// Pure function - no side effects, no adapter calls. (C-11)
 //
 // Retroactive difficulty changes affect earned XP because we re-derive here
 // rather than snapshotting xpValue at validation time (OD-02 resolution).
-
-const XP_THRESHOLD = 100; // C-04: always 100 per Milestone
+//
+// xpThreshold is now read from each Milestone record (not a global constant),
+// allowing milestones to have different XP totals (e.g. 50, 15, 125, 85…).
 
 const COMPLETED_STATUSES = new Set<string>([
   PROGRESS_STATUS.COMPLETED,
@@ -31,6 +32,7 @@ export const computeProgress = (
   const completedMissionIds: string[] = [];
 
   const milestoneProgress: MilestoneProgress[] = milestones.map((ms) => {
+    const threshold = ms.xpThreshold > 0 ? ms.xpThreshold : 1;
     const msMissions = missions.filter((m) => m.milestoneId === ms.id);
     const completedIds: string[] = [];
     let earnedXP = 0;
@@ -44,8 +46,8 @@ export const computeProgress = (
       }
     }
 
-    const percentComplete = XP_THRESHOLD > 0 ? earnedXP / XP_THRESHOLD : 0;
-    const isComplete = earnedXP >= XP_THRESHOLD;
+    const percentComplete = earnedXP / threshold;
+    const isComplete = earnedXP >= threshold;
     const hasStarted = completedIds.length > 0;
 
     const status = isComplete
@@ -57,7 +59,7 @@ export const computeProgress = (
     return {
       milestoneId: ms.id,
       earnedXP,
-      xpThreshold: XP_THRESHOLD,
+      xpThreshold: threshold,
       percentComplete: Math.min(percentComplete, 1),
       status,
       completedMissionIds: completedIds,
