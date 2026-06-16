@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { MdArrowBack } from "react-icons/md";
 import type { BuddyProfile, Milestone, Resource } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { useIdentity } from "../hooks/useIdentity.ts";
+import {
+  clearEphemeralIdentity,
+  isEphemeralIdentity,
+} from "../hooks/ephemeralIdentityStore.ts";
 import { useSession } from "../hooks/useSession.ts";
 import { useScrollCollapse } from "../hooks/useScrollCollapse.ts";
 import { useAdminMilestoneEditor } from "../hooks/useAdminMilestoneEditor.ts";
@@ -40,6 +45,7 @@ type AdminTab = (typeof ADMIN_TABS)[keyof typeof ADMIN_TABS];
 
 const AdminCockpitPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
+  const navigate = useNavigate();
   const sid = sessionId ?? "";
   const adapter = useAdapter();
   const { identity } = useIdentity();
@@ -350,6 +356,38 @@ const AdminCockpitPage = () => {
         totalXP={0}
         role="Game Master"
       />
+
+      {/* Back-to-landing — only visible in ephemeral demo mode */}
+      {isEphemeralIdentity() && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-start",
+            padding: "var(--space-2) var(--space-4)",
+            background: "hsl(var(--color-card))",
+            borderBottom: "1px solid hsl(var(--color-border))",
+          }}
+        >
+          <button
+            type="button"
+            className="btn btn--ghost"
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "hsl(var(--color-muted-fg))",
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--space-1)",
+            }}
+            onClick={() => {
+              clearEphemeralIdentity();
+              navigate("/", { replace: true });
+            }}
+          >
+            <MdArrowBack size={16} />
+            Back to Landing
+          </button>
+        </div>
+      )}
 
       {/* ── Tab navigation ──────────────────────────────────────────────── */}
       <nav

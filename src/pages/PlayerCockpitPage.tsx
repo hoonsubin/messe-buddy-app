@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { MdArrowBack } from "react-icons/md";
 import type { Mission, Player } from "../types/index.ts";
 import { MISSION_TYPE } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { useIdentity } from "../hooks/useIdentity.ts";
+import {
+  clearEphemeralIdentity,
+  isEphemeralIdentity,
+} from "../hooks/ephemeralIdentityStore.ts";
 import { useSession } from "../hooks/useSession.ts";
 import { usePlayerProgress } from "../hooks/usePlayerProgress.ts";
 import { useBuddy } from "../hooks/useBuddy.ts";
@@ -226,7 +231,10 @@ const PlayerCockpitPage = () => {
     <div
       data-testid="player-cockpit-page"
       data-page="player-cockpit"
-      style={{ minHeight: "100dvh" }}
+      style={{
+        minHeight: "100dvh",
+        paddingTop: "var(--topbar-h)",
+      }}
     >
       {isLoading && (
         <div
@@ -271,6 +279,38 @@ const PlayerCockpitPage = () => {
         totalXP={playerProgress?.totalXP ?? 0}
         role={player?.role ?? ""}
       />
+
+      {/* Back-to-landing — only visible in ephemeral demo mode */}
+      {isEphemeralIdentity() && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-start",
+            padding: "var(--space-2) var(--space-4)",
+            background: "hsl(var(--color-card))",
+            borderBottom: "1px solid hsl(var(--color-border))",
+          }}
+        >
+          <button
+            type="button"
+            className="btn btn--ghost"
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "hsl(var(--color-muted-fg))",
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--space-1)",
+            }}
+            onClick={() => {
+              clearEphemeralIdentity();
+              navigate("/", { replace: true });
+            }}
+          >
+            <MdArrowBack size={16} />
+            Back to Landing
+          </button>
+        </div>
+      )}
 
       {/* Mission detail popup (text / link missions) */}
       {popupMission !== null && player !== null && (

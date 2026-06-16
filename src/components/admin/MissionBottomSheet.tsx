@@ -148,8 +148,10 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
   );
 
   // ── Draft persistence ───────────────────────────────────────────────────────
-  const [dismissedStoredDraftForMissionId, setDismissedStoredDraftForMissionId] =
-    useState<string | null>(null);
+  const [
+    dismissedStoredDraftForMissionId,
+    setDismissedStoredDraftForMissionId,
+  ] = useState<string | null>(null);
 
   const storedDraft = useMemo((): StoredDraft | null => {
     if (!activeMissionId) return null;
@@ -157,7 +159,12 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
     const found = loadStoredDraft(sessionId, activeMissionId);
     if (found && found.draft.title !== draft?.title) return found;
     return null;
-  }, [activeMissionId, sessionId, draft?.title, dismissedStoredDraftForMissionId]);
+  }, [
+    activeMissionId,
+    sessionId,
+    draft?.title,
+    dismissedStoredDraftForMissionId,
+  ]);
 
   // ── Rename state ────────────────────────────────────────────────────────────
   const [isRenaming, setIsRenaming] = useState(false);

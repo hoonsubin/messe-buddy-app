@@ -4,6 +4,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { useIdentity } from "./useIdentity.ts";
 import {
+  clearEphemeralIdentity,
+  isEphemeralIdentity,
+  setEphemeralIdentity,
+} from "./ephemeralIdentityStore.ts";
+import {
   createGameMakerSession,
   joinSession,
 } from "../use-cases/joinSession.ts";
@@ -101,12 +106,25 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     setView(next);
   }, [resetError]);
 
+  // Clear any stale ephemeral identity when LandingPage mounts.
+  // Handles browser-back from demo cockpit where the ephemeral store
+  // was set before navigation; the original page instance couldn't
+  // clear it before unmounting.
+  useEffect(() => {
+    if (isEphemeralIdentity()) {
+      clearEphemeralIdentity();
+    }
+  }, []);
+
   // Returning user: if identity exists in localStorage, navigate to cockpit
   // only if the user hasn't explicitly chosen a view (i.e. landing page loads
   // and identity is present, but the user hasn't clicked any button yet).
+  // Ephemeral demo identities are skipped — demo navigation is handled
+  // directly in the click handler.
   useEffect(() => {
     if (!identity || view !== "role-select") return;
     if (hasNavigated) return;
+    if (isEphemeralIdentity()) return;
     hasNavigated = true;
     const dest = identity.role === USER_ROLE.PLAYER
       ? `/session/${identity.sessionId}`
@@ -210,22 +228,26 @@ export const useLandingFlow = (): UseLandingFlowResult => {
   }, [adapter, navigate, recoveryKey, recoverySessionId]);
 
   const handleDemoPlayer = useCallback(() => {
-    setIdentity({
+    clearEphemeralIdentity(); // clear any stale before setting new
+    setEphemeralIdentity({
       uid: "uid_sofia_002",
       recoveryKey: "SOFIA026",
       sessionId: "sess_mmt2026",
       role: USER_ROLE.PLAYER,
     });
-  }, [setIdentity]);
+    navigate("/session/sess_mmt2026", { replace: true });
+  }, [navigate]);
 
   const handleDemoAdmin = useCallback(() => {
-    setIdentity({
+    clearEphemeralIdentity();
+    setEphemeralIdentity({
       uid: "uid_gamemaker_peter",
       recoveryKey: "DEMO1234",
       sessionId: "sess_mmt2026",
       role: USER_ROLE.GAMEMAKER,
     });
-  }, [setIdentity]);
+    navigate("/admin/sess_mmt2026", { replace: true });
+  }, [navigate]);
 
   const handleLoadTemplate = useCallback(
     async (templateName: string) => {
