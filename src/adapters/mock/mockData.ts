@@ -44,7 +44,7 @@ const MOCK_PRE_BOARDING_CHECKS: ReadonlyArray<PreBoardingCheckItem> = [
 
 export const MOCK_SESSION: Session = {
   ...pb("sess_mmt2026"),
-  name: "Messe München Onboarding — Summer 2026",
+  name: "Messe München Onboarding - Summer 2026",
   bgImageUrl: mapBackground,
   gameMakerId: "uid_gamemaker_peter",
   preBoardingChecks: MOCK_PRE_BOARDING_CHECKS,
@@ -122,7 +122,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     milestoneId: "ms_orientation",
     title: "Read the Company Handbook",
     body:
-      "## Company Handbook\n\nThe handbook covers our values, code of conduct, and key policies. Take your time reading through it — your buddy is here if you have questions.",
+      "## Company Handbook\n\nThe handbook covers our values, code of conduct, and key policies. Take your time reading through it - your buddy is here if you have questions.",
     type: "link",
     externalUrl: "https://www.messe-muenchen.de/",
     difficulty: 3,
@@ -140,7 +140,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     milestoneId: "ms_team",
     title: "Meet Your Buddy",
     body:
-      "## Your First Check-In\n\nSchedule a 30-minute coffee chat with your assigned buddy. This is your chance to ask all the questions you haven't had the nerve to ask yet.\n\nAt the end of your chat, your buddy will **scan the QR code** on your phone to confirm the meeting.\n\n> 📍 **Buddy Lounge, Building C — Floor 2**\n> Drop-in hours Mon–Fri, 09:00–17:00\n>\n> Or schedule via Slack — your buddy will suggest a time.",
+      "## Your First Check-In\n\nSchedule a 30-minute coffee chat with your assigned buddy. This is your chance to ask all the questions you haven't had the nerve to ask yet.\n\nAt the end of your chat, your buddy will **scan the QR code** on your phone to confirm the meeting.\n\n> 📍 **Buddy Lounge, Building C - Floor 2**\n> Drop-in hours Mon–Fri, 09:00–17:00\n>\n> Or schedule via Slack - your buddy will suggest a time.",
     type: "text",
     difficulty: 2,
     xpValue: 29, // deriveXP(weights=[2,1,1,3], total=7): floor(100*2/7)=28, +1 remainder → 29
@@ -201,7 +201,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     milestoneId: "ms_settled",
     title: "Office Tour",
     body:
-      "## Find Your Way Around\n\nComplete a self-guided tour and locate the following stops:\n\n- Your assigned desk\n- Main kitchen (Building A, Floor 1)\n- Nearest emergency exits\n- Product & Design team area (Building B, Floor 3)\n- IT Help Desk (Building A, Floor 0)\n\nWhen you're done, find your buddy — they'll **scan your QR code** to confirm.\n\n> 📍 **Start at Reception, Building A**\n> The front desk team can point you in the right direction.\n>\n> Estimated time: 20–30 minutes",
+      "## Find Your Way Around\n\nComplete a self-guided tour and locate the following stops:\n\n- Your assigned desk\n- Main kitchen (Building A, Floor 1)\n- Nearest emergency exits\n- Product & Design team area (Building B, Floor 3)\n- IT Help Desk (Building A, Floor 0)\n\nWhen you're done, find your buddy - they'll **scan your QR code** to confirm.\n\n> 📍 **Start at Reception, Building A**\n> The front desk team can point you in the right direction.\n>\n> Estimated time: 20–30 minutes",
     type: "text",
     difficulty: 2,
     xpValue: 34, // deriveXP(weights=[2,2,2], total=6): floor(100*2/6)=33, +1 remainder (order 0) → 34
@@ -216,7 +216,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     milestoneId: "ms_settled",
     title: "IT Setup",
     body:
-      "## Get Your Devices Ready\n\nVisit the IT Help Desk to collect your **laptop** and set up **two-factor authentication** on your accounts. Bring your employee badge — they'll need to verify your identity.\n\nOnce complete, your Game Master will mark this mission as approved.\n\n> 📍 **IT Help Desk — Building A, Ground Floor**\n> Open Monday–Friday, 08:00–18:00\n>\n> Walk-ins welcome. Average wait: 10–15 minutes.",
+      "## Get Your Devices Ready\n\nVisit the IT Help Desk to collect your **laptop** and set up **two-factor authentication** on your accounts. Bring your employee badge - they'll need to verify your identity.\n\nOnce complete, your Game Master will mark this mission as approved.\n\n> 📍 **IT Help Desk - Building A, Ground Floor**\n> Open Monday–Friday, 08:00–18:00\n>\n> Walk-ins welcome. Average wait: 10–15 minutes.",
     type: "text",
     difficulty: 2,
     xpValue: 33, // floor(100*2/6)=33
@@ -480,7 +480,7 @@ export const MOCK_PLAYERS: ReadonlyArray<Player> = [
 
 export const MOCK_SESSION_2: Session = {
   ...pb("sess_eng_2026"),
-  name: "Engineering Onboarding — June 2026",
+  name: "Engineering Onboarding - June 2026",
   bgImageUrl: "",
   gameMakerId: "uid_gamemaker_peter",
   preBoardingChecks: [],
@@ -560,7 +560,7 @@ export const MOCK_MISSIONS_2: ReadonlyArray<Mission> = [
 // ── Progress Events for Engineering Players ────────────────────────────────────
 
 export const MOCK_PROGRESS_EVENTS_2: ReadonlyArray<ProgressEvent> = [
-  // Marco: just started — only 1 mission submitted, very recently
+  // Marco: just started - only 1 mission submitted, very recently
   {
     ...pb("evt_marco_setup"),
     sessionId: "sess_eng_2026",
@@ -569,7 +569,7 @@ export const MOCK_PROGRESS_EVENTS_2: ReadonlyArray<ProgressEvent> = [
     status: "autoApproved",
     updated: "2026-06-14T20:00:00.000Z",
   },
-  // Julia: on track — 2 missions done, recently active
+  // Julia: on track - 2 missions done, recently active
   {
     ...pb("evt_julia_setup"),
     sessionId: "sess_eng_2026",
@@ -615,7 +615,7 @@ export const MOCK_BUDDY_PROFILES: ReadonlyArray<BuddyProfile> = [
   },
 ];
 
-// ── Progress Events (for Sofia — tutorial complete, mixed progress) ────────────
+// ── Progress Events (for Sofia - tutorial complete, mixed progress) ────────────
 
 export const MOCK_PROGRESS_EVENTS: ReadonlyArray<ProgressEvent> = [
   {

@@ -1,4 +1,4 @@
-// ApprovalRequestCard — shows a single pending approval with Approve, Reject, and Scan QR buttons.
+// ApprovalRequestCard - shows a single pending approval with Approve, Reject, and Scan QR buttons.
 interface ApprovalRequestCardProps {
   readonly playerName: string;
   readonly missionTitle: string;

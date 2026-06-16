@@ -1,4 +1,4 @@
-// Phase 1 shell — full-screen tutorial overlay. Logic wired in Phase 5.
+// Phase 1 shell - full-screen tutorial overlay. Logic wired in Phase 5.
 // Mounts when player.tutorialComplete === false.
 // Renders a dim backdrop, a dynamic highlight ring around the target element,
 // and a TutorialStep card.
@@ -34,7 +34,7 @@ const TutorialOverlay = (props: TutorialOverlayProps) => {
   const step = props.steps[props.currentStepIndex] ??
     props.steps[0]!;
 
-  // Dynamic highlight ring positioning — hooks must run unconditionally.
+  // Dynamic highlight ring positioning - hooks must run unconditionally.
   const [highlightRect, setHighlightRect] = useState<HighlightRect | null>(
     null,
   );
@@ -67,7 +67,7 @@ const TutorialOverlay = (props: TutorialOverlayProps) => {
     });
   }, [step.targetSelector]);
 
-  // Recompute on step change — defer via rAF to avoid sync setState in effect.
+  // Recompute on step change - defer via rAF to avoid sync setState in effect.
   // Also auto-scroll the target element into view so the highlight ring is visible.
   useEffect(() => {
     const selector = step.targetSelector;
@@ -125,7 +125,7 @@ const TutorialOverlay = (props: TutorialOverlayProps) => {
       aria-hidden="true" /* TutorialStep dialog is the accessible focus target */
     >
       {
-        /* Dim backdrop — only when there is no targeted highlight ring.
+        /* Dim backdrop - only when there is no targeted highlight ring.
           When a highlight ring is active, the ring's box-shadow provides the
           dimming outside the spotlight; a separate backdrop would double-stack
           the opacity (~80%) and bleed into the spotlight center. */
@@ -140,7 +140,7 @@ const TutorialOverlay = (props: TutorialOverlayProps) => {
         />
       )}
 
-      {/* Highlight ring — spotlight effect via box-shadow */}
+      {/* Highlight ring - spotlight effect via box-shadow */}
       {highlightRect !== null && (
         <div
           className="tutorial-overlay__highlight"

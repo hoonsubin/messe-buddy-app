@@ -20,7 +20,7 @@ type Status = "idle" | "loading" | "error";
 // Module-level guard to prevent double-navigation under React 18+ StrictMode.
 // Unlike useRef (which is re-initialized on StrictMode unmount/remount), a
 // module-level variable survives remount and prevents the second effect fire
-// from calling navigate() — which would otherwise throw a SecurityError:
+// from calling navigate() - which would otherwise throw a SecurityError:
 // "Too many calls to Location or History APIs within a short timeframe."
 let hasNavigated = false;
 
@@ -40,7 +40,7 @@ const LandingPage = () => {
   const [recoverySessionId, setRecoverySessionId] = useState("");
   const [templates, setTemplates] = useState<ReadonlyArray<TemplateExport>>([]);
 
-  // Set after a successful join/create — triggers the modal
+  // Set after a successful join/create - triggers the modal
   const [pendingRecoveryKey, setPendingRecoveryKey] = useState<string | null>(
     null,
   );
@@ -83,7 +83,7 @@ const LandingPage = () => {
     setErrorMessage("");
     try {
       const result = await joinSession(sessionCode.trim(), adapter);
-      // joinSession already writes to localStorage — do NOT call setIdentity here,
+      // joinSession already writes to localStorage - do NOT call setIdentity here,
       // which would fire the returning-user useEffect and navigate before the modal renders.
       setPendingRedirect(`/session/${result.identity.sessionId}`);
       setPendingRecoveryKey(result.identity.recoveryKey);
@@ -902,7 +902,7 @@ const LandingPage = () => {
         </p>
       </div>
 
-      {/* Recovery key modal — shown once after join/create */}
+      {/* Recovery key modal - shown once after join/create */}
       {pendingRecoveryKey && (
         <RecoveryKeyModal
           recoveryKey={pendingRecoveryKey}

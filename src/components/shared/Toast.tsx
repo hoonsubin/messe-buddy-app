@@ -1,5 +1,5 @@
 /**
- * Toast — ephemeral status notification anchored to the bottom of the viewport.
+ * Toast - ephemeral status notification anchored to the bottom of the viewport.
  *
  * Renders nothing when `message` is null/undefined.
  * The caller is responsible for setting a timeout to clear the message.

@@ -1,4 +1,4 @@
-// Phase 6 — wired resources editor with visibility toggles.
+// Phase 6 - wired resources editor with visibility toggles.
 import { MdCheckBox, MdCheckBoxOutlineBlank, MdClose } from "react-icons/md";
 import type { PBRecord, Resource } from "../../types/index.ts";
 import type { ResourceType } from "../../types/index.ts";

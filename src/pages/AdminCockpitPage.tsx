@@ -46,13 +46,13 @@ const AdminCockpitPage = () => {
   // Session data
   const { session, milestones, missions } = useSession(sid);
 
-  // Local override for bgImageUrl — avoids re-fetching session on upload
+  // Local override for bgImageUrl - avoids re-fetching session on upload
   const [bgImageUrlOverride, setBgImageUrlOverride] = useState<string | null>(
     null,
   );
   const bgImageUrl = bgImageUrlOverride ?? session?.bgImageUrl ?? "";
 
-  // ── Tab navigation (declared early — used as resetKey for useScrollCollapse) ─
+  // ── Tab navigation (declared early - used as resetKey for useScrollCollapse) ─
   const [activeTab, setActiveTab] = useState<AdminTab>(
     ADMIN_TABS.ACTIVE_SESSION,
   );
@@ -94,7 +94,7 @@ const AdminCockpitPage = () => {
     activeTab === ADMIN_TABS.ALL_NEW_HIRES,
   );
 
-  // ── Resources (admin owns full CRUD — useResources is player-only) ─────────
+  // ── Resources (admin owns full CRUD - useResources is player-only) ─────────
   // Declared before useTemplateLibrary which consumes adminResources.
 
   const [adminResources, setAdminResources] = useState<
@@ -435,7 +435,7 @@ const AdminCockpitPage = () => {
             />
           </div>
 
-          {/* Mission list — grouped by milestone, drag-to-reorder */}
+          {/* Mission list - grouped by milestone, drag-to-reorder */}
           <AdminMissionsList
             missions={missions}
             milestones={milestones}

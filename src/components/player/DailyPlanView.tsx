@@ -1,4 +1,4 @@
-// Today's Missions — primary orientation surface for new hires.
+// Today's Missions - primary orientation surface for new hires.
 // Renders missions computed by the getDailyMissions use case.
 // Collapsible by default; collapsed state shows only a header bar
 // with a numbered badge. Click to expand and see the full list.
@@ -134,7 +134,7 @@ const DailyPlanView = (props: DailyPlanViewProps) => {
               color: "hsl(var(--color-muted-fg))",
             }}
           >
-            Start here — these are your top priorities for today.
+            Start here - these are your top priorities for today.
           </p>
           {missions.length === 0
             ? (

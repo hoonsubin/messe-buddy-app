@@ -45,7 +45,7 @@ const templates = new Map<string, TemplateExport>();
 type ProgressCallback = (event: ProgressEvent) => void;
 const subscriptions = new Map<string, Set<ProgressCallback>>();
 
-// Seeding — runs once at module load.
+// Seeding - runs once at module load.
 (() => {
   sessions.set(MOCK_SESSION.id, MOCK_SESSION);
   sessions.set(MOCK_SESSION_2.id, MOCK_SESSION_2);
@@ -96,7 +96,7 @@ export const setMockAdminUid = (uid: string): void => {
   currentAdminUid = uid;
 };
 
-// Simulates Game Maker approval — transitions pendingApproval → completed
+// Simulates Game Maker approval - transitions pendingApproval → completed
 // after 4 seconds. Mirrors what the real PB SSE subscription does.
 const simulateGmApproval = (
   key: string,
@@ -321,7 +321,7 @@ const upsertProgressEvent = async (
   const key = `${playerId}::${missionId}`;
   const existing = progressEvents.get(key);
 
-  // Need sessionId — derive from the player record.
+  // Need sessionId - derive from the player record.
   const player = players.get(playerId);
   const sessionId = player?.sessionId ?? existing?.sessionId ?? "";
 

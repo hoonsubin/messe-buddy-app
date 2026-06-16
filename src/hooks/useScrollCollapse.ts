@@ -59,17 +59,17 @@ export const useScrollCollapse = (
     lastTopRef.current = top;
     lastTimeRef.current = now;
 
-    // At the very top — always expand
+    // At the very top - always expand
     if (top <= 0) {
       setCollapsed(false);
       return;
     }
 
     if (dy > 0) {
-      // Downward scroll — collapse unconditionally
+      // Downward scroll - collapse unconditionally
       setCollapsed(true);
     } else if (dy < 0 && dt > 0) {
-      // Upward scroll — expand only if fast enough
+      // Upward scroll - expand only if fast enough
       const speed = Math.abs(dy / dt); // px/ms
       if (speed >= fastScrollThreshold) {
         setCollapsed(false);

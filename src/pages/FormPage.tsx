@@ -31,7 +31,7 @@ const FormPage = () => {
         const p = await adapter.getPlayer(identity.uid);
         if (!cancelled) setPlayer(p);
       } catch {
-        // Player lookup failed — player stays null
+        // Player lookup failed - player stays null
       } finally {
         if (!cancelled) setPlayerLoading(false);
       }
@@ -135,7 +135,7 @@ const FormPage = () => {
     return Object.keys(newErrors).length === 0;
   }, [formSchema, values]);
 
-  // Submit handler — uses player.id (PB record ID) not identity.uid
+  // Submit handler - uses player.id (PB record ID) not identity.uid
   const handleSubmit = useCallback(async () => {
     if (!validate()) return;
     if (!player || !missionId) return;
@@ -154,7 +154,7 @@ const FormPage = () => {
       // Also mark profileComplete and tutorialComplete since the profile
       // step is the final tutorial step (Phase 5).
       if (missionId === "mission_profile") {
-        // Build a mutable patch object — Player fields are readonly so
+        // Build a mutable patch object - Player fields are readonly so
         // we construct with a Record<string, unknown> and cast at the call site.
         const patch: Record<string, unknown> = {
           profileComplete: true,
@@ -194,7 +194,7 @@ const FormPage = () => {
             .filter(Boolean);
         }
 
-        // Cast through unknown — updatePlayer accepts Partial<Omit<Player, keyof PBRecord>>
+        // Cast through unknown - updatePlayer accepts Partial<Omit<Player, keyof PBRecord>>
         // and the runtime adapter applies only the provided keys.
         await adapter.updatePlayer(
           player.id,
@@ -218,7 +218,7 @@ const FormPage = () => {
     }
   }, [validate, player, missionId, adapter, values, sessionId, navigate]);
 
-  // Save for later — just keep local state (persistence is Phase 4-3)
+  // Save for later - just keep local state (persistence is Phase 4-3)
   const handleSaveForLater = useCallback(() => {
     setIsDraft(true);
   }, []);

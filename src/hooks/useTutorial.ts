@@ -4,7 +4,7 @@ import { PLACEHOLDER_STEPS } from "../components/tutorial/TutorialOverlay.tsx";
 import type { AppAdapter } from "../adapters/interface.ts";
 import type { Player } from "../types/index.ts";
 
-// Profile Setup mission ID from mock data — used for tutorial final-step routing.
+// Profile Setup mission ID from mock data - used for tutorial final-step routing.
 const PROFILE_MISSION_ID = "mission_profile";
 
 // The 0-based index of the Profile step within PLACEHOLDER_STEPS.

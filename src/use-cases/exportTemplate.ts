@@ -8,7 +8,7 @@ import type {
 } from "../types/index.ts";
 import type { TemplateExport } from "../types/index.ts";
 
-// Pure function — strips PB IDs and returns a portable TemplateExport. (C-10)
+// Pure function - strips PB IDs and returns a portable TemplateExport. (C-10)
 // No adapter calls; no side effects.
 //
 // _milestoneOrder and _missionOrder are added as import-remapping keys so that

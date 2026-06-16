@@ -2,7 +2,7 @@ import type { QRPayload } from "../types/index.ts";
 
 // Single encode/decode point for QR payloads. (C-16)
 //
-// The `secret` is the session secret — never transmitted to the player device.
+// The `secret` is the session secret - never transmitted to the player device.
 // In the mock adapter, pass the sessionId as a stand-in secret.
 // In the PocketBase adapter, derive it from a server-side session field.
 //

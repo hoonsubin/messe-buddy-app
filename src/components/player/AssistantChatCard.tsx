@@ -1,13 +1,9 @@
 // Collapsible AI policy-assistant card. Lives in the top slot of the player
-// cockpit. Collapsed by default — the bar is itself the entry point. Chat state
+// cockpit. Collapsed by default - the bar is itself the entry point. Chat state
 // is owned here (via useChat), so collapsing and reopening preserves the
 // conversation; collapse only hides the body, it never resets.
 import { useState } from "react";
-import {
-  MdAutoAwesome,
-  MdExpandLess,
-  MdExpandMore,
-} from "react-icons/md";
+import { MdAutoAwesome, MdExpandLess, MdExpandMore } from "react-icons/md";
 import { useChat } from "../../hooks/useChat.ts";
 import ChatPanel from "./ChatPanel.tsx";
 
@@ -77,7 +73,7 @@ const AssistantChatCard = (props: AssistantChatCardProps) => {
               <span className="assistant-chat-card__subtitle">
                 {hasConversation
                   ? "Continue your conversation"
-                  : "Vacation, hours, expenses — answered from the docs"}
+                  : "Vacation, hours, expenses - answered from the docs"}
               </span>
             </div>
             <MdExpandMore

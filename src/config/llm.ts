@@ -3,7 +3,7 @@
 // Resolution order: runtime config (window.__MB_CONFIG__, written by the
 // container entrypoint into /config.js) first, then build-time Vite env, then
 // safe defaults. This lets a clean `docker compose up --build` inject the
-// LLM URL at runtime — when the virtual key has actually been minted — without
+// LLM URL at runtime - when the virtual key has actually been minted - without
 // rebuilding the bundle.
 //
 // In the recommended container setup the browser talks SAME-ORIGIN to nginx at
@@ -42,14 +42,14 @@ export const USE_MOCK_CHAT: boolean = rt.useMockChat ??
 // System prompt sent as the first message of every request.
 //
 // NOTE: LiteLLM's `general_settings.default_system_prompt` in docker/litellm.yaml
-// is NOT honored by the proxy — it is silently ignored. RAG (vector_store_ids)
+// is NOT honored by the proxy - it is silently ignored. RAG (vector_store_ids)
 // is injected server-side regardless, but the instruction/guardrail prompt must
 // be supplied by the client. Keep this in sync with litellm.yaml's documented
 // prompt. Overridable at runtime via window.__MB_CONFIG__.systemPrompt.
 const DEFAULT_SYSTEM_PROMPT =
   `You are a document-based onboarding assistant for new employees at Messe ` +
   `München, integrated into the MesseBuddy onboarding platform.\n\n` +
-  `STRICT RULES — follow these without exception:\n` +
+  `STRICT RULES - follow these without exception:\n` +
   `- Answer ONLY from the company documents provided to you in this conversation.\n` +
   `- Do NOT use general knowledge, training data, or any information not in the provided documents.\n` +
   `- If the provided documents do not contain a clear answer, say exactly: "That information is not in the documents I have access to. Please contact HR or your manager."\n` +

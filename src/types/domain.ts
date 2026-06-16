@@ -108,7 +108,7 @@ export interface Resource extends PBRecord {
   readonly isVisibleToPlayer: boolean;
 }
 
-// Adapter-boundary raw types — only used inside src/adapters/pocketbase/.
+// Adapter-boundary raw types - only used inside src/adapters/pocketbase/.
 // Never imported by components or use cases. (C-13)
 export interface FormSchemaRaw extends PBRecord {
   readonly missionId: string;

@@ -24,13 +24,13 @@ Before answering my question, tell me what files you need to see.
 ## Files I Need
 
 ### Must See (required for accurate answer)
-- `path/to/file.ts` — [why needed]
+- `path/to/file.ts` - [why needed]
 
 ### Should See (helpful for complete answer)
-- `path/to/file.ts` — [why helpful]
+- `path/to/file.ts` - [why helpful]
 
 ### Already Have
-- `path/to/file.ts` — [from earlier in conversation]
+- `path/to/file.ts` - [from earlier in conversation]
 
 ### Uncertainties
 - [What I'm not sure about without seeing the code]

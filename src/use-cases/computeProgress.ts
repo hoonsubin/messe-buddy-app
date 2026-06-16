@@ -3,7 +3,7 @@ import type { MilestoneProgress, PlayerProgress } from "../types/index.ts";
 import { MILESTONE_STATUS, PROGRESS_STATUS } from "../types/index.ts";
 
 // Derives PlayerProgress from ProgressEvents and Missions at read time.
-// Pure function — no side effects, no adapter calls. (C-11)
+// Pure function - no side effects, no adapter calls. (C-11)
 //
 // Retroactive difficulty changes affect earned XP because we re-derive here
 // rather than snapshotting xpValue at validation time (OD-02 resolution).

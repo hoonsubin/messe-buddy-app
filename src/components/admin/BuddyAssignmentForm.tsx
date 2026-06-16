@@ -1,4 +1,4 @@
-// Phase 1 shell — logic wired in Phase 4.
+// Phase 1 shell - logic wired in Phase 4.
 import type { BuddyProfile, PBRecord, Player } from "../../types/index.ts";
 
 interface BuddyAssignmentFormProps {
@@ -31,7 +31,7 @@ const BuddyAssignmentForm = (props: BuddyAssignmentFormProps) => (
         value={props.selectedPlayerId}
         onChange={(e) => props.onPlayerChange(e.target.value)}
       >
-        <option value="">— select player —</option>
+        <option value="">- select player -</option>
         {props.players.map((p) => (
           <option key={p.id} value={p.id}>{p.name || p.id}</option>
         ))}

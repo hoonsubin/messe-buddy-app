@@ -1,4 +1,4 @@
-// Phase 1 shell — logic wired in Phase 2+.
+// Phase 1 shell - logic wired in Phase 2+.
 // LegendItem deferred to Phase 8 (ChatMessage/LiteLLM types). Using local shape.
 interface LegendItem {
   readonly label: string;

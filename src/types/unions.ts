@@ -1,5 +1,5 @@
 // All union types and const+keyof patterns from SPECS.md.
-// C-12: No TypeScript enums — use const object + keyof union throughout.
+// C-12: No TypeScript enums - use const object + keyof union throughout.
 
 export const MISSION_TYPE = {
   TEXT: "text",

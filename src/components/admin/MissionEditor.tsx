@@ -175,7 +175,7 @@ const MissionEditor = (props: MissionEditorProps) => {
         />
       </div>
 
-      {/* Validation method — disabled when type is form (C-06) */}
+      {/* Validation method - disabled when type is form (C-06) */}
       <ValidationMethodSelector
         value={props.draft.validationMethod ?? VALIDATION_METHOD.GM_APPROVE}
         hidden={props.draft.type === MISSION_TYPE.FORM}
@@ -217,7 +217,7 @@ const MissionEditor = (props: MissionEditorProps) => {
         </label>
       </div>
 
-      {/* FormEditor — shown when type is form */}
+      {/* FormEditor - shown when type is form */}
       {props.draft.type === MISSION_TYPE.FORM && (
         <div data-testid="form-editor-slot">
           <p

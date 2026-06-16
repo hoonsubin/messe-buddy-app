@@ -1,5 +1,5 @@
 /**
- * ConfirmDialog — centered modal dialog for irreversible or interruptive actions.
+ * ConfirmDialog - centered modal dialog for irreversible or interruptive actions.
  *
  * Uses the existing .modal-backdrop / .modal CSS classes so it inherits the
  * same centering, backdrop blur, and border-radius treatment as SaveTemplateModal.

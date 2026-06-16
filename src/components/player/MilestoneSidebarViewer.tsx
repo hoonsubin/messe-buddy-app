@@ -43,7 +43,7 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
 
   return (
     <>
-      {/* Backdrop — tap outside to close */}
+      {/* Backdrop - tap outside to close */}
       <div
         aria-hidden="true"
         onClick={props.onClose}

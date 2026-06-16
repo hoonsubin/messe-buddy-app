@@ -47,7 +47,7 @@ const TemplateLibrary = (props: TemplateLibraryProps) => {
     ? source.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()))
     : source;
 
-  // Placeholders are display-only — disable load/delete for them
+  // Placeholders are display-only - disable load/delete for them
   const isPlaceholder = props.templates.length === 0;
 
   return (

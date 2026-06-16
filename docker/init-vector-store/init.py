@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-MesseBuddy — Vector Store Initializer + Document Ingestion
+MesseBuddy - Vector Store Initializer + Document Ingestion
 
 Bootstraps the pgvector vector store, registers it in LiteLLM metadata,
 and optionally ingests documents from /consume-docs.
 
 Workaround for LiteLLM bug: https://github.com/BerriAI/litellm/issues/25947
 
-Every step emits [OK] or [FAIL] — no silent failures.
+Every step emits [OK] or [FAIL] - no silent failures.
 Exits non-zero if a required step fails.
 """
 
@@ -96,15 +96,15 @@ def log(msg: str) -> None:
 
 
 def ok(msg: str) -> None:
-    log(f"  ✅  OK  — {msg}")
+    log(f"  ✅  OK  - {msg}")
 
 
 def warn(msg: str) -> None:
-    log(f"  ⚠️  WARN — {msg}")
+    log(f"  ⚠️  WARN - {msg}")
 
 
 def fail(msg: str) -> None:
-    log(f"  ❌  FAIL — {msg}")
+    log(f"  ❌  FAIL - {msg}")
     sys.exit(1)
 
 
@@ -219,7 +219,7 @@ def insert_vector_store_row() -> None:
         conn.close()
 
         if row:
-            ok(f"Inserted vector store row — id={row[0]}")
+            ok(f"Inserted vector store row - id={row[0]}")
         else:
             warn(
                 f"Row already exists for vector_store_id='{_VECTOR_STORE_ID}'"
@@ -296,7 +296,7 @@ def seed_master_key() -> None:
             if elapsed == 0:
                 log(
                     f"  LiteLLM DB migrations still in progress "
-                    f"({err_msg}) — waiting…"
+                    f"({err_msg}) - waiting…"
                 )
             time.sleep(_WAIT_INTERVAL)
             elapsed += _WAIT_INTERVAL
@@ -326,7 +326,7 @@ def seed_master_key() -> None:
         cur.close()
         conn.close()
         if row:
-            ok(f"Master key seeded — token_hash={token_hash[:16]}...")
+            ok(f"Master key seeded - token_hash={token_hash[:16]}...")
         else:
             ok("Master key already exists (idempotent, no action)")
     except Exception as exc:
@@ -340,7 +340,7 @@ def register_in_litellm() -> None:
     route vector store operations (search, file upload) to the litellm-pgvector
     service.  The credential appears in the Admin UI at Tools > Vector Stores.
 
-    Uses POST /credentials — idempotent: if the credential already exists
+    Uses POST /credentials - idempotent: if the credential already exists
     from a previous run, the API returns 409 and we log a warning instead
     of failing.
 
@@ -449,14 +449,14 @@ def register_in_litellm() -> None:
         if row:
             ok(
                 f"Inserted vector store row into"
-                f" ManagedVectorStoresTable — id={row[0]}"
+                f" ManagedVectorStoresTable - id={row[0]}"
             )
         else:
             ok("Vector store row already exists (idempotent)")
     except Exception as exc:
         warn(f"DB fallback also failed: {exc}")
         warn(
-            "The store WILL still work at runtime — pgvector tables"
+            "The store WILL still work at runtime - pgvector tables"
             " (Step 3) are the authoritative source."
         )
 
@@ -507,7 +507,7 @@ def register_managed_vector_store() -> None:
         if resp.status_code == 200:
             body = resp.json()
             store_id = body.get("id", "?")
-            ok(f"Managed vector store created — proxy id={store_id}")
+            ok(f"Managed vector store created - proxy id={store_id}")
             return
         warn(
             f"Unexpected response {resp.status_code} from "
@@ -561,7 +561,7 @@ def register_managed_vector_store() -> None:
         if row:
             ok(
                 f"Inserted vector store row into"
-                f" ManagedVectorStoresTable — id={row[0]}"
+                f" ManagedVectorStoresTable - id={row[0]}"
             )
         else:
             ok("Vector store row already exists (idempotent)")
@@ -689,7 +689,7 @@ def ingest_documents() -> None:
     docs_path = Path(_DOCS_DIR)
     if not docs_path.is_dir():
         log(
-            "Step 6: No /consume-docs directory — skipping ingestion"
+            "Step 6: No /consume-docs directory - skipping ingestion"
             f" (looked at {_DOCS_DIR})"
         )
         return
@@ -699,7 +699,7 @@ def ingest_documents() -> None:
         files_to_process.extend(sorted(docs_path.rglob(f"*{ext}")))
 
     if not files_to_process:
-        log("Step 6: No supported files in /consume-docs — skipping ingestion")
+        log("Step 6: No supported files in /consume-docs - skipping ingestion")
         return
 
     log(f"Step 6: Ingesting {len(files_to_process)} document(s)...")
@@ -767,7 +767,7 @@ def ingest_documents() -> None:
     print()
 
     if total_failures > 0:
-        fail("Document ingestion had failures — check logs above")
+        fail("Document ingestion had failures - check logs above")
     else:
         ok("Documents ingested")
 
@@ -780,7 +780,7 @@ def generate_virtual_key() -> None:
     shared runtime volume.
 
     The app container's entrypoint reads /runtime/virtual_key at startup and
-    injects it into the nginx /llm proxy — so the key is created at runtime
+    injects it into the nginx /llm proxy - so the key is created at runtime
     (after the proxy is healthy) rather than baked into the image at build time.
 
     Idempotency relies on the shared volume persisting alongside the LiteLLM DB:
@@ -808,7 +808,7 @@ def generate_virtual_key() -> None:
                     return
             except requests.RequestException:
                 pass
-            warn("Existing virtual key invalid — minting a replacement")
+            warn("Existing virtual key invalid - minting a replacement")
 
     payload = {
         "key_alias": _VIRTUAL_KEY_ALIAS,

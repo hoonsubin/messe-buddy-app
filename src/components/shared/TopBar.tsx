@@ -1,4 +1,4 @@
-// Phase 1 shell — logic wired in Phase 2+.
+// Phase 1 shell - logic wired in Phase 2+.
 interface TopBarProps {
   readonly playerName: string;
   readonly avatarUrl?: string;

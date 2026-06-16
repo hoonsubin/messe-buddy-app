@@ -24,7 +24,7 @@ done
 
 KEY="$(cat "$KEY_FILE" 2>/dev/null || true)"
 if [ -z "$KEY" ]; then
-  echo "entrypoint: WARNING — no virtual key found at $KEY_FILE; the assistant"
+  echo "entrypoint: WARNING - no virtual key found at $KEY_FILE; the assistant"
   echo "             will fail to authenticate until one is provisioned."
 fi
 export KEY

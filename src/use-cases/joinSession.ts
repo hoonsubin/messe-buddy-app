@@ -18,7 +18,7 @@ export interface JoinSessionResult {
 }
 
 // Creates a Player record in the adapter, writes LocalIdentity to localStorage,
-// and returns both. The profile fields default to empty strings — they are
+// and returns both. The profile fields default to empty strings - they are
 // filled in during the Tutorial's Profile Setup Mission.
 export const joinSession = async (
   sessionId: string,
@@ -58,7 +58,7 @@ export const joinSession = async (
   return { identity, player };
 };
 
-// Creates a Game Maker identity (no Player record — GM uses the session itself).
+// Creates a Game Maker identity (no Player record - GM uses the session itself).
 export const createGameMakerSession = async (
   sessionName: string,
   adapter: AppAdapter,

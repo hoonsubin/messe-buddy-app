@@ -109,7 +109,7 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
       }
       setShowValidation(true);
     } else {
-      // qr — C-07: no PB write before GM scans. Just show QR + subscribe.
+      // qr - C-07: no PB write before GM scans. Just show QR + subscribe.
       setShowValidation(true);
     }
   }, [adapter, isCompleted, isSubmitting, mission, props]);
@@ -129,7 +129,7 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
     <div
       className="modal-backdrop"
       data-testid="mission-detail-popup"
-      // Spec: does NOT dismiss on backdrop click — only close button + swipe-down
+      // Spec: does NOT dismiss on backdrop click - only close button + swipe-down
     >
       <div
         className="modal"
@@ -192,7 +192,7 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
             ))}
           </div>
 
-          {/* QR context hint — shown before the user triggers validation */}
+          {/* QR context hint - shown before the user triggers validation */}
           {mission.validationMethod === "qr" && !showValidation &&
             !isCompleted && (
             <div
@@ -214,7 +214,7 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
             </div>
           )}
 
-          {/* Body — rendered as Markdown for text missions */}
+          {/* Body - rendered as Markdown for text missions */}
           {bodyHtml && !isLink && (
             <div
               className="prose"
@@ -222,7 +222,7 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
             />
           )}
 
-          {/* Link missions — show external URL + open button */}
+          {/* Link missions - show external URL + open button */}
           {isLink && mission.externalUrl && (
             <div
               style={{

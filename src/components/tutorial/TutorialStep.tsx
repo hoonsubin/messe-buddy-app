@@ -1,4 +1,4 @@
-// Phase 1 shell — tutorial step overlay card. Logic wired in Phase 5.
+// Phase 1 shell - tutorial step overlay card. Logic wired in Phase 5.
 // Each step highlights a target region via `targetSelector` (CSS class) and
 // renders an instructional card anchored near the highlight ring.
 
@@ -20,7 +20,7 @@ const welcomeTitle = (playerName?: string): string => {
   return first ? `Hello, ${first}.` : "Hello.";
 };
 
-// Step 0 (index 0) = Welcome step — shown when stepNumber === 1.
+// Step 0 (index 0) = Welcome step - shown when stepNumber === 1.
 const WELCOME_STEP_NUMBER = 1;
 
 const TutorialStep = (props: TutorialStepProps) => {

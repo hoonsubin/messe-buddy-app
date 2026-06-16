@@ -58,7 +58,7 @@ const SaveTemplateModal = (props: SaveTemplateModalProps) => {
           Save as template
         </h2>
 
-        {/* Mode toggle — only shown when existing templates exist */}
+        {/* Mode toggle - only shown when existing templates exist */}
         {hasExisting && (
           <div
             role="group"
@@ -131,7 +131,7 @@ const SaveTemplateModal = (props: SaveTemplateModalProps) => {
                 style={{ minHeight: "var(--touch-target)" }}
                 autoFocus
               >
-                <option value="">— Select a template —</option>
+                <option value="">- Select a template -</option>
                 {props.existingTemplates?.map((name) => (
                   <option key={name} value={name}>
                     {name}

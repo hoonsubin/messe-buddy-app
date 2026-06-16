@@ -1,4 +1,4 @@
-// Phase 1 shell — GM QR scanning view. Camera + validation logic wired in Phase 5.
+// Phase 1 shell - GM QR scanning view. Camera + validation logic wired in Phase 5.
 import TopBar from "../components/shared/TopBar.tsx";
 import CameraFeed from "../components/qr/CameraFeed.tsx";
 import ValidationResult from "../components/qr/ValidationResult.tsx";

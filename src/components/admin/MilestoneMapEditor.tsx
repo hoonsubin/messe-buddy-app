@@ -138,7 +138,7 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
         // Capture pointer so we get move/up events even outside the node
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
       } else {
-        // ── Pointer down on empty area — start long-press timer ───────────────
+        // ── Pointer down on empty area - start long-press timer ───────────────
         emptyPressPosRef.current = { x: e.clientX, y: e.clientY };
         emptyLongPressRef.current = setTimeout(() => {
           if (emptyPressPosRef.current) {

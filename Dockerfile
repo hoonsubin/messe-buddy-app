@@ -16,7 +16,7 @@ RUN deno install
 COPY . .
 
 # PocketBase URL is still baked at build time (same-origin /api in practice).
-# The LLM endpoint + virtual key are NOT build args — they are injected at
+# The LLM endpoint + virtual key are NOT build args - they are injected at
 # RUNTIME via /config.js and the nginx /llm proxy (see docker/entrypoint.sh),
 # because the virtual key does not exist until init-vector-store runs.
 ARG VITE_PB_URL=http://localhost:8090
@@ -26,8 +26,8 @@ RUN VITE_PB_URL=${VITE_PB_URL} deno task build
 
 # ─── Stage 2: Runtime ──────────────────────────────────────────────────────────
 # Single container image running:
-#   • nginx  — serves the compiled PWA static files
-#   • PocketBase — REST + SSE backend on :8090
+#   • nginx  - serves the compiled PWA static files
+#   • PocketBase - REST + SSE backend on :8090
 # Both processes are managed by supervisord.
 FROM debian:bookworm-slim AS runtime
 
@@ -54,7 +54,7 @@ RUN curl -fsSL \
 # PWA static files
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Configuration. nginx.conf is a TEMPLATE — entrypoint.sh renders it at startup
+# Configuration. nginx.conf is a TEMPLATE - entrypoint.sh renders it at startup
 # (envsubst ${KEY}) into the live config so the runtime virtual key is injected.
 COPY docker/nginx.conf /etc/nginx/sites-available/default.template
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf

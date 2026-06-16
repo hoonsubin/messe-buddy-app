@@ -30,10 +30,6 @@ const ChatPanel = (props: ChatPanelProps) => {
 
   const prompts = props.suggestedPrompts ?? DEFAULT_PROMPTS;
   const isEmpty = props.messages.length === 0;
-  const last = props.messages[props.messages.length - 1];
-  // Show bouncing dots only before the first token of the current answer.
-  const showTyping = props.isStreaming && last?.role === "assistant" &&
-    last.content === "";
 
   // Auto-scroll to the latest content as it streams in.
   useEffect(() => {
@@ -122,7 +118,18 @@ const ChatPanel = (props: ChatPanelProps) => {
                         msg.isError ? " chat-message__bubble--error" : ""
                       }`}
                     >
-                      {msg.isError
+                      {msg.streaming && msg.content === ""
+                        ? (
+                          <span
+                            className="chat-dots"
+                            aria-label="Assistant is typing"
+                          >
+                            <span className="chat-typing__dot" />
+                            <span className="chat-typing__dot" />
+                            <span className="chat-typing__dot" />
+                          </span>
+                        )
+                        : msg.isError
                         ? msg.content
                         : (
                           <div
@@ -142,19 +149,6 @@ const ChatPanel = (props: ChatPanelProps) => {
                 )
             ))
           )}
-
-        {showTyping && (
-          <div className="chat-row chat-row--assistant">
-            <div className="chat-avatar" aria-hidden="true">
-              <MdAutoAwesome size={16} />
-            </div>
-            <div className="chat-typing" aria-label="Assistant is typing">
-              <span className="chat-typing__dot" />
-              <span className="chat-typing__dot" />
-              <span className="chat-typing__dot" />
-            </div>
-          </div>
-        )}
 
         <div ref={endRef} />
       </div>

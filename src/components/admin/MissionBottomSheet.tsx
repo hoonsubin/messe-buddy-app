@@ -304,7 +304,7 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
             </button>
           )}
 
-          {/* Milestone title — editable on tap (list view only) */}
+          {/* Milestone title - editable on tap (list view only) */}
           {view === "list"
             ? isRenaming
               ? (

@@ -9,7 +9,7 @@
  * Output: package.json at project root
  */
 
-// Deno.readTextFileSync is a built-in Deno API — no import needed
+// Deno.readTextFileSync is a built-in Deno API - no import needed
 
 interface DenoConfig {
   imports?: Record<string, string>;

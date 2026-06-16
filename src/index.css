@@ -92,7 +92,7 @@ body {
   overflow: hidden;
   background-color: hsl(var(--color-secondary));
   border-radius: var(--radius-lg);
-  touch-action: none;   /* hand off all touch to JS — required for non-passive pan */
+  touch-action: none;   /* hand off all touch to JS - required for non-passive pan */
   user-select: none;
   cursor: grab;
 }
@@ -213,7 +213,7 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
-/* Blue liquid fill — rises from bottom proportional to progress */
+/* Blue liquid fill - rises from bottom proportional to progress */
 .milestone-node__fill {
   position: absolute;
   bottom: 0;
@@ -227,7 +227,7 @@ body {
 .milestone-node__name {
   position: relative;
   z-index: 1;
-  font-size: 0.75rem;   /* 12px — minimum readable size on mobile */
+  font-size: 0.75rem;   /* 12px - minimum readable size on mobile */
   font-weight: var(--weight-semibold);
   color: hsl(var(--color-card));
   text-align: center;
@@ -247,7 +247,7 @@ body {
   background-color: hsl(var(--color-muted));
 }
 
-/* wrapper must never intercept pointer events — it's purely decorative */
+/* wrapper must never intercept pointer events - it's purely decorative */
 .milestone-map__bg-wrapper {
   pointer-events: none;
 }
@@ -258,7 +258,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  pointer-events: none; /* decorative — must never block taps */
+  pointer-events: none; /* decorative - must never block taps */
 }
 
 .milestone-node__progress-track {
@@ -288,7 +288,7 @@ body {
 
 /* ── Drag feedback ─────────────────────────────────────────────────────── */
 
-/* Node being dragged — reduced opacity + elevated shadow */
+/* Node being dragged - reduced opacity + elevated shadow */
 .milestone-node--dragging {
   z-index: 100;
 }
@@ -535,7 +535,7 @@ body {
   border-block-end-color: hsl(var(--color-primary));
 }
 
-/* ── Sidebar mission row (compact — inside sidebar tabs) ─────────────────── */
+/* ── Sidebar mission row (compact - inside sidebar tabs) ─────────────────── */
 .sidebar-mission-row {
   display: flex;
   align-items: center;
@@ -910,7 +910,7 @@ textarea.form-input {
   box-shadow: var(--shadow-sm);
 }
 
-/* ── Resources grid — 1 col on mobile, 2 col on wider viewports ──────────── */
+/* ── Resources grid - 1 col on mobile, 2 col on wider viewports ──────────── */
 .resources-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -1114,7 +1114,15 @@ textarea.form-input {
 
 /* Rendered markdown inside assistant bubbles */
 .chat-markdown {
-  display: inline;
+  display: block;
+}
+
+/* Typing dots rendered inside the assistant bubble (no own background) */
+.chat-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-block: 2px;
 }
 
 .chat-markdown > :first-child {
@@ -1137,6 +1145,11 @@ textarea.form-input {
 
 .chat-markdown li {
   margin: var(--space-1) 0;
+}
+
+/* Loose lists wrap items in <p>; don't let that add extra vertical space */
+.chat-markdown li p {
+  margin: 0;
 }
 
 .chat-markdown a {
@@ -1768,7 +1781,7 @@ textarea.form-input {
   will-change: height;
 }
 
-/* Collapsed state — triggered by useScrollCollapse on the parent */
+/* Collapsed state - triggered by useScrollCollapse on the parent */
 .admin-layout[data-map-collapsed="true"] .admin-layout__map {
   height: 20svh;
 }
@@ -1885,7 +1898,7 @@ textarea.form-input {
     transition: none;   /* no collapse animation on desktop */
   }
 
-  /* Disable collapse on desktop — scrollTop won't change but be defensive */
+  /* Disable collapse on desktop - scrollTop won't change but be defensive */
   .admin-layout[data-map-collapsed="true"] .admin-layout__map {
     height: 100%;
   }
@@ -1937,7 +1950,7 @@ textarea.form-input {
 }
 .prose strong { font-weight: var(--weight-semibold); }
 
-/* Location / info callout — rendered from markdown blockquote */
+/* Location / info callout - rendered from markdown blockquote */
 .prose blockquote {
   margin: var(--space-4) 0;
   padding: var(--space-3) var(--space-4);
@@ -2000,7 +2013,7 @@ textarea.form-input {
   color: hsl(var(--color-accent));
 }
 
-/* Textarea auto-grow — height is set inline by JS; transition makes it smooth */
+/* Textarea auto-grow - height is set inline by JS; transition makes it smooth */
 .markdown-editor__textarea {
   transition: height 120ms ease-out;
   resize: none;

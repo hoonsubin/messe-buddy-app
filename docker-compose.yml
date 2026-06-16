@@ -1,12 +1,12 @@
-# MesseBuddy — Docker Compose
+# MesseBuddy - Docker Compose
 #
 # Services:
-#   app              — nginx (PWA :80) + PocketBase (:8090) in one container
-#   litellm          — LiteLLM proxy (:4000), database mode + native pgvector RAG
-#   litellm-pgvector — PG Vector store connector (:8001), document upload + search
-#   litellm-db       — PostgreSQL for LiteLLM metadata (virtual keys, spend, config)
-#   vector-db        — PostgreSQL + pgvector for RAG document embeddings
-#   redis            — LiteLLM cache / rate-limit state
+#   app              - nginx (PWA :80) + PocketBase (:8090) in one container
+#   litellm          - LiteLLM proxy (:4000), database mode + native pgvector RAG
+#   litellm-pgvector - PG Vector store connector (:8001), document upload + search
+#   litellm-db       - PostgreSQL for LiteLLM metadata (virtual keys, spend, config)
+#   vector-db        - PostgreSQL + pgvector for RAG document embeddings
+#   redis            - LiteLLM cache / rate-limit state
 #
 # Quick start:
 #   cp .env.example .env          # fill in OPENAI_API_KEY (or another provider)
@@ -22,9 +22,9 @@
 #   Documents are managed via the LiteLLM Admin UI at http://localhost:4000/ui.
 #   The litellm-pgvector connector handles chunking, embedding, and storage.
 #   At query time, the pgvector connector retrieves relevant context and LiteLLM
-#   injects it into the prompt automatically — no PWA code changes required.
+#   injects it into the prompt automatically - no PWA code changes required.
 #
-#   init-vector-store — one-shot bootstrap that creates the vector store in
+#   init-vector-store - one-shot bootstrap that creates the vector store in
 #     pgvector and registers it in LiteLLM's metadata. Exits after completion.
 #     Workaround for: https://github.com/BerriAI/litellm/issues/25947
 
@@ -61,7 +61,7 @@ services:
 
   # ── PostgreSQL + pgvector (Vector store) ───────────────────────────────────
   # Dedicated database for the litellm-pgvector connector.
-  # Stores only the vector_stores and embeddings tables — no LiteLLM metadata.
+  # Stores only the vector_stores and embeddings tables - no LiteLLM metadata.
   # Separating this from the LiteLLM metadata database prevents Prisma schema
   # conflicts: `prisma db push` in the connector only sees its own tables.
   vector-db:
@@ -159,7 +159,7 @@ services:
   #   - The litellm-pgvector connector chunks, embeds, and stores documents
   #   - At query time, relevant chunks are retrieved and injected into the prompt
   #
-  # Swap providers or update system prompts by editing docker/litellm.yaml —
+  # Swap providers or update system prompts by editing docker/litellm.yaml -
   # no PWA code change required.
   litellm:
     image: ghcr.io/berriai/litellm:main-stable
@@ -179,7 +179,7 @@ services:
       # HoonLabs upstream LiteLLM proxy key
       LLM_PROXY_KEY: ${LLM_PROXY_KEY:-}
 
-      # Embedding model for RAG — must match a model_name in litellm.yaml
+      # Embedding model for RAG - must match a model_name in litellm.yaml
       # Default: nomic-embed-text-v2-moe (768-dim MoE, routed via HoonLabs proxy)
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text-v2-moe}
       PG_VECTOR_API_BASE: http://litellm-pgvector:8001
@@ -222,7 +222,7 @@ services:
   # One-shot service that bootstraps the vector store in pgvector and
   # registers it in LiteLLM's metadata so it appears in the Admin UI.
   #
-  # Every step emits [OK] or [FAIL] — no silent failures.
+  # Every step emits [OK] or [FAIL] - no silent failures.
   # Exits non-zero if a required step fails so docker compose logs show the error.
   #
   # Workaround for LiteLLM bug: https://github.com/BerriAI/litellm/issues/25947
@@ -267,7 +267,7 @@ services:
         # For local Docker usage the defaults work as-is.
         VITE_PB_URL: ${VITE_PB_URL:-http://localhost:8090}
         VITE_LITELLM_URL: ${VITE_LITELLM_URL:-http://localhost:4000}
-        # Scoped LiteLLM virtual key — baked into the bundle, so PUBLICLY visible.
+        # Scoped LiteLLM virtual key - baked into the bundle, so PUBLICLY visible.
         # Never the master key. Empty by default (falls back to mock chat).
         VITE_LITELLM_KEY: ${VITE_LITELLM_KEY:-}
         VITE_LITELLM_MODEL: ${VITE_LITELLM_MODEL:-policy-assistant}

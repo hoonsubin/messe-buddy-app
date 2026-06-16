@@ -38,10 +38,10 @@ const MilestoneNode = (props: MilestoneNodeProps) => {
       onContextMenu={props.onContextMenu}
       onPointerDown={props.onPointerDown}
       draggable={false}
-      aria-label={`${props.label} — ${pct}% complete`}
+      aria-label={`${props.label} - ${pct}% complete`}
     >
       <div className="milestone-node__box">
-        {/* Liquid fill — rises from bottom */}
+        {/* Liquid fill - rises from bottom */}
         <div
           className="milestone-node__fill"
           style={{ height: `${fillHeight * 100}%` }}

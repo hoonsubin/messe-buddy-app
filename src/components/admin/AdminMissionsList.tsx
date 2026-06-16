@@ -73,7 +73,7 @@ const buildGroups = (
 const AdminMissionsList = (props: AdminMissionsListProps) => {
   const { missions, milestones, onReorder, onMissionClick } = props;
 
-  // Groups computed from props — seed local order state on first render
+  // Groups computed from props - seed local order state on first render
   const [groups, setGroups] = useState<MissionGroup[]>(() =>
     buildGroups(missions, milestones)
   );

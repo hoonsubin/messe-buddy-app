@@ -10,7 +10,7 @@ import type {
   Session,
 } from "./domain.ts";
 
-// Template export — structure only, no player data. (C-10)
+// Template export - structure only, no player data. (C-10)
 //
 // _milestoneOrder / _missionOrder are import-remapping keys added during export.
 // They let importTemplate reconstruct FK references after PB IDs are stripped.
@@ -29,7 +29,7 @@ export interface TemplateExport {
   readonly resources: ReadonlyArray<Omit<Resource, keyof PBRecord>>;
 }
 
-// Full session export — includes all player runtime data.
+// Full session export - includes all player runtime data.
 export interface FullSessionExport {
   readonly exportType: "full";
   readonly exportedAt: string;

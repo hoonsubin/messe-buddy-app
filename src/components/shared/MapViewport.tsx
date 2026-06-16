@@ -46,7 +46,7 @@ const MapViewport = (props: MapViewportProps) => {
   };
 
   const [transform, setTransform] = useState<MapTransform>(() => {
-    // During SSR / initial render the ref is null — fall back to origin.
+    // During SSR / initial render the ref is null - fall back to origin.
     // The correct centered transform is applied via the callback ref below
     // when the viewport mounts, before the first paint.
     return { x: 0, y: 0, scale: DEFAULT_SCALE };
@@ -66,7 +66,7 @@ const MapViewport = (props: MapViewportProps) => {
     }
   };
 
-  // Mutable drag/pinch state — stored in a ref to avoid stale closures.
+  // Mutable drag/pinch state - stored in a ref to avoid stale closures.
   const gesture = useRef({
     dragging: false,
     startClient: { x: 0, y: 0 },
@@ -249,7 +249,7 @@ const MapViewport = (props: MapViewportProps) => {
         {props.children}
       </div>
 
-      {/* Zoom controls + overlay controls — outside the canvas so they don't scale */}
+      {/* Zoom controls + overlay controls - outside the canvas so they don't scale */}
       <div className="map-zoom-controls" aria-label="Map zoom controls">
         {props.overlayControls}
         <button

@@ -50,7 +50,7 @@ interface UseAdminPlayersResult {
  * - Player list, selection, progress
  * - Pending approvals
  * - Approve / reject / QR-validate  (approve and QR-validate share the same
- *   implementation — both complete a mission with a GM validator stamp)
+ *   implementation - both complete a mission with a GM validator stamp)
  * - QR scanner modal context
  */
 export const useAdminPlayers = ({

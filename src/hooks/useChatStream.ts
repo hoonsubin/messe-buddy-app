@@ -3,7 +3,7 @@
 // The PWA is intentionally "dumb": it POSTs the conversation to
 // /v1/chat/completions with stream:true and renders the streamed tokens. The
 // model alias, system prompt, and RAG vector store are all configured
-// server-side (docker/litellm.yaml) — nothing about them lives here.
+// server-side (docker/litellm.yaml) - nothing about them lives here.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -21,7 +21,7 @@ export interface ChatMessage {
   readonly isError?: boolean;
 }
 
-// Shared return shape — implemented by both the live and mock hooks so the
+// Shared return shape - implemented by both the live and mock hooks so the
 // `useChat` selector can swap them transparently.
 export interface UseChatReturn {
   readonly messages: ReadonlyArray<ChatMessage>;
@@ -33,7 +33,7 @@ export interface UseChatReturn {
 }
 
 const ERROR_MESSAGE =
-  "Sorry — I couldn't reach the assistant just now. Please try again in a moment.";
+  "Sorry - I couldn't reach the assistant just now. Please try again in a moment.";
 
 // Parse an OpenAI-style SSE chunk buffer, returning the text delta and whether
 // the [DONE] sentinel was seen. Leftover (incomplete) data stays in `rest`.
@@ -47,7 +47,7 @@ function drainSSE(buffer: string): ParsedChunk {
   let delta = "";
   let done = false;
   const lines = buffer.split("\n");
-  // Last element may be a partial line — keep it for the next read.
+  // Last element may be a partial line - keep it for the next read.
   const rest = lines.pop() ?? "";
 
   for (const raw of lines) {
@@ -121,7 +121,7 @@ export const useChatStream = (): UseChatReturn => {
     };
 
     // Build the request from existing turns plus this user message, prefixed
-    // with the system prompt (LiteLLM does not inject one — see config/llm.ts).
+    // with the system prompt (LiteLLM does not inject one - see config/llm.ts).
     const history = [...messagesRef.current, userMsg].map((m) => ({
       role: m.role,
       content: m.content,
@@ -185,7 +185,7 @@ export const useChatStream = (): UseChatReturn => {
         }
       } catch (e) {
         if (controller.signal.aborted) {
-          // User stopped generation — keep whatever streamed so far.
+          // User stopped generation - keep whatever streamed so far.
           finishLast();
         } else {
           setError(ERROR_MESSAGE);

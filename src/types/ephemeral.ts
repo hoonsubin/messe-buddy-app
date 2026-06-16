@@ -6,7 +6,7 @@ import type {
 } from "./unions.ts";
 import type { FieldSchema } from "./value-objects.ts";
 
-// Pre-boarding checklist item — session-scoped, stored on the Session record.
+// Pre-boarding checklist item - session-scoped, stored on the Session record.
 // Not a separate PB collection.
 export interface PreBoardingCheckItem {
   readonly id: string;
@@ -15,7 +15,7 @@ export interface PreBoardingCheckItem {
   readonly dueDate?: string; // ISO date string or empty
 }
 
-// Derived at read time by computeProgress — never persisted. (C-11)
+// Derived at read time by computeProgress - never persisted. (C-11)
 
 export interface MilestoneProgress {
   readonly milestoneId: string;
@@ -61,6 +61,6 @@ export interface DraftMission {
 }
 
 // IDs stripped on export; used for template JSON. (C-10)
-// Alias of TemplateExport without the exportType discriminant — used for
+// Alias of TemplateExport without the exportType discriminant - used for
 // in-memory display (template list, preview) where the discriminant is already known.
 export type TemplateRecord = import("./exports.ts").TemplateExport;

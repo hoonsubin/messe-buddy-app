@@ -23,7 +23,7 @@ import {
   TutorialOverlayWithStep,
 } from "../components/tutorial/TutorialOverlay.tsx";
 
-// sessionStorage key for tutorial form round-trips — also read inside useTutorial.
+// sessionStorage key for tutorial form round-trips - also read inside useTutorial.
 const TUTORIAL_FORM_KEY = "mb_tutorial_form_pending";
 
 // ── Page ───────────────────────────────────────────────────────────────────────
@@ -99,7 +99,7 @@ const PlayerCockpitPage = () => {
   );
   const [popupMission, setPopupMission] = useState<Mission | null>(null);
 
-  // ── Mission click — single handler for both list and sidebar ───────────────
+  // ── Mission click - single handler for both list and sidebar ───────────────
   const handleMissionClick = useCallback(
     (missionId: string, fromTutorial = false) => {
       const mission = missions.find((m) => m.id === missionId);
@@ -306,7 +306,7 @@ const PlayerCockpitPage = () => {
           </p>
         </header>
 
-        {/* AI policy assistant — collapsible (collapsed by default) */}
+        {/* AI policy assistant - collapsible (collapsed by default) */}
         <AssistantChatCard
           {...(buddy?.name !== undefined && { buddyName: buddy.name })}
         />
@@ -373,7 +373,7 @@ const PlayerCockpitPage = () => {
             )}
         </section>
 
-        {/* Resources — standalone block at the bottom (no tabs) */}
+        {/* Resources - standalone block at the bottom (no tabs) */}
         <section aria-label="Resources">
           <ResourcesSection resources={resources} onSearch={() => undefined} />
         </section>
