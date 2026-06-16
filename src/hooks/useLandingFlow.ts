@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent, RefObject } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { useIdentity } from "./useIdentity.ts";
 import {
@@ -33,7 +33,7 @@ export interface UseLandingFlowResult {
   readonly pendingRecoveryKey: string | null;
   readonly pendingPlayer: Player | null;
   readonly templateFileRef: RefObject<HTMLInputElement | null>;
-  readonly setView: (view: LandingView) => void;
+  readonly goToView: (view: LandingView) => void;
   readonly setSessionCode: (value: string) => void;
   readonly setSessionName: (value: string) => void;
   readonly setRecoveryKey: (value: string) => void;
@@ -62,14 +62,17 @@ let hasNavigated = false;
 
 export const useLandingFlow = (): UseLandingFlowResult => {
   const navigate = useNavigate();
+  const { sessionId: inviteSessionId } = useParams<{ sessionId: string }>();
   const adapter = useAdapter();
   const { identity, setIdentity } = useIdentity();
 
-  const [view, setView] = useState<LandingView>("role-select");
+  const [view, setView] = useState<LandingView>(() =>
+    inviteSessionId ? "join" : "role-select"
+  );
   const [status, setStatus] = useState<LandingStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const [sessionCode, setSessionCode] = useState("");
+  const [sessionCode, setSessionCode] = useState(() => inviteSessionId ?? "");
   const [sessionName, setSessionName] = useState("");
   const [recoveryKey, setRecoveryKey] = useState("");
   const [recoverySessionId, setRecoverySessionId] = useState("");
@@ -92,6 +95,11 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     setErrorMessage("");
     setStatus("idle");
   }, []);
+
+  const goToView = useCallback((next: LandingView) => {
+    resetError();
+    setView(next);
+  }, [resetError]);
 
   // Returning user: if identity exists in localStorage, navigate to cockpit
   // only if the user hasn't explicitly chosen a view (i.e. landing page loads
@@ -276,7 +284,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     pendingRecoveryKey,
     pendingPlayer,
     templateFileRef,
-    setView,
+    goToView,
     setSessionCode,
     setSessionName,
     setRecoveryKey,
