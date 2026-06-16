@@ -16,9 +16,16 @@ interface BuddyAssignmentFormProps {
 const BuddyAssignmentForm = (props: BuddyAssignmentFormProps) => (
   <div
     className="card"
-    style={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
+    style={{
+      padding: "var(--space-4)",
+      display: "flex",
+      flexDirection: "column",
+      gap: "var(--space-4)",
+    }}
   >
-    <header style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+    <header
+      style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}
+    >
       <MdPeople
         size={18}
         aria-hidden="true"
@@ -42,75 +49,81 @@ const BuddyAssignmentForm = (props: BuddyAssignmentFormProps) => (
         e.preventDefault();
         props.onSave();
       }}
-      style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-4)",
+      }}
     >
-    <div className="form-field">
-      <label className="form-label" htmlFor="buddy-player-select">
-        Assign to player
-      </label>
-      <select
-        id="buddy-player-select"
-        className="form-input"
-        value={props.selectedPlayerId}
-        onChange={(e) => props.onPlayerChange(e.target.value)}
-      >
-        <option value="">- select player -</option>
-        {props.players.map((p) => (
-          <option key={p.id} value={p.id}>{p.name || p.id}</option>
-        ))}
-      </select>
-    </div>
-    <div className="form-field">
-      <label className="form-label" htmlFor="buddy-name">Buddy name</label>
-      <input
-        id="buddy-name"
-        className="form-input"
-        type="text"
-        value={props.draft.name}
-        onChange={(e) =>
-          props.onDraftChange({ ...props.draft, name: e.target.value })}
-        placeholder="e.g. Marcus Weber"
-      />
-    </div>
-    <div className="form-field">
-      <label className="form-label" htmlFor="buddy-role">Role</label>
-      <input
-        id="buddy-role"
-        className="form-input"
-        type="text"
-        value={props.draft.role}
-        onChange={(e) =>
-          props.onDraftChange({ ...props.draft, role: e.target.value })}
-        placeholder="e.g. Senior Product Manager"
-      />
-    </div>
-    <div className="form-field">
-      <label className="form-label" htmlFor="buddy-tenure">Tenure</label>
-      <input
-        id="buddy-tenure"
-        className="form-input"
-        type="text"
-        value={props.draft.tenure}
-        onChange={(e) =>
-          props.onDraftChange({ ...props.draft, tenure: e.target.value })}
-        placeholder="e.g. 4 years at Messe München"
-      />
-    </div>
-    <div className="form-field">
-      <label className="form-label" htmlFor="buddy-contact">Contact URL</label>
-      <input
-        id="buddy-contact"
-        className="form-input"
-        type="url"
-        value={props.draft.contactUrl}
-        onChange={(e) =>
-          props.onDraftChange({ ...props.draft, contactUrl: e.target.value })}
-        placeholder="https://..."
-      />
-    </div>
-    <button type="submit" className="btn btn--primary">
-      Save buddy assignment
-    </button>
+      <div className="form-field">
+        <label className="form-label" htmlFor="buddy-player-select">
+          Assign to player
+        </label>
+        <select
+          id="buddy-player-select"
+          className="form-input"
+          value={props.selectedPlayerId}
+          onChange={(e) => props.onPlayerChange(e.target.value)}
+        >
+          <option value="">- select player -</option>
+          {props.players.map((p) => (
+            <option key={p.id} value={p.id}>{p.name || p.id}</option>
+          ))}
+        </select>
+      </div>
+      <div className="form-field">
+        <label className="form-label" htmlFor="buddy-name">Buddy name</label>
+        <input
+          id="buddy-name"
+          className="form-input"
+          type="text"
+          value={props.draft.name}
+          onChange={(e) =>
+            props.onDraftChange({ ...props.draft, name: e.target.value })}
+          placeholder="e.g. Marcus Weber"
+        />
+      </div>
+      <div className="form-field">
+        <label className="form-label" htmlFor="buddy-role">Role</label>
+        <input
+          id="buddy-role"
+          className="form-input"
+          type="text"
+          value={props.draft.role}
+          onChange={(e) =>
+            props.onDraftChange({ ...props.draft, role: e.target.value })}
+          placeholder="e.g. Senior Product Manager"
+        />
+      </div>
+      <div className="form-field">
+        <label className="form-label" htmlFor="buddy-tenure">Tenure</label>
+        <input
+          id="buddy-tenure"
+          className="form-input"
+          type="text"
+          value={props.draft.tenure}
+          onChange={(e) =>
+            props.onDraftChange({ ...props.draft, tenure: e.target.value })}
+          placeholder="e.g. 4 years at Messe München"
+        />
+      </div>
+      <div className="form-field">
+        <label className="form-label" htmlFor="buddy-contact">
+          Contact URL
+        </label>
+        <input
+          id="buddy-contact"
+          className="form-input"
+          type="url"
+          value={props.draft.contactUrl}
+          onChange={(e) =>
+            props.onDraftChange({ ...props.draft, contactUrl: e.target.value })}
+          placeholder="https://..."
+        />
+      </div>
+      <button type="submit" className="btn btn--primary">
+        Save buddy assignment
+      </button>
     </form>
   </div>
 );

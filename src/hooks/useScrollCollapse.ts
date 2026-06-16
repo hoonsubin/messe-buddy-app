@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 /**
  * Tracks scroll velocity on a container element and returns a `collapsed`
@@ -40,8 +46,9 @@ export const useScrollCollapse = (
   // an external navigational signal (resetKey). This is a genuine external-
   // system sync, not props-to-state derivation — the collapsed flag and DOM
   // scrollTop are not derivable from props alone.
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = scrollRef.current;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset collapse on tab change
     setCollapsed(false);
     lastTopRef.current = 0;
     lastTimeRef.current = 0;

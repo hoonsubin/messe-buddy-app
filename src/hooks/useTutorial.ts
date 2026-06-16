@@ -78,6 +78,7 @@ export const useTutorial = (
     if (formPending !== null) {
       sessionStorage.removeItem(TUTORIAL_FORM_KEY);
       if (!player.profileComplete) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage restore
         setShowTutorial(true);
         setTutorialStep(PROFILE_STEP_INDEX);
         persistStep(PROFILE_STEP_INDEX);

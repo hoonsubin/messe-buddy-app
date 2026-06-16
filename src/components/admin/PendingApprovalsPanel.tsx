@@ -16,9 +16,16 @@ const PendingApprovalsPanel = (props: PendingApprovalsPanelProps) => (
     data-testid="pending-approvals-panel"
     aria-label="Pending approvals"
     className="card"
-    style={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}
+    style={{
+      padding: "var(--space-4)",
+      display: "flex",
+      flexDirection: "column",
+      gap: "var(--space-3)",
+    }}
   >
-    <header style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+    <header
+      style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}
+    >
       <MdPendingActions
         size={18}
         aria-hidden="true"
@@ -57,9 +64,7 @@ const PendingApprovalsPanel = (props: PendingApprovalsPanelProps) => (
         >
           {props.pendingEvents.map((evt) => {
             const player = props.players.find((p) => p.id === evt.playerId);
-            const mission = props.missions.find((m) =>
-              m.id === evt.missionId
-            );
+            const mission = props.missions.find((m) => m.id === evt.missionId);
             return (
               <ApprovalRequestCard
                 key={`${evt.playerId}::${evt.missionId}`}
@@ -67,8 +72,7 @@ const PendingApprovalsPanel = (props: PendingApprovalsPanelProps) => (
                 missionTitle={mission?.title ?? evt.missionId}
                 xpValue={mission?.xpValue ?? 0}
                 onApprove={() => props.onApprove(evt.playerId, evt.missionId)}
-                onReject={() =>
-                  props.onReject(evt.playerId, evt.missionId)}
+                onReject={() => props.onReject(evt.playerId, evt.missionId)}
                 onScanQR={() => props.onScanQR(evt.playerId, evt.missionId)}
               />
             );

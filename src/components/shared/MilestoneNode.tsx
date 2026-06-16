@@ -30,7 +30,9 @@ const MilestoneNode = (props: MilestoneNodeProps) => {
   return (
     <button
       type="button"
-      className={`milestone-node${props.className ? ` ${props.className}` : ""}`}
+      className={`milestone-node${
+        props.className ? ` ${props.className}` : ""
+      }`}
       data-testid={`milestone-node-${props.id}`}
       data-milestone-id={props.id}
       data-status={props.status}
@@ -73,7 +75,9 @@ const MilestoneNode = (props: MilestoneNodeProps) => {
 
       {/* Mission count pill — below the box */}
       <span
-        className={`milestone-node__pill${mCount === 0 ? " milestone-node__pill--empty" : ""}`}
+        className={`milestone-node__pill${
+          mCount === 0 ? " milestone-node__pill--empty" : ""
+        }`}
         aria-label={`${mCount} missions`}
       >
         {mCount} missions

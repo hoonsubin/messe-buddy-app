@@ -1,0 +1,78 @@
+interface FetchErrorPanelProps {
+  readonly message?: string;
+  readonly onRetry: () => void;
+  readonly retryLabel?: string;
+  readonly onBack?: () => void;
+  readonly backLabel?: string;
+  readonly testId?: string;
+  readonly page?: string;
+}
+
+/**
+ * Full-viewport error state with a retry action for failed data fetches.
+ * Used by pages that consume hooks exposing a `refresh()` callback.
+ */
+const FetchErrorPanel = ({
+  message = "Could not load data. Please try again.",
+  onRetry,
+  retryLabel = "Try again",
+  onBack,
+  backLabel = "Go back",
+  testId,
+  page,
+}: FetchErrorPanelProps) => (
+  <div
+    {...(testId !== undefined && { "data-testid": testId })}
+    {...(page !== undefined && { "data-page": page })}
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: "100dvh",
+      color: "hsl(var(--color-muted-fg))",
+      background: "hsl(var(--color-bg))",
+      gap: "var(--space-4)",
+      padding: "var(--space-6)",
+      textAlign: "center",
+    }}
+  >
+    <p
+      role="alert"
+      style={{
+        margin: 0,
+        color: "hsl(var(--color-destructive))",
+        maxWidth: "24rem",
+      }}
+    >
+      {message}
+    </p>
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "var(--space-3)",
+        justifyContent: "center",
+      }}
+    >
+      <button
+        type="button"
+        className="btn btn--primary"
+        onClick={onRetry}
+      >
+        {retryLabel}
+      </button>
+      {onBack !== undefined && (
+        <button
+          type="button"
+          className="btn btn--secondary"
+          onClick={onBack}
+        >
+          {backLabel}
+        </button>
+      )}
+    </div>
+  </div>
+);
+
+export default FetchErrorPanel;

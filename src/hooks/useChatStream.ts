@@ -77,10 +77,24 @@ export const useChatStream = (appContext?: string): UseChatReturn => {
   const messagesRef = useRef<ReadonlyArray<ChatMessage>>(messages);
   const streamingRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
+  const appContextRef = useRef(appContext);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  useEffect(() => {
+    appContextRef.current = appContext;
+  });
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      abortRef.current?.abort();
+    };
+  }, []);
 
   // Append a text delta to the trailing (streaming) assistant message.
   const appendToLast = useCallback((delta: string) => {
@@ -128,8 +142,9 @@ export const useChatStream = (appContext?: string): UseChatReturn => {
     }));
     // System message = static guardrail + the per-user application context
     // block (name + buddy), which the guardrail treats as a trusted source.
-    const systemContent = appContext
-      ? `${LLM_SYSTEM_PROMPT}\n\n${appContext}`
+    const ctx = appContextRef.current;
+    const systemContent = ctx
+      ? `${LLM_SYSTEM_PROMPT}\n\n${ctx}`
       : LLM_SYSTEM_PROMPT;
     const requestMessages = systemContent
       ? [{ role: "system", content: systemContent }, ...history]
@@ -143,6 +158,7 @@ export const useChatStream = (appContext?: string): UseChatReturn => {
     abortRef.current = controller;
 
     const run = async () => {
+      let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
       try {
         const res = await fetch(LLM_CHAT_URL, {
           method: "POST",
@@ -162,20 +178,24 @@ export const useChatStream = (appContext?: string): UseChatReturn => {
           throw new Error(`LLM request failed: ${res.status}`);
         }
 
-        const reader = res.body.getReader();
+        reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
         let streamDone = false;
 
-        while (!streamDone) {
+        while (!streamDone && !controller.signal.aborted) {
           const { done, value } = await reader.read();
           if (done) break;
           buffer += decoder.decode(value, { stream: true });
           const parsed = drainSSE(buffer);
           buffer = parsed.rest;
-          if (parsed.delta) appendToLast(parsed.delta);
+          if (parsed.delta && mountedRef.current) {
+            appendToLast(parsed.delta);
+          }
           if (parsed.done) streamDone = true;
         }
+
+        if (!mountedRef.current || controller.signal.aborted) return;
 
         // If the model returned nothing, surface a gentle note rather than an
         // empty bubble.
@@ -189,6 +209,7 @@ export const useChatStream = (appContext?: string): UseChatReturn => {
           finishLast();
         }
       } catch {
+        if (!mountedRef.current) return;
         if (controller.signal.aborted) {
           // User stopped generation - keep whatever streamed so far.
           finishLast();
@@ -197,14 +218,23 @@ export const useChatStream = (appContext?: string): UseChatReturn => {
           finishLast({ content: ERROR_MESSAGE, isError: true });
         }
       } finally {
-        setIsStreaming(false);
+        if (reader) {
+          try {
+            reader.releaseLock();
+          } catch {
+            // Lock already released.
+          }
+        }
         streamingRef.current = false;
         abortRef.current = null;
+        if (mountedRef.current) {
+          setIsStreaming(false);
+        }
       }
     };
 
     void run();
-  }, [appendToLast, finishLast, appContext]);
+  }, [appendToLast, finishLast]);
 
   const clear = useCallback(() => {
     abortRef.current?.abort();

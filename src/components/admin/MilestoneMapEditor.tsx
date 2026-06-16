@@ -147,8 +147,8 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
 
       const dx = e.clientX - d.startClientX;
       const dy = e.clientY - d.startClientY;
-      const moved =
-        Math.abs(dx) > DRAG_THRESHOLD_PX || Math.abs(dy) > DRAG_THRESHOLD_PX;
+      const moved = Math.abs(dx) > DRAG_THRESHOLD_PX ||
+        Math.abs(dy) > DRAG_THRESHOLD_PX;
 
       // Cancel long-press if the user moved
       if (moved && d.longPressTimer) {

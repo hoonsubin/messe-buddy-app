@@ -1,18 +1,35 @@
-# Debug Mode Rules (Non-Obvious Only)
+# Debug Mode — React Lifecycle Bug Checklist
 
-- **No tests exist in this project**. Running `deno task lint` is the only automated quality gate.
-- **mockAdapter simulates GM approval with a 4-second `setTimeout`** ([`mockAdapter.ts`](src/adapters/mock/mockAdapter.ts:79)). Events with `status: "pendingApproval"` auto-transition to `status: "completed"` after 4 seconds with `validatedBy: "uid_gamemaker_peter"`.
-- **Mock adapter uses Maps** keyed by descriptive static IDs (e.g., `"player_sofia"`, `"mission_profile"`), not 15-char PB IDs. The composite key for progress events is `` `${playerId}::${missionId}` `` ([`mockAdapter.ts`](src/adapters/mock/mockAdapter.ts:34)).
-- **`localStorage` key is `"mb_identity"`** ([`useIdentity.ts`](src/hooks/useIdentity.ts:4)). Clear this to simulate a first-time user or trigger the recovery flow. The `role` field is client-stored and **not** server-validated - any role can be set.
-- **The `pocketbase/` adapter directory is empty** - there is no real backend to debug against. All data comes from [`mockData.ts`](src/adapters/mock/mockData.ts).
-- **`deno fmt`** only formats `src/` ([`deno.json`](deno.json:16)). Files outside `src/` (config, docker, scripts) are not auto-formatted.
-- **Vite build-time env vars**: `VITE_PB_URL` and `VITE_LITELLM_URL` are frozen in the bundle at build time. Runtime env changes won't affect them - you must rebuild.
+Diagnostic procedure for lifecycle-related bugs. Complements [`AGENTS.md`](../../AGENTS.md).
 
----
+## 1. Stale Closure Diagnosis
 
-## UI/UX-Driven Debugging
+Check in this order when a component shows stale state:
 
-- **Elements that are obscured, off-screen, or at viewport edges are always in scope for debugging and fixing.** They are not "pre-existing" or "out of scope" — they represent real UX bugs that affect users, especially on mobile.
-- **The first response to a viewport issue is investigation, not dismissal.** Use `browser_evaluate` to measure element positions, check CSS properties, and understand *why* the element is unreachable before proposing any fix.
-- **Obscured elements are treated as defects.** If a button, input, or content area is hidden behind an overlay, clipped by overflow, or pushed outside the viewport, the root cause must be resolved — not worked around with `force: true` or programmatic scrolling.
-- **Layout issues must be fixed at the CSS/component level**, not patched with `force: true` clicks. Always prefer fixing the root layout problem over adding test-only workarounds.
+1. **Is the function wrapped in `useCallback` with incomplete deps?** Every variable referenced inside the callback must appear in the dependency array — unless it's a `ref.current` (intentional escape hatch). Use the `react-hooks/exhaustive-deps` lint rule as a debug aid.
+
+2. **Is a volatile callback passed directly to a child component?** If a callback is recreated on every state change (e.g., form input, editor draft) and passed directly as a JSX prop, the child receives a new reference every render. The fix is the **Callback Wrapping Pattern**: `onClick={() => cb()}` instead of `onClick={cb}`. This ensures the child always invokes the latest version.
+
+3. **Is the Latest Ref Pattern used but the ref wasn't synced?** If a ref is used to escape stale closures, verify the sync `useEffect` runs: `useEffect(() => { ref.current = val; })`. Without this, the ref holds the initial value.
+
+## 2. Missing Effect Cleanup Diagnosis
+
+| Symptom | Suspect | Fix |
+|---------|---------|-----|
+| State updates after component unmount | Fetch.resolve() runs after cleanup | `AbortController.signal` or cancelled flag |
+| Phantom API calls continue after navigation | fetch() inside loop without per-iteration cancel check | Check cancelled flag between iterations |
+| setTimeout callback fires on unmounted component | Timer created without cleanup | `clearTimeout` in cleanup return |
+| Stream keeps reading after component leaves DOM | `Response.body.getReader().read()` in infinite loop | `controller.abort()` in cleanup return |
+| Analytics/timeout fires against wrong data | setInterval without cleanup | `clearInterval` in cleanup return |
+
+## 3. Data-Fetching Resilience Checklist
+
+- **Retry missing?** If the hook has no `refresh` callback, transient network failures are unrecoverable until the component remounts. The fix: increment a counter state in `refresh` and include it in the effect's dependency array.
+- **Conditional fetch without re-run?** Pattern `if (!id) return; void fetch()` means the effect won't re-run if `id` becomes available between renders (e.g., after an async identity resolution). The effect only re-runs when dep values change, not when a missing dependency becomes available.
+- **Long-running loop not cancel-safe?** An effect that iterates over items with per-item async calls must check the cancellation flag between each iteration, not just at the top.
+
+## 4. Memoization Anti-Patterns
+
+- **`React.memo` + unstables props** — wrapping a component with `React.memo` is defeated if it receives objects, arrays, or callbacks that are recreated every render. The shallow compare always fails.
+- **`useMemo` on trivial values** — wrapping a constant or simple arithmetic in `useMemo` is slower than computing it at render time. Only memoize non-trivial computations.
+- **`eslint-disable react-hooks/exhaustive-deps` without justification** — every suppression must be annotated with the exact reason ("ref is stable", "build-time constant"). New code should avoid suppression entirely.

@@ -10,6 +10,7 @@ import { useBuddy } from "../hooks/useBuddy.ts";
 import { useResources } from "../hooks/useResources.ts";
 import { useTutorial } from "../hooks/useTutorial.ts";
 import ConfirmDialog from "../components/shared/ConfirmDialog.tsx";
+import FetchErrorPanel from "../components/shared/FetchErrorPanel.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
 import AssistantChatCard from "../components/player/AssistantChatCard.tsx";
 import MilestoneMapViewer from "../components/player/MilestoneMapViewer.tsx";
@@ -75,6 +76,8 @@ const PlayerCockpitPage = () => {
     milestones,
     missions,
     loading: sessionLoading,
+    error: sessionError,
+    refresh: refreshSession,
   } = useSession(sessionId ?? "");
 
   const { buddy } = useBuddy(playerId);
@@ -205,6 +208,17 @@ const PlayerCockpitPage = () => {
       >
         <p>Could not load player data. Please try again.</p>
       </div>
+    );
+  }
+
+  if (sessionError && !sessionLoading) {
+    return (
+      <FetchErrorPanel
+        message="Could not load session data. Please try again."
+        onRetry={refreshSession}
+        testId="player-cockpit-page"
+        page="player-cockpit"
+      />
     );
   }
 

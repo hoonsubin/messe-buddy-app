@@ -10,3 +10,53 @@
 - **Progress is never snapshotted** - `computeProgress` re-derives at read time (C-11). Retroactive difficulty changes affect earned XP (OD-02 resolution).
 - **SSE subscription is only held by `ValidationDisplay`** and only when `validationMethod = 'qr'` (C-07). Everything else is fetched once on mount.
 - **No auth system is planned for the prototype** (C-03). If adding auth later, the `role` field must be server-validated on every mutation.
+
+---
+
+## React Lifecycle Design Principles
+
+Design-level rules for hooks, effects, and component boundaries. These are framework-agnostic principles applicable to any React project.
+
+### Data-Fetching Hook Contract
+
+Every hook that fetches data must expose:
+- Loading state (covers both initial and subsequent fetches)
+- Error state (typed, nullable, cleared between fetches)
+- Data state (nullable until first successful fetch)
+- Retry/refresh callback
+
+Omitting the retry callback means transient network failures are unrecoverable until remount — an architectural defect.
+
+### Component ↔ Hook Boundary
+
+- **Components consume data via hooks; they never own `useEffect` + fetch.** Fetching logic belongs in a hook file under `src/hooks/`. A component orchestrates UI; a hook orchestrates data.
+- **Callbacks with volatile dependencies must not be passed directly as JSX props.** If a hook returns a callback that re-creates on every state change, the consumer must wrap it inline: `onClick={() => cb()}`. This prevents memoized children from holding stale references and avoids unnecessary re-renders. This is the **Callback Wrapping Pattern**.
+- **Derivation over synchronization.** Prefer `useMemo` over `useEffect` + `setState` for values computable from existing state/props. Reserve `useEffect` + `setState` for external system synchronization (`localStorage`, browser APIs, subscriptions).
+
+### Effect Lifecycle Tiers
+
+Every `useEffect` falls into one of four tiers with distinct cleanup requirements:
+
+| Tier | Nature | Cleanup Required |
+|------|--------|-----------------|
+| 1 | One-shot synchronous toggle | None |
+| 2 | Async fire-and-cancel (fetch, Promise chains) | Boolean cancelled flag or AbortController |
+| 3 | Subscription wire-and-unwire (EventEmitter, SSE, WebSocket) | Explicit unsubscribe/removeListener |
+| 4 | Stream start-and-stop (ReadableStream, SSE text stream) | AbortController + reader.release() |
+
+Tiers 2-4 **must** have cleanup. Tier 2 and 4 are most commonly violated (missing cancelled flag, AbortController not wired into cleanup return).
+
+### Dependency Array Hygiene
+
+- **Primitive dependencies over object references.** Hooks should accept primitive IDs (`sessionId: string`) rather than object references (`session: Session`) for values used as effect deps. Object references cause the effect to re-run on parent re-render even when identity hasn't semantically changed.
+- **`eslint-disable react-hooks/exhaustive-deps` is a design smell.** Every suppression must be annotated with the exact justification. Valid: "ref is stable, not a reactive value". Invalid: suppression without any rationale.
+- **Module-scope build-time constants** (from `import.meta.env`, `Deno.env.get`, Vite defines) are not reactive — they must not appear in dependency arrays.
+
+### React Compiler (If Enabled)
+
+The React 19 compiler auto-memoizes components and hooks, reducing manual `useCallback`/`useMemo` overhead. It does **not**:
+- Fix stale closures (it only memoizes what was written)
+- Inject AbortController cleanup or cancellation flags
+- Fix missing effect cleanup
+
+All architectural rules remain in effect regardless of compiler status. The compiler is a performance optimization, not a correctness tool.

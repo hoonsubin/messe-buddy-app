@@ -6,6 +6,7 @@ import { useIdentity } from "../hooks/useIdentity.ts";
 import { useSession } from "../hooks/useSession.ts";
 import { usePlayerProgress } from "../hooks/usePlayerProgress.ts";
 import TopBar from "../components/shared/TopBar.tsx";
+import FetchErrorPanel from "../components/shared/FetchErrorPanel.tsx";
 import FormShell from "../components/form/FormShell.tsx";
 
 const FormPage = () => {
@@ -47,6 +48,8 @@ const FormPage = () => {
     milestones,
     missions: sessionMissions,
     loading: sessionLoading,
+    error: sessionError,
+    refresh: refreshSession,
   } = useSession(sessionId);
 
   const mission = sessionMissions.find((m) => m.id === missionId) ?? null;
@@ -247,6 +250,21 @@ const FormPage = () => {
       >
         <p>Please sign in first.</p>
       </div>
+    );
+  }
+
+  if (sessionError && !sessionLoading) {
+    return (
+      <FetchErrorPanel
+        message="Could not load session data. Please try again."
+        onRetry={refreshSession}
+        testId="form-page"
+        page="form"
+        {...(sessionId && {
+          onBack: () => navigate(`/session/${sessionId}`),
+          backLabel: "← Back to Dashboard",
+        })}
+      />
     );
   }
 

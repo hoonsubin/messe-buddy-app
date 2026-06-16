@@ -69,13 +69,18 @@ export const useAdminPlayers = ({
     QRScannerContext | null
   >(null);
   const isInitialPlayerLoad = useRef(true);
+  const validatorUidRef = useRef(validatorUid);
+
+  useEffect(() => {
+    validatorUidRef.current = validatorUid;
+  });
 
   // ── Shared complete-mission implementation ─────────────────────────────────
   const completeMission = useCallback(
     async (playerId: string, missionId: string) => {
       await adapter.upsertProgressEvent(playerId, missionId, {
         status: "completed",
-        validatedBy: validatorUid ?? "gm",
+        validatedBy: validatorUidRef.current ?? "gm",
         validatedAt: new Date().toISOString(),
       });
       const updated = await adapter.listProgressEvents(playerId);
@@ -84,7 +89,7 @@ export const useAdminPlayers = ({
         return [...others, ...updated];
       });
     },
-    [adapter, validatorUid],
+    [adapter],
   );
 
   // ── Load players ────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DraftMission, Mission } from "../types/index.ts";
 import { MISSION_TYPE } from "../types/index.ts";
 import type { AppAdapter } from "../adapters/interface.ts";
@@ -45,11 +45,13 @@ interface UseAdminMissionEditorResult {
   readonly draftMissions: ReadonlyMap<string, DraftMission>;
   readonly xpPreview: number;
   readonly missionOrderChanges: ReadonlyMap<string, number>;
+  readonly deletedMissionIds: ReadonlySet<string>;
   readonly draftMissionsAreDirty: boolean;
   readonly handleMissionSelect: (missionId: string) => void;
   readonly handleAddMission: (milestoneId: string) => void;
   readonly handleDraftChange: (draft: DraftMission) => void;
   readonly handleMissionReorder: (missionId: string, newOrder: number) => void;
+  readonly handleDeleteMission: (missionId: string) => void;
   readonly clearSelectedMission: () => void;
   readonly saveMissions: (
     sid: string,
@@ -79,6 +81,16 @@ export const useAdminMissionEditor = (
   const [missionOrderChanges, setMissionOrderChanges] = useState<
     ReadonlyMap<string, number>
   >(new Map());
+  const [deletedMissionIds, setDeletedMissionIds] = useState<
+    ReadonlySet<string>
+  >(
+    new Set(),
+  );
+  const draftMissionsRef = useRef(draftMissions);
+
+  useEffect(() => {
+    draftMissionsRef.current = draftMissions;
+  });
 
   const handleMissionSelect = useCallback(
     (missionId: string) => {
@@ -132,6 +144,23 @@ export const useAdminMissionEditor = (
     [],
   );
 
+  const handleDeleteMission = useCallback((missionId: string) => {
+    setDeletedMissionIds((prev) => new Set([...prev, missionId]));
+    // If the deleted mission was being edited, remove its draft and deselect
+    setDraftMissions((prev) => {
+      let changed = false;
+      const next = new Map(prev);
+      for (const [key, d] of next) {
+        if (d.originalId === missionId || key === missionId) {
+          next.delete(key);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+    setSelectedMissionId((prev) => (prev === missionId ? null : prev));
+  }, []);
+
   const clearSelectedMission = useCallback(() => {
     setSelectedMissionId(null);
   }, []);
@@ -161,8 +190,10 @@ export const useAdminMissionEditor = (
       serverMissions: ReadonlyArray<Mission>,
       xp: number,
     ) => {
+      const drafts = draftMissionsRef.current;
+
       // 1. Save mission content
-      for (const [, draft] of draftMissions) {
+      for (const [, draft] of drafts) {
         if (!draft.isDirty) continue;
         if (draft.originalId) {
           const real = serverMissions.find((m) => m.id === draft.originalId);
@@ -198,7 +229,7 @@ export const useAdminMissionEditor = (
       }
 
       // 2. Save form schemas
-      for (const [, draft] of draftMissions) {
+      for (const [, draft] of drafts) {
         if (!draft.isDirty || draft.type !== MISSION_TYPE.FORM) continue;
         if (draft.originalId && draft.formFields?.length) {
           await adapter.upsertFormSchema(draft.originalId, draft.formFields);
@@ -210,13 +241,14 @@ export const useAdminMissionEditor = (
         await adapter.updateMission(missionId, { order: newOrder });
       }
     },
-    [draftMissions, missionOrderChanges],
+    [missionOrderChanges],
   );
 
   const discardMissions = useCallback(() => {
     setDraftMissions(new Map());
     setSelectedMissionId(null);
     setMissionOrderChanges(new Map());
+    setDeletedMissionIds(new Set());
   }, []);
 
   const clearDirtyMissions = useCallback(() => {
@@ -239,11 +271,13 @@ export const useAdminMissionEditor = (
     draftMissions,
     xpPreview,
     missionOrderChanges,
+    deletedMissionIds,
     draftMissionsAreDirty,
     handleMissionSelect,
     handleAddMission,
     handleDraftChange,
     handleMissionReorder,
+    handleDeleteMission,
     clearSelectedMission,
     saveMissions,
     discardMissions,

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { MdArrowBack, MdClose } from "react-icons/md";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MdArrowBack, MdEditNote } from "react-icons/md";
 import type { DraftMission, Milestone, Mission } from "../../types/index.ts";
 import type { StoredDraft } from "../../utils/draftStorage.ts";
 import {
@@ -34,6 +34,8 @@ interface MissionBottomSheetProps {
   readonly onSaveAsTemplate: () => void;
   readonly onDiscard: () => void;
   readonly onAddMission: () => void;
+  readonly onDeleteMission: (missionId: string) => void;
+  readonly onReorderMission: (missionId: string, newOrder: number) => void;
   readonly onClose: () => void;
 }
 
@@ -59,36 +61,44 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
     onSaveAsTemplate,
     onDiscard,
     onAddMission,
+    onDeleteMission,
+    onReorderMission,
     onClose,
   } = props;
 
   // ── View state ──────────────────────────────────────────────────────────────
-  const [view, setView] = useState<SheetView>("list");
+  // When the user taps "back" in the editor we record which mission they
+  // dismissed so derived view stays on the list until a different mission is
+  // selected (avoids setState-in-effect for external activeMissionId sync).
+  const [backDismissedForMissionId, setBackDismissedForMissionId] = useState<
+    string | null
+  >(null);
   const [viewAnim, setViewAnim] = useState<"entering" | "back" | "">("");
+
+  const view: SheetView = isOpen &&
+      activeMissionId &&
+      backDismissedForMissionId !== activeMissionId
+    ? "editor"
+    : "list";
 
   const navigateTo = useCallback(
     (next: SheetView, direction: "forward" | "back" = "forward") => {
       setViewAnim(direction === "forward" ? "entering" : "back");
-      setView(next);
+      if (next === "list" && activeMissionId) {
+        setBackDismissedForMissionId(activeMissionId);
+      } else if (next === "editor") {
+        setBackDismissedForMissionId(null);
+      }
       // Clear animation class after it completes
       setTimeout(() => setViewAnim(""), 180);
     },
-    [],
+    [activeMissionId],
   );
 
-  // ── View routing ─────────────────────────────────────────────────────────────
-  // auto-navigate when activeMissionId changes from outside (sidebar click)
-  useEffect(() => {
-    if (!isOpen) return;
-    if (activeMissionId && view === "list") {
-      navigateTo("editor", "forward");
-    }
-  }, [activeMissionId, isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Reset to list when sheet closes
+  // Reset dismiss flag when sheet closes
   useEffect(() => {
     if (!isOpen) {
-      setTimeout(() => setView("list"), 400); // after close animation
+      setTimeout(() => setBackDismissedForMissionId(null), 400); // after close animation
     }
   }, [isOpen]);
 
@@ -138,40 +148,27 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
   );
 
   // ── Draft persistence ───────────────────────────────────────────────────────
-  const [storedDraft, setStoredDraft] = useState<StoredDraft | null>(null);
+  const [dismissedStoredDraftForMissionId, setDismissedStoredDraftForMissionId] =
+    useState<string | null>(null);
 
-  // When a specific mission is selected, check localStorage for a saved draft.
-  // localStorage is a genuine external system — reading it requires an effect.
-  useEffect(() => {
-    if (!activeMissionId) {
-      setStoredDraft(null);
-      return;
-    }
+  const storedDraft = useMemo((): StoredDraft | null => {
+    if (!activeMissionId) return null;
+    if (dismissedStoredDraftForMissionId === activeMissionId) return null;
     const found = loadStoredDraft(sessionId, activeMissionId);
-    // Only show the banner if the stored draft actually has content that differs
-    if (found && found.draft.title !== draft?.title) {
-      setStoredDraft(found);
-    } else {
-      setStoredDraft(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeMissionId, sessionId]);
+    if (found && found.draft.title !== draft?.title) return found;
+    return null;
+  }, [activeMissionId, sessionId, draft?.title, dismissedStoredDraftForMissionId]);
 
   // ── Rename state ────────────────────────────────────────────────────────────
   const [isRenaming, setIsRenaming] = useState(false);
-  const [renameValue, setRenameValue] = useState(milestone?.name ?? "");
-  // Reset the rename input when the milestone changes externally (e.g. GM
-  // selects a different milestone in the sidebar). This is synchronizing
-  // internal editable state with an external prop — derive-in-render alone
-  // cannot handle user-driven edits to the same field.
-  useEffect(() => {
-    setRenameValue(milestone?.name ?? "");
-  }, [milestone?.name]);
 
-  const handleRenameSubmit = useCallback(() => {
-    if (renameValue.trim()) onRename(renameValue.trim());
-    setIsRenaming(false);
-  }, [onRename, renameValue]);
+  const handleRenameSubmit = useCallback(
+    (value: string) => {
+      if (value.trim()) onRename(value.trim());
+      setIsRenaming(false);
+    },
+    [onRename],
+  );
 
   // ── Confirm action handlers ─────────────────────────────────────────────────
   const handleKeepEditing = useCallback(() => {
@@ -268,7 +265,7 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
           {view === "editor" && (
             <button
               type="button"
-              className="btn btn--ghost sheet-close-btn"
+              className="btn btn--ghost sheet-icon-btn"
               onClick={() => navigateTo("list", "back")}
               aria-label="Back to mission list"
             >
@@ -276,18 +273,20 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
             </button>
           )}
 
-          {/* Milestone title - editable on tap (list view only) */}
+          {/* Title — static in both views; pencil button triggers rename/focus */}
           {view === "list"
             ? isRenaming
               ? (
                 <input
+                  key={milestone?.id ?? "rename"}
                   className="form-input sheet-header__title"
                   type="text"
-                  value={renameValue}
-                  onChange={(e) => setRenameValue(e.target.value)}
-                  onBlur={handleRenameSubmit}
+                  defaultValue={milestone?.name ?? ""}
+                  onBlur={(e) => handleRenameSubmit(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") handleRenameSubmit();
+                    if (e.key === "Enter") {
+                      handleRenameSubmit(e.currentTarget.value);
+                    }
                     if (e.key === "Escape") setIsRenaming(false);
                   }}
                   autoFocus
@@ -298,35 +297,28 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
                 />
               )
               : (
-                <button
-                  type="button"
-                  className="btn btn--ghost sheet-header__title"
-                  style={{
-                    fontSize: "var(--text-lg)",
-                    fontWeight: "var(--weight-semibold)",
-                    textAlign: "left",
-                    padding: 0,
-                  }}
-                  onClick={() => setIsRenaming(true)}
-                  title="Tap to rename"
-                >
+                <span className="sheet-header__title">
                   {milestone?.name ?? "Milestone"}
-                </button>
+                </span>
               )
             : (
-              /* Editor view: show mission title */
               <span className="sheet-header__title">
                 {activeMission?.title || draft?.title || "New mission"}
               </span>
             )}
 
+          {/* Pencil button — rename milestone (list) or focus title field (editor) */}
           <button
             type="button"
-            className="btn btn--ghost sheet-close-btn"
-            onClick={attemptClose}
-            aria-label="Close"
+            className="btn btn--ghost sheet-icon-btn"
+            onClick={() => {
+              if (view === "list") setIsRenaming(true);
+            }}
+            aria-label={view === "list"
+              ? "Rename milestone"
+              : "Edit mission title"}
           >
-            <MdClose size={20} aria-hidden="true" />
+            <MdEditNote size={22} aria-hidden="true" />
           </button>
         </div>
 
@@ -344,6 +336,8 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
                   activeMissionId={activeMissionId}
                   onMissionSelect={handleMissionSelectAndNavigate}
                   onAddMission={handleAddMissionAndNavigate}
+                  onDeleteMission={onDeleteMission}
+                  onReorderMission={onReorderMission}
                 />
               )
               : (
@@ -352,11 +346,17 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
                   xpPreview={xpPreview}
                   storedDraft={storedDraft}
                   onDraftChange={onDraftChange}
-                  onDismissStoredDraft={() => setStoredDraft(null)}
+                  onDismissStoredDraft={() => {
+                    if (activeMissionId) {
+                      setDismissedStoredDraftForMissionId(activeMissionId);
+                    }
+                  }}
                   onLoadStoredDraft={() => {
                     if (storedDraft) {
                       onDraftChange(storedDraft.draft);
-                      setStoredDraft(null);
+                      if (activeMissionId) {
+                        setDismissedStoredDraftForMissionId(activeMissionId);
+                      }
                     }
                   }}
                 />

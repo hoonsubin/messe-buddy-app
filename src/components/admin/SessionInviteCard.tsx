@@ -9,7 +9,9 @@ interface SessionInviteCardProps {
 // Returns a cleanup function that removes the canvas content.
 function renderQRCode(canvas: HTMLCanvasElement, url: string): void {
   // Use the global QRCode constructor if the script has already loaded.
-  if (typeof (globalThis as Record<string, unknown>)["QRCode"] !== "undefined") {
+  if (
+    typeof (globalThis as Record<string, unknown>)["QRCode"] !== "undefined"
+  ) {
     const QRCode = (globalThis as Record<string, unknown>)["QRCode"] as new (
       el: HTMLElement,
       opts: Record<string, unknown>,
@@ -30,7 +32,8 @@ function renderQRCode(canvas: HTMLCanvasElement, url: string): void {
   const script = existing ??
     Object.assign(document.createElement("script"), {
       id: "qrcode-js-cdn",
-      src: "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js",
+      src:
+        "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js",
     });
 
   script.addEventListener("load", () => renderQRCode(canvas, url), {

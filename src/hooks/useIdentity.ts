@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { LocalIdentity } from "../types/index.ts";
 
 const IDENTITY_KEY = "mb_identity";
@@ -27,6 +27,14 @@ export const useIdentity = (): UseIdentityResult => {
   const [identity, setIdentityState] = useState<LocalIdentity | null>(
     readIdentity,
   );
+
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === IDENTITY_KEY) setIdentityState(readIdentity());
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
 
   const setIdentity = useCallback((newIdentity: LocalIdentity) => {
     localStorage.setItem(IDENTITY_KEY, JSON.stringify(newIdentity));

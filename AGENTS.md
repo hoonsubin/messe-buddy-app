@@ -61,6 +61,19 @@ All 17 in [`SPECS.md`](SPECS.md:946). Critical subset:
 | C-13 | No component calls `JSON.parse` on PB fields — parsing inside adapter |
 | C-16 | [`qrPayload.ts`](src/utils/qrPayload.ts:1) is single encode/decode point (HMAC-SHA256) |
 
+## UI Development Workflow
+
+Before writing ANY implementation code for a new screen, page, or feature:
+
+1. Use `superdesign` tools to iterate on visual design if needed
+2. Only proceed to implementation after the user confirms the wireframe
+3. Store approved wireframe artifacts in `./designs/` folder
+4. Reference the wireframe during implementation for layout/component decisions
+
+### Design Consistency
+- Always check `./designs/` for prior wireframes before starting adjacent screens
+- Maintain a design token vocabulary defined in `./designs/design-tokens.md`
+
 ### Routes
 
 | Path | Component | Role |
@@ -84,6 +97,23 @@ All 17 in [`SPECS.md`](SPECS.md:946). Critical subset:
 - **Formatter:** `deno fmt` (2-space indent, 80-char width, semicolons, double quotes). Only `src/` formatted.
 - **Components:** keep <200 lines; extract reusable pieces to `src/components/` or `src/utils/`. One responsibility per file. See [`ConfirmSheet`](src/components/admin/ConfirmSheet.tsx), [`DraftRestoreBanner`](src/components/admin/DraftRestoreBanner.tsx), [`MissionListView`](src/components/admin/MissionListView.tsx) as reference.
 
+### React Hooks & Lifecycle (All Modes)
+
+**Async effect cleanup completeness.** Every effect that launches async work must cancel it in cleanup:
+- `fetch` with `ReadableStream` body → `AbortController.signal` + `controller.abort()` in cleanup
+- `async/await` chains → boolean `cancelled` flag, checked after each `await`
+- `setTimeout`/`setInterval` → `clearTimeout`/`clearInterval` in cleanup
+- Long-running loops (nested async fetches) → check cancellation flag between each iteration
+
+**Closure freshness vs. callback stability trade-off.** A `useCallback` that reads state/props must either:
+- Include them in deps (freshness at cost of recreation), OR
+- Use the **Latest Ref Pattern**: `useRef + useEffect` sync to read latest values with a stable callback identity. Use this when callbacks are passed to memoized children or stored across renders.
+
+**Data-fetching resilience.** Every hook that fetches on mount should expose a `refresh` callback (increment a counter state → trigger the effect again via dependency). Without this, transient network failures trap the user in an error state until page reload.
+
+**External store synchronization.** `localStorage` initializers in `useState(reader())` are correct for mount-time, but cross-tab changes require a `window` `"storage"` event listener. Never read `localStorage`/`sessionStorage` during render — use an effect.
+
+**Callback wrapping pattern.** When a hook returns callbacks that re-create on every state change (volatile identity), callers should wrap them inline: `onClick={() => cb()}`. This guarantees the child component always invokes the latest version without requiring the child to re-render on every parent state change.
 ---
 
 ## Testing & Debugging
@@ -165,13 +195,14 @@ See [`.env.example`](.env.example:1). `VITE_PB_URL` and `VITE_LITELLM_URL` are *
 
 ## Research Before Implementation
 
-**Verify external API/SDK/CLI behavior.** Do not infer from names.
+**Verify external API/SDK/CLI behavior and industry best-practices.** Do not infer without reliable external evidence.
 
 Use `searxng_web_search` before:
 - Integrating any external API/SDK/CLI not verified this session
 - Choosing library versions, Docker tags, Go module versions
 - Writing code against unread interfaces/structs
 - Debugging unfamiliar error strings (search verbatim)
+- Auditing code smells or framework-specific gotchas (e.g., React 19 hooks and component life-cycles)
 
 Follow up with `web_url_read` at pkg.go.dev, `raw.githubusercontent.com`, or official docs. **Source of truth is live documentation, not LLM training data.**
 

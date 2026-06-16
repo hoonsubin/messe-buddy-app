@@ -1,4 +1,10 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import type { ReactNode } from "react";
 
 const MIN_SCALE = 0.5;
@@ -178,8 +184,10 @@ const MapViewport = forwardRef<MapViewportHandle, MapViewportProps>(
       if (!gesture.current.dragging) return;
       setTransform((prev) => ({
         ...prev,
-        x: gesture.current.startPan.x + (e.clientX - gesture.current.startClient.x),
-        y: gesture.current.startPan.y + (e.clientY - gesture.current.startClient.y),
+        x: gesture.current.startPan.x +
+          (e.clientX - gesture.current.startClient.x),
+        y: gesture.current.startPan.y +
+          (e.clientY - gesture.current.startClient.y),
       }));
     };
 
@@ -225,7 +233,8 @@ const MapViewport = forwardRef<MapViewportHandle, MapViewportProps>(
         <div
           className="map-canvas"
           style={{
-            transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+            transform:
+              `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
           }}
         >
           {props.bgImageUrl

@@ -1,14 +1,43 @@
-# Code Mode Rules (Non-Obvious Only)
+# Code Mode — React Lifecycle Implementation Rules
 
-- **`verbatimModuleSyntax`** is enabled - use `import type` for type-only imports. Never mix runtime and type imports in one statement.
-- **No TypeScript `enum`** - use `const` object + `keyof` union (C-12). Pattern: `export const FOO = { A: "a" } as const; export type Foo = (typeof FOO)[keyof typeof FOO];`
-- **All interface fields are `readonly`**; arrays are `ReadonlyArray<T>`. Mutations go through the adapter, never by direct property assignment.
-- **Components never call the adapter directly**. Business logic is in [`src/use-cases/`](src/use-cases/). Components → use cases → adapter.
-- **`upsertProgressEvent` is the single write path** for all ProgressEvent mutations (C-05, C-14). No component may write to progress events outside this function.
-- **No `JSON.parse` on PB record fields** in components (C-13). [`FormSchemaRaw`](src/types/domain.ts:107) and [`ProgressEventRaw`](src/types/domain.ts:112) exist only inside the adapter, which parses them into typed interfaces before returning to app-layer code.
-- **Template export embeds `_milestoneOrder` and `_missionOrder`** ([`exportTemplate.ts`](src/use-cases/exportTemplate.ts:27)). These are import-remapping keys that let [`importTemplate`](src/use-cases/importTemplate.ts:13) reconstruct FK references after PB IDs are stripped.
-- **QR encoding/decoding**: Only [`src/utils/qrPayload.ts`](src/utils/qrPayload.ts) touches QR strings (C-16). Components call `encodeQRPayload`/`decodeQRPayload` - never `JSON.stringify`/`JSON.parse` on QR data directly.
-- **The PocketBase adapter directory** ([`src/adapters/pocketbase/`](src/adapters/pocketbase)) is empty. Currently only the mock adapter exists.
+Complements the cross-cutting lifecycle principles in [`AGENTS.md`](../../AGENTS.md). These are implementation-time rules specific to coding.
+
+## Data-Fetching useEffect Checklist
+
+Every `useEffect` that performs async data fetching must satisfy all four:
+1. **Cancellation mechanism** — `AbortController` + `signal` for `fetch`-based operations; boolean `cancelled` flag for `async/await` chains
+2. **Cleanup function** — `controller.abort()` or `cancelled = true` in the effect's cleanup return
+3. **Retry capability** — expose a `refresh` callback by incrementing a counter state that's included in the dependency array
+4. **Error state** — catch block sets an `error` state, not just console.error
+
+## useState Rules
+
+- **Derive, don't sync.** If a value is computable from existing state or props, compute it at render time (or use `useMemo`). Only use `useEffect` + `setState` when synchronizing with an external system (`localStorage`, `sessionStorage`, DOM APIs, subscriptions).
+- **Functional updaters for dependent state.** When new state depends on its previous value, use `setState(prev => f(prev))`. Never read state from a ref or closure variable inside `setState`.
+- **Stable keys for identity comparison.** When seeding state from a prop that is an object or array, compare by a stable key (e.g., `.id`) not by reference identity. Object identity checks break if the parent recreates the reference on every render.
+
+## useCallback / useMemo Rules
+
+- **Volatile callbacks must not be passed directly to children.** If a `useCallback` depends on a frequently-changing value (form input, draft array, order map), callers must wrap it inline: `onClick={() => cb()}`. The child always invokes the latest version; the child does not re-render on every parent state change. This is the **Callback Wrapping Pattern**.
+- **Stable callback identity + fresh value.** When a callback must keep a stable reference (for memoized children, event subscriptions, debounced functions) yet read the latest state/props, use the **Latest Ref Pattern**:
+  ```typescript
+  const valRef = useRef(val);
+  useEffect(() => { valRef.current = val; });
+  const stableCb = useCallback(() => doSomething(valRef.current), []);
+  ```
+- **No trivial memoization.** `useMemo(() => x, [x])` adds overhead without benefit. Only memoize non-trivial computations.
+
+## Long-Running Async Loop Safety
+
+When an effect iterates over many items with async operations:
+- Check the cancellation flag between every iteration, not just after the loop completes
+- Use `Promise.allSettled` over `Promise.all` to isolate individual failures
+- An item-level failure should not abort the entire operation
+
+## Hook Organization
+
+- One hook file = one data concern. A hook exceeding 6 state variables or ~150 lines should be split into sub-hooks, or imperative logic extracted to a use-case module.
+- Test files are co-located as `*.test.ts`/`.tsx` in the same directory.
 
 ---
 

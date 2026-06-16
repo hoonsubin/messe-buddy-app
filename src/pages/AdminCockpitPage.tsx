@@ -12,6 +12,7 @@ import { usePreBoardingChecklist } from "../hooks/usePreBoardingChecklist.ts";
 import { useCrossHireData } from "../hooks/useCrossHireData.ts";
 import { useTemplateLibrary } from "../hooks/useTemplateLibrary.ts";
 import Toast from "../components/shared/Toast.tsx";
+import FetchErrorPanel from "../components/shared/FetchErrorPanel.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
 import MilestoneMapEditor from "../components/admin/MilestoneMapEditor.tsx";
 import MissionBottomSheet from "../components/admin/MissionBottomSheet.tsx";
@@ -43,7 +44,14 @@ const AdminCockpitPage = () => {
   const { identity } = useIdentity();
 
   // Session data
-  const { session, milestones, missions } = useSession(sid);
+  const {
+    session,
+    milestones,
+    missions,
+    loading: sessionLoading,
+    error: sessionError,
+    refresh: refreshSession,
+  } = useSession(sid);
 
   // Local override for bgImageUrl - avoids re-fetching session on upload
   const [bgImageUrlOverride, setBgImageUrlOverride] = useState<string | null>(
@@ -313,6 +321,17 @@ const AdminCockpitPage = () => {
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
+  if (sessionError && !sessionLoading) {
+    return (
+      <FetchErrorPanel
+        message="Could not load session data. Please try again."
+        onRetry={refreshSession}
+        testId="admin-cockpit-page"
+        page="admin-cockpit"
+      />
+    );
+  }
+
   return (
     <div
       data-testid="admin-cockpit-page"
@@ -545,9 +564,11 @@ const AdminCockpitPage = () => {
         isOpen={milestoneEditor.selectedMilestone !== null}
         milestone={milestoneEditor.selectedMilestone}
         missions={milestoneEditor.selectedMilestone
-          ? missions.filter(
-            (m) => m.milestoneId === milestoneEditor.selectedMilestone!.id,
-          )
+          ? missions
+            .filter(
+              (m) => m.milestoneId === milestoneEditor.selectedMilestone!.id,
+            )
+            .filter((m) => !missionEditor.deletedMissionIds.has(m.id))
           : []}
         activeMissionId={missionEditor.selectedMissionId}
         draft={missionEditor.activeDraftMission}
@@ -573,6 +594,8 @@ const AdminCockpitPage = () => {
               milestoneEditor.selectedMilestone.id,
             )
             : undefined}
+        onDeleteMission={missionEditor.handleDeleteMission}
+        onReorderMission={missionEditor.handleMissionReorder}
         onClose={() => {
           missionEditor.clearSelectedMission();
           milestoneEditor.setSelectedMilestone(null);

@@ -19,17 +19,24 @@ export const useCrossHireData = (
 
     const fetch = async () => {
       const sessions = await adapter.listSessions();
+      if (cancelled) return;
+
       const result: HireProgressRow[] = [];
 
       for (const s of sessions) {
+        if (cancelled) return;
+
         const [sessionPlayers, sessionMilestones, sessionMissions] =
           await Promise.all([
             adapter.listPlayers(s.id),
             adapter.listMilestones(s.id),
             adapter.listMissions(s.id),
           ]);
+        if (cancelled) return;
 
         for (const p of sessionPlayers) {
+          if (cancelled) return;
+
           const events = await adapter.listProgressEvents(p.id);
           const progress = computeProgress(
             p.id,
