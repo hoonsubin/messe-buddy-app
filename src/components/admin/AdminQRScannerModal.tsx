@@ -1,95 +1,52 @@
-// AdminQRScannerModal - modal overlay for GM QR scanning with camera,
-// jsqr decode, payload validation against context, and Simulate Scan.
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { MdClose } from "react-icons/md";
+import { useAdapter } from "../../adapters/useAdapter.ts";
 import CameraFeed from "../qr/CameraFeed.tsx";
 import ValidationResult from "../qr/ValidationResult.tsx";
+import { encodeQRPayload } from "../../utils/qrPayload.ts";
 import {
-  decodeQRPayload,
-  encodeQRPayload,
-  QRPayloadError,
-} from "../../utils/qrPayload.ts";
+  buildValidationUrl,
+  parseValidationToken,
+  validationPathFromToken,
+} from "../../utils/qrUrl.ts";
 
 type ScanState = "idle" | "scanning" | "success" | "invalid" | "error";
 
-interface QRScannerContext {
-  readonly playerId: string;
-  readonly missionId: string;
-  readonly playerName: string;
-  readonly missionTitle: string;
-}
-
 interface AdminQRScannerModalProps {
   readonly isOpen: boolean;
-  readonly context: QRScannerContext | null;
   readonly sessionId: string;
   readonly onClose: () => void;
-  readonly onValidate: (playerId: string, missionId: string) => Promise<void>;
 }
 
-// Key fragment so the modal remounts when opened with new context,
-// avoiding cascading setState-in-effect warnings.
-const contextKey = (ctx: QRScannerContext | null): string =>
-  ctx ? `${ctx.playerId}::${ctx.missionId}` : "closed";
-
 const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
+  const navigate = useNavigate();
+  const adapter = useAdapter();
   const [cameraActive, setCameraActive] = useState(true);
-  const [validationState, setValidationState] = useState<ScanState>(
-    "scanning",
-  );
-  const [errorMessage, setErrorMessage] = useState<string>("");
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // ── QR decode + validate ─────────────────────────────────────────────────────
+  const [validationState, setValidationState] = useState<ScanState>("scanning");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleDecode = useCallback(
-    async (encoded: string) => {
-      if (!props.context || !props.sessionId) return;
-
-      let decoded;
-      try {
-        decoded = await decodeQRPayload(encoded, props.sessionId);
-      } catch (err: unknown) {
-        const message = err instanceof QRPayloadError
-          ? `Invalid QR: ${err.message}`
-          : "Failed to decode QR code - please try again.";
-        setValidationState("invalid");
-        setErrorMessage(message);
-        return;
-      }
-
-      // Validate payload matches the approval context
-      if (
-        decoded.playerId !== props.context.playerId ||
-        decoded.missionId !== props.context.missionId
-      ) {
+    (scanned: string) => {
+      const parsed = parseValidationToken(scanned);
+      if (!parsed) {
         setValidationState("invalid");
         setErrorMessage(
-          "QR code doesn't match this request - please verify the correct mission QR is being scanned.",
+          "Invalid QR code — expected a MesseBuddy validation URL.",
         );
         return;
       }
 
-      // Success - write progress event
-      try {
-        await props.onValidate(decoded.playerId, decoded.missionId);
-        setValidationState("success");
-        setErrorMessage("");
-        setCameraActive(false);
-
-        // Auto-close after 2 seconds
-        closeTimerRef.current = setTimeout(() => {
-          props.onClose();
-        }, 2000);
-      } catch {
-        setValidationState("error");
-        setErrorMessage("Failed to save validation result - please try again.");
-      }
+      setValidationState("success");
+      setErrorMessage("");
+      setCameraActive(false);
+      props.onClose();
+      navigate(
+        validationPathFromToken(parsed.sessionId, parsed.token),
+      );
     },
-    [props],
+    [navigate, props],
   );
-
-  // ── Camera error handler ─────────────────────────────────────────────────────
 
   const handleCameraError = useCallback((message: string) => {
     setValidationState("error");
@@ -97,38 +54,55 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
     setCameraActive(false);
   }, []);
 
-  // ── Simulate Scan - build mock payload and feed through decode flow ──────────
-
   const handleSimulate = useCallback(async () => {
-    if (!props.context || !props.sessionId) return;
+    try {
+      const [players, missions, session] = await Promise.all([
+        adapter.listPlayers(props.sessionId),
+        adapter.listMissions(props.sessionId),
+        adapter.getSession(props.sessionId),
+      ]);
+      const player = players[0];
+      const mission = missions.find((m) => m.validationMethod === "qr");
+      if (!player || !mission) {
+        setValidationState("error");
+        setErrorMessage("No QR mission available to simulate.");
+        return;
+      }
 
-    const mockPayload = await encodeQRPayload(
-      {
-        playerId: props.context.playerId,
-        missionId: props.context.missionId,
-        sessionId: props.sessionId,
-        xpValue: 100,
-        issuedAt: Date.now(),
-      },
-      props.sessionId,
-    );
-
-    // Feed through the same decode + validate pipeline
-    await handleDecode(mockPayload);
-  }, [props, handleDecode]);
-
-  // ── Cancel ───────────────────────────────────────────────────────────────────
+      const secret = session.qrSecret ?? props.sessionId;
+      const encoded = await encodeQRPayload(
+        {
+          playerId: player.id,
+          missionId: mission.id,
+          sessionId: props.sessionId,
+          xpValue: mission.xpValue,
+          issuedAt: Date.now(),
+        },
+        secret,
+      );
+      const url = buildValidationUrl(props.sessionId, encoded);
+      handleDecode(url);
+    } catch {
+      setValidationState("error");
+      setErrorMessage("Simulate scan failed. Please try again.");
+    }
+  }, [adapter, handleDecode, props.sessionId]);
 
   const handleCancel = useCallback(() => {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
     setCameraActive(false);
     props.onClose();
   }, [props]);
 
-  // ── Render ───────────────────────────────────────────────────────────────────
+  // Reset scan state when modal opens
+  const wasOpenRef = useRef(false);
+  useEffect(() => {
+    if (props.isOpen && !wasOpenRef.current) {
+      setCameraActive(true);
+      setValidationState("scanning");
+      setErrorMessage("");
+    }
+    wasOpenRef.current = props.isOpen;
+  }, [props.isOpen]);
 
   if (!props.isOpen) return null;
 
@@ -148,7 +122,6 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
         padding: "var(--space-4)",
       }}
     >
-      {/* Backdrop */}
       <div
         aria-hidden="true"
         style={{
@@ -160,7 +133,6 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
         onClick={handleCancel}
       />
 
-      {/* Modal content */}
       <div
         style={{
           position: "relative",
@@ -177,7 +149,6 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
           padding: "var(--space-5)",
         }}
       >
-        {/* Header */}
         <div
           style={{
             display: "flex",
@@ -218,45 +189,16 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
           </button>
         </div>
 
-        {/* Context info */}
-        {props.context && (
-          <div
-            style={{
-              padding: "var(--space-3)",
-              borderRadius: "var(--radius-md)",
-              background: "hsl(var(--color-bg))",
-              fontSize: "var(--text-sm)",
-            }}
-          >
-            <p
-              style={{
-                margin: 0,
-                fontWeight: "var(--weight-medium)",
-                color: "hsl(var(--color-muted-fg))",
-              }}
-            >
-              Scanning for:
-            </p>
-            <p
-              style={{
-                margin: "var(--space-1) 0 0",
-                fontWeight: "var(--weight-semibold)",
-              }}
-            >
-              {props.context.playerName}
-            </p>
-            <p
-              style={{
-                margin: "var(--space-1) 0 0",
-                color: "hsl(var(--color-muted-fg))",
-              }}
-            >
-              {props.context.missionTitle}
-            </p>
-          </div>
-        )}
+        <p
+          style={{
+            margin: 0,
+            fontSize: "var(--text-sm)",
+            color: "hsl(var(--color-muted-fg))",
+          }}
+        >
+          Point the camera at a player&apos;s mission QR code.
+        </p>
 
-        {/* Camera feed placeholder */}
         <div
           style={{
             width: "100%",
@@ -273,16 +215,11 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
           />
         </div>
 
-        {/* Scan status */}
         <ValidationResult
           state={validationState}
-          missionTitle={validationState === "success"
-            ? props.context?.missionTitle
-            : undefined}
           errorMessage={errorMessage || undefined}
         />
 
-        {/* Actions */}
         <div
           style={{
             display: "flex",
@@ -316,7 +253,7 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
           <button
             type="button"
             className="btn btn--secondary"
-            onClick={handleSimulate}
+            onClick={() => void handleSimulate()}
             disabled={validationState === "success"}
           >
             Simulate Scan
@@ -327,14 +264,4 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
   );
 };
 
-const AdminQRScannerModalWithKey = (props: AdminQRScannerModalProps) => {
-  // Re-mount the modal when context changes so state is always fresh
-  return (
-    <AdminQRScannerModal
-      key={props.isOpen ? contextKey(props.context) : "closed"}
-      {...props}
-    />
-  );
-};
-
-export default AdminQRScannerModalWithKey;
+export default AdminQRScannerModal;
