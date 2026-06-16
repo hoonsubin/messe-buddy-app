@@ -251,84 +251,22 @@ const LandingPage = () => {
   return (
     <>
       <div
-        className="landing"
+        className="landing landing--grid-bg"
         data-testid="landing-page"
         data-page="landing"
-        style={{
-          minHeight: "100dvh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "hsl(var(--color-bg))",
-          backgroundImage:
-            "linear-gradient(hsl(var(--color-border) / 0.5) 1px, transparent 1px), " +
-            "linear-gradient(90deg, hsl(var(--color-border) / 0.5) 1px, transparent 1px)",
-          backgroundSize: "2rem 2rem",
-          padding: "var(--space-6) var(--space-4)",
-          gap: "var(--space-6)",
-        }}
       >
         {/* Messe München logotype */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--space-3)",
-          }}
-        >
-          <div
-            aria-hidden="true"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "3rem",
-              height: "3rem",
-              background: "hsl(var(--color-primary))",
-              color: "hsl(var(--color-primary-fg))",
-              borderRadius: "var(--radius-sm)",
-              fontWeight: "var(--weight-semibold)",
-              fontSize: "var(--text-base)",
-              letterSpacing: "-0.03em",
-              flexShrink: 0,
-            }}
-          >
+        <div className="landing__brand">
+          <div className="landing__brand-mark" aria-hidden="true">
             MM
           </div>
-          <span
-            style={{
-              fontSize: "var(--text-base)",
-              color: "hsl(var(--color-muted-fg))",
-              fontWeight: "var(--weight-medium)",
-            }}
-          >
-            Messe München
-          </span>
+          <span className="landing__brand-name">Messe München</span>
         </div>
 
         {/* Headline */}
-        <div style={{ textAlign: "center" }}>
-          <h1
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "var(--text-3xl)",
-              fontWeight: "var(--weight-semibold)",
-              color: "hsl(var(--color-fg))",
-              margin: 0,
-              lineHeight: "var(--leading-tight)",
-            }}
-          >
-            Employee Onboarding
-          </h1>
-          <p
-            style={{
-              color: "hsl(var(--color-muted-fg))",
-              marginTop: "var(--space-2)",
-              marginBottom: 0,
-              fontSize: "var(--text-sm)",
-            }}
-          >
+        <div className="landing__headline">
+          <h1 className="landing__title">Employee Onboarding</h1>
+          <p className="landing__subtitle">
             {view === "role-select" && "Choose how you'd like to join"}
             {view === "join" && "Enter your session code"}
             {view === "create" && "Create a new onboarding session"}
@@ -337,39 +275,15 @@ const LandingPage = () => {
         </div>
 
         {/* Card */}
-        <div
-          className="card"
-          style={{
-            width: "100%",
-            maxWidth: "22rem",
-            padding: "var(--space-6)",
-            boxShadow: "var(--shadow-md)",
-          }}
-        >
+        <div className="landing__card">
           {/* ── role-select view ── */}
           {view === "role-select" && (
             <>
-              <p
-                style={{
-                  fontSize: "var(--text-sm)",
-                  fontWeight: "var(--weight-medium)",
-                  color: "hsl(var(--color-muted-fg))",
-                  margin: "0 0 var(--space-4)",
-                }}
-              >
-                Join as
-              </p>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-3)",
-                }}
-              >
+              <p className="landing__section-label">Join as</p>
+              <div className="landing__stack">
                 <button
                   type="button"
-                  className="btn btn--primary"
-                  style={{ width: "100%", justifyContent: "center" }}
+                  className="btn btn--primary landing__btn-full"
                   onClick={() => {
                     resetError();
                     setView("join");
@@ -379,8 +293,7 @@ const LandingPage = () => {
                 </button>
                 <button
                   type="button"
-                  className="btn btn--secondary"
-                  style={{ width: "100%", justifyContent: "center" }}
+                  className="btn btn--secondary landing__btn-full"
                   onClick={() => {
                     resetError();
                     setView("create");
@@ -389,22 +302,10 @@ const LandingPage = () => {
                   Admin
                 </button>
               </div>
-              <hr
-                style={{
-                  margin: "var(--space-5) 0",
-                  border: "none",
-                  borderTop: "1px solid hsl(var(--color-border))",
-                }}
-              />
+              <hr className="landing__rule" />
               <button
                 type="button"
-                className="btn btn--ghost"
-                style={{
-                  width: "100%",
-                  justifyContent: "center",
-                  color: "hsl(var(--color-muted-fg))",
-                  fontSize: "var(--text-sm)",
-                }}
+                className="btn btn--ghost landing__btn-muted"
                 onClick={() => {
                   resetError();
                   setView("recover");
@@ -414,66 +315,22 @@ const LandingPage = () => {
               </button>
 
               {/* Demo shortcuts */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--space-3)",
-                  marginTop: "var(--space-2)",
-                }}
-              >
-                <div
-                  style={{
-                    flex: 1,
-                    height: "1px",
-                    background: "hsl(var(--color-border))",
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: "var(--text-xs)",
-                    color: "hsl(var(--color-muted-fg))",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  demo
-                </span>
-                <div
-                  style={{
-                    flex: 1,
-                    height: "1px",
-                    background: "hsl(var(--color-border))",
-                  }}
-                />
+              <div className="landing__divider">
+                <div className="landing__divider-line" />
+                <span className="landing__divider-label">demo</span>
+                <div className="landing__divider-line" />
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "var(--space-2)",
-                }}
-              >
+              <div className="landing__demo-row">
                 <button
                   type="button"
-                  className="btn btn--ghost"
-                  style={{
-                    flex: 1,
-                    justifyContent: "center",
-                    fontSize: "var(--text-xs)",
-                    color: "hsl(var(--color-muted-fg))",
-                  }}
+                  className="btn btn--ghost landing__btn-demo"
                   onClick={handleDemoPlayer}
                 >
                   As Employee
                 </button>
                 <button
                   type="button"
-                  className="btn btn--ghost"
-                  style={{
-                    flex: 1,
-                    justifyContent: "center",
-                    fontSize: "var(--text-xs)",
-                    color: "hsl(var(--color-muted-fg))",
-                  }}
+                  className="btn btn--ghost landing__btn-demo"
                   onClick={handleDemoAdmin}
                 >
                   As Admin
@@ -485,54 +342,30 @@ const LandingPage = () => {
           {/* ── join view ── */}
           {view === "join" && (
             <>
-              <label
-                htmlFor="session-code"
-                style={{
-                  display: "block",
-                  fontSize: "var(--text-sm)",
-                  fontWeight: "var(--weight-medium)",
-                  color: "hsl(var(--color-fg))",
-                  marginBottom: "var(--space-2)",
-                }}
-              >
-                Session code
-              </label>
-              <input
-                id="session-code"
-                type="text"
-                className="form-input"
-                placeholder="Ask your Game Master for the code"
-                value={sessionCode}
-                onChange={(e) => setSessionCode(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void handleJoin();
-                }}
-                autoFocus
-                style={{ width: "100%", marginBottom: "var(--space-4)" }}
-              />
-              {errorMessage && (
-                <p
-                  role="alert"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "hsl(var(--color-destructive))",
-                    margin: "0 0 var(--space-3)",
+              <div className="form-field landing__form-field">
+                <label htmlFor="session-code" className="form-label">
+                  Session code
+                </label>
+                <input
+                  id="session-code"
+                  type="text"
+                  className="form-input"
+                  placeholder="Ask your Game Master for the code"
+                  value={sessionCode}
+                  onChange={(e) => setSessionCode(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void handleJoin();
                   }}
-                >
-                  {errorMessage}
-                </p>
+                  autoFocus
+                />
+              </div>
+              {errorMessage && (
+                <p className="form-error" role="alert">{errorMessage}</p>
               )}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-2)",
-                }}
-              >
+              <div className="landing__actions">
                 <button
                   type="button"
-                  className="btn btn--primary"
-                  style={{ width: "100%", justifyContent: "center" }}
+                  className="btn btn--primary landing__btn-full"
                   disabled={!sessionCode.trim() || status === "loading"}
                   onClick={() => void handleJoin()}
                 >
@@ -540,8 +373,7 @@ const LandingPage = () => {
                 </button>
                 <button
                   type="button"
-                  className="btn btn--ghost"
-                  style={{ width: "100%", justifyContent: "center" }}
+                  className="btn btn--ghost landing__btn-full"
                   onClick={() => {
                     resetError();
                     setView("role-select");
@@ -556,54 +388,30 @@ const LandingPage = () => {
           {/* ── create view ── */}
           {view === "create" && (
             <>
-              <label
-                htmlFor="session-name"
-                style={{
-                  display: "block",
-                  fontSize: "var(--text-sm)",
-                  fontWeight: "var(--weight-medium)",
-                  color: "hsl(var(--color-fg))",
-                  marginBottom: "var(--space-2)",
-                }}
-              >
-                Session name
-              </label>
-              <input
-                id="session-name"
-                type="text"
-                className="form-input"
-                placeholder="e.g. Munich Onboarding June 2026"
-                value={sessionName}
-                onChange={(e) => setSessionName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void handleCreate();
-                }}
-                autoFocus
-                style={{ width: "100%", marginBottom: "var(--space-4)" }}
-              />
-              {errorMessage && (
-                <p
-                  role="alert"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "hsl(var(--color-destructive))",
-                    margin: "0 0 var(--space-3)",
+              <div className="form-field landing__form-field">
+                <label htmlFor="session-name" className="form-label">
+                  Session name
+                </label>
+                <input
+                  id="session-name"
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Munich Onboarding June 2026"
+                  value={sessionName}
+                  onChange={(e) => setSessionName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void handleCreate();
                   }}
-                >
-                  {errorMessage}
-                </p>
+                  autoFocus
+                />
+              </div>
+              {errorMessage && (
+                <p className="form-error" role="alert">{errorMessage}</p>
               )}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-2)",
-                }}
-              >
+              <div className="landing__actions">
                 <button
                   type="button"
-                  className="btn btn--primary"
-                  style={{ width: "100%", justifyContent: "center" }}
+                  className="btn btn--primary landing__btn-full"
                   disabled={!sessionName.trim() || status === "loading"}
                   onClick={() => void handleCreate()}
                 >
@@ -611,8 +419,7 @@ const LandingPage = () => {
                 </button>
                 <button
                   type="button"
-                  className="btn btn--ghost"
-                  style={{ width: "100%", justifyContent: "center" }}
+                  className="btn btn--ghost landing__btn-full"
                   onClick={() => {
                     resetError();
                     setView("role-select");
@@ -623,54 +430,21 @@ const LandingPage = () => {
               </div>
 
               {/* Template import */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--space-3)",
-                  marginTop: "var(--space-2)",
-                }}
-              >
-                <div
-                  style={{
-                    flex: 1,
-                    height: "1px",
-                    background: "hsl(var(--color-border))",
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: "var(--text-xs)",
-                    color: "hsl(var(--color-muted-fg))",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  or
-                </span>
-                <div
-                  style={{
-                    flex: 1,
-                    height: "1px",
-                    background: "hsl(var(--color-border))",
-                  }}
-                />
+              <div className="landing__divider">
+                <div className="landing__divider-line" />
+                <span className="landing__divider-label">or</span>
+                <div className="landing__divider-line" />
               </div>
               <input
                 ref={templateFileRef}
                 type="file"
                 accept="application/json,.json"
-                style={{ display: "none" }}
+                className="landing__file-input"
                 onChange={(e) => void handleTemplateImport(e)}
               />
               <button
                 type="button"
-                className="btn btn--ghost"
-                style={{
-                  width: "100%",
-                  justifyContent: "center",
-                  fontSize: "var(--text-sm)",
-                  color: "hsl(var(--color-muted-fg))",
-                }}
+                className="btn btn--ghost landing__btn-muted"
                 disabled={status === "loading"}
                 onClick={() => templateFileRef.current?.click()}
               >
@@ -678,13 +452,7 @@ const LandingPage = () => {
               </button>
               <button
                 type="button"
-                className="btn btn--ghost"
-                style={{
-                  width: "100%",
-                  justifyContent: "center",
-                  fontSize: "var(--text-sm)",
-                  color: "hsl(var(--color-muted-fg))",
-                }}
+                className="btn btn--ghost landing__btn-muted"
                 disabled={status === "loading"}
                 onClick={() => {
                   resetError();
@@ -699,75 +467,26 @@ const LandingPage = () => {
           {/* ── templates view ── */}
           {view === "templates" && (
             <>
-              <p
-                style={{
-                  fontSize: "var(--text-sm)",
-                  fontWeight: "var(--weight-medium)",
-                  color: "hsl(var(--color-fg))",
-                  margin: "0 0 var(--space-3)",
-                }}
-              >
+              <p className="landing__section-label landing__section-label--emphasis">
                 Select a template to create a new session
               </p>
               {errorMessage && (
-                <p
-                  role="alert"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "hsl(var(--color-destructive))",
-                    margin: "0 0 var(--space-3)",
-                  }}
-                >
-                  {errorMessage}
-                </p>
+                <p className="form-error" role="alert">{errorMessage}</p>
               )}
               {templates.length === 0 &&
                 !errorMessage &&
                 status !== "loading" && (
-                <p
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "hsl(var(--color-muted-fg))",
-                    margin: "0 0 var(--space-3)",
-                  }}
-                >
+                <p className="landing__hint">
                   No templates saved yet. Create a session and save it as a
                   template to see it here.
                 </p>
               )}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-2)",
-                }}
-              >
+              <div className="landing__template-list">
                 {templates.map((t) => (
-                  <div
-                    key={t.name}
-                    className="card"
-                    style={{
-                      padding: "var(--space-3)",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
+                  <div key={t.name} className="card landing__template-row">
                     <div>
-                      <div
-                        style={{
-                          fontWeight: "var(--weight-medium)",
-                          fontSize: "var(--text-sm)",
-                        }}
-                      >
-                        {t.name}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "var(--text-xs)",
-                          color: "hsl(var(--color-muted-fg))",
-                        }}
-                      >
+                      <div className="landing__template-name">{t.name}</div>
+                      <div className="landing__template-meta">
                         {t.milestones.length} milestones · {t.missions.length}
                         {" "}
                         missions
@@ -777,7 +496,8 @@ const LandingPage = () => {
                       type="button"
                       className="btn btn--secondary"
                       disabled={status === "loading"}
-                      onClick={() => void handleLoadTemplateFromStore(t.name)}
+                      onClick={() =>
+                        void handleLoadTemplateFromStore(t.name)}
                     >
                       {status === "loading" ? "Loading…" : "Use Template"}
                     </button>
@@ -786,12 +506,7 @@ const LandingPage = () => {
               </div>
               <button
                 type="button"
-                className="btn btn--ghost"
-                style={{
-                  width: "100%",
-                  justifyContent: "center",
-                  marginTop: "var(--space-3)",
-                }}
+                className="btn btn--ghost landing__back-btn"
                 onClick={() => {
                   resetError();
                   setView("create");
@@ -805,81 +520,44 @@ const LandingPage = () => {
           {/* ── recover view ── */}
           {view === "recover" && (
             <>
-              <label
-                htmlFor="recover-key"
-                style={{
-                  display: "block",
-                  fontSize: "var(--text-sm)",
-                  fontWeight: "var(--weight-medium)",
-                  color: "hsl(var(--color-fg))",
-                  marginBottom: "var(--space-2)",
-                }}
-              >
-                Recovery key
-              </label>
-              <input
-                id="recover-key"
-                type="text"
-                className="form-input"
-                placeholder="8-character key"
-                value={recoveryKey}
-                onChange={(e) => setRecoveryKey(e.target.value)}
-                autoCapitalize="characters"
-                autoFocus
-                style={{
-                  width: "100%",
-                  fontFamily: "var(--font-mono)",
-                  letterSpacing: "0.1em",
-                  marginBottom: "var(--space-3)",
-                }}
-              />
-              <label
-                htmlFor="recover-session"
-                style={{
-                  display: "block",
-                  fontSize: "var(--text-sm)",
-                  fontWeight: "var(--weight-medium)",
-                  color: "hsl(var(--color-fg))",
-                  marginBottom: "var(--space-2)",
-                }}
-              >
-                Session ID
-              </label>
-              <input
-                id="recover-session"
-                type="text"
-                className="form-input"
-                placeholder="Shared by your Game Master"
-                value={recoverySessionId}
-                onChange={(e) => setRecoverySessionId(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void handleRecover();
-                }}
-                style={{ width: "100%", marginBottom: "var(--space-4)" }}
-              />
-              {errorMessage && (
-                <p
-                  role="alert"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "hsl(var(--color-destructive))",
-                    margin: "0 0 var(--space-3)",
+              <div className="form-field landing__form-field--compact">
+                <label htmlFor="recover-key" className="form-label">
+                  Recovery key
+                </label>
+                <input
+                  id="recover-key"
+                  type="text"
+                  className="form-input landing__input-mono"
+                  placeholder="8-character key"
+                  value={recoveryKey}
+                  onChange={(e) => setRecoveryKey(e.target.value)}
+                  autoCapitalize="characters"
+                  autoFocus
+                />
+              </div>
+              <div className="form-field landing__form-field">
+                <label htmlFor="recover-session" className="form-label">
+                  Session ID
+                </label>
+                <input
+                  id="recover-session"
+                  type="text"
+                  className="form-input"
+                  placeholder="Shared by your Game Master"
+                  value={recoverySessionId}
+                  onChange={(e) => setRecoverySessionId(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void handleRecover();
                   }}
-                >
-                  {errorMessage}
-                </p>
+                />
+              </div>
+              {errorMessage && (
+                <p className="form-error" role="alert">{errorMessage}</p>
               )}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-2)",
-                }}
-              >
+              <div className="landing__actions">
                 <button
                   type="button"
-                  className="btn btn--primary"
-                  style={{ width: "100%", justifyContent: "center" }}
+                  className="btn btn--primary landing__btn-full"
                   disabled={!recoveryKey.trim() ||
                     !recoverySessionId.trim() ||
                     status === "loading"}
@@ -889,8 +567,7 @@ const LandingPage = () => {
                 </button>
                 <button
                   type="button"
-                  className="btn btn--ghost"
-                  style={{ width: "100%", justifyContent: "center" }}
+                  className="btn btn--ghost landing__btn-full"
                   onClick={() => {
                     resetError();
                     setView("role-select");
@@ -904,18 +581,11 @@ const LandingPage = () => {
         </div>
 
         {/* Footer */}
-        <p
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "hsl(var(--color-muted-fg))",
-            margin: 0,
-            textAlign: "center",
-          }}
-        >
+        <p className="landing__footer">
           Having trouble?{" "}
           <a
             href="mailto:it@messe-muenchen.de"
-            style={{ color: "hsl(var(--color-primary))" }}
+            className="landing__footer-link"
           >
             Contact IT Support
           </a>
