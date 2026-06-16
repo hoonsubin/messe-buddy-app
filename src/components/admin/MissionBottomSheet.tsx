@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MdArrowBack, MdClose } from "react-icons/md";
 import type { DraftMission, Milestone, Mission } from "../../types/index.ts";
-import MissionEditor from "./MissionEditor.tsx";
+import type { StoredDraft } from "../../utils/draftStorage.ts";
+import {
+  clearStoredDraft,
+  loadStoredDraft,
+  saveStoredDraft,
+} from "../../utils/draftStorage.ts";
+import ConfirmSheet from "./ConfirmSheet.tsx";
+import MissionEditorView from "./MissionEditorView.tsx";
+import MissionListView from "./MissionListView.tsx";
 import SaveActions from "./SaveActions.tsx";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
-interface StoredDraft {
-  readonly draft: DraftMission;
-  readonly missionId: string;
-  readonly savedAt: string;
-}
 
 type SheetView = "list" | "editor";
 type ConfirmState = "idle" | "pending-close";
@@ -34,58 +36,6 @@ interface MissionBottomSheetProps {
   readonly onAddMission: () => void;
   readonly onClose: () => void;
 }
-
-// ── Draft localStorage helpers ────────────────────────────────────────────────
-
-const DRAFT_KEY = (sessionId: string, missionId: string) =>
-  `mb_draft_${sessionId}_${missionId}`;
-
-const loadStoredDraft = (
-  sessionId: string,
-  missionId: string,
-): StoredDraft | null => {
-  try {
-    const raw = localStorage.getItem(DRAFT_KEY(sessionId, missionId));
-    return raw ? (JSON.parse(raw) as StoredDraft) : null;
-  } catch {
-    return null;
-  }
-};
-
-const saveStoredDraft = (
-  sessionId: string,
-  missionId: string,
-  draft: DraftMission,
-) => {
-  const payload: StoredDraft = {
-    draft,
-    missionId,
-    savedAt: new Date().toISOString(),
-  };
-  try {
-    localStorage.setItem(
-      DRAFT_KEY(sessionId, missionId),
-      JSON.stringify(payload),
-    );
-  } catch { /* storage full or disabled */ }
-};
-
-const clearStoredDraft = (sessionId: string, missionId: string) => {
-  try {
-    localStorage.removeItem(DRAFT_KEY(sessionId, missionId));
-  } catch { /* ignore */ }
-};
-
-const formatTime = (iso: string) => {
-  try {
-    return new Date(iso).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "earlier";
-  }
-};
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -246,6 +196,22 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
     onClose();
   }, [activeMissionId, sessionId, onDiscard, onClose]);
 
+  // ── Callback wrappers for list-view navigation ──────────────────────────────
+  // MissionListView doesn't know about the sheet's internal navigation, so we
+  // wrap the external callbacks to also navigate to the editor view.
+  const handleMissionSelectAndNavigate = useCallback(
+    (missionId: string) => {
+      onMissionSelect(missionId);
+      navigateTo("editor", "forward");
+    },
+    [onMissionSelect, navigateTo],
+  );
+
+  const handleAddMissionAndNavigate = useCallback(() => {
+    onAddMission();
+    navigateTo("editor", "forward");
+  }, [onAddMission, navigateTo]);
+
   // ── Computed values ─────────────────────────────────────────────────────────
   const sheetTransform = isDragging
     ? `translateY(${dragY}px)`
@@ -373,134 +339,27 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
           >
             {view === "list"
               ? (
-                /* ── List view ── */
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100%",
-                  }}
-                >
-                  <ul className="sheet-mission-list" role="list">
-                    {missions.map((m) => (
-                      <li key={m.id}>
-                        <button
-                          type="button"
-                          className={`sheet-mission-item${
-                            activeMissionId === m.id
-                              ? " sheet-mission-item--active"
-                              : ""
-                          }`}
-                          onClick={() => {
-                            onMissionSelect(m.id);
-                            navigateTo("editor", "forward");
-                          }}
-                        >
-                          {m.title || (
-                            <em style={{ opacity: 0.5 }}>
-                              Untitled
-                            </em>
-                          )}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <div
-                    style={{ padding: "var(--space-4) var(--space-5)" }}
-                  >
-                    <button
-                      type="button"
-                      className="btn btn--secondary"
-                      style={{
-                        width: "100%",
-                        minHeight: "var(--touch-target)",
-                      }}
-                      onClick={() => {
-                        onAddMission();
-                        // onAddMission will eventually set activeMissionId, which
-                        // triggers the useEffect that navigates to editor view
-                        navigateTo("editor", "forward");
-                      }}
-                    >
-                      + Add mission
-                    </button>
-                  </div>
-                </div>
+                <MissionListView
+                  missions={missions}
+                  activeMissionId={activeMissionId}
+                  onMissionSelect={handleMissionSelectAndNavigate}
+                  onAddMission={handleAddMissionAndNavigate}
+                />
               )
               : (
-                /* ── Editor view ── */
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    minHeight: "100%",
+                <MissionEditorView
+                  draft={draft}
+                  xpPreview={xpPreview}
+                  storedDraft={storedDraft}
+                  onDraftChange={onDraftChange}
+                  onDismissStoredDraft={() => setStoredDraft(null)}
+                  onLoadStoredDraft={() => {
+                    if (storedDraft) {
+                      onDraftChange(storedDraft.draft);
+                      setStoredDraft(null);
+                    }
                   }}
-                >
-                  {/* Draft restore banner */}
-                  {storedDraft && (
-                    <div className="draft-banner" role="status">
-                      <span className="draft-banner__text">
-                        Unsaved draft from {formatTime(storedDraft.savedAt)}
-                      </span>
-                      <div className="draft-banner__actions">
-                        <button
-                          type="button"
-                          className="btn btn--ghost"
-                          style={{
-                            fontSize: "var(--text-xs)",
-                            padding: "var(--space-1) var(--space-2)",
-                          }}
-                          onClick={() => setStoredDraft(null)}
-                        >
-                          Dismiss
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn--secondary"
-                          style={{
-                            fontSize: "var(--text-xs)",
-                            padding: "var(--space-1) var(--space-2)",
-                          }}
-                          onClick={() => {
-                            onDraftChange(storedDraft.draft);
-                            setStoredDraft(null);
-                          }}
-                        >
-                          Load draft
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {draft
-                    ? (
-                      <div
-                        style={{
-                          padding:
-                            "var(--space-4) var(--space-5) var(--space-6)",
-                          flex: 1,
-                        }}
-                      >
-                        <MissionEditor
-                          draft={draft}
-                          xpPreview={xpPreview}
-                          onDraftChange={onDraftChange}
-                        />
-                      </div>
-                    )
-                    : (
-                      <p
-                        style={{
-                          padding: "var(--space-6) var(--space-5)",
-                          color: "hsl(var(--color-muted-fg))",
-                          fontSize: "var(--text-sm)",
-                        }}
-                      >
-                        Select a mission to edit
-                      </p>
-                    )}
-                </div>
+                />
               )}
           </div>
         </div>
@@ -520,34 +379,11 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
 
         {/* ── Dismiss confirmation overlay ── */}
         {confirmState === "pending-close" && (
-          <div className="sheet-confirm" role="alertdialog" aria-modal="true">
-            <p className="sheet-confirm__title">Unsaved changes</p>
-            <p className="sheet-confirm__desc">
-              What would you like to do with your edits?
-            </p>
-            <button
-              type="button"
-              className="btn btn--primary sheet-confirm__btn"
-              onClick={handleKeepEditing}
-            >
-              Keep editing
-            </button>
-            <button
-              type="button"
-              className="btn btn--secondary sheet-confirm__btn"
-              onClick={handleSaveDraft}
-            >
-              Save as draft
-            </button>
-            <button
-              type="button"
-              className="btn btn--ghost sheet-confirm__btn"
-              style={{ color: "hsl(var(--color-destructive))" }}
-              onClick={handleDiscardAndClose}
-            >
-              Discard changes
-            </button>
-          </div>
+          <ConfirmSheet
+            onKeepEditing={handleKeepEditing}
+            onSaveDraft={handleSaveDraft}
+            onDiscardAndClose={handleDiscardAndClose}
+          />
         )}
       </div>
     </>
