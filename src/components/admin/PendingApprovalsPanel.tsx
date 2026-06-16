@@ -8,7 +8,6 @@ interface PendingApprovalsPanelProps {
   readonly missions: ReadonlyArray<Mission>;
   readonly onApprove: (playerId: string, missionId: string) => void;
   readonly onReject: (playerId: string, missionId: string) => void;
-  readonly onScanQR: (playerId: string, missionId: string) => void;
 }
 
 const PendingApprovalsPanel = (props: PendingApprovalsPanelProps) => (
@@ -73,7 +72,6 @@ const PendingApprovalsPanel = (props: PendingApprovalsPanelProps) => (
                 xpValue={mission?.xpValue ?? 0}
                 onApprove={() => props.onApprove(evt.playerId, evt.missionId)}
                 onReject={() => props.onReject(evt.playerId, evt.missionId)}
-                onScanQR={() => props.onScanQR(evt.playerId, evt.missionId)}
               />
             );
           })}
