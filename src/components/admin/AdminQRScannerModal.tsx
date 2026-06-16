@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdClose } from "react-icons/md";
 import { useAdapter } from "../../adapters/useAdapter.ts";
@@ -22,9 +22,10 @@ interface AdminQRScannerModalProps {
 const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
   const navigate = useNavigate();
   const adapter = useAdapter();
-  const [cameraActive, setCameraActive] = useState(true);
+  const [cameraReady, setCameraReady] = useState(false);
   const [validationState, setValidationState] = useState<ScanState>("scanning");
   const [errorMessage, setErrorMessage] = useState("");
+  const cameraActive = props.isOpen && cameraReady;
 
   const handleDecode = useCallback(
     (scanned: string) => {
@@ -39,7 +40,7 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
 
       setValidationState("success");
       setErrorMessage("");
-      setCameraActive(false);
+      setCameraReady(false);
       props.onClose();
       navigate(
         validationPathFromToken(parsed.sessionId, parsed.token),
@@ -51,7 +52,7 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
   const handleCameraError = useCallback((message: string) => {
     setValidationState("error");
     setErrorMessage(message);
-    setCameraActive(false);
+    setCameraReady(false);
   }, []);
 
   const handleSimulate = useCallback(async () => {
@@ -89,19 +90,27 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
   }, [adapter, handleDecode, props.sessionId]);
 
   const handleCancel = useCallback(() => {
-    setCameraActive(false);
+    setCameraReady(false);
     props.onClose();
   }, [props]);
 
-  // Reset scan state when modal opens
-  const wasOpenRef = useRef(false);
+  // Start camera after the modal is painted (avoids first-open getUserMedia races).
   useEffect(() => {
-    if (props.isOpen && !wasOpenRef.current) {
-      setCameraActive(true);
-      setValidationState("scanning");
-      setErrorMessage("");
-    }
-    wasOpenRef.current = props.isOpen;
+    if (!props.isOpen) return;
+
+    setValidationState("scanning");
+    setErrorMessage("");
+
+    let cancelled = false;
+    const frameId = requestAnimationFrame(() => {
+      if (!cancelled) setCameraReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frameId);
+      setCameraReady(false);
+    };
   }, [props.isOpen]);
 
   if (!props.isOpen) return null;
@@ -236,7 +245,7 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
                 onClick={() => {
                   setValidationState("scanning");
                   setErrorMessage("");
-                  setCameraActive(true);
+                  setCameraReady(true);
                 }}
               >
                 {validationState === "error" ? "Retry camera" : "Start camera"}

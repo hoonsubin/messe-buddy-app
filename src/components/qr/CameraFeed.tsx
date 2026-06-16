@@ -25,6 +25,67 @@ interface CameraFeedProps {
 }
 
 const SCAN_COOLDOWN_MS = 3000;
+const PREVIEW_TIMEOUT_MS = 8000;
+
+const reportCameraError = (
+  onError: ((message: string) => void) | undefined,
+  err: unknown,
+): void => {
+  const name = err instanceof DOMException ? err.name : "";
+  if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+    onError?.(
+      "Camera access required - please allow camera permissions in your browser settings.",
+    );
+  } else if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+    onError?.("No camera found on this device.");
+  } else {
+    onError?.(
+      `Unable to access camera: ${
+        err instanceof Error ? err.message : "Unknown error"
+      }`,
+    );
+  }
+};
+
+const requestVideoStream = async (): Promise<MediaStream> => {
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" } },
+    });
+  } catch {
+    return await navigator.mediaDevices.getUserMedia({ video: true });
+  }
+};
+
+const waitForVideoMetadata = (video: HTMLVideoElement): Promise<void> => {
+  if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const onMeta = () => {
+      cleanup();
+      resolve();
+    };
+    const onError = () => {
+      cleanup();
+      reject(new Error("Camera preview failed to load"));
+    };
+    const timeoutId = setTimeout(() => {
+      cleanup();
+      reject(new Error("Camera preview timed out"));
+    }, PREVIEW_TIMEOUT_MS);
+
+    const cleanup = () => {
+      video.removeEventListener("loadedmetadata", onMeta);
+      video.removeEventListener("error", onError);
+      clearTimeout(timeoutId);
+    };
+
+    video.addEventListener("loadedmetadata", onMeta);
+    video.addEventListener("error", onError);
+  });
+};
 
 const CameraFeed = (props: CameraFeedProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -33,11 +94,18 @@ const CameraFeed = (props: CameraFeedProps) => {
   const rafRef = useRef<number | null>(null);
   const cooldownRef = useRef(false);
 
-  // Hold the scan loop function in a ref so we can reference it from within
-  // itself without a hoisting issue.
-  const scanLoopRef = useRef<() => void>(() => {});
+  const onDecodeRef = useRef(props.onDecode);
+  const onErrorRef = useRef(props.onError);
 
-  // ── Scan loop ────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    onDecodeRef.current = props.onDecode;
+  }, [props.onDecode]);
+
+  useEffect(() => {
+    onErrorRef.current = props.onError;
+  }, [props.onError]);
+
+  const scanLoopRef = useRef<() => void>(() => {});
 
   const runScanLoop = useCallback(() => {
     const video = videoRef.current;
@@ -54,7 +122,6 @@ const CameraFeed = (props: CameraFeedProps) => {
       return;
     }
 
-    // Lazily create offscreen canvas at video dimensions
     if (
       !canvasRef.current ||
       canvasRef.current.width !== width ||
@@ -77,10 +144,9 @@ const CameraFeed = (props: CameraFeedProps) => {
 
     if (!cooldownRef.current) {
       const code = jsQR(imageData.data, width, height);
-      if (code && code.data) {
+      if (code?.data) {
         cooldownRef.current = true;
-        props.onDecode(code.data);
-        // Re-enable scanning after cooldown (for retry on mismatch)
+        onDecodeRef.current(code.data);
         setTimeout(() => {
           cooldownRef.current = false;
         }, SCAN_COOLDOWN_MS);
@@ -88,23 +154,18 @@ const CameraFeed = (props: CameraFeedProps) => {
     }
 
     rafRef.current = requestAnimationFrame(scanLoopRef.current);
-  }, [props]);
+  }, []);
 
-  // Keep the ref in sync via effect, not during render
   useEffect(() => {
     scanLoopRef.current = runScanLoop;
   }, [runScanLoop]);
 
-  // ── Start / stop camera ──────────────────────────────────────────────────────
-
   const stopCamera = useCallback(() => {
-    // Cancel the scan loop
     if (rafRef.current !== null) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
 
-    // Stop all media tracks
     if (streamRef.current) {
       for (const track of streamRef.current.getTracks()) {
         track.stop();
@@ -112,60 +173,62 @@ const CameraFeed = (props: CameraFeedProps) => {
       streamRef.current = null;
     }
 
-    // Clear video source
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
   }, []);
 
-  const startCamera = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
-      streamRef.current = stream;
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-    } catch (err: unknown) {
-      const name = err instanceof DOMException ? err.name : "";
-      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-        props.onError?.(
-          "Camera access required - please allow camera permissions in your browser settings.",
-        );
-      } else if (
-        name === "NotFoundError" || name === "DevicesNotFoundError"
-      ) {
-        props.onError?.("No camera found on this device.");
-      } else {
-        props.onError?.(
-          `Unable to access camera: ${
-            err instanceof Error ? err.message : "Unknown error"
-          }`,
-        );
-      }
-    }
-  }, [props]);
-
-  // ── Lifecycle ────────────────────────────────────────────────────────────────
-
   useEffect(() => {
-    if (props.isActive) {
-      cooldownRef.current = false;
-      startCamera();
-      rafRef.current = requestAnimationFrame(scanLoopRef.current);
-    } else {
+    if (!props.isActive) {
       stopCamera();
+      return;
     }
+
+    let cancelled = false;
+    cooldownRef.current = false;
+
+    const startCamera = async () => {
+      try {
+        const stream = await requestVideoStream();
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        const video = videoRef.current;
+        if (!video) {
+          stream.getTracks().forEach((track) => track.stop());
+          onErrorRef.current?.(
+            "Camera preview not ready. Please try again.",
+          );
+          return;
+        }
+
+        streamRef.current = stream;
+        video.muted = true;
+        video.srcObject = stream;
+
+        await waitForVideoMetadata(video);
+        if (cancelled) return;
+
+        await video.play();
+        if (cancelled) return;
+
+        rafRef.current = requestAnimationFrame(scanLoopRef.current);
+      } catch (err: unknown) {
+        if (!cancelled) {
+          reportCameraError(onErrorRef.current, err);
+        }
+      }
+    };
+
+    void startCamera();
 
     return () => {
+      cancelled = true;
       stopCamera();
     };
-  }, [props.isActive, startCamera, stopCamera]);
-
-  // ── Render ───────────────────────────────────────────────────────────────────
+  }, [props.isActive, stopCamera]);
 
   return (
     <div
@@ -173,38 +236,36 @@ const CameraFeed = (props: CameraFeedProps) => {
       data-testid="camera-feed"
       data-active={props.isActive}
     >
-      {props.isActive
-        ? (
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            aria-label="QR scanner camera preview"
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              display: "block",
-            }}
-          />
-        )
-        : (
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "hsl(var(--color-muted))",
-              color: "hsl(var(--color-muted-fg))",
-              fontSize: "var(--text-sm)",
-            }}
-          >
-            Camera inactive
-          </div>
-        )}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        aria-hidden={!props.isActive}
+        aria-label="QR scanner camera preview"
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          display: props.isActive ? "block" : "none",
+        }}
+      />
+      {!props.isActive && (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "hsl(var(--color-muted))",
+            color: "hsl(var(--color-muted-fg))",
+            fontSize: "var(--text-sm)",
+          }}
+        >
+          Camera inactive
+        </div>
+      )}
     </div>
   );
 };

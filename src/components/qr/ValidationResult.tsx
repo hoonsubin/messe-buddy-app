@@ -1,9 +1,9 @@
 // Shows scan result (idle / scanning / success / invalid / error).
 import {
-  MdBluetoothSearching,
   MdCheck,
   MdClose,
   MdError,
+  MdQrCodeScanner,
   MdRadioButtonUnchecked,
 } from "react-icons/md";
 
@@ -28,7 +28,7 @@ const STATE_CONFIG: Record<
 
 const STATE_ICON: Record<ValidationState, typeof MdCheck> = {
   idle: MdRadioButtonUnchecked,
-  scanning: MdBluetoothSearching,
+  scanning: MdQrCodeScanner,
   success: MdCheck,
   invalid: MdClose,
   error: MdError,
