@@ -70,6 +70,7 @@ const AdminCockpitPage = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>(
     ADMIN_TABS.ACTIVE_SESSION,
   );
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   // ── Scroll-collapse for the sidebar on mobile ──────────────────────────────
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -86,13 +87,9 @@ const AdminCockpitPage = () => {
     selectedPlayer,
     selectedPlayerProgress,
     pendingEvents,
-    qrScannerContext,
     handlePlayerSelect,
     handleApprove,
     handleReject,
-    handleScanQR,
-    handleQRValidate,
-    closeQRScanner,
   } = useAdminPlayers({
     sid,
     milestones,
@@ -482,6 +479,7 @@ const AdminCockpitPage = () => {
               onAddMilestoneAt={milestoneEditor.handleAddMilestoneAt}
               onDelete={milestoneEditor.handleDeleteMilestone}
               onUploadBackground={handleUploadBackground}
+              onOpenScanner={() => setScannerOpen(true)}
             />
           </div>
 
@@ -510,7 +508,6 @@ const AdminCockpitPage = () => {
                 void handleApprove(playerId, missionId)}
               onReject={(playerId, missionId) =>
                 void handleReject(playerId, missionId)}
-              onScanQR={handleScanQR}
             />
             <BuddyAssignmentForm
               players={players}
@@ -585,12 +582,9 @@ const AdminCockpitPage = () => {
 
       {/* ── QR Scanner modal ────────────────────────────────────────────── */}
       <AdminQRScannerModal
-        isOpen={qrScannerContext !== null}
-        context={qrScannerContext}
+        isOpen={scannerOpen}
         sessionId={sid}
-        onClose={closeQRScanner}
-        onValidate={(playerId, missionId) =>
-          handleQRValidate(playerId, missionId)}
+        onClose={() => setScannerOpen(false)}
       />
 
       {/* ── Full-screen mission editor bottom sheet ──────────────────────── */}

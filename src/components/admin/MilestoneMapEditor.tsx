@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MdAdd, MdImage, MdZoomIn, MdZoomOut } from "react-icons/md";
+import { MdAdd, MdImage, MdQrCode2, MdZoomIn, MdZoomOut } from "react-icons/md";
 import type { Milestone } from "../../types/index.ts";
 import MapViewport, { type MapViewportHandle } from "../shared/MapViewport.tsx";
 import MilestoneNode from "../shared/MilestoneNode.tsx";
@@ -16,6 +16,7 @@ interface MilestoneMapEditorProps {
   readonly onAddMilestoneAt: (xPercent: number, yPercent: number) => void;
   readonly onDelete: (id: string) => void;
   readonly onUploadBackground: (file: File) => void;
+  readonly onOpenScanner?: () => void;
 }
 
 interface DragState {
@@ -320,6 +321,17 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
           <MdZoomOut size={20} aria-hidden="true" />
         </button>
         <div className="map-toolbar-sep" aria-hidden="true" />
+        {props.onOpenScanner && (
+          <button
+            type="button"
+            className="map-toolbar-btn"
+            aria-label="Open QR scanner"
+            title="Scan player QR code"
+            onClick={props.onOpenScanner}
+          >
+            <MdQrCode2 size={20} aria-hidden="true" />
+          </button>
+        )}
         <label
           className="map-toolbar-btn"
           htmlFor="map-bg-upload"
