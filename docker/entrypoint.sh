@@ -32,7 +32,10 @@ export KEY
 # Render nginx config, substituting ONLY ${KEY} (leaves $host, $uri, … intact).
 envsubst '${KEY}' < "$NGINX_TEMPLATE" > "$NGINX_CONF"
 
-# Front-end runtime config: same-origin proxy, real (non-mock) chat.
+# Front-end runtime config: same-origin proxy for LLM and PB.
+# llmBaseUrl: same-origin /llm proxy (nginx injects Authorization server-side).
+# useMockChat: false in production (real LLM streaming).
+# pbUrl: unset (browser uses same-origin /api; the adapter defaults to /api).
 cat > "$CONFIG_JS" <<'EOF'
 window.__MB_CONFIG__ = { llmBaseUrl: "/llm", useMockChat: false };
 EOF

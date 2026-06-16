@@ -97,7 +97,36 @@ All 17 constraints in [`SPECS.md`](SPECS.md:946).
 - **`useChatStream` is a Phase 1 stub** ([`useChatStream.ts`](src/hooks/useChatStream.ts:20)) - returns empty state. Real AI streaming will be wired in Phase 6.
 - **Build-time env vars** (`VITE_PB_URL`, `VITE_LITELLM_URL`) are frozen in the JS bundle at build time. Runtime env changes won't affect them - you must rebuild.
 - **`consume-docs/`** feeds the RAG ingestion pipeline. Documents placed there are chunked, embedded, and stored in pgvector.
-- Use the PlayWright MCP tool for testing. Always view from the user's perspective. All screenshots must be saved in `.playwright-mcp`
+
+---
+
+## Component Implementation Policy
+
+- **Keep components lean.** If a single component file exceeds ~200 lines, extract reusable pieces (types, UI sub-components, hooks) into separate files. A component file should express orchestration logic, not inline hundreds of lines of markup.
+- **Prefer extraction over nesting.** When a component has clearly separable concerns — e.g., list view vs. editor view, drag-to-dismiss logic, draft persistence — extract them into dedicated modules under [`src/components/`](src/components/) or [`src/utils/`](src/utils/) as appropriate.
+- **Small components are preferred.** Each file should have one clear responsibility. Reference canonical patterns like [`ConfirmSheet`](src/components/admin/ConfirmSheet.tsx), [`DraftRestoreBanner`](src/components/admin/DraftRestoreBanner.tsx), and [`MissionListView`](src/components/admin/MissionListView.tsx) (extracted from [`MissionBottomSheet`](src/components/admin/MissionBottomSheet.tsx)).
+
+---
+
+## Mandatory Smoke Testing After UI Changes
+
+- **Any change to a UI component must be validated with Playwright** before marking the task complete. Use `browser_run_code_unsafe` or `browser_snapshot` to verify that:
+  - The component renders without error
+  - Core user interactions (click, input, navigation) work
+  - No broken layout, missing elements, or console errors
+- **Test from a mobile-first viewport** (390×844). Resize to the user's actual viewport if different.
+- **Always test the user-facing flow**, not just the implementation detail. For example, verify that a bottom sheet opens, shows content, and closes.
+- **Save screenshots to `.playwright-mcp/`** for visual reference.
+- **Do not force-click elements** to bypass layout issues. If an element is obscured or outside the viewport, investigate and fix the root cause — this is a legitimate UX bug, not a testing convenience.
+
+---
+
+## UI/UX-Driven Debugging
+
+- **Elements that are obscured, off-screen, or at viewport edges are always in scope for debugging and fixing.** They are not "pre-existing" or "out of scope" — they represent real UX bugs that affect users, especially on mobile.
+- **The first response to a viewport issue is investigation, not dismissal.** Use `browser_evaluate` to measure element positions, check CSS properties, and understand *why* the element is unreachable before proposing any fix.
+- **Obscured elements are treated as defects.** If a button, input, or content area is hidden behind an overlay, clipped by overflow, or pushed outside the viewport, the root cause must be resolved — not worked around with `force: true` or programmatic scrolling.
+- **Layout issues must be fixed at the CSS/component level**, not patched with `force: true` clicks. Always prefer fixing the root layout problem over adding test-only workarounds.
 
 ---
 

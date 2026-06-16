@@ -38,13 +38,6 @@ model_list:
   # All models use openai/ provider prefix since the upstream is
   # an OpenAI-compatible LiteLLM proxy.
 
-  # Chat: DeepSeek v4 Flash
-  - model_name: deepseek-v4-flash
-    litellm_params:
-      model: openai/deepseek/deepseek-v4-flash
-      api_base: https://litellm.hoonlabs.xyz/v1
-      api_key: os.environ/LLM_PROXY_KEY
-
   # Chat: IBM Granite 4.0 H Tiny
   - model_name: ibm-granite-tiny
     litellm_params:
