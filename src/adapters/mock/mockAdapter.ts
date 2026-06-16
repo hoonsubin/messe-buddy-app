@@ -138,12 +138,14 @@ const createSession = async (
   gameMakerUid: string,
 ): Promise<Session> => {
   await Promise.resolve();
+  const record = makeRecord();
   const session: Session = {
-    ...makeRecord(),
+    ...record,
     name,
     bgImageUrl: "",
     gameMakerId: gameMakerUid,
     preBoardingChecks: [],
+    qrSecret: record.id, // prototype stand-in; matches PB auto-gen semantics in mock
   };
   sessions.set(session.id, session);
   return session;

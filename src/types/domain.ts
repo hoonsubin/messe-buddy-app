@@ -20,6 +20,7 @@ export interface Session extends PBRecord {
   readonly name: string;
   readonly bgImageUrl: string;
   readonly gameMakerId: string; // raw UID string, not a PB relation
+  readonly qrSecret?: string; // HMAC key for QR signing (C-16); GM verify only
   readonly preBoardingChecks: ReadonlyArray<PreBoardingCheckItem>;
 }
 

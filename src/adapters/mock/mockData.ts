@@ -58,6 +58,7 @@ export const MOCK_SESSION: Session = {
   name: "Messe München Onboarding - Summer 2026",
   bgImageUrl: mapBackground,
   gameMakerId: "uid_gamemaker_peter",
+  qrSecret: "sess_mmt2026",
   preBoardingChecks: MOCK_PRE_BOARDING_CHECKS,
 };
 
@@ -873,6 +874,7 @@ export const MOCK_SESSION_2: Session = {
   name: "Engineering Onboarding - June 2026",
   bgImageUrl: "",
   gameMakerId: "uid_gamemaker_peter",
+  qrSecret: "sess_eng_2026",
   preBoardingChecks: [],
 };
 
