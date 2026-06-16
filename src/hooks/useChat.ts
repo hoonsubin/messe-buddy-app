@@ -9,8 +9,8 @@ import { USE_MOCK_CHAT } from "../config/llm.ts";
 
 export type { ChatMessage, UseChatReturn } from "./useChatStream.ts";
 
-export function useChat(): UseChatReturn {
+export function useChat(appContext?: string): UseChatReturn {
   const mock = useMockChat();
-  const live = useChatStream();
+  const live = useChatStream(appContext);
   return USE_MOCK_CHAT ? mock : live;
 }

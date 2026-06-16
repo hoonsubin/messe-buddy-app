@@ -8,8 +8,9 @@ import {
 } from "../use-cases/joinSession.ts";
 import { recoverIdentity } from "../use-cases/recoverIdentity.ts";
 import { importTemplate } from "../use-cases/importTemplate.ts";
-import type { TemplateExport } from "../types/index.ts";
+import type { Player, TemplateExport } from "../types/index.ts";
 import RecoveryKeyModal from "../components/shared/RecoveryKeyModal.tsx";
+import NameCaptureModal from "../components/shared/NameCaptureModal.tsx";
 import { USER_ROLE } from "../types/index.ts";
 
 type View = "role-select" | "join" | "create" | "recover" | "templates";
@@ -46,6 +47,8 @@ const LandingPage = () => {
   );
   // Set alongside pendingRecoveryKey so we know where to redirect on dismiss
   const [pendingRedirect, setPendingRedirect] = useState<string>("/");
+  // Player awaiting a name — gates the name-capture step before the recovery key
+  const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
 
   // Hidden file input for template import
   const templateFileRef = useRef<HTMLInputElement>(null);
@@ -86,13 +89,30 @@ const LandingPage = () => {
       // joinSession already writes to localStorage - do NOT call setIdentity here,
       // which would fire the returning-user useEffect and navigate before the modal renders.
       setPendingRedirect(`/session/${result.identity.sessionId}`);
-      setPendingRecoveryKey(result.identity.recoveryKey);
+      // Capture the player's name before revealing the recovery key.
+      setPendingPlayer(result.player);
       setStatus("idle");
     } catch {
       setStatus("error");
       setErrorMessage(
         "Session not found. Check your session code and try again.",
       );
+    }
+  };
+
+  // Persist the name entered in the capture step, then reveal the recovery key.
+  const handleNameSubmit = async (name: string) => {
+    if (!pendingPlayer) return;
+    setStatus("loading");
+    setErrorMessage("");
+    try {
+      await adapter.updatePlayer(pendingPlayer.id, { name });
+      setPendingRecoveryKey(pendingPlayer.recoveryKey);
+      setPendingPlayer(null);
+      setStatus("idle");
+    } catch {
+      setStatus("error");
+      setErrorMessage("Could not save your name. Please try again.");
     }
   };
 
@@ -902,8 +922,16 @@ const LandingPage = () => {
         </p>
       </div>
 
-      {/* Recovery key modal - shown once after join/create */}
-      {pendingRecoveryKey && (
+      {/* Name capture - shown after join, before the recovery key */}
+      {pendingPlayer && (
+        <NameCaptureModal
+          onSubmit={(name) => void handleNameSubmit(name)}
+          loading={status === "loading"}
+        />
+      )}
+
+      {/* Recovery key modal - shown once after the name step (join) or create */}
+      {pendingRecoveryKey && !pendingPlayer && (
         <RecoveryKeyModal
           recoveryKey={pendingRecoveryKey}
           onDismiss={handleRecoveryKeyDismiss}

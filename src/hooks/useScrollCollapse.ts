@@ -35,6 +35,11 @@ export const useScrollCollapse = (
   // Whenever resetKey changes (e.g. active tab switches), snap the scroll
   // container back to the top and expand the collapsible panel so the new
   // content always starts from a clean state.
+  //
+  // Effect synchronizes internal collapsed state and DOM scroll position with
+  // an external navigational signal (resetKey). This is a genuine external-
+  // system sync, not props-to-state derivation — the collapsed flag and DOM
+  // scrollTop are not derivable from props alone.
   useEffect(() => {
     const el = scrollRef.current;
     setCollapsed(false);

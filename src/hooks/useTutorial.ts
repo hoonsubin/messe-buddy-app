@@ -66,13 +66,12 @@ export const useTutorial = (
   const [tutorialStep, setTutorialStep] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
-  // Track which player we've already initialized for, to run the effect once
-  const [initializedFor, setInitializedFor] = useState<string | null>(null);
 
-  // Restore tutorial state once per player load
+  // Restore tutorial state once per player load.
+  // sessionStorage is a synchronous external store that must be read in an
+  // effect — reading it during render would make the component impure.
   useEffect(() => {
-    if (!player || player.id === initializedFor) return;
-    setInitializedFor(player.id);
+    if (!player) return;
 
     // Priority 1: form round-trip
     const formPending = sessionStorage.getItem(TUTORIAL_FORM_KEY);
@@ -93,7 +92,8 @@ export const useTutorial = (
       setShowTutorial(true);
       setTutorialStep(persisted);
     }
-  }, [player, initializedFor]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player?.id]);
 
   const handleTutorialNext = useCallback(() => {
     if (tutorialStep === PROFILE_STEP_INDEX) {

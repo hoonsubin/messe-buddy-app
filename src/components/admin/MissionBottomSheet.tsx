@@ -126,7 +126,8 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
     [],
   );
 
-  // Sync view with activeMissionId changes
+  // ── View routing ─────────────────────────────────────────────────────────────
+  // auto-navigate when activeMissionId changes from outside (sidebar click)
   useEffect(() => {
     if (!isOpen) return;
     if (activeMissionId && view === "list") {
@@ -189,7 +190,8 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
   // ── Draft persistence ───────────────────────────────────────────────────────
   const [storedDraft, setStoredDraft] = useState<StoredDraft | null>(null);
 
-  // When a specific mission is selected, check localStorage for a saved draft
+  // When a specific mission is selected, check localStorage for a saved draft.
+  // localStorage is a genuine external system — reading it requires an effect.
   useEffect(() => {
     if (!activeMissionId) {
       setStoredDraft(null);
@@ -208,6 +210,10 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
   // ── Rename state ────────────────────────────────────────────────────────────
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(milestone?.name ?? "");
+  // Reset the rename input when the milestone changes externally (e.g. GM
+  // selects a different milestone in the sidebar). This is synchronizing
+  // internal editable state with an external prop — derive-in-render alone
+  // cannot handle user-driven edits to the same field.
   useEffect(() => {
     setRenameValue(milestone?.name ?? "");
   }, [milestone?.name]);

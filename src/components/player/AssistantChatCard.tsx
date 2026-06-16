@@ -9,11 +9,13 @@ import ChatPanel from "./ChatPanel.tsx";
 
 interface AssistantChatCardProps {
   readonly buddyName?: string;
+  // Trusted per-user context (name + buddy) injected into the system prompt.
+  readonly appContext?: string;
 }
 
 const AssistantChatCard = (props: AssistantChatCardProps) => {
   const [expanded, setExpanded] = useState(false);
-  const { messages, isStreaming, send, stop } = useChat();
+  const { messages, isStreaming, send, stop } = useChat(props.appContext);
 
   const hasConversation = messages.length > 0;
 

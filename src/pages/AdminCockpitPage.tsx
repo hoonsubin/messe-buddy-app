@@ -199,6 +199,16 @@ const AdminCockpitPage = () => {
     [handlePlayerSelect, loadBuddyProfile],
   );
 
+  // ── Save / discard ─────────────────────────────────────────────────────────
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setSaveToast(msg);
+    setTimeout(() => setSaveToast(null), 3000);
+  }, []);
+
   const handleBuddySave = useCallback(() => {
     if (!selectedPlayerId) return;
     void adapter.upsertBuddyProfile(selectedPlayerId, {
@@ -211,7 +221,7 @@ const AdminCockpitPage = () => {
       buddyProfileRef.current = profile;
       showToast("Buddy assigned");
     });
-  }, [adapter, selectedPlayerId, buddyDraft]);
+  }, [adapter, selectedPlayerId, buddyDraft, showToast]);
 
   // ── Background upload ──────────────────────────────────────────────────────
 
@@ -223,16 +233,6 @@ const AdminCockpitPage = () => {
     },
     [adapter, sid],
   );
-
-  // ── Save / discard ─────────────────────────────────────────────────────────
-
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveToast, setSaveToast] = useState<string | null>(null);
-
-  const showToast = useCallback((msg: string) => {
-    setSaveToast(msg);
-    setTimeout(() => setSaveToast(null), 3000);
-  }, []);
 
   const isDirty = useMemo(
     () =>

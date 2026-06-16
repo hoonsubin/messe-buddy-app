@@ -150,6 +150,27 @@ const PlayerCockpitPage = () => {
 
   const isLoading = sessionLoading || playerLoading;
 
+  // Trusted per-user context for the AI assistant: name + assigned buddy only.
+  // Wrapped in <APPLICATION_CONTEXT> tags the system prompt recognizes.
+  const aiAppContext = (() => {
+    const lines: string[] = [];
+    const userName = player?.preferredName?.trim() || player?.name?.trim();
+    if (userName) lines.push(`User's name: ${userName}.`);
+    if (buddy) {
+      let line = `Assigned buddy: ${buddy.name}`;
+      if (buddy.role) line += `, ${buddy.role}`;
+      if (buddy.tenure) line += ` (${buddy.tenure})`;
+      const contact = buddy.email ?? buddy.phone ?? buddy.contactUrl;
+      if (contact) line += `. Contact: ${contact}`;
+      lines.push(`${line}.`);
+    }
+    if (lines.length === 0) return undefined;
+    return "<APPLICATION_CONTEXT>\n" +
+      "Trusted facts about the current user (not a policy document):\n" +
+      lines.join("\n") +
+      "\n</APPLICATION_CONTEXT>";
+  })();
+
   // ── Error / no-identity guards ─────────────────────────────────────────────
   if (!identity) {
     return (
@@ -300,76 +321,81 @@ const PlayerCockpitPage = () => {
           <div className="cockpit-col">
             <AssistantChatCard
               {...(buddy?.name !== undefined && { buddyName: buddy.name })}
+              {...(aiAppContext !== undefined && { appContext: aiAppContext })}
             />
 
-        {/* Milestones section */}
-        <section aria-label="Milestones">
-          <h2 className="section-label">Milestones</h2>
-          <div
-            style={{
-              borderRadius: "var(--radius-lg)",
-              overflow: "hidden",
-              boxShadow: "var(--shadow-md)",
-            }}
-          >
-            <MilestoneMapViewer
-              milestones={milestones}
-              bgImageUrl={session?.bgImageUrl ?? ""}
-              milestoneProgress={playerProgress?.milestoneProgress ?? []}
-              playerXPercent={currentMilestone?.xPercent}
-              playerYPercent={currentMilestone?.yPercent}
-              onMilestoneClick={(id) => setSelectedMilestoneId(id)}
-            />
-          </div>
-        </section>
+            {/* Milestones section */}
+            <section aria-label="Milestones">
+              <h2 className="section-label">Milestones</h2>
+              <div
+                style={{
+                  borderRadius: "var(--radius-lg)",
+                  overflow: "hidden",
+                  boxShadow: "var(--shadow-md)",
+                }}
+              >
+                <MilestoneMapViewer
+                  milestones={milestones}
+                  bgImageUrl={session?.bgImageUrl ?? ""}
+                  milestoneProgress={playerProgress?.milestoneProgress ?? []}
+                  playerXPercent={currentMilestone?.xPercent}
+                  playerYPercent={currentMilestone?.yPercent}
+                  onMilestoneClick={(id) => setSelectedMilestoneId(id)}
+                />
+              </div>
+            </section>
 
-        {/* Current missions */}
-        <CurrentMissionsList
-          missions={currentMissions}
-          progressEvents={progressEvents}
-          onMissionClick={handleMissionClick}
-          onMarkComplete={() => undefined}
-        />
+            {/* Current missions */}
+            <CurrentMissionsList
+              missions={currentMissions}
+              progressEvents={progressEvents}
+              onMissionClick={handleMissionClick}
+              onMarkComplete={() => undefined}
+            />
           </div>
 
           <div className="cockpit-col">
-        {/* Your buddy */}
-        <section aria-label="Your buddy">
-          {buddy
-            ? (
-              <BuddyCard
-                name={buddy.name}
-                role={buddy.role}
-                {...(buddy.tenure !== undefined && { tenure: buddy.tenure })}
-                {...(buddy.avatarUrl !== undefined &&
-                  { avatarUrl: buddy.avatarUrl })}
-                {...(buddy.contactUrl !== undefined &&
-                  { contactUrl: buddy.contactUrl })}
-                {...(buddy.quote !== undefined && { quote: buddy.quote })}
-                {...(buddy.email !== undefined && { email: buddy.email })}
-                {...(buddy.phone !== undefined && { phone: buddy.phone })}
-              />
-            )
-            : !isLoading && (
-              <div className="card" style={{ padding: "var(--space-6)" }}>
-                <p
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "hsl(var(--color-muted-fg))",
-                    textAlign: "center",
-                    margin: 0,
-                  }}
-                >
-                  You'll be assigned a buddy soon.
-                </p>
-              </div>
-            )}
-        </section>
+            {/* Your buddy */}
+            <section aria-label="Your buddy">
+              {buddy
+                ? (
+                  <BuddyCard
+                    name={buddy.name}
+                    role={buddy.role}
+                    {...(buddy.tenure !== undefined &&
+                      { tenure: buddy.tenure })}
+                    {...(buddy.avatarUrl !== undefined &&
+                      { avatarUrl: buddy.avatarUrl })}
+                    {...(buddy.contactUrl !== undefined &&
+                      { contactUrl: buddy.contactUrl })}
+                    {...(buddy.quote !== undefined && { quote: buddy.quote })}
+                    {...(buddy.email !== undefined && { email: buddy.email })}
+                    {...(buddy.phone !== undefined && { phone: buddy.phone })}
+                  />
+                )
+                : !isLoading && (
+                  <div className="card" style={{ padding: "var(--space-6)" }}>
+                    <p
+                      style={{
+                        fontSize: "var(--text-sm)",
+                        color: "hsl(var(--color-muted-fg))",
+                        textAlign: "center",
+                        margin: 0,
+                      }}
+                    >
+                      You'll be assigned a buddy soon.
+                    </p>
+                  </div>
+                )}
+            </section>
 
-        {/* Resources - standalone block at the bottom (no tabs) */}
-        <section aria-label="Resources">
-          <ResourcesSection resources={resources} onSearch={() => undefined} />
-        </section>
+            {/* Resources - standalone block at the bottom (no tabs) */}
+            <section aria-label="Resources">
+              <ResourcesSection
+                resources={resources}
+                onSearch={() => undefined}
+              />
+            </section>
           </div>
         </div>
       </main>

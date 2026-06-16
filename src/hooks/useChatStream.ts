@@ -69,7 +69,7 @@ function drainSSE(buffer: string): ParsedChunk {
   return { delta, done, rest };
 }
 
-export const useChatStream = (): UseChatReturn => {
+export const useChatStream = (appContext?: string): UseChatReturn => {
   const [messages, setMessages] = useState<ReadonlyArray<ChatMessage>>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -126,8 +126,13 @@ export const useChatStream = (): UseChatReturn => {
       role: m.role,
       content: m.content,
     }));
-    const requestMessages = LLM_SYSTEM_PROMPT
-      ? [{ role: "system", content: LLM_SYSTEM_PROMPT }, ...history]
+    // System message = static guardrail + the per-user application context
+    // block (name + buddy), which the guardrail treats as a trusted source.
+    const systemContent = appContext
+      ? `${LLM_SYSTEM_PROMPT}\n\n${appContext}`
+      : LLM_SYSTEM_PROMPT;
+    const requestMessages = systemContent
+      ? [{ role: "system", content: systemContent }, ...history]
       : history;
 
     setMessages((prev) => [...prev, userMsg, placeholder]);
@@ -183,7 +188,7 @@ export const useChatStream = (): UseChatReturn => {
         } else {
           finishLast();
         }
-      } catch (e) {
+      } catch {
         if (controller.signal.aborted) {
           // User stopped generation - keep whatever streamed so far.
           finishLast();
@@ -199,7 +204,7 @@ export const useChatStream = (): UseChatReturn => {
     };
 
     void run();
-  }, [appendToLast, finishLast]);
+  }, [appendToLast, finishLast, appContext]);
 
   const clear = useCallback(() => {
     abortRef.current?.abort();
