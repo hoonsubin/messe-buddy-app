@@ -5,7 +5,7 @@ import { MISSION_TYPE } from "../types/index.ts";
 import type { AppAdapter } from "../adapters/interface.ts";
 import type { Mission, Session } from "../types/index.ts";
 import { exportTemplate } from "../use-cases/exportTemplate.ts";
-import { importTemplate } from "../use-cases/importTemplate.ts";
+import { bootstrapFromTemplate } from "../use-cases/bootstrapFromTemplate.ts";
 import type { Resource } from "../types/index.ts";
 import type { Milestone } from "../types/index.ts";
 
@@ -117,13 +117,10 @@ export const useTemplateLibrary = ({
       const template = templates.find((t) => t.name === templateId);
       if (!template) return;
       const uid = gmUid ?? crypto.randomUUID();
-      const newSessionId = await importTemplate(
-        template,
-        template.name,
-        uid,
-        adapter,
-      );
-      navigate(`/admin/${newSessionId}`, { replace: true });
+      const { sessionId } = await bootstrapFromTemplate(template, adapter, {
+        gmUid: uid,
+      });
+      navigate(`/admin/${sessionId}`, { replace: true });
     },
     [adapter, gmUid, navigate, templates],
   );

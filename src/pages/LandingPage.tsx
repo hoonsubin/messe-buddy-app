@@ -1,7 +1,9 @@
 import RecoveryKeyModal from "../components/shared/RecoveryKeyModal.tsx";
 import NameCaptureModal from "../components/shared/NameCaptureModal.tsx";
+import TemplateLibrary from "../components/shared/TemplateLibrary.tsx";
 import { useLandingFlow } from "../hooks/useLandingFlow.ts";
 import type { LandingView } from "../hooks/useLandingFlow.ts";
+import { toTemplateSummaries } from "../utils/templateSummary.ts";
 
 const LandingPage = () => {
   const {
@@ -28,7 +30,7 @@ const LandingPage = () => {
     handleNameSubmit,
     handleDemoPlayer,
     handleDemoAdmin,
-    handleLoadTemplateFromStore,
+    handleLoadTemplate,
     handleTemplateImport,
     handleRecoveryKeyDismiss,
   } = useLandingFlow();
@@ -245,37 +247,16 @@ const LandingPage = () => {
               {errorMessage && (
                 <p className="form-error" role="alert">{errorMessage}</p>
               )}
-              {templates.length === 0 &&
-                !errorMessage &&
-                status !== "loading" && (
-                <p className="landing__hint">
-                  No templates saved yet. Create a session and save it as a
-                  template to see it here.
-                </p>
-              )}
-              <div className="landing__template-list">
-                {templates.map((t) => (
-                  <div key={t.name} className="card landing__template-row">
-                    <div>
-                      <div className="landing__template-name">{t.name}</div>
-                      <div className="landing__template-meta">
-                        {t.milestones.length} milestones · {t.missions.length}
-                        {" "}
-                        missions
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="btn btn--secondary"
-                      disabled={status === "loading"}
-                      onClick={() =>
-                        void handleLoadTemplateFromStore(t.name)}
-                    >
-                      {status === "loading" ? "Loading…" : "Use Template"}
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <TemplateLibrary
+                templates={toTemplateSummaries(templates)}
+                onLoad={(id) => void handleLoadTemplate(id)}
+                showSearch={false}
+                showTitle={false}
+                showPlaceholders={false}
+                loading={status === "loading"}
+                loadLabel="Use Template"
+                emptyMessage="No templates saved yet. Create a session and save it as a template to see it here."
+              />
               <button
                 type="button"
                 className="btn btn--ghost landing__back-btn"

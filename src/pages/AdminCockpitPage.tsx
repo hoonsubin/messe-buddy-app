@@ -19,7 +19,8 @@ import MissionBottomSheet from "../components/admin/MissionBottomSheet.tsx";
 import PendingApprovalsPanel from "../components/admin/PendingApprovalsPanel.tsx";
 import PlayerSelectorDropdown from "../components/admin/PlayerSelectorDropdown.tsx";
 import PlayerProfileCard from "../components/admin/PlayerProfileCard.tsx";
-import TemplateLibrary from "../components/admin/TemplateLibrary.tsx";
+import TemplateLibrary from "../components/shared/TemplateLibrary.tsx";
+import { toTemplateSummaries } from "../utils/templateSummary.ts";
 import BuddyAssignmentForm from "../components/admin/BuddyAssignmentForm.tsx";
 import ResourcesEditor from "../components/admin/ResourcesEditor.tsx";
 import SaveTemplateModal from "../components/admin/SaveTemplateModal.tsx";
@@ -489,12 +490,7 @@ const AdminCockpitPage = () => {
               onToggleVisibility={handleResourceToggleVisibility}
             />
             <TemplateLibrary
-              templates={templateLibrary.templates.map((t) => ({
-                id: t.name,
-                name: t.name,
-                milestoneCount: t.milestones.length,
-                missionCount: t.missions.length,
-              }))}
+              templates={toTemplateSummaries(templateLibrary.templates)}
               onLoad={templateLibrary.handleLoadTemplate}
               onDelete={(id) => void templateLibrary.handleDeleteTemplate(id)}
             />

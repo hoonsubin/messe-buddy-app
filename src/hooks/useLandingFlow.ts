@@ -8,7 +8,7 @@ import {
   joinSession,
 } from "../use-cases/joinSession.ts";
 import { recoverIdentity } from "../use-cases/recoverIdentity.ts";
-import { importTemplate } from "../use-cases/importTemplate.ts";
+import { bootstrapFromTemplate } from "../use-cases/bootstrapFromTemplate.ts";
 import type { Player, TemplateExport } from "../types/index.ts";
 import { USER_ROLE } from "../types/index.ts";
 
@@ -46,7 +46,7 @@ export interface UseLandingFlowResult {
   readonly handleNameSubmit: (name: string) => Promise<void>;
   readonly handleDemoPlayer: () => void;
   readonly handleDemoAdmin: () => void;
-  readonly handleLoadTemplateFromStore: (templateName: string) => Promise<void>;
+  readonly handleLoadTemplate: (templateName: string) => Promise<void>;
   readonly handleTemplateImport: (e: ChangeEvent<HTMLInputElement>) => Promise<
     void
   >;
@@ -219,26 +219,17 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     });
   }, [setIdentity]);
 
-  const handleLoadTemplateFromStore = useCallback(
+  const handleLoadTemplate = useCallback(
     async (templateName: string) => {
       const template = templates.find((t) => t.name === templateName);
       if (!template) return;
       setStatus("loading");
       setErrorMessage("");
       try {
-        const gmUid = crypto.randomUUID();
-        const newSessionId = await importTemplate(
-          template,
-          template.name,
-          gmUid,
-          adapter,
-        );
-        setIdentity({
-          uid: gmUid,
+        const { identity } = await bootstrapFromTemplate(template, adapter, {
           recoveryKey: "TMPL0001",
-          sessionId: newSessionId,
-          role: USER_ROLE.GAMEMAKER,
         });
+        setIdentity(identity);
       } catch {
         setStatus("error");
         setErrorMessage("Could not import template. Please try again.");
@@ -257,19 +248,10 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     try {
       const text = await file.text();
       const template = JSON.parse(text) as TemplateExport;
-      const gmUid = crypto.randomUUID();
-      const newSessionId = await importTemplate(
-        template,
-        template.name,
-        gmUid,
-        adapter,
-      );
-      setIdentity({
-        uid: gmUid,
+      const { identity } = await bootstrapFromTemplate(template, adapter, {
         recoveryKey: "IMPRT001",
-        sessionId: newSessionId,
-        role: USER_ROLE.GAMEMAKER,
       });
+      setIdentity(identity);
     } catch {
       setStatus("error");
       setErrorMessage(
@@ -307,7 +289,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     handleNameSubmit,
     handleDemoPlayer,
     handleDemoAdmin,
-    handleLoadTemplateFromStore,
+    handleLoadTemplate,
     handleTemplateImport,
     handleRecoveryKeyDismiss,
   };
