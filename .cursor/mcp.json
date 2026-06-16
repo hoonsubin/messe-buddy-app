@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "superdesign": {
+      "command": "npx",
+      "args": ["-y", "cold-mcp-super-design"],
+      "type": "stdio"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--browser=firefox",
+        "--device=iPhone 15"
+      ]
+    }
+  }
+}
