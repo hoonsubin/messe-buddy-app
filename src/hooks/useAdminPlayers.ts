@@ -17,41 +17,25 @@ interface UseAdminPlayersOptions {
   readonly adapter: AppAdapter;
 }
 
-interface QRScannerContext {
-  readonly playerId: string;
-  readonly missionId: string;
-  readonly playerName: string;
-  readonly missionTitle: string;
-}
-
 interface UseAdminPlayersResult {
   readonly players: ReadonlyArray<Player>;
   readonly selectedPlayerId: string;
   readonly selectedPlayer: Player | null;
   readonly selectedPlayerProgress: PlayerProgress | null;
   readonly pendingEvents: ReadonlyArray<ProgressEvent>;
-  readonly qrScannerContext: QRScannerContext | null;
   readonly handlePlayerSelect: (playerId: string) => void;
   readonly handleApprove: (
     playerId: string,
     missionId: string,
   ) => Promise<void>;
   readonly handleReject: (playerId: string, missionId: string) => Promise<void>;
-  readonly handleScanQR: (playerId: string, missionId: string) => void;
-  readonly handleQRValidate: (
-    playerId: string,
-    missionId: string,
-  ) => Promise<void>;
-  readonly closeQRScanner: () => void;
 }
 
 /**
  * Manages all player-related state for the admin cockpit:
  * - Player list, selection, progress
- * - Pending approvals
- * - Approve / reject / QR-validate  (approve and QR-validate share the same
- *   implementation - both complete a mission with a GM validator stamp)
- * - QR scanner modal context
+ * - Pending approvals (gmApprove path)
+ * - Approve / reject handlers
  */
 export const useAdminPlayers = ({
   sid,
@@ -65,9 +49,6 @@ export const useAdminPlayers = ({
   const [allProgressEvents, setAllProgressEvents] = useState<
     ReadonlyArray<ProgressEvent>
   >([]);
-  const [qrScannerContext, setQrScannerContext] = useState<
-    QRScannerContext | null
-  >(null);
   const isInitialPlayerLoad = useRef(true);
   const validatorUidRef = useRef(validatorUid);
 
@@ -75,7 +56,6 @@ export const useAdminPlayers = ({
     validatorUidRef.current = validatorUid;
   });
 
-  // ── Shared complete-mission implementation ─────────────────────────────────
   const completeMission = useCallback(
     async (playerId: string, missionId: string) => {
       await adapter.upsertProgressEvent(playerId, missionId, {
@@ -92,18 +72,15 @@ export const useAdminPlayers = ({
     [adapter],
   );
 
-  // ── Load players ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!sid) return;
     void adapter.listPlayers(sid).then(setPlayers);
   }, [adapter, sid]);
 
-  // ── Player select (exposed so BuddyAssignmentForm can trigger it too) ───────
   const handlePlayerSelect = useCallback((playerId: string) => {
     setSelectedPlayerId(playerId);
   }, []);
 
-  // ── Fetch progress for all players; auto-select first on initial load ───────
   useEffect(() => {
     if (!players.length) return;
     let cancelled = false;
@@ -125,7 +102,6 @@ export const useAdminPlayers = ({
     };
   }, [adapter, handlePlayerSelect, players]);
 
-  // ── Derived values ──────────────────────────────────────────────────────────
   const selectedPlayer = players.find((p) => p.id === selectedPlayerId) ?? null;
 
   const selectedPlayerProgress: PlayerProgress | null = useMemo(() => {
@@ -145,7 +121,6 @@ export const useAdminPlayers = ({
     (e) => e.status === "pendingApproval",
   );
 
-  // ── Action handlers ─────────────────────────────────────────────────────────
   const handleApprove = completeMission;
 
   const handleReject = useCallback(
@@ -162,36 +137,14 @@ export const useAdminPlayers = ({
     [adapter],
   );
 
-  const handleScanQR = useCallback(
-    (playerId: string, missionId: string) => {
-      const player = players.find((p) => p.id === playerId);
-      const mission = missions.find((m) => m.id === missionId);
-      setQrScannerContext({
-        playerId,
-        missionId,
-        playerName: player?.name ?? player?.uid ?? playerId,
-        missionTitle: mission?.title ?? missionId,
-      });
-    },
-    [players, missions],
-  );
-
-  const handleQRValidate = completeMission;
-
-  const closeQRScanner = useCallback(() => setQrScannerContext(null), []);
-
   return {
     players,
     selectedPlayerId,
     selectedPlayer,
     selectedPlayerProgress,
     pendingEvents,
-    qrScannerContext,
     handlePlayerSelect,
     handleApprove,
     handleReject,
-    handleScanQR,
-    handleQRValidate,
-    closeQRScanner,
   };
 };

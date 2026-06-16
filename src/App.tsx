@@ -5,6 +5,7 @@ import PlayerCockpitPage from "./pages/PlayerCockpitPage.tsx";
 import AdminCockpitPage from "./pages/AdminCockpitPage.tsx";
 import FormPage from "./pages/FormPage.tsx";
 import QRScannerView from "./pages/QRScannerView.tsx";
+import ValidationPage from "./pages/ValidationPage.tsx";
 import RequireRole from "./components/layout/RequireRole.tsx";
 import { USER_ROLE } from "./types/index.ts";
 
@@ -26,9 +27,23 @@ const router = createBrowserRouter([
       </RequireRole>
     ),
   },
+  {
+    path: "/admin/:sessionId/scan",
+    element: (
+      <RequireRole role={USER_ROLE.GAMEMAKER}>
+        <QRScannerView />
+      </RequireRole>
+    ),
+  },
+  {
+    path: "/validate/:sessionId",
+    element: (
+      <RequireRole role={USER_ROLE.GAMEMAKER}>
+        <ValidationPage />
+      </RequireRole>
+    ),
+  },
   { path: "/form/:missionId", element: <FormPage /> },
-  { path: "/qr/:missionId", element: <QRScannerView /> },
-  // QR invite link — renders landing page with sessionId pre-filled
   { path: "/join/:sessionId", element: <LandingPage /> },
 ]);
 

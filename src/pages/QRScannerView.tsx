@@ -1,12 +1,53 @@
-// Phase 1 shell - GM QR scanning view. Camera + validation logic wired in Phase 5.
+import { useCallback, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import TopBar from "../components/shared/TopBar.tsx";
 import CameraFeed from "../components/qr/CameraFeed.tsx";
 import ValidationResult from "../components/qr/ValidationResult.tsx";
 import { useIdentity } from "../hooks/useIdentity.ts";
+import {
+  parseValidationToken,
+  validationPathFromToken,
+} from "../utils/qrUrl.ts";
 
-// Phase 1: static shell, no live camera.
+type ScanState = "idle" | "scanning" | "success" | "invalid" | "error";
+
 const QRScannerView = () => {
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const navigate = useNavigate();
   const { identity } = useIdentity();
+  const sid = sessionId ?? "";
+
+  const [cameraActive, setCameraActive] = useState(false);
+  const [validationState, setValidationState] = useState<ScanState>("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handleDecode = useCallback(
+    (scanned: string) => {
+      const parsed = parseValidationToken(scanned);
+      if (!parsed) {
+        setValidationState("invalid");
+        setErrorMessage(
+          "Invalid QR code — expected a MesseBuddy validation URL.",
+        );
+        setCameraActive(false);
+        return;
+      }
+
+      setValidationState("success");
+      setErrorMessage("");
+      setCameraActive(false);
+      navigate(validationPathFromToken(parsed.sessionId, parsed.token));
+    },
+    [navigate],
+  );
+
+  const handleCameraError = useCallback((message: string) => {
+    setValidationState("error");
+    setErrorMessage(message);
+    setCameraActive(false);
+  }, []);
+
+  const scanState: ScanState = cameraActive ? "scanning" : validationState;
 
   return (
     <div
@@ -49,20 +90,44 @@ const QRScannerView = () => {
 
         <div style={{ width: "100%", maxWidth: "24rem" }}>
           <CameraFeed
-            isActive={false}
-            onDecode={() => undefined}
+            isActive={cameraActive}
+            onDecode={handleDecode}
+            onError={handleCameraError}
           />
         </div>
 
-        <ValidationResult state="idle" />
+        <ValidationResult
+          state={scanState}
+          errorMessage={errorMessage || undefined}
+        />
 
         <button
           type="button"
           className="btn btn--primary"
           style={{ width: "100%", maxWidth: "24rem" }}
+          onClick={() => {
+            if (cameraActive) {
+              setCameraActive(false);
+              setValidationState("idle");
+            } else {
+              setValidationState("scanning");
+              setErrorMessage("");
+              setCameraActive(true);
+            }
+          }}
         >
-          Start camera
+          {cameraActive ? "Stop camera" : "Start camera"}
         </button>
+
+        {sid && (
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => navigate(`/admin/${sid}`)}
+          >
+            Back to cockpit
+          </button>
+        )}
       </main>
     </div>
   );

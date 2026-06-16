@@ -1,7 +1,7 @@
 # MesseBuddy - Project Specification
 
-> **Status:** Pre-implementation baseline · Sprint 3 entry point **Last
-> updated:** 2026-06-12 **Authors:** Group 3 - Alisa Diakova · Hoon Kim ·
+> **Status:** Active implementation reference · Sprint 3 **Last updated:**
+> 2026-06-17 **Authors:** Group 3 - Alisa Diakova · Hoon Kim ·
 > Kseniya Tsiabus · Luis Müller **External PO:** Peter Tubak (Messe München)
 > **Course:** Management & Digital Technologies II · LMU Munich School of
 > Management · Summer Term 2026
@@ -69,8 +69,9 @@ This glossary is authoritative.
 | **Player**             | A new employee going through an onboarding journey. Has read-only access to the cockpit.                                                                                                                                                                                                                                 |
 | **Game Maker**         | The admin who configures the session - sets up Milestones, Missions, and validates completions.                                                                                                                                                                                                                          |
 | **XP**                 | Experience points earned by completing Missions. Each Milestone has an `xpThreshold` of 100.                                                                                                                                                                                                                             |
-| **Validation Method**  | The mechanism by which a Mission completion is confirmed. One of: `gmApprove` (Game Maker approves directly in admin cockpit), `selfApprove` (Player self-marks, immediately approved), or `qr` (Player generates a QR code, Game Maker physically scans it). Set per Mission by the Game Maker; default is `gmApprove`. |
-| **Validation Request** | The transient state after a Player marks a non-`selfApprove` Mission complete. The Mission enters `pendingApproval` status and a `ValidationDisplay` is shown until the Game Maker acts.                                                                                                                                 |
+| **Validation Method**  | The mechanism by which a Mission completion is confirmed. One of: `gmApprove` (Game Maker approves in admin cockpit), `selfApprove` (Player self-marks, immediately approved), or `qr` (Player shows a URL-encoded QR code; Game Maker scans and confirms on `ValidationPage`). Set per Mission by the Game Maker; default is `gmApprove`. |
+| **Validation URL**     | QR transport format: `{origin}/validate/{sessionId}?t={base64-encoded signed QRPayload}`. Parsed by `qrUrl.ts`; HMAC verified on `ValidationPage` before any `ProgressEvent` write. |
+| **Validation Request** | The transient state after a Player marks a non-`selfApprove` Mission complete. For `gmApprove`, the Mission enters `pendingApproval` and `PendingApprovalDisplay` is shown. For `qr`, no `ProgressEvent` is written until the GM confirms on `ValidationPage`. |
 | **Validation**         | An app mechanism that allows the game maker or another player to verify that a mission as been completed. Need for XP distribution.                                                                                                                                                                                      |
 | **Current Missions**   | A curated list of Missions the Game Maker has surfaced to the Player's main view - not all Missions are in this list by default.                                                                                                                                                                                         |
 | **Buddy**              | A company-assigned mentor figure displayed on the Player's cockpit. Not a system user - their info is manually entered by the Game Maker.                                                                                                                                                                                |
@@ -234,7 +235,7 @@ There is no authentication system. Identity is UID-based.
   `localStorage` and in `sessions.gameMakerId`
 - **No Pocketbase auth collections are used**
 
-### LocalStorage Identity Shape
+### LocalIdentity Shape
 
 ```ts
 interface LocalIdentity {
@@ -245,20 +246,53 @@ interface LocalIdentity {
 }
 ```
 
-Key: `localStorage.getItem('mb_identity')`
+> **[NEED-UPDATE — UX / data storage]** _Reason: `role` is client-stored only
+> today; route guards read `LocalIdentity.role` without server verification.
+> Future: persist roles in a `SessionRole` (or equivalent) collection and
+> validate on every mutation. See `SessionRole` type and OD-14._
 
-> **Trust boundary:** The `role` field is client-stored and not
-> server-validated. The prototype assumes a trusted demo context. For
-> production, role must be verified server-side on every mutation.
+### Identity storage and resolution
 
-### Session Constraint
+The app does **not** use PocketBase auth. Identity is resolved client-side via
+`useIdentity`:
+
+| Source | Storage | Written by | Cleared by |
+| ------ | ------- | ---------- | ---------- |
+| **Persisted** | `localStorage` key `mb_identity` | `joinSession`, `recoverIdentity`, `createGameMakerSession`, `setIdentity` | `clearIdentity`, browser data wipe |
+| **Ephemeral demo** | In-memory `ephemeralIdentityStore` (module singleton) | Landing page demo buttons via `setEphemeralIdentity` | `clearEphemeralIdentity` (e.g. ephemeral admin "back to landing") |
+
+**Resolution order:** `readEphemeralIdentity()` first; if absent, parse
+`localStorage.mb_identity`. Cross-tab `localStorage` changes sync via the
+`storage` event listener in `useIdentity`.
+
+Ephemeral identity lets demo flows skip `localStorage` writes while still
+passing `RequireRole` (which calls `useIdentity`). Production join/create flows
+always persist to `localStorage`.
+
+> **Trust boundary:** The `role` field is client-stored and not server-validated.
+> The prototype assumes a trusted demo context.
+
+### Route guards
+
+Protected routes wrap children in `RequireRole`, which redirects to `/` when:
+
+1. No identity (neither ephemeral nor `localStorage`)
+2. `identity.role` does not match the route's required role
+3. `identity.sessionId` does not match the URL `:sessionId` param
+
+This applies to Player Cockpit, Admin Cockpit, and `ValidationPage`.
+
+### Session constraint
 
 > A single user identity is exclusively tied to one session. This is to avoid
-> implementation and deployment complexities during early development and
-> testing phase. The final user session management mechanism may change.
+> implementation complexity during early development.
+
+> **[NEED-UPDATE — UX / data storage]** _Reason: one identity per session limits
+> multi-session users and cross-hire scenarios. Future: `SessionRole` records
+> allowing one UID across sessions, or account picker on landing. See OD-14._
 
 Joining a new session requires generating a new UID and completing the tutorial
-flow from scratch.
+flow from scratch (current behavior).
 
 ### Identity Recovery
 
@@ -277,11 +311,11 @@ The `recoveryKey` is displayed **once** on first join with a copy button.
 `players WHERE recoveryKey = input AND uid = sessions.gameMakerId`. Role is
 restored as `'gamemaker'`.
 
-### Returning User (localStorage Valid)
+### Returning User (identity valid)
 
-On every app load, if `mb_identity` exists in `localStorage` and the referenced
-`sessionId` resolves in Pocketbase, the user is silently routed to their cockpit
-without any interaction.
+On every app load, if `useIdentity` resolves a identity (ephemeral or
+`localStorage`) and the referenced `sessionId` resolves in Pocketbase, the user
+is silently routed to their cockpit without interaction.
 
 ## Application Views & User Interaction
 
@@ -297,9 +331,25 @@ without any interaction.
 | **Join Session**     | Player, first time     | Identity Gate → Player Cockpit             |
 | **Create Session**   | Game Maker             | Session Setup → Admin Cockpit              |
 | **Recover Progress** | `localStorage` missing | Recovery Gate → Restore → Cockpit          |
+| **Demo Player/Admin** | Landing demo buttons  | Ephemeral identity → Cockpit (no `localStorage` write) |
 
 **Session Setup** allows: create blank session, or load from Template (JSON
 import).
+
+### Routes
+
+| Path | Guard | Page | Notes |
+| ---- | ----- | ---- | ----- |
+| `/` | Public | `LandingPage` | Role select, join, create, recover, templates |
+| `/join/:sessionId` | Public | `LandingPage` | Invite link; session code pre-filled |
+| `/session/:sessionId` | `RequireRole` → `player` | `PlayerCockpitPage` | |
+| `/admin/:sessionId` | `RequireRole` → `gamemaker` | `AdminCockpitPage` | |
+| `/form/:missionId` | None | `FormPage` | Player identity read from `useIdentity` at runtime |
+| `/validate/:sessionId` | `RequireRole` → `gamemaker` | `ValidationPage` | QR confirm; query `?t=` = signed payload token |
+| `/admin/:sessionId/scan` | `RequireRole` → `gamemaker` | `QRScannerView` | Target GM scanner route (replaces legacy `/qr/:missionId`) |
+
+> **[NEED-UPDATE — routing]** Legacy `/qr/:missionId` (unguarded, mission-scoped
+> param) is deprecated; remove or redirect when `/admin/:sessionId/scan` ships.
 
 ### Player Cockpit
 
@@ -346,32 +396,57 @@ and routes to one of three strategies based on `mission.validationMethod`:
 5. Game Maker clicks Approve → `upsertProgressEvent` → `status: completed`
 6. `ValidationDisplay` receives update → dismisses → XP recalculates
 
+> **[NEED-UPDATE — UX / data storage]** OD-10: Player may see `pendingApproval`
+> inline on mission cards instead of full-screen `ValidationDisplay`. Affects
+> where progress state is surfaced and when subscriptions mount.
+
 **`selfApprove`**
 
 1. Player marks Mission complete → `upsertProgressEvent` called immediately with
    `status: autoApproved`
 2. No `ValidationDisplay` shown - cockpit updates inline
 
-**`qr` (alternative - retained for physical co-location contexts)**
+**`qr` (physical co-location — URL-encoded QR + shared ValidationPage)**
 
-1. Player marks Mission complete → `ValidationDisplay` mounts showing QR code
-2. QR encodes: `{ playerId, missionId, sessionId, xpValue }` - client-side, no
-   server call
-3. `ValidationDisplay` opens SSE subscription on `progress_events` for
-   `(playerId, missionId)`
-4. Game Maker opens `QRScannerView`, device camera decodes QR
-5. `ValidationResult` shows: player name, mission title, XP value
-6. Game Maker confirms → `upsertProgressEvent` → `status: completed`
-7. PocketBase SSE push fires → `ValidationDisplay` receives event → dismisses →
-   XP recalculates
+1. Player marks Mission complete → `ValidationDisplay` mounts with `QRDisplay`
+   (no `ProgressEvent` write before GM confirms — C-07)
+2. `QRDisplay` calls `encodeQRPayload` in `qrPayload.ts`, wraps with
+   `buildValidationUrl` in `qrUrl.ts` → QR encodes full URL:
+   `{origin}/validate/{sessionId}?t={base64 signed QRPayload}`
+3. `QRDisplay` holds an adapter `subscribeProgressEvent` callback so the Player
+   is notified when status becomes `completed` (mock: in-memory notify; PB:
+   SSE). This is **player-side only** — the GM scan/confirm path does not hold
+   a PocketBase subscription.
+4. Game Maker scans the QR via any entry point:
+   - **External device camera** → browser opens `/validate/:sessionId?t=...`
+   - **Built-in scanner** → `AdminQRScannerModal` or `QRScannerView` parses URL
+     via `parseValidationToken` → `navigate` to the same `ValidationPage`
+5. `ValidationPage` (GM-only, `RequireRole`): fetch `session.qrSecret`,
+   `decodeQRPayload` from `?t=`, load player / mission / milestone names,
+   render confirmation card (milestone, mission, player, XP)
+6. Game Maker taps **Confirm** → `upsertProgressEvent` → `status: completed`,
+   `validatedBy` = GM `identity.uid`, `validatedAt` = now
+7. Player `QRDisplay` subscription fires → `onValidated` → cockpit XP
+   recalculates
+
+**QR signing key (`qrSecret`):** Stored on `sessions.qrSecret` (64-char hex,
+auto-generated on PocketBase session create). Used only on the GM device for
+HMAC verification on `ValidationPage`. Prototype mock sets `qrSecret = sessionId`
+so encode and decode stay aligned.
+
+> **[NEED-UPDATE — UX / data storage]** _Reason: Player-side `encodeQRPayload`
+> currently needs the same secret as GM decode; production may move signing
+> server-side or issue short-lived player tokens. See OD-13._
 
 > **Trust boundary (qr only):** `xpValue` in the QR payload is client-generated
-> and not server-verified. For production, re-derive from `missions.xpValue` at
-> scan time. Acceptable for prototype demo context. See OD-07.
+> and not server-verified at encode time. `ValidationPage` should prefer
+> `missions.xpValue` at confirm when available. Acceptable for prototype demo.
+> See OD-07.
 
-SSE subscription is only held by `ValidationDisplay`, and only when
-`validationMethod = 'qr'`. All other validation paths use polling or a one-time
-fetch. Everything else in the app is fetched once on mount.
+Real-time subscriptions: `ValidationDisplay` for `qr` uses adapter subscribe on
+the **player** device only. `gmApprove` may use polling or SSE while waiting for
+approval (see OD-09). The GM QR confirm path is offline until the explicit PB
+write on `ValidationPage` (C-07).
 
 ### Admin Cockpit
 
@@ -386,6 +461,8 @@ The Game Maker's primary view - read-write. Components in render order:
 - `BuddyAssignmentForm`
 - `ResourcesEditor`
 - `SaveActions`
+- `AdminQRScannerModal` (optional GM QoL — generic URL scanner → `ValidationPage`)
+- `PendingApprovalsPanel` / `useAdminPlayers` for approve/reject (`gmApprove` only)
 
 **Background Image:** Game Maker uploads JPEG/PNG/WEBP → stored in Pocketbase
 file storage → `session.bgImageUrl` updated → both Player and Admin
@@ -432,11 +509,12 @@ flexible as possible for the users.
 
 ```
 App
-├── LandingPage
-├── PlayerCockpitPage
-├── AdminCockpitPage
-├── FormPage
-└── QRScannerView
+├── LandingPage                       [/ , /join/:sessionId]
+├── PlayerCockpitPage                 [/session/:sessionId]
+├── AdminCockpitPage                  [/admin/:sessionId]
+├── FormPage                          [/form/:missionId]
+├── ValidationPage                    [/validate/:sessionId]  GM QR confirm
+└── QRScannerView                     [/admin/:sessionId/scan]  GM camera scanner
 ```
 
 ### Shared Component Contracts
@@ -469,8 +547,8 @@ PlayerCockpitPage
 │   └── MissionCard ×N                [editable=false]
 ├── MissionDetailPopup                [on mission click, text/link types]
 ├── ValidationDisplay                 [full-screen, mounts on Mark Complete]
-│   ├── QRDisplay                     [only when validationMethod = 'qr'; SSE active]
-│   └── PendingApprovalDisplay        [only when validationMethod = 'gmApprove']
+│   ├── QRDisplay                     [validationMethod = 'qr'; URL QR + player subscribe]
+│   └── PendingApprovalDisplay        [validationMethod = 'gmApprove']
 ├── BuddyCard
 └── ResourcesSection
     ├── SearchBar
@@ -484,8 +562,9 @@ AdminCockpitPage
 ├── TopBar
 ├── PlayerSelectorDropdown
 ├── PlayerProfileCard
-├── PendingApprovalsPanel             [shows missions in pendingApproval state across all players]
-│   └── ApprovalRequestCard ×N
+├── PendingApprovalsPanel             [gmApprove pendingApproval events only]
+│   └── ApprovalRequestCard ×N        [Approve / Reject — not QR missions]
+├── AdminQRScannerModal               [generic URL scanner → ValidationPage]
 ├── MilestoneMapEditor
 │   ├── BackgroundImageUploader
 │   ├── BackgroundCanvas
@@ -514,9 +593,13 @@ AdminCockpitPage
 FormPage
 └── FormField ×N                      [driven by FieldSchema[]]
 
-QRScannerView                         [only reachable when validationMethod = 'qr']
+ValidationPage                        [GM-only; RequireRole gamemaker]
+├── Confirmation card                 [milestone, mission, player names, XP]
+└── Confirm / Cancel                  [Confirm → upsertProgressEvent completed]
+
+QRScannerView                         [/admin/:sessionId/scan]
 ├── CameraFeed                        [device camera API]
-└── ValidationResult                  [confirm / reject; renders ScanData after offline HMAC decode]
+└── ValidationResult                  [scan status only; confirm on ValidationPage]
 ```
 
 ## TypeScript Data Model
@@ -585,7 +668,12 @@ interface QRPayload {
   readonly sessionId: string;
   readonly xpValue: number;
   readonly issuedAt: number; // Unix ms timestamp
+  readonly hmac: string; // hex HMAC-SHA256 (C-16); keyed with session qrSecret
 }
+
+// URL utilities in qrUrl.ts (C-16 transport wrapper)
+// buildValidationUrl(sessionId, encodedPayload) → full app URL for QR canvas
+// parseValidationToken(scannedString) → { sessionId, token } | null
 
 interface ScanData {
   readonly playerId: string;
@@ -597,6 +685,9 @@ interface ScanData {
   readonly decodedAt: string;
 }
 
+// **[NEED-UPDATE — UX / data storage]** Planned server-side role binding.
+// Not used by adapters yet; identity is LocalIdentity (localStorage or ephemeral).
+// Future: verify role on mutations instead of client-only LocalIdentity.role.
 interface SessionRole {
   readonly userId: string;
   readonly sessionId: string;
@@ -649,6 +740,8 @@ interface Session extends PBRecord {
   readonly name: string;
   readonly bgImageUrl: string;
   readonly gameMakerId: string; // raw UID string, not a PB relation
+  readonly qrSecret?: string; // 64-char hex HMAC key (C-16); GM verify only; PB auto-generates
+  readonly preBoardingChecks: ReadonlyArray<PreBoardingCheckItem>; // session-scoped checklist JSON
 }
 
 interface Player extends PBRecord {
@@ -722,6 +815,8 @@ interface ProgressEvent extends PBRecord {
   readonly validatedBy?: string; // Game Maker UID
   readonly validatedAt?: string;
   readonly formResponse?: Readonly<Record<string, string>>; // parsed by adapter
+  // **[NEED-UPDATE — UX / data storage]** OD-02: snapshot validatedXp at
+  // confirm time instead of re-deriving from mission difficulty changes.
 }
 
 interface Resource extends PBRecord {
@@ -949,11 +1044,11 @@ interface FullSessionExport {
 | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | C-01 | One user identity per session                                                                                                                                                                                                           | `players.uid` unique globally                                                                         |
 | C-02 | Progress is always recoverable                                                                                                                                                                                                          | `recoveryKey` stored in PB, shown once on first join                                                  |
-| C-03 | No auth system required                                                                                                                                                                                                                 | Pocketbase auth collections unused in prototype                                                       |
+| C-03 | No auth system required                                                                                                                                                                                                                 | Pocketbase auth collections unused; identity via `LocalIdentity` + `RequireRole` (client-trusted role) |
 | C-04 | `xpThreshold` is always 100 per Milestone                                                                                                                                                                                               | Constant; not stored as a variable field                                                              |
 | C-05 | One `ProgressEvent` per `(playerId, missionId)`                                                                                                                                                                                         | Enforced at `upsertProgressEvent` - the single write path                                             |
 | C-06 | Form missions always `autoApproved`, regardless of `validationMethod`                                                                                                                                                                   | `autoApproved` status set on submit; `ValidationDisplay` never mounts for `form` type                 |
-| C-07 | The `qr` validation path holds no SSE subscription at any point - it is fully offline (HMAC verify → GM confirm → PB write). The `gmApprove` path may use polling or SSE in `ValidationDisplay` while waiting for approval (see OD-09). | Enforced by `ValidationDisplay`: no `pb.collection().subscribe()` call when `validationMethod = 'qr'` |
+| C-07 | The GM `qr` path holds no PocketBase SSE subscription during scan or confirm — offline HMAC verify on `ValidationPage` → GM confirm → `upsertProgressEvent`. Player `QRDisplay` may use adapter subscribe to detect completion after the write. `gmApprove` may use polling or SSE in `ValidationDisplay` (see OD-09). | `ValidationPage` + `qrPayload.ts`; no `pb.collection().subscribe()` on GM QR confirm path |
 | C-08 | Milestone positions are percentage-based                                                                                                                                                                                                | `xPercent`/`yPercent` 0–100, never pixels                                                             |
 | C-09 | `MilestoneNode` and `MissionCard` are shared components                                                                                                                                                                                 | `draggable` and `editable` boolean props; see D-007 for trade-off                                     |
 | C-10 | Templates strip all PBRecord IDs on export                                                                                                                                                                                              | Import creates fresh records; never reuse IDs across sessions                                         |
@@ -962,7 +1057,7 @@ interface FullSessionExport {
 | C-13 | No component calls `JSON.parse` on a PB record field                                                                                                                                                                                    | All parsing happens inside the PB adapter module                                                      |
 | C-14 | No component writes directly to `progress_events`                                                                                                                                                                                       | All mutations go through `upsertProgressEvent`                                                        |
 | C-15 | `validationMethod` defaults to `'gmApprove'` for all new Missions                                                                                                                                                                       | Set in `MissionEditor` default state; form missions ignore this field                                 |
-| C-16 | QR payloads must include an HMAC-SHA256 signature keyed with the session token. `qrPayload.ts` is the single encode/decode point; no component calls `JSON.stringify` or `JSON.parse` on QR strings directly                            | Enforced by `qrPayload.ts` utility module; `QRDisplay` and `QRScannerView` both call it               |
+| C-16 | QR payloads must include HMAC-SHA256 keyed with `sessions.qrSecret`. `qrPayload.ts` is the single encode/decode point; `qrUrl.ts` wraps payloads in validation URLs. No component calls `JSON.stringify`/`JSON.parse` on QR strings directly. | `qrPayload.ts`, `qrUrl.ts`; `QRDisplay`, scanners, `ValidationPage` |
 | C-17 | `ChatThread` and `ChatMessage` are ephemeral client-only state. Chat history is never written to PocketBase and is reset on page navigation                                                                                             | `useChatStream` hook holds state in React; no PB adapter call for chat data                           |
 
 ## Open Decisions [APPEND-ONLY]
@@ -981,3 +1076,5 @@ interface FullSessionExport {
 | OD-10 | Should the Player see the `pendingApproval` state inline (e.g., greyed-out mission card with "Waiting for approval") rather than a full-screen `ValidationDisplay`?                                         | Player UX feedback loop; affects when `ValidationDisplay` dismisses        | Sprint 3       |
 | OD-11 | What is the auth mechanism for the LiteLLM proxy? Options: (a) Bearer token hardcoded in env var at build time, (b) session token passed from `LocalIdentity`, (c) unauthenticated (internal network only). | Security posture of the AI gateway; affects `useChatStream` implementation | Sprint 3       |
 | OD-12 | Should the QR payload's `issuedAt` expiry tolerance be configurable per session, or a fixed constant (e.g., 5 minutes)?                                                                                     | UX for slow QR scans; security for replayed tokens                         | Sprint 3       |
+| OD-13 | How should player-side QR signing obtain the HMAC key in production? Options: server-signed token endpoint, short-lived player signing key, or accept prototype `sessionId` stand-in in mock only.          | Security of `qr` path; `qrSecret` must not leak to untrusted clients       | Post-prototype |
+| OD-14 | Should identity move from `localStorage` + ephemeral demo to persisted `SessionRole` records with server-validated roles?                                                                                  | Multi-session UX, route guard trust, recovery flows                        | Post-prototype |
