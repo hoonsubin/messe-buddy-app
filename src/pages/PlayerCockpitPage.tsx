@@ -269,18 +269,7 @@ const PlayerCockpitPage = () => {
       )}
 
       {/* Scrollable page body */}
-      <main
-        style={{
-          paddingTop: "var(--topbar-h)",
-          paddingInline: "var(--space-4)",
-          paddingBottom: "var(--space-10)",
-          maxWidth: "48rem",
-          marginInline: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-8)",
-        }}
-      >
+      <main className="cockpit-main">
         {/* Welcome header */}
         <header style={{ paddingTop: "var(--space-6)" }}>
           <h1
@@ -307,9 +296,11 @@ const PlayerCockpitPage = () => {
         </header>
 
         {/* AI policy assistant - collapsible (collapsed by default) */}
-        <AssistantChatCard
-          {...(buddy?.name !== undefined && { buddyName: buddy.name })}
-        />
+        <div className="cockpit-grid">
+          <div className="cockpit-col">
+            <AssistantChatCard
+              {...(buddy?.name !== undefined && { buddyName: buddy.name })}
+            />
 
         {/* Milestones section */}
         <section aria-label="Milestones">
@@ -339,7 +330,9 @@ const PlayerCockpitPage = () => {
           onMissionClick={handleMissionClick}
           onMarkComplete={() => undefined}
         />
+          </div>
 
+          <div className="cockpit-col">
         {/* Your buddy */}
         <section aria-label="Your buddy">
           {buddy
@@ -377,6 +370,8 @@ const PlayerCockpitPage = () => {
         <section aria-label="Resources">
           <ResourcesSection resources={resources} onSearch={() => undefined} />
         </section>
+          </div>
+        </div>
       </main>
     </div>
   );

@@ -72,7 +72,7 @@ const ChatPanel = (props: ChatPanelProps) => {
               <div className="chat-empty__avatar" aria-hidden="true">
                 <MdAutoAwesome size={26} />
               </div>
-              <p className="chat-empty__title">Ask about company policies</p>
+              <p className="chat-empty__title">What would you like to know?</p>
               <p className="chat-empty__scope">
                 I answer quick questions straight from the official docs. For
                 anything personal,{" "}

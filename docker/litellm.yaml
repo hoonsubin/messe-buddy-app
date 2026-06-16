@@ -53,20 +53,20 @@ model_list:
       api_key: os.environ/LLM_PROXY_KEY
 
   # Embedding: Nomic Embed Text v2 MoE (768 dim, Matryoshka-capable)
-  # Used by init-vector-store for document ingestion.
-  # The pgvector connector (litellm-pgvector) calls the remote HoonLabs proxy
-  # directly for embeddings at runtime; init-vector-store calls local LiteLLM.
-  # The model_name MUST match EMBEDDING_MODEL env var (default: nomic-embed-text-v2-moe).
   - model_name: nomic-embed-text-v2-moe
     litellm_params:
       model: openai/nomic-ai/embed-text-v2-moe
       api_base: https://litellm.hoonlabs.xyz/v1
       api_key: os.environ/LLM_PROXY_KEY
 
-  # Reranker: BGE Reranker v2 M3 (for result re-ranking in RAG pipelines)
+  # Reranker: BGE Reranker v2 M3 (cross-encoder, used by the pgvector connector
+  # to re-rank retrieved chunks before they're injected into the prompt).
+  # NOTE: provider MUST be `hosted_vllm/` — it exposes LiteLLM's `/rerank`
+  # endpoint. The `openai/` provider does NOT support rerank. The upstream
+  # (litellm.hoonlabs.xyz) serves this model from a vLLM rerank runtime.
   - model_name: bge-reranker-v2-m3
     litellm_params:
-      model: openai/gpustack/bge-reranker-v2-m3
+      model: hosted_vllm/gpustack/bge-reranker-v2-m3
       api_base: https://litellm.hoonlabs.xyz/v1
       api_key: os.environ/LLM_PROXY_KEY
 

@@ -115,6 +115,14 @@ services:
       EMBEDDING__BASE_URL: http://litellm:4000
       EMBEDDING__API_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
       EMBEDDING__DIMENSIONS: ${EMBEDDING_DIM:-768}
+      # ── Reranking ──────────────────────────────────────────────────────────
+      # Cross-encoder reranks the over-fetched candidate pool before chunks are
+      # returned for prompt injection. RERANK__MODEL must match a rerank-capable
+      # model_name in docker/litellm.yaml (hosted_vllm/ provider). Falls back to
+      # vector order on any rerank failure.
+      RERANK__ENABLED: ${RERANK_ENABLED:-true}
+      RERANK__MODEL: ${RERANK_MODEL:-bge-reranker-v2-m3}
+      RERANK__CANDIDATES: ${RERANK_CANDIDATES:-30}
       HOST: "0.0.0.0"
       PORT: "8001"
       DB_FIELDS__ID_FIELD: "id"
