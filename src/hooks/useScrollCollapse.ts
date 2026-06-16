@@ -10,11 +10,20 @@ import { useCallback, useEffect, useRef, useState } from "react";
  *   - Slow/linear upward scroll → no change
  *   - scrollTop reaches 0 → always expand
  *
- * @param scrollRef - ref to the scrollable container element
+ * @param scrollRef          - ref to the scrollable container element
+ * @param resetKey           - any value; when it changes the hook resets to
+ *                             expanded and scrolls the container back to top.
+ *                             Pass the active tab id, route, or any discriminator
+ *                             so the effect resets correctly on navigation.
  * @param fastScrollThreshold - minimum px/ms for "fast" upward scroll (default 1.0)
+ *
+ * Reuse pattern:
+ *   const collapsed = useScrollCollapse(scrollRef, activeTab);
+ *   // Pass `collapsed` via data-attribute or context to the collapsible panel.
  */
 export const useScrollCollapse = (
   scrollRef: React.RefObject<HTMLElement | null>,
+  resetKey: unknown = undefined,
   fastScrollThreshold = 1.0,
 ): boolean => {
   const [collapsed, setCollapsed] = useState(false);
@@ -22,6 +31,22 @@ export const useScrollCollapse = (
   const lastTopRef = useRef(0);
   const lastTimeRef = useRef(0);
 
+  // ── Reset on key change ─────────────────────────────────────────────────────
+  // Whenever resetKey changes (e.g. active tab switches), snap the scroll
+  // container back to the top and expand the collapsible panel so the new
+  // content always starts from a clean state.
+  useEffect(() => {
+    const el = scrollRef.current;
+    setCollapsed(false);
+    lastTopRef.current = 0;
+    lastTimeRef.current = 0;
+    if (el) {
+      el.scrollTop = 0;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetKey]);
+
+  // ── Scroll handler ──────────────────────────────────────────────────────────
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -52,6 +77,7 @@ export const useScrollCollapse = (
     }
   }, [scrollRef, fastScrollThreshold]);
 
+  // ── Attach / detach listener ────────────────────────────────────────────────
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;

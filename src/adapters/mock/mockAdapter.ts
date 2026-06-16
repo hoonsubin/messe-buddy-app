@@ -436,6 +436,11 @@ const saveTemplate = async (template: TemplateExport): Promise<void> => {
   templates.set(template.name, template);
 };
 
+const deleteTemplate = async (name: string): Promise<void> => {
+  await Promise.resolve();
+  templates.delete(name);
+};
+
 // ── Export ────────────────────────────────────────────────────────────────────
 
 export const mockAdapter: AppAdapter = {
@@ -470,4 +475,5 @@ export const mockAdapter: AppAdapter = {
   deleteResource,
   listTemplates,
   saveTemplate,
+  deleteTemplate,
 };

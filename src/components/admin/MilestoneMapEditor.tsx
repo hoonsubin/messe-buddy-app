@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { MdImage } from "react-icons/md";
 import type { Milestone } from "../../types/index.ts";
 import MapViewport from "../shared/MapViewport.tsx";
 import MilestoneNode from "../shared/MilestoneNode.tsx";
@@ -622,6 +623,32 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
         >
           + Add Milestone
         </button>
+        <label
+          className="btn btn--ghost"
+          htmlFor="map-bg-upload"
+          title="Upload background image"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "var(--space-1)",
+            cursor: "pointer",
+          }}
+        >
+          <MdImage size={16} aria-hidden="true" />
+          Background
+          <input
+            id="map-bg-upload"
+            type="file"
+            accept="image/*"
+            className="visually-hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onUploadBackground(file);
+              // Reset so the same file can be re-selected
+              e.target.value = "";
+            }}
+          />
+        </label>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
-// Phase 1 shell — template browsing panel. Logic wired in Phase 4.
-// TemplateExport type is deferred to Phase 8; using a local shape for now.
+import { useState } from "react";
+import { MdDeleteOutline } from "react-icons/md";
 import SearchBar from "../shared/SearchBar.tsx";
 
 interface TemplateSummary {
@@ -12,6 +12,7 @@ interface TemplateSummary {
 interface TemplateLibraryProps {
   readonly templates: ReadonlyArray<TemplateSummary>;
   readonly onLoad: (templateId: string) => void;
+  readonly onDelete: (templateId: string) => void;
 }
 
 const PLACEHOLDER_TEMPLATES: ReadonlyArray<TemplateSummary> = [
@@ -36,9 +37,18 @@ const PLACEHOLDER_TEMPLATES: ReadonlyArray<TemplateSummary> = [
 ];
 
 const TemplateLibrary = (props: TemplateLibraryProps) => {
-  const templates = props.templates.length > 0
+  const [query, setQuery] = useState("");
+
+  const source = props.templates.length > 0
     ? props.templates
     : PLACEHOLDER_TEMPLATES;
+
+  const visible = query.trim()
+    ? source.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()))
+    : source;
+
+  // Placeholders are display-only — disable load/delete for them
+  const isPlaceholder = props.templates.length === 0;
 
   return (
     <div
@@ -61,58 +71,98 @@ const TemplateLibrary = (props: TemplateLibraryProps) => {
 
       <SearchBar
         placeholder="Search templates..."
-        onSearch={() => undefined}
+        onSearch={setQuery}
       />
 
-      <ul
-        style={{
-          listStyle: "none",
-          padding: 0,
-          margin: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-2)",
-        }}
-      >
-        {templates.map((t) => (
-          <li
-            key={t.id}
-            className="card"
+      {visible.length === 0
+        ? (
+          <p
             style={{
-              padding: "var(--space-3)",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              fontSize: "var(--text-sm)",
+              color: "hsl(var(--color-muted-fg))",
+              margin: 0,
+              textAlign: "center",
+              padding: "var(--space-4) 0",
             }}
           >
-            <div>
-              <div
+            No templates match "{query}"
+          </p>
+        )
+        : (
+          <ul
+            style={{
+              listStyle: "none",
+              padding: 0,
+              margin: 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-2)",
+            }}
+          >
+            {visible.map((t) => (
+              <li
+                key={t.id}
+                className="card"
                 style={{
-                  fontWeight: "var(--weight-medium)",
-                  fontSize: "var(--text-sm)",
+                  padding: "var(--space-3)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: "var(--space-2)",
                 }}
               >
-                {t.name}
-              </div>
-              <div
-                style={{
-                  fontSize: "var(--text-xs)",
-                  color: "hsl(var(--color-muted-fg))",
-                }}
-              >
-                {t.milestoneCount} milestones · {t.missionCount} missions
-              </div>
-            </div>
-            <button
-              type="button"
-              className="btn btn--secondary"
-              onClick={() => props.onLoad(t.id)}
-            >
-              Use Template
-            </button>
-          </li>
-        ))}
-      </ul>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontWeight: "var(--weight-medium)",
+                      fontSize: "var(--text-sm)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {t.name}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "var(--text-xs)",
+                      color: "hsl(var(--color-muted-fg))",
+                    }}
+                  >
+                    {t.milestoneCount} milestones · {t.missionCount} missions
+                  </div>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "var(--space-1)",
+                    flexShrink: 0,
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="btn btn--secondary"
+                    onClick={() => props.onLoad(t.id)}
+                    disabled={isPlaceholder}
+                    title={isPlaceholder ? "Save a template first" : undefined}
+                  >
+                    Use
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--ghost"
+                    onClick={() => props.onDelete(t.id)}
+                    disabled={isPlaceholder}
+                    aria-label={`Delete ${t.name}`}
+                    title={isPlaceholder ? "Save a template first" : undefined}
+                  >
+                    <MdDeleteOutline size={16} aria-hidden="true" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
     </div>
   );
 };

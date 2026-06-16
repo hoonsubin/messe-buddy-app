@@ -102,4 +102,5 @@ export interface AppAdapter {
   // Templates
   listTemplates(): Promise<ReadonlyArray<TemplateExport>>;
   saveTemplate(template: TemplateExport): Promise<void>;
+  deleteTemplate(name: string): Promise<void>;
 }

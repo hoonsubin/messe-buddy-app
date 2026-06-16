@@ -1,32 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import type {
-  BuddyProfile,
-  DraftMilestone,
-  DraftMission,
-  FormSchema,
-  Milestone,
-  Mission,
-  Player,
-  PlayerProgress,
-  PreBoardingCheckItem,
-  ProgressEvent,
-  Resource,
-  TemplateExport,
-} from "../types/index.ts";
-import { MISSION_TYPE } from "../types/index.ts";
+import { useParams } from "react-router-dom";
+import type { BuddyProfile, Milestone, Resource } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { useIdentity } from "../hooks/useIdentity.ts";
 import { useSession } from "../hooks/useSession.ts";
 import { useScrollCollapse } from "../hooks/useScrollCollapse.ts";
-import { computeProgress } from "../use-cases/computeProgress.ts";
-import { deriveXP } from "../use-cases/deriveXP.ts";
-import { exportTemplate } from "../use-cases/exportTemplate.ts";
-import { importTemplate } from "../use-cases/importTemplate.ts";
+import { useAdminMilestoneEditor } from "../hooks/useAdminMilestoneEditor.ts";
+import { useAdminMissionEditor } from "../hooks/useAdminMissionEditor.ts";
+import { useAdminPlayers } from "../hooks/useAdminPlayers.ts";
+import { usePreBoardingChecklist } from "../hooks/usePreBoardingChecklist.ts";
+import { useCrossHireData } from "../hooks/useCrossHireData.ts";
+import { useTemplateLibrary } from "../hooks/useTemplateLibrary.ts";
+import Toast from "../components/shared/Toast.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
 import MilestoneMapEditor from "../components/admin/MilestoneMapEditor.tsx";
 import AdminMissionsList from "../components/admin/AdminMissionsList.tsx";
-import MilestoneSidebarEditor from "../components/admin/MilestoneSidebarEditor.tsx";
+import MissionBottomSheet from "../components/admin/MissionBottomSheet.tsx";
 import PendingApprovalsPanel from "../components/admin/PendingApprovalsPanel.tsx";
 import PlayerSelectorDropdown from "../components/admin/PlayerSelectorDropdown.tsx";
 import PlayerProfileCard from "../components/admin/PlayerProfileCard.tsx";
@@ -36,7 +25,6 @@ import ResourcesEditor from "../components/admin/ResourcesEditor.tsx";
 import SaveTemplateModal from "../components/admin/SaveTemplateModal.tsx";
 import PreBoardingChecklist from "../components/admin/PreBoardingChecklist.tsx";
 import CrossHireDashboard from "../components/admin/CrossHireDashboard.tsx";
-import type { HireProgressRow } from "../components/admin/CrossHireDashboard.tsx";
 import AdminQRScannerModal from "../components/admin/AdminQRScannerModal.tsx";
 import SessionInviteCard from "../components/admin/SessionInviteCard.tsx";
 
@@ -47,57 +35,6 @@ const ADMIN_TABS = {
 } as const;
 type AdminTab = (typeof ADMIN_TABS)[keyof typeof ADMIN_TABS];
 
-// ── Draft helpers ─────────────────────────────────────────────────────────────
-
-const defaultDraftMilestone = (
-  id: string,
-  name: string,
-  xPercent: number,
-  yPercent: number,
-): DraftMilestone => ({
-  id,
-  name,
-  xPercent,
-  yPercent,
-  isDirty: false,
-});
-
-const defaultDraftMission = (milestoneId: string): DraftMission => ({
-  milestoneId,
-  isDirty: false,
-});
-
-const makeId = (): string =>
-  Math.random().toString(36).slice(2, 17).padEnd(15, "0").slice(0, 15);
-
-// Compute XP preview for a draft mission given the current set of missions in
-// the same milestone. Creates synthetic Mission objects, calls deriveXP, and
-// returns the XP value for the synthetic draft mission.
-const computeXPPreview = (
-  draft: DraftMission,
-  msMissions: ReadonlyArray<Mission>,
-): number => {
-  const synthetic: Mission = {
-    id: "__draft__",
-    created: new Date().toISOString(),
-    updated: new Date().toISOString(),
-    sessionId: "",
-    milestoneId: draft.milestoneId,
-    title: draft.title ?? "",
-    body: draft.body ?? "",
-    type: draft.type ?? MISSION_TYPE.TEXT,
-    difficulty: draft.difficulty ?? 1,
-    xpValue: 0,
-    tags: draft.tags ?? [],
-    order: msMissions.length,
-    isInCurrentMissions: draft.isInCurrentMissions ?? true,
-    validationMethod: draft.validationMethod ?? "gmApprove",
-  };
-  const allMissions: ReadonlyArray<Mission> = [...msMissions, synthetic];
-  const xpValues = deriveXP(allMissions);
-  return xpValues[xpValues.length - 1] ?? 0;
-};
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 const AdminCockpitPage = () => {
@@ -105,18 +42,60 @@ const AdminCockpitPage = () => {
   const sid = sessionId ?? "";
   const adapter = useAdapter();
   const { identity } = useIdentity();
-  const navigate = useNavigate();
 
-  // Session data via hooks
+  // Session data
   const { session, milestones, missions } = useSession(sid);
 
-  // ── Scroll-collapse for the map panel (mobile only) ────────────────────────
-  // The actual scroll container is the sidebar div (overflow-y: auto inside the
-  // grid 1fr row) — not the outer <main>, which never overflows.
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const mapCollapsed = useScrollCollapse(sidebarRef);
+  // Local override for bgImageUrl — avoids re-fetching session on upload
+  const [bgImageUrlOverride, setBgImageUrlOverride] = useState<string | null>(
+    null,
+  );
+  const bgImageUrl = bgImageUrlOverride ?? session?.bgImageUrl ?? "";
 
-  // ── Resources (admin view — all resources, not filtered) ────────────────────
+  // ── Tab navigation (declared early — used as resetKey for useScrollCollapse) ─
+  const [activeTab, setActiveTab] = useState<AdminTab>(
+    ADMIN_TABS.ACTIVE_SESSION,
+  );
+
+  // ── Scroll-collapse for the sidebar on mobile ──────────────────────────────
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const mapCollapsed = useScrollCollapse(sidebarRef, activeTab);
+
+  // ── Domain hooks ───────────────────────────────────────────────────────────
+
+  const milestoneEditor = useAdminMilestoneEditor(milestones);
+  const missionEditor = useAdminMissionEditor(missions);
+
+  const {
+    players,
+    selectedPlayerId,
+    selectedPlayer,
+    selectedPlayerProgress,
+    pendingEvents,
+    qrScannerContext,
+    handlePlayerSelect,
+    handleApprove,
+    handleReject,
+    handleScanQR,
+    handleQRValidate,
+    closeQRScanner,
+  } = useAdminPlayers({
+    sid,
+    milestones,
+    missions,
+    validatorUid: identity?.uid,
+    adapter,
+  });
+
+  const preBoardingChecklist = usePreBoardingChecklist(sid, session, adapter);
+
+  const crossHireRows = useCrossHireData(
+    adapter,
+    activeTab === ADMIN_TABS.ALL_NEW_HIRES,
+  );
+
+  // ── Resources (admin owns full CRUD — useResources is player-only) ─────────
+  // Declared before useTemplateLibrary which consumes adminResources.
 
   const [adminResources, setAdminResources] = useState<
     ReadonlyArray<Resource>
@@ -126,150 +105,16 @@ const AdminCockpitPage = () => {
     void adapter.listResources(sid).then(setAdminResources);
   }, [adapter, sid]);
 
-  // ── Pre-boarding checklist state ────────────────────────────────────────────
-
-  const [preBoardingItems, setPreBoardingItems] = useState<
-    ReadonlyArray<PreBoardingCheckItem>
-  >([]);
-
-  // Sync from session when session data loads or changes
-  const prevSessionRef = useRef(session);
-  useEffect(() => {
-    if (session && session !== prevSessionRef.current) {
-      prevSessionRef.current = session;
-      setPreBoardingItems(session.preBoardingChecks);
-    }
-  }, [session]);
-
-  const handlePreBoardingToggle = useCallback(
-    (id: string) => {
-      setPreBoardingItems((prev) => {
-        const next = prev.map((item) =>
-          item.id === id ? { ...item, checked: !item.checked } : item
-        );
-        void adapter.updateSession(sid, { preBoardingChecks: next });
-        return next;
-      });
-    },
-    [adapter, sid],
-  );
-
-  const handlePreBoardingAdd = useCallback(
-    (label: string) => {
-      setPreBoardingItems((prev) => {
-        const newItem: PreBoardingCheckItem = {
-          id: makeId(),
-          label,
-          checked: false,
-        };
-        const next = [...prev, newItem];
-        void adapter.updateSession(sid, { preBoardingChecks: next });
-        return next;
-      });
-    },
-    [adapter, sid],
-  );
-
-  const handlePreBoardingMarkAllDone = useCallback(() => {
-    setPreBoardingItems((prev) => {
-      const next = prev.map((item) => ({ ...item, checked: true }));
-      void adapter.updateSession(sid, { preBoardingChecks: next });
-      return next;
-    });
-  }, [adapter, sid]);
-
-  // ── Players ─────────────────────────────────────────────────────────────────
-
-  const [players, setPlayers] = useState<ReadonlyArray<Player>>([]);
-  useEffect(() => {
-    if (!sid) return;
-    void adapter.listPlayers(sid).then(setPlayers);
-  }, [adapter, sid]);
-
-  // Selected player
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
-  const isInitialPlayerLoad = useRef(true);
-
-  // ── Buddy assignment state ──────────────────────────────────────────────────
-
-  const emptyBuddyDraft = useCallback(
-    (): Omit<
-      BuddyProfile,
-      "id" | "created" | "updated" | "assignedToPlayerId"
-    > => ({
-      sessionId: sid,
-      name: "",
-      role: "",
-      tenure: "",
-      contactUrl: "",
-    }),
-    [sid],
-  );
-
-  const [buddyDraft, setBuddyDraft] = useState(() => emptyBuddyDraft());
-  const buddyProfileRef = useRef<BuddyProfile | null>(null);
-
-  // Load buddy profile when player selection changes, using a callback
-  // instead of an effect to avoid the setState-in-effect lint violation.
-  const loadBuddyProfile = useCallback(
-    (playerId: string) => {
-      if (!playerId) {
-        buddyProfileRef.current = null;
-        setBuddyDraft(emptyBuddyDraft());
-        return;
-      }
-      void adapter.getBuddyProfile(playerId).then((profile) => {
-        buddyProfileRef.current = profile;
-        if (profile) {
-          setBuddyDraft({
-            sessionId: profile.sessionId,
-            name: profile.name,
-            role: profile.role,
-            tenure: profile.tenure ?? "",
-            contactUrl: profile.contactUrl ?? "",
-          });
-        } else {
-          setBuddyDraft(emptyBuddyDraft());
-        }
-      });
-    },
-    [adapter, emptyBuddyDraft],
-  );
-
-  const handlePlayerSelect = useCallback(
-    (playerId: string) => {
-      setSelectedPlayerId(playerId);
-      loadBuddyProfile(playerId);
-    },
-    [loadBuddyProfile],
-  );
-
-  const handleBuddyDraftChange = useCallback(
-    (
-      draft: Omit<
-        BuddyProfile,
-        "id" | "created" | "updated" | "assignedToPlayerId"
-      >,
-    ) => {
-      setBuddyDraft(draft);
-    },
-    [],
-  );
-
-  const handleBuddySave = useCallback(() => {
-    if (!selectedPlayerId) return;
-    void adapter.upsertBuddyProfile(selectedPlayerId, {
-      sessionId: buddyDraft.sessionId,
-      name: buddyDraft.name,
-      role: buddyDraft.role,
-      tenure: buddyDraft.tenure,
-      contactUrl: buddyDraft.contactUrl,
-    }).then((profile) => {
-      buddyProfileRef.current = profile;
-    });
-  }, [adapter, selectedPlayerId, buddyDraft]);
-
-  // ── Resource CRUD callbacks ─────────────────────────────────────────────────
+  const templateLibrary = useTemplateLibrary({
+    sid,
+    active: activeTab === ADMIN_TABS.ACTIVE_SESSION,
+    session,
+    milestones,
+    missions,
+    resources: adminResources,
+    gmUid: identity?.uid,
+    adapter,
+  });
 
   const handleResourceAdd = useCallback(
     (data: Omit<Resource, "id" | "created" | "updated">) => {
@@ -302,568 +147,178 @@ const AdminCockpitPage = () => {
     [adapter],
   );
 
-  // All progress events across all players
-  const [allProgressEvents, setAllProgressEvents] = useState<
-    ReadonlyArray<ProgressEvent>
-  >([]);
+  // ── Buddy assignment ───────────────────────────────────────────────────────
 
-  useEffect(() => {
-    if (!players.length) return;
-    let cancelled = false;
-
-    if (isInitialPlayerLoad.current) {
-      handlePlayerSelect(players[0]!.id);
-      isInitialPlayerLoad.current = false;
-    }
-
-    const fetchAll = async () => {
-      const results = await Promise.all(
-        players.map((p) => adapter.listProgressEvents(p.id)),
-      );
-      if (!cancelled) setAllProgressEvents(results.flat());
-    };
-    void fetchAll();
-    return () => {
-      cancelled = true;
-    };
-  }, [adapter, handlePlayerSelect, players]);
-
-  const pendingEvents = allProgressEvents.filter(
-    (e) => e.status === "pendingApproval",
+  const emptyBuddyDraft = useCallback(
+    (): Omit<
+      BuddyProfile,
+      "id" | "created" | "updated" | "assignedToPlayerId"
+    > => ({
+      sessionId: sid,
+      name: "",
+      role: "",
+      tenure: "",
+      contactUrl: "",
+    }),
+    [sid],
   );
 
-  const selectedPlayer = players.find((p) => p.id === selectedPlayerId) ??
-    null;
+  const [buddyDraft, setBuddyDraft] = useState(() => emptyBuddyDraft());
+  const buddyProfileRef = useRef<BuddyProfile | null>(null);
 
-  // ── Selected player progress ────────────────────────────────────────────────
-
-  const selectedPlayerProgress: PlayerProgress | null = useMemo(() => {
-    if (!selectedPlayer) return null;
-    const playerEvents = allProgressEvents.filter(
-      (e) => e.playerId === selectedPlayer.id,
-    );
-    return computeProgress(
-      selectedPlayer.id,
-      missions,
-      milestones,
-      playerEvents,
-    );
-  }, [selectedPlayer, allProgressEvents, missions, milestones]);
-
-  // ── Milestone editor state ──────────────────────────────────────────────────
-
-  const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(
-    null,
-  );
-  const [selectedMissionId, setSelectedMissionId] = useState<string | null>(
-    null,
-  );
-
-  // Draft milestones — seeded from real milestones on first load.
-  // Tracked separately so drag/add/edit are batched until Save.
-  const [draftMilestones, setDraftMilestones] = useState<
-    ReadonlyArray<DraftMilestone>
-  >([]);
-  const draftMilestonesSeeded = useRef(false);
-
-  useEffect(() => {
-    if (draftMilestonesSeeded.current || milestones.length === 0) return;
-    draftMilestonesSeeded.current = true;
-    setDraftMilestones(
-      milestones.map((ms) =>
-        defaultDraftMilestone(ms.id, ms.name, ms.xPercent, ms.yPercent)
-      ),
-    );
-  }, [milestones]);
-
-  // Draft missions — keyed by a synthetic draft ID (not the PB mission ID).
-  // When editing an existing mission we seed from real data; for new missions
-  // we create a fresh DraftMission.
-  const [draftMissions, setDraftMissions] = useState<
-    ReadonlyMap<string, DraftMission>
-  >(new Map());
-
-  // ── MilestoneMapEditor callbacks ────────────────────────────────────────────
-
-  const handleNodeDrop = useCallback(
-    (id: string, xPercent: number, yPercent: number) => {
-      setDraftMilestones((prev) =>
-        prev.map((dm) =>
-          dm.id === id ? { ...dm, xPercent, yPercent, isDirty: true } : dm
-        )
-      );
-    },
-    [],
-  );
-
-  const handleAddMilestone = useCallback(() => {
-    const id = makeId();
-    const dm = defaultDraftMilestone(id, "New milestone", 50, 50);
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore readonly constraint — we manage state immutably
-    setDraftMilestones((prev) => [...prev, dm]);
-  }, []);
-
-  const handleAddMilestoneAt = useCallback(
-    (xPercent: number, yPercent: number) => {
-      const id = makeId();
-      const dm = defaultDraftMilestone(id, "New Milestone", xPercent, yPercent);
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore readonly constraint — we manage state immutably
-      setDraftMilestones((prev) => [...prev, dm]);
-    },
-    [],
-  );
-
-  const handleRenameMilestone = useCallback(
-    (id: string, name: string) => {
-      setDraftMilestones((prev) =>
-        prev.map((dm) => dm.id === id ? { ...dm, name, isDirty: true } : dm)
-      );
-    },
-    [],
-  );
-
-  const handleDeleteMilestone = useCallback((id: string) => {
-    setDraftMilestones((prev) => prev.filter((dm) => dm.id !== id));
-  }, []);
-
-  // ── MilestoneSidebarEditor / MissionEditor callbacks ────────────────────────
-
-  const handleMissionSelect = useCallback(
-    (missionId: string) => {
-      setSelectedMissionId(missionId);
-      // Seed draft from real mission if not already in draftMissions
-      setDraftMissions((prev) => {
-        if (prev.has(missionId)) return prev;
-        const real = missions.find((m) => m.id === missionId);
-        if (!real) return prev;
-        const draft: DraftMission = {
-          milestoneId: real.milestoneId,
-          originalId: real.id,
-          isDirty: false,
-          title: real.title,
-          body: real.body,
-          type: real.type,
-          externalUrl: real.externalUrl,
-          difficulty: real.difficulty,
-          tags: real.tags,
-          suggestedDueDate: real.suggestedDueDate,
-          validationMethod: real.validationMethod,
-          isInCurrentMissions: real.isInCurrentMissions,
-          formFields: [],
-        };
-        return new Map(prev).set(missionId, draft);
-      });
-    },
-    [missions],
-  );
-
-  const handleAddMission = useCallback(() => {
-    if (!selectedMilestone) return;
-    const draftId = makeId();
-    const draft = defaultDraftMission(selectedMilestone.id);
-    setDraftMissions((prev) => new Map(prev).set(draftId, draft));
-    setSelectedMissionId(draftId);
-  }, [selectedMilestone]);
-
-  const handleDraftChange = useCallback(
-    (draft: DraftMission) => {
-      if (!selectedMissionId) return;
-      setDraftMissions((prev) =>
-        new Map(prev).set(selectedMissionId, { ...draft, isDirty: true })
-      );
-    },
-    [selectedMissionId],
-  );
-
-  // Compute XP preview for the current draft mission
-  const xpPreview = useMemo(() => {
-    if (!selectedMissionId) return 0;
-    const draft = draftMissions.get(selectedMissionId);
-    if (!draft || draft.difficulty === undefined) return 0;
-    const msMissions = missions.filter(
-      (m) => m.milestoneId === draft.milestoneId && m.id !== selectedMissionId,
-    );
-    return computeXPPreview(draft, msMissions);
-  }, [selectedMissionId, draftMissions, missions]);
-
-  // ── Tab navigation ──────────────────────────────────────────────────────────
-
-  const [activeTab, setActiveTab] = useState<AdminTab>(
-    ADMIN_TABS.ACTIVE_SESSION,
-  );
-
-  // ── Cross-hire dashboard data (Phase 6g) ───────────────────────────────────
-
-  const [crossHireRows, setCrossHireRows] = useState<
-    ReadonlyArray<HireProgressRow>
-  >([]);
-
-  useEffect(() => {
-    if (activeTab !== ADMIN_TABS.ALL_NEW_HIRES) return;
-    let cancelled = false;
-
-    const fetchCrossHireData = async () => {
-      const sessions = await adapter.listSessions();
-      const rows: HireProgressRow[] = [];
-
-      for (const s of sessions) {
-        const sessionPlayers = await adapter.listPlayers(s.id);
-        const sessionMilestones = await adapter.listMilestones(s.id);
-        const sessionMissions = await adapter.listMissions(s.id);
-
-        for (const p of sessionPlayers) {
-          const events = await adapter.listProgressEvents(p.id);
-          const progress = computeProgress(
-            p.id,
-            sessionMissions,
-            sessionMilestones,
-            events,
-          );
-
-          const progressPercent = (() => {
-            const { milestoneProgress } = progress;
-            if (milestoneProgress.length === 0) return 0;
-            const total = milestoneProgress.reduce(
-              (sum, mp) => sum + mp.percentComplete,
-              0,
-            );
-            return Math.round((total / milestoneProgress.length) * 100);
-          })();
-
-          const lastActivity = events.length > 0
-            ? Math.max(...events.map((e) => new Date(e.updated).getTime()))
-            : null;
-          // null means no activity recorded yet — never treat as Infinity
-          const daysSinceLastActivity = lastActivity !== null
-            ? Math.floor((Date.now() - lastActivity) / (1000 * 60 * 60 * 24))
-            : null;
-
-          rows.push({
-            playerId: p.id,
-            playerName: p.name || p.uid || p.id,
-            sessionName: s.name,
-            progressPercent,
-            daysSinceLastActivity,
-            isStalled: daysSinceLastActivity !== null &&
-              daysSinceLastActivity > 3,
-          });
-        }
+  const loadBuddyProfile = useCallback(
+    (playerId: string) => {
+      if (!playerId) {
+        buddyProfileRef.current = null;
+        setBuddyDraft(emptyBuddyDraft());
+        return;
       }
-
-      if (!cancelled) setCrossHireRows(rows);
-    };
-
-    void fetchCrossHireData();
-    return () => {
-      cancelled = true;
-    };
-  }, [adapter, activeTab]);
-
-  // ── QR scanner ──────────────────────────────────────────────────────────────
-
-  const [qrScannerContext, setQrScannerContext] = useState<
-    {
-      playerId: string;
-      missionId: string;
-      playerName: string;
-      missionTitle: string;
-    } | null
-  >(null);
-
-  const handleScanQR = useCallback(
-    (playerId: string, missionId: string) => {
-      const player = players.find((p) => p.id === playerId);
-      const mission = missions.find((m) => m.id === missionId);
-      setQrScannerContext({
-        playerId,
-        missionId,
-        playerName: player?.name ?? player?.uid ?? playerId,
-        missionTitle: mission?.title ?? missionId,
+      void adapter.getBuddyProfile(playerId).then((profile) => {
+        buddyProfileRef.current = profile;
+        if (profile) {
+          setBuddyDraft({
+            sessionId: profile.sessionId,
+            name: profile.name,
+            role: profile.role,
+            tenure: profile.tenure ?? "",
+            contactUrl: profile.contactUrl ?? "",
+          });
+        } else {
+          setBuddyDraft(emptyBuddyDraft());
+        }
       });
     },
-    [players, missions],
+    [adapter, emptyBuddyDraft],
   );
 
-  const handleQRValidate = useCallback(
-    async (playerId: string, missionId: string) => {
-      await adapter.upsertProgressEvent(playerId, missionId, {
-        status: "completed",
-        validatedBy: identity?.uid ?? "gm",
-        validatedAt: new Date().toISOString(),
-      });
-      const updated = await adapter.listProgressEvents(playerId);
-      setAllProgressEvents((prev) => {
-        const others = prev.filter((e) => e.playerId !== playerId);
-        return [...others, ...updated];
-      });
+  const handlePlayerSelectWithBuddy = useCallback(
+    (playerId: string) => {
+      handlePlayerSelect(playerId);
+      loadBuddyProfile(playerId);
     },
-    [adapter, identity],
+    [handlePlayerSelect, loadBuddyProfile],
   );
 
-  // ── Approval handlers ───────────────────────────────────────────────────────
+  const handleBuddySave = useCallback(() => {
+    if (!selectedPlayerId) return;
+    void adapter.upsertBuddyProfile(selectedPlayerId, {
+      sessionId: buddyDraft.sessionId,
+      name: buddyDraft.name,
+      role: buddyDraft.role,
+      tenure: buddyDraft.tenure,
+      contactUrl: buddyDraft.contactUrl,
+    }).then((profile) => {
+      buddyProfileRef.current = profile;
+      showToast("Buddy assigned");
+    });
+  }, [adapter, selectedPlayerId, buddyDraft]);
 
-  const handleApprove = useCallback(
-    async (playerId: string, missionId: string) => {
-      await adapter.upsertProgressEvent(playerId, missionId, {
-        status: "completed",
-        validatedBy: identity?.uid ?? "gm",
-        validatedAt: new Date().toISOString(),
-      });
-      const updated = await adapter.listProgressEvents(playerId);
-      setAllProgressEvents((prev) => {
-        const others = prev.filter((e) => e.playerId !== playerId);
-        return [...others, ...updated];
-      });
+  // ── Background upload ──────────────────────────────────────────────────────
+
+  const handleUploadBackground = useCallback(
+    (file: File) => {
+      const localUrl = URL.createObjectURL(file);
+      setBgImageUrlOverride(localUrl);
+      void adapter.updateSession(sid, { bgImageUrl: localUrl });
     },
-    [adapter, identity],
+    [adapter, sid],
   );
 
-  const handleReject = useCallback(
-    async (playerId: string, missionId: string) => {
-      await adapter.upsertProgressEvent(playerId, missionId, {
-        status: "pending",
-      });
-      const updated = await adapter.listProgressEvents(playerId);
-      setAllProgressEvents((prev) => {
-        const others = prev.filter((e) => e.playerId !== playerId);
-        return [...others, ...updated];
-      });
-    },
-    [adapter],
-  );
-
-  // ── Batch save ──────────────────────────────────────────────────────────────
+  // ── Save / discard ─────────────────────────────────────────────────────────
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveToast, setSaveToast] = useState<string | null>(null);
 
-  // ── Mission reorder tracking ────────────────────────────────────────────
-  // Maps missionId → newOrder for missions that have been drag-reordered
-  const [missionOrderChanges, setMissionOrderChanges] = useState<
-    ReadonlyMap<string, number>
-  >(new Map());
+  const showToast = useCallback((msg: string) => {
+    setSaveToast(msg);
+    setTimeout(() => setSaveToast(null), 3000);
+  }, []);
 
-  const handleMissionReorder = useCallback(
-    (missionId: string, newOrder: number) => {
-      setMissionOrderChanges((prev) => new Map(prev).set(missionId, newOrder));
-    },
-    [],
+  const isDirty = useMemo(
+    () =>
+      milestoneEditor.draftMilestonesAreDirty ||
+      missionEditor.draftMissionsAreDirty ||
+      missionEditor.missionOrderChanges.size > 0,
+    [
+      milestoneEditor.draftMilestonesAreDirty,
+      missionEditor.draftMissionsAreDirty,
+      missionEditor.missionOrderChanges,
+    ],
   );
-
-  const isDirty = useMemo(() => {
-    const msDirty = draftMilestones.some((dm) => dm.isDirty);
-    const mDirty = [...draftMissions.values()].some((dm) => dm.isDirty);
-    const reorderDirty = missionOrderChanges.size > 0;
-    return msDirty || mDirty || reorderDirty;
-  }, [draftMilestones, draftMissions, missionOrderChanges]);
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
-      // 1. Save milestones first (FK dependency for missions)
-      for (const dm of draftMilestones) {
-        const real = milestones.find((m) => m.id === dm.id);
-        if (real) {
-          await adapter.updateMilestone(dm.id, {
-            name: dm.name,
-            xPercent: dm.xPercent,
-            yPercent: dm.yPercent,
-          });
-        } else {
-          // New milestone — find order
-          const maxOrder = milestones.reduce(
-            (max, m) => Math.max(max, m.order),
-            0,
-          );
-          await adapter.createMilestone({
-            sessionId: sid,
-            name: dm.name,
-            xPercent: dm.xPercent,
-            yPercent: dm.yPercent,
-            xpThreshold: 100,
-            order: maxOrder + 1,
-          });
-        }
-      }
-
-      // 2. Save missions
-      for (const [, draft] of draftMissions) {
-        if (!draft.isDirty) continue;
-        if (draft.originalId) {
-          const real = missions.find((m) => m.id === draft.originalId);
-          if (real) {
-            await adapter.updateMission(draft.originalId, {
-              title: draft.title ?? real.title,
-              body: draft.body ?? real.body,
-              type: draft.type ?? real.type,
-              externalUrl: draft.externalUrl,
-              difficulty: draft.difficulty ?? real.difficulty,
-              tags: draft.tags ?? real.tags,
-              suggestedDueDate: draft.suggestedDueDate ?? real.suggestedDueDate,
-              validationMethod: draft.validationMethod ?? real.validationMethod,
-              isInCurrentMissions: draft.isInCurrentMissions ??
-                real.isInCurrentMissions,
-            });
-          }
-        } else {
-          await adapter.createMission({
-            sessionId: sid,
-            milestoneId: draft.milestoneId,
-            title: draft.title ?? "New mission",
-            body: draft.body ?? "",
-            type: draft.type ?? MISSION_TYPE.TEXT,
-            difficulty: draft.difficulty ?? 1,
-            xpValue: xpPreview,
-            tags: draft.tags ?? [],
-            order: 0,
-            isInCurrentMissions: draft.isInCurrentMissions ?? true,
-            validationMethod: draft.validationMethod ?? "gmApprove",
-          });
-        }
-      }
-
-      // 3. Save form schemas for form-type missions with dirty form fields
-      for (const [, draft] of draftMissions) {
-        if (!draft.isDirty || draft.type !== MISSION_TYPE.FORM) continue;
-        if (draft.originalId && draft.formFields?.length) {
-          await adapter.upsertFormSchema(draft.originalId, draft.formFields);
-        }
-      }
-
-      // 4. Persist mission reorder changes
-      if (missionOrderChanges.size > 0) {
-        for (const [missionId, newOrder] of missionOrderChanges) {
-          await adapter.updateMission(missionId, { order: newOrder });
-        }
-      }
-
-      // Clear dirty state
-      setDraftMilestones((prev) =>
-        prev.map((dm) => ({ ...dm, isDirty: false }))
+      await milestoneEditor.saveMilestones(sid, adapter, milestones);
+      await missionEditor.saveMissions(
+        sid,
+        adapter,
+        missions,
+        missionEditor.xpPreview,
       );
-      setDraftMissions((prev) => {
-        const next = new Map(prev);
-        for (const [key, dm] of next) {
-          if (dm.isDirty) next.set(key, { ...dm, isDirty: false });
-        }
-        return next;
-      });
-      setMissionOrderChanges(new Map());
-
-      setSaveToast("All changes saved");
-      setTimeout(() => setSaveToast(null), 3000);
+      milestoneEditor.clearDirtyMilestones();
+      missionEditor.clearDirtyMissions();
+      missionEditor.clearOrderChanges();
+      showToast("All changes saved");
     } catch {
-      setSaveToast("Save failed");
-      setTimeout(() => setSaveToast(null), 3000);
+      showToast("Save failed");
     } finally {
       setIsSaving(false);
     }
   }, [
     adapter,
     sid,
-    draftMilestones,
-    draftMissions,
-    missions,
     milestones,
-    xpPreview,
-    missionOrderChanges,
+    missions,
+    milestoneEditor,
+    missionEditor,
+    showToast,
   ]);
 
   const handleDiscard = useCallback(() => {
-    setDraftMilestones(
-      milestones.map((ms) =>
-        defaultDraftMilestone(ms.id, ms.name, ms.xPercent, ms.yPercent)
-      ),
-    );
-    setDraftMissions(new Map());
-    setSelectedMissionId(null);
-    setSelectedMilestone(null);
-    setMissionOrderChanges(new Map());
-  }, [milestones]);
+    milestoneEditor.discardMilestones(milestones);
+    missionEditor.discardMissions();
+  }, [milestones, milestoneEditor, missionEditor]);
 
-  // ── Template export ─────────────────────────────────────────────────────────
+  // ── Mission click from map list ────────────────────────────────────────────
 
-  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
-  const [templateName, setTemplateName] = useState("");
-  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
-
-  const handleExportTemplate = useCallback(async () => {
-    if (!session) return;
-    setIsSavingTemplate(true);
-    try {
-      const formMissions = missions.filter((m) => m.type === MISSION_TYPE.FORM);
-      const schemaResults = await Promise.all(
-        formMissions.map((m) => adapter.getFormSchema(m.id).catch(() => null)),
-      );
-      const formSchemas = schemaResults.filter(
-        (s): s is FormSchema => s !== null,
-      );
-
-      const name = templateName.trim() || session.name;
-      const template = exportTemplate(
-        name,
-        session,
-        milestones,
-        missions,
-        formSchemas,
-        adminResources,
-      );
-
-      // Save to mock template store
-      await adapter.saveTemplate(template);
-
-      // Also download as JSON file
-      const blob = new Blob([JSON.stringify(template, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${name.replace(/\s+/g, "-").toLowerCase()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      setSaveTemplateOpen(false);
-      setTemplateName("");
-    } finally {
-      setIsSavingTemplate(false);
-    }
-  }, [adapter, session, milestones, missions, adminResources, templateName]);
-
-  // ── Template library ────────────────────────────────────────────────────────
-
-  const [templates, setTemplates] = useState<ReadonlyArray<TemplateExport>>([]);
-
-  useEffect(() => {
-    if (activeTab !== ADMIN_TABS.ACTIVE_SESSION) return;
-    void adapter.listTemplates().then(setTemplates);
-  }, [adapter, activeTab]);
-
-  const handleLoadTemplate = useCallback(
-    async (templateId: string) => {
-      const template = templates.find((t) => t.name === templateId);
-      if (!template) return;
-      const gmUid = identity?.uid ?? crypto.randomUUID();
-      const newSessionId = await importTemplate(
-        template,
-        template.name,
-        gmUid,
-        adapter,
-      );
-      navigate(`/admin/${newSessionId}`, { replace: true });
+  const handleMissionListClick = useCallback(
+    (missionId: string) => {
+      const mission = missions.find((m) => m.id === missionId);
+      const milestone = mission
+        ? milestones.find((ms) => ms.id === mission.milestoneId) ?? null
+        : null;
+      if (milestone) {
+        milestoneEditor.setSelectedMilestone(milestone);
+        missionEditor.handleMissionSelect(missionId);
+      }
     },
-    [adapter, identity, navigate, templates],
+    [missions, milestones, milestoneEditor, missionEditor],
+  );
+
+  // ── Computed values for render ─────────────────────────────────────────────
+
+  // Build the Milestone[] shape for MilestoneMapEditor from draft state
+  const draftMilestonesAsMilestones: ReadonlyArray<Milestone> = useMemo(
+    () =>
+      milestoneEditor.draftMilestones.map((dm) => {
+        const real = milestones.find((m) => m.id === dm.id);
+        return {
+          id: dm.id,
+          name: dm.name,
+          xPercent: dm.xPercent,
+          yPercent: dm.yPercent,
+          order: real?.order ?? 0,
+          sessionId: real?.sessionId ?? sid,
+          xpThreshold: real?.xpThreshold ?? 100,
+          created: real?.created ?? new Date().toISOString(),
+          updated: real?.updated ?? new Date().toISOString(),
+        } satisfies Milestone;
+      }),
+    [milestoneEditor.draftMilestones, milestones, sid],
   );
 
   // ── Render ──────────────────────────────────────────────────────────────────
-
-  const activeDraftMission = selectedMissionId
-    ? draftMissions.get(selectedMissionId) ?? null
-    : null;
 
   return (
     <div
@@ -910,10 +365,7 @@ const AdminCockpitPage = () => {
           {(
             [
               { key: ADMIN_TABS.ACTIVE_SESSION, label: "Active Session" },
-              {
-                key: ADMIN_TABS.PRE_BOARDING,
-                label: "Pre-Boarding Checklist",
-              },
+              { key: ADMIN_TABS.PRE_BOARDING, label: "Pre-Boarding Checklist" },
               { key: ADMIN_TABS.ALL_NEW_HIRES, label: "All New Hires" },
             ] as const
           ).map((tab) => {
@@ -966,33 +418,20 @@ const AdminCockpitPage = () => {
           {/* Map canvas */}
           <div className="admin-layout__map">
             <MilestoneMapEditor
-              milestones={draftMilestones.map((dm) => {
-                const real = milestones.find((m) => m.id === dm.id);
-                return {
-                  id: dm.id,
-                  name: dm.name,
-                  xPercent: dm.xPercent,
-                  yPercent: dm.yPercent,
-                  order: real?.order ?? 0,
-                  sessionId: real?.sessionId ?? sid,
-                  xpThreshold: real?.xpThreshold ?? 100,
-                  created: real?.created ?? new Date().toISOString(),
-                  updated: real?.updated ?? new Date().toISOString(),
-                } satisfies Milestone;
-              })}
-              bgImageUrl={session?.bgImageUrl ?? ""}
+              milestones={draftMilestonesAsMilestones}
+              bgImageUrl={bgImageUrl}
               onMilestoneClick={(id) => {
-                setSelectedMissionId(null);
-                setSelectedMilestone(
+                missionEditor.clearSelectedMission();
+                milestoneEditor.setSelectedMilestone(
                   milestones.find((m) => m.id === id) ?? null,
                 );
               }}
-              onNodeDrop={handleNodeDrop}
-              onAddMilestone={handleAddMilestone}
-              onAddMilestoneAt={handleAddMilestoneAt}
-              onRename={handleRenameMilestone}
-              onDelete={handleDeleteMilestone}
-              onUploadBackground={() => undefined}
+              onNodeDrop={milestoneEditor.handleNodeDrop}
+              onAddMilestone={milestoneEditor.handleAddMilestone}
+              onAddMilestoneAt={milestoneEditor.handleAddMilestoneAt}
+              onRename={milestoneEditor.handleRenameMilestone}
+              onDelete={milestoneEditor.handleDeleteMilestone}
+              onUploadBackground={handleUploadBackground}
             />
           </div>
 
@@ -1000,17 +439,8 @@ const AdminCockpitPage = () => {
           <AdminMissionsList
             missions={missions}
             milestones={milestones}
-            onReorder={handleMissionReorder}
-            onMissionClick={(missionId) => {
-              const mission = missions.find((m) => m.id === missionId);
-              const milestone = mission
-                ? milestones.find((ms) => ms.id === mission.milestoneId) ?? null
-                : null;
-              if (milestone) {
-                setSelectedMilestone(milestone);
-                handleMissionSelect(missionId);
-              }
-            }}
+            onReorder={missionEditor.handleMissionReorder}
+            onMissionClick={handleMissionListClick}
           />
 
           {/* Sidebar panels */}
@@ -1020,7 +450,7 @@ const AdminCockpitPage = () => {
               <PlayerSelectorDropdown
                 players={players}
                 selectedId={selectedPlayerId}
-                onSelect={handlePlayerSelect}
+                onSelect={handlePlayerSelectWithBuddy}
               />
             )}
             {selectedPlayer && selectedPlayerProgress && (
@@ -1044,8 +474,8 @@ const AdminCockpitPage = () => {
               players={players}
               draft={buddyDraft}
               selectedPlayerId={selectedPlayerId}
-              onPlayerChange={handlePlayerSelect}
-              onDraftChange={handleBuddyDraftChange}
+              onPlayerChange={handlePlayerSelectWithBuddy}
+              onDraftChange={setBuddyDraft}
               onSave={handleBuddySave}
             />
             <ResourcesEditor
@@ -1056,13 +486,14 @@ const AdminCockpitPage = () => {
               onToggleVisibility={handleResourceToggleVisibility}
             />
             <TemplateLibrary
-              templates={templates.map((t) => ({
+              templates={templateLibrary.templates.map((t) => ({
                 id: t.name,
                 name: t.name,
                 milestoneCount: t.milestones.length,
                 missionCount: t.missions.length,
               }))}
-              onLoad={handleLoadTemplate}
+              onLoad={templateLibrary.handleLoadTemplate}
+              onDelete={(id) => void templateLibrary.handleDeleteTemplate(id)}
             />
           </div>
         </main>
@@ -1081,15 +512,15 @@ const AdminCockpitPage = () => {
         >
           <PreBoardingChecklist
             playerName={selectedPlayer?.name.split(" ")[0]}
-            items={preBoardingItems}
-            onToggle={handlePreBoardingToggle}
-            onAdd={handlePreBoardingAdd}
-            onMarkAllDone={handlePreBoardingMarkAllDone}
+            items={preBoardingChecklist.items}
+            onToggle={preBoardingChecklist.onToggle}
+            onAdd={preBoardingChecklist.onAdd}
+            onMarkAllDone={preBoardingChecklist.onMarkAllDone}
           />
         </main>
       )}
 
-      {/* ── All New Hires view (HR Overview) ────────────────────────────── */}
+      {/* ── All New Hires view ───────────────────────────────────────────── */}
       {activeTab === ADMIN_TABS.ALL_NEW_HIRES && (
         <main
           style={{
@@ -1120,65 +551,68 @@ const AdminCockpitPage = () => {
         isOpen={qrScannerContext !== null}
         context={qrScannerContext}
         sessionId={sid}
-        onClose={() => setQrScannerContext(null)}
+        onClose={closeQRScanner}
         onValidate={(playerId, missionId) =>
           handleQRValidate(playerId, missionId)}
       />
 
-      {/* Milestone/mission editor sidebar */}
-      {selectedMilestone && (
-        <MilestoneSidebarEditor
-          milestone={selectedMilestone}
-          missions={missions}
-          activeMissionId={selectedMissionId}
-          draft={activeDraftMission}
-          xpPreview={xpPreview}
-          isDirty={isDirty}
-          isSaving={isSaving}
-          onMissionSelect={handleMissionSelect}
-          onDraftChange={handleDraftChange}
-          onRename={(newName) =>
-            handleRenameMilestone(selectedMilestone.id, newName)}
-          onSave={() => void handleSave()}
-          onSaveAsTemplate={() => setSaveTemplateOpen(true)}
-          onDiscard={handleDiscard}
-          onAddMission={handleAddMission}
-        />
-      )}
+      {/* ── Full-screen mission editor bottom sheet ──────────────────────── */}
+      <MissionBottomSheet
+        isOpen={milestoneEditor.selectedMilestone !== null}
+        milestone={milestoneEditor.selectedMilestone}
+        missions={milestoneEditor.selectedMilestone
+          ? missions.filter(
+            (m) => m.milestoneId === milestoneEditor.selectedMilestone!.id,
+          )
+          : []}
+        activeMissionId={missionEditor.selectedMissionId}
+        draft={missionEditor.activeDraftMission}
+        xpPreview={missionEditor.xpPreview}
+        isDirty={isDirty}
+        isSaving={isSaving}
+        sessionId={sid}
+        onMissionSelect={missionEditor.handleMissionSelect}
+        onDraftChange={missionEditor.handleDraftChange}
+        onRename={(newName) =>
+          milestoneEditor.selectedMilestone
+            ? milestoneEditor.handleRenameMilestone(
+              milestoneEditor.selectedMilestone.id,
+              newName,
+            )
+            : undefined}
+        onSave={() => void handleSave()}
+        onSaveAsTemplate={() => templateLibrary.setSaveTemplateOpen(true)}
+        onDiscard={handleDiscard}
+        onAddMission={() =>
+          milestoneEditor.selectedMilestone
+            ? missionEditor.handleAddMission(
+              milestoneEditor.selectedMilestone.id,
+            )
+            : undefined}
+        onClose={() => {
+          missionEditor.clearSelectedMission();
+          milestoneEditor.setSelectedMilestone(null);
+        }}
+      />
 
       {/* ── Save toast ──────────────────────────────────────────────────── */}
-      {saveToast && (
-        <div
-          aria-live="polite"
-          style={{
-            position: "fixed",
-            bottom: "var(--space-6)",
-            left: "50%",
-            zIndex: 2000,
-            padding: "var(--space-3) var(--space-5)",
-            borderRadius: "var(--radius-md)",
-            background: "hsl(var(--color-card))",
-            boxShadow: "var(--shadow-lg)",
-            fontSize: "var(--text-sm)",
-            fontWeight: "var(--weight-medium)",
-            color: saveToast.includes("fail")
-              ? "hsl(var(--color-destructive))"
-              : "hsl(var(--color-status-complete))",
-          }}
-        >
-          {saveToast}
-        </div>
-      )}
+      <Toast
+        message={saveToast}
+        isError={saveToast?.includes("fail") ?? false}
+      />
 
+      {/* ── Save Template modal ──────────────────────────────────────────── */}
       <SaveTemplateModal
-        isOpen={saveTemplateOpen}
-        templateName={templateName}
-        isSaving={isSavingTemplate}
-        onNameChange={setTemplateName}
-        onConfirm={() => void handleExportTemplate()}
+        isOpen={templateLibrary.saveTemplateOpen}
+        templateName={templateLibrary.templateName}
+        isSaving={templateLibrary.isSavingTemplate}
+        existingTemplates={templateLibrary.templates.map((t) => t.name)}
+        onNameChange={templateLibrary.setTemplateName}
+        onConfirm={(replaceTarget) =>
+          void templateLibrary.handleExportTemplate(replaceTarget)}
         onCancel={() => {
-          setSaveTemplateOpen(false);
-          setTemplateName("");
+          templateLibrary.setSaveTemplateOpen(false);
+          templateLibrary.setTemplateName("");
         }}
       />
     </div>
