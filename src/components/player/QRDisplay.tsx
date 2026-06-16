@@ -3,6 +3,7 @@ import * as QRCode from "qrcode";
 import type { ProgressEvent } from "../../types/index.ts";
 import { useAdapter } from "../../adapters/useAdapter.ts";
 import { encodeQRPayload } from "../../utils/qrPayload.ts";
+import { buildValidationUrl } from "../../utils/qrUrl.ts";
 
 interface QRDisplayProps {
   readonly playerId: string;
@@ -19,7 +20,6 @@ const QRDisplay = (props: QRDisplayProps) => {
 
   const { playerId, missionId, sessionId, xpValue, onValidated } = props;
 
-  // ── Encode payload and render QR canvas ────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
@@ -27,7 +27,9 @@ const QRDisplay = (props: QRDisplayProps) => {
       if (!canvasRef.current) return;
 
       try {
-        // For the mock, we use sessionId as the HMAC secret (C-16 note).
+        const session = await adapter.getSession(sessionId);
+        const secret = session.qrSecret ?? sessionId;
+
         const encoded = await encodeQRPayload(
           {
             playerId,
@@ -36,11 +38,13 @@ const QRDisplay = (props: QRDisplayProps) => {
             xpValue,
             issuedAt: Date.now(),
           },
-          sessionId,
+          secret,
         );
 
+        const validationUrl = buildValidationUrl(sessionId, encoded);
+
         if (!cancelled && canvasRef.current) {
-          await QRCode.toCanvas(canvasRef.current, encoded, {
+          await QRCode.toCanvas(canvasRef.current, validationUrl, {
             width: 220,
             margin: 2,
             color: { dark: "#000000", light: "#ffffff" },
@@ -59,9 +63,8 @@ const QRDisplay = (props: QRDisplayProps) => {
     return () => {
       cancelled = true;
     };
-  }, [playerId, missionId, sessionId, xpValue]);
+  }, [adapter, playerId, missionId, sessionId, xpValue]);
 
-  // ── Subscribe for GM scan completion ───────────────────────────────────
   useEffect(() => {
     const unsubscribe = adapter.subscribeProgressEvent(
       playerId,
