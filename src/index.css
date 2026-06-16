@@ -1596,13 +1596,177 @@ textarea.form-input {
 }
 
 /* ── Admin editor specifics ──────────────────────────────────────────────── */
+
+/* Editor root fills admin-layout__map via flex */
+.milestone-map-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Toolbar strip — sits above the map viewport */
 .map-editor-toolbar {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  min-height: var(--min-touch);
   background-color: hsl(var(--color-card));
   border-block-end: 1px solid hsl(var(--color-border));
+  flex-shrink: 0;
+}
+
+/* "Edit mode" label — red, left-aligned in toolbar */
+.map-editor-toolbar__edit-label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: hsl(var(--color-destructive));
+  margin-inline-end: auto;
+  padding-inline-start: var(--space-1);
+}
+
+/* Icon buttons in the toolbar */
+.map-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--min-touch);
+  min-height: var(--min-touch);
+  background: none;
+  border: none;
+  border-radius: var(--radius);
+  color: hsl(var(--color-fg));
+  cursor: pointer;
+  transition: background var(--duration-fast);
+  padding: 0;
+}
+
+.map-toolbar-btn:hover {
+  background: hsl(var(--color-secondary));
+}
+
+/* Vertical separator between toolbar button groups */
+.map-toolbar-sep {
+  width: 1px;
+  height: 1.25rem;
+  background: hsl(var(--color-border));
+  margin-inline: var(--space-1);
+  flex-shrink: 0;
+}
+
+/* Canvas wrap — fills remaining height, contains viewport + FAB */
+.milestone-map-editor__canvas-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Override viewport aspect-ratio when inside the editor — fill the container */
+.milestone-map-editor__canvas-wrap .map-viewport {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: unset;
+  border-radius: 0;
+}
+
+/* FAB — circular navy + button, bottom-right of the map area */
+.map-fab {
+  position: absolute;
+  bottom: var(--space-3);
+  right: var(--space-3);
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: hsl(var(--color-primary));
+  color: hsl(var(--color-primary-fg));
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  z-index: 20;
+  transition: background var(--duration-fast), box-shadow var(--duration-fast);
+}
+
+.map-fab:hover {
+  background: hsl(var(--color-accent));
+  box-shadow: var(--shadow-xl);
+}
+
+/* ── Milestone node: column-flex layout (box on top, pill below) ─────────── */
+
+.milestone-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Mission count pill — green, below the node box */
+.milestone-node__pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.125rem var(--space-2);
+  border-radius: 9999px;
+  background: #27ae60;
+  color: #fff;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.milestone-node__pill--empty {
+  background: hsl(var(--color-muted-fg));
+}
+
+/* Delete badge — red circle, absolute top-left of the button */
+.milestone-node__delete-btn {
+  position: absolute;
+  top: -0.375rem;
+  left: -0.375rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: hsl(var(--color-destructive));
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: var(--weight-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  line-height: 1;
+  border: 1.5px solid hsl(var(--color-card));
+  /* prevent the badge from triggering drag on the node */
+  touch-action: none;
+}
+
+/* ── iOS-style edit mode: shake animation ────────────────────────────────── */
+
+@keyframes milestone-shake {
+  0%, 100% {
+    transform: translate(-50%, -50%) rotate(-2deg);
+  }
+  50% {
+    transform: translate(-50%, -50%) rotate(2deg);
+  }
+}
+
+.milestone-node--edit-mode {
+  animation: milestone-shake 0.4s ease-in-out infinite alternate;
+}
+
+/* Dragging node in edit mode: pause shake, show dragging state */
+.milestone-node--dragging.milestone-node--edit-mode {
+  animation: none;
 }
 
 .grid-overlay {
@@ -1835,6 +1999,8 @@ textarea.form-input {
   border-bottom: 1px solid hsl(var(--color-border));
   transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   will-change: height;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Collapsed state - triggered by useScrollCollapse on the parent */
@@ -1952,6 +2118,8 @@ textarea.form-input {
     border-bottom: none;
     border-left: 1px solid hsl(var(--color-border));
     transition: none;   /* no collapse animation on desktop */
+    display: flex;
+    flex-direction: column;
   }
 
   /* Disable collapse on desktop - scrollTop won't change but be defensive */

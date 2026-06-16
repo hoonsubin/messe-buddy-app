@@ -1,3 +1,4 @@
+import { MdPendingActions } from "react-icons/md";
 import type { Mission, Player, ProgressEvent } from "../../types/index.ts";
 import ApprovalRequestCard from "./ApprovalRequestCard.tsx";
 
@@ -11,16 +12,30 @@ interface PendingApprovalsPanelProps {
 }
 
 const PendingApprovalsPanel = (props: PendingApprovalsPanelProps) => (
-  <section data-testid="pending-approvals-panel" aria-label="Pending approvals">
-    <h3
-      style={{
-        fontSize: "var(--text-base)",
-        fontWeight: "var(--weight-semibold)",
-        marginBottom: "var(--space-3)",
-      }}
-    >
-      Pending Approvals
-    </h3>
+  <section
+    data-testid="pending-approvals-panel"
+    aria-label="Pending approvals"
+    className="card"
+    style={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}
+  >
+    <header style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+      <MdPendingActions
+        size={18}
+        aria-hidden="true"
+        style={{ color: "hsl(var(--color-accent))", flexShrink: 0 }}
+      />
+      <h3
+        style={{
+          margin: 0,
+          fontFamily: "var(--font-display)",
+          fontSize: "var(--text-base)",
+          fontWeight: "var(--weight-semibold)",
+          color: "hsl(var(--color-fg))",
+        }}
+      >
+        Pending Approvals
+      </h3>
+    </header>
     {props.pendingEvents.length === 0
       ? (
         <p

@@ -28,6 +28,8 @@ const router = createBrowserRouter([
   },
   { path: "/form/:missionId", element: <FormPage /> },
   { path: "/qr/:missionId", element: <QRScannerView /> },
+  // QR invite link — renders landing page with sessionId pre-filled
+  { path: "/join/:sessionId", element: <LandingPage /> },
 ]);
 
 const App = () => {

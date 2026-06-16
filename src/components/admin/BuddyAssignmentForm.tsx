@@ -1,4 +1,5 @@
 // Phase 1 shell - logic wired in Phase 4.
+import { MdPeople } from "react-icons/md";
 import type { BuddyProfile, PBRecord, Player } from "../../types/index.ts";
 
 interface BuddyAssignmentFormProps {
@@ -13,14 +14,36 @@ interface BuddyAssignmentFormProps {
 }
 
 const BuddyAssignmentForm = (props: BuddyAssignmentFormProps) => (
-  <form
-    data-testid="buddy-assignment-form"
-    onSubmit={(e) => {
-      e.preventDefault();
-      props.onSave();
-    }}
-    style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
+  <div
+    className="card"
+    style={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
   >
+    <header style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+      <MdPeople
+        size={18}
+        aria-hidden="true"
+        style={{ color: "hsl(var(--color-accent))", flexShrink: 0 }}
+      />
+      <h3
+        style={{
+          margin: 0,
+          fontFamily: "var(--font-display)",
+          fontSize: "var(--text-base)",
+          fontWeight: "var(--weight-semibold)",
+          color: "hsl(var(--color-fg))",
+        }}
+      >
+        Assign Buddy
+      </h3>
+    </header>
+    <form
+      data-testid="buddy-assignment-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        props.onSave();
+      }}
+      style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
+    >
     <div className="form-field">
       <label className="form-label" htmlFor="buddy-player-select">
         Assign to player
@@ -88,7 +111,8 @@ const BuddyAssignmentForm = (props: BuddyAssignmentFormProps) => (
     <button type="submit" className="btn btn--primary">
       Save buddy assignment
     </button>
-  </form>
+    </form>
+  </div>
 );
 
 export default BuddyAssignmentForm;

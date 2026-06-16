@@ -14,7 +14,6 @@ import { useTemplateLibrary } from "../hooks/useTemplateLibrary.ts";
 import Toast from "../components/shared/Toast.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
 import MilestoneMapEditor from "../components/admin/MilestoneMapEditor.tsx";
-import AdminMissionsList from "../components/admin/AdminMissionsList.tsx";
 import MissionBottomSheet from "../components/admin/MissionBottomSheet.tsx";
 import PendingApprovalsPanel from "../components/admin/PendingApprovalsPanel.tsx";
 import PlayerSelectorDropdown from "../components/admin/PlayerSelectorDropdown.tsx";
@@ -280,22 +279,6 @@ const AdminCockpitPage = () => {
     missionEditor.discardMissions();
   }, [milestones, milestoneEditor, missionEditor]);
 
-  // ── Mission click from map list ────────────────────────────────────────────
-
-  const handleMissionListClick = useCallback(
-    (missionId: string) => {
-      const mission = missions.find((m) => m.id === missionId);
-      const milestone = mission
-        ? milestones.find((ms) => ms.id === mission.milestoneId) ?? null
-        : null;
-      if (milestone) {
-        milestoneEditor.setSelectedMilestone(milestone);
-        missionEditor.handleMissionSelect(missionId);
-      }
-    },
-    [missions, milestones, milestoneEditor, missionEditor],
-  );
-
   // ── Computed values for render ─────────────────────────────────────────────
 
   // Build the Milestone[] shape for MilestoneMapEditor from draft state
@@ -316,6 +299,16 @@ const AdminCockpitPage = () => {
         } satisfies Milestone;
       }),
     [milestoneEditor.draftMilestones, milestones, sid],
+  );
+
+  // Mission count per milestone — passed to map nodes as pills
+  const missionCounts = useMemo<Record<string, number>>(
+    () =>
+      missions.reduce<Record<string, number>>((acc, m) => {
+        acc[m.milestoneId] = (acc[m.milestoneId] ?? 0) + 1;
+        return acc;
+      }, {}),
+    [missions],
   );
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -396,7 +389,7 @@ const AdminCockpitPage = () => {
                     cursor: "pointer",
                     whiteSpace: "nowrap",
                     minHeight: "var(--min-touch)",
-                    borderRadius: "var(--radius-md) var(--radius-md) 0 0",
+                    borderRadius: "var(--radius) var(--radius) 0 0",
                     transition: "color 0.15s, border-color 0.15s",
                   }}
                 >
@@ -419,6 +412,7 @@ const AdminCockpitPage = () => {
           <div className="admin-layout__map">
             <MilestoneMapEditor
               milestones={draftMilestonesAsMilestones}
+              missionCounts={missionCounts}
               bgImageUrl={bgImageUrl}
               onMilestoneClick={(id) => {
                 missionEditor.clearSelectedMission();
@@ -427,21 +421,11 @@ const AdminCockpitPage = () => {
                 );
               }}
               onNodeDrop={milestoneEditor.handleNodeDrop}
-              onAddMilestone={milestoneEditor.handleAddMilestone}
               onAddMilestoneAt={milestoneEditor.handleAddMilestoneAt}
-              onRename={milestoneEditor.handleRenameMilestone}
               onDelete={milestoneEditor.handleDeleteMilestone}
               onUploadBackground={handleUploadBackground}
             />
           </div>
-
-          {/* Mission list - grouped by milestone, drag-to-reorder */}
-          <AdminMissionsList
-            missions={missions}
-            milestones={milestones}
-            onReorder={missionEditor.handleMissionReorder}
-            onMissionClick={handleMissionListClick}
-          />
 
           {/* Sidebar panels */}
           <div ref={sidebarRef} className="admin-layout__sidebar">
