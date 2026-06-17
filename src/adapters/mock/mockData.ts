@@ -788,21 +788,20 @@ export const MOCK_PLAYERS: ReadonlyArray<Player> = [
     uid: "uid_sofia_002",
     recoveryKey: "SOFIA026",
     sessionId: "sess_mmt2026",
-    tutorialComplete: true,
-    profileComplete: true,
+    tutorialComplete: false,
+    profileComplete: false,
     name: "Sofia Chen",
-    preferredName: "Sofia",
-    pronouns: "she/her",
-    role: "Junior Event Manager",
-    team: "Event Management",
-    startDate: "2026-06-09",
-    location: "Building B, Floor 3",
-    timezone: "Europe/Berlin",
-    skillsConfident: ["Project coordination", "Stakeholder communication"],
-    skillsDevelop: ["Exhibition logistics", "SAP"],
-    languages: ["English", "Mandarin", "German (beginner)"],
-    workStyle:
-      "I work best with focused mornings and collaborative afternoons.",
+    preferredName: undefined,
+    pronouns: undefined,
+    role: undefined,
+    team: undefined,
+    startDate: undefined,
+    location: undefined,
+    timezone: undefined,
+    skillsConfident: undefined,
+    skillsDevelop: undefined,
+    languages: undefined,
+    workStyle: undefined,
   },
 ];
 
@@ -835,48 +834,9 @@ export const MOCK_BUDDY_PROFILES: ReadonlyArray<BuddyProfile> = [
 ];
 
 // ── Progress Events ───────────────────────────────────────────────────────────
-// Sofia: 3 M1 missions done (20 XP → ms_arrive in_progress),
-// safety briefing pending approval (M2 touched).
+// Sofia starts fresh (no progress events) to simulate a completely new user.
 
-export const MOCK_PROGRESS_EVENTS: ReadonlyArray<ProgressEvent> = [
-  {
-    ...pb("evt_sofia_profile"),
-    sessionId: "sess_mmt2026",
-    playerId: "player_sofia",
-    missionId: "mission_m1_profile",
-    status: "autoApproved",
-    formResponse: {
-      preferredName: "Sofia",
-      pronouns: "she/her",
-      role: "Junior Event Manager",
-      department: "Event Management",
-      startDate: "2026-06-09",
-      location: "Building B, Floor 3",
-      languages: "English, Mandarin, German",
-    },
-  },
-  {
-    ...pb("evt_sofia_video"),
-    sessionId: "sess_mmt2026",
-    playerId: "player_sofia",
-    missionId: "mission_m1_ceo_video",
-    status: "autoApproved",
-  },
-  {
-    ...pb("evt_sofia_workstation"),
-    sessionId: "sess_mmt2026",
-    playerId: "player_sofia",
-    missionId: "mission_m1_workstation",
-    status: "autoApproved",
-  },
-  {
-    ...pb("evt_sofia_safety_briefing"),
-    sessionId: "sess_mmt2026",
-    playerId: "player_sofia",
-    missionId: "mission_m2_safety_briefing",
-    status: "pendingApproval",
-  },
-];
+export const MOCK_PROGRESS_EVENTS: ReadonlyArray<ProgressEvent> = [];
 
 // ── Second session (stub — kept for adapter compatibility) ────────────────────
 
