@@ -143,6 +143,7 @@ const createSession = async (
     ...record,
     name,
     bgImageUrl: "",
+    mapNodeScale: 0.33,
     gameMakerId: gameMakerUid,
     preBoardingChecks: [],
     qrSecret: record.id, // prototype stand-in; matches PB auto-gen semantics in mock

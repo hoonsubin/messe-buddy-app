@@ -401,6 +401,7 @@ const PlayerCockpitPage = () => {
                 <MilestoneMapViewer
                   milestones={milestones}
                   bgImageUrl={session?.bgImageUrl ?? ""}
+                  mapNodeScale={session?.mapNodeScale ?? 1}
                   milestoneProgress={playerProgress?.milestoneProgress ?? []}
                   playerXPercent={currentMilestone?.xPercent}
                   playerYPercent={currentMilestone?.yPercent}

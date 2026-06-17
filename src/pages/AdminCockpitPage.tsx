@@ -462,6 +462,7 @@ const AdminCockpitPage = () => {
               milestones={draftMilestonesAsMilestones}
               missionCounts={missionCounts}
               bgImageUrl={bgImageUrl}
+              mapNodeScale={session?.mapNodeScale ?? 1}
               onMilestoneClick={(id) => {
                 missionEditor.clearSelectedMission();
                 milestoneEditor.setSelectedMilestone(

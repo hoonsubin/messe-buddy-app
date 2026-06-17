@@ -27,5 +27,15 @@ jobs:
       - name: Type check & build
         run: deno task build
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Python syntax & runtime checks
+        run: |
+          pip install psycopg2-binary requests watchdog
+          python scripts/check_python.py
+
       - name: Generate package.json (verify no errors)
         run: deno run -A scripts/generate-package-json.ts

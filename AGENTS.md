@@ -92,12 +92,14 @@ Before writing ANY implementation code for a new screen, page, or feature:
 
 - **`verbatimModuleSyntax`** - use `import type` for type-only imports. Never mix runtime + type in one statement.
 - **No `enum`** - pattern: `export const FOO = { A: "a" } as const; export type Foo = (typeof FOO)[keyof typeof FOO];` ([`src/types/unions.ts`](src/types/unions.ts:4))
+- **Icons only** - When using an icon for the UI component, ALWAYS use `react-icons` and NEVER use ASCII symbols or emojis.
 - **Interface fields** are `readonly`; arrays `ReadonlyArray<T>`. Mutations via adapter only.
 - **`interface`** for object contracts; **`type`** for unions, intersections, aliases.
 - **Imports** from Deno import map ([`deno.json`](deno.json:25)), never `package.json`. Internal imports use **`.ts`/`.tsx` extensions**.
 - **Barrel exports** in [`src/types/index.ts`](src/types/index.ts:1) - re-exports types + const objects.
 - **Formatter:** `deno fmt` (2-space indent, 80-char width, semicolons, double quotes). Only `src/` formatted.
 - **Components:** keep <200 lines; extract reusable pieces to `src/components/` or `src/utils/`. One responsibility per file. See [`ConfirmSheet`](src/components/admin/ConfirmSheet.tsx), [`DraftRestoreBanner`](src/components/admin/DraftRestoreBanner.tsx), [`MissionListView`](src/components/admin/MissionListView.tsx) as reference.
+- **Visualize** - When possible, use Mermaid diagram or HTML wireframe to express visualized aspects of the content. NEVER use ASCII diagrams.
 
 ### React Hooks & Lifecycle (All Modes)
 
@@ -130,6 +132,8 @@ Use Playwright MCP (`playwright` server in [`.cursor/mcp.json`](.cursor/mcp.json
 - Save screenshots to `.playwright-mcp/`
 
 **Never force-click.** Obscured/off-screen elements are real UX bugs - fix at CSS/component level.
+
+ALWAYS ensure that the (`./.github/workflows/pr-check.yml`)[./.github/workflows/pr-check.yml] passes.
 
 ### Layout Debugging
 - Obscured, off-screen, or edge-clipped elements are in-scope defects
