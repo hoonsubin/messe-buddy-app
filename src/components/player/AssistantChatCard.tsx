@@ -33,7 +33,7 @@ const AssistantChatCard = (props: AssistantChatCardProps) => {
                 <MdAutoAwesome size={18} />
               </div>
               <p className="assistant-chat-card__title">
-                Ask about company policies
+                Ask AI about company policies
               </p>
               <button
                 type="button"
@@ -70,7 +70,7 @@ const AssistantChatCard = (props: AssistantChatCardProps) => {
             </div>
             <div className="assistant-chat-card__bar-text">
               <span className="assistant-chat-card__title">
-                Ask about company policies
+                Ask AI bout company policies
               </span>
               <span className="assistant-chat-card__subtitle">
                 {hasConversation

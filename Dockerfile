@@ -67,7 +67,12 @@ RUN apt-get update \
         curl \
         ca-certificates \
         gettext-base \
+        openssl \
     && rm -rf /var/lib/apt/lists/*
+
+# Directory for TLS certificates (self-signed generated at startup,
+# or mount trusted certs here via Docker volume for mkcert / Let's Encrypt).
+RUN mkdir -p /etc/nginx/ssl
 
 # PWA static files
 COPY --from=pwa-builder /app/dist /usr/share/nginx/html
@@ -86,7 +91,7 @@ RUN chmod +x /entrypoint.sh
 # PocketBase data directory (mount a named volume here in production)
 VOLUME ["/pb_data"]
 
-# nginx (PWA) :80  |  PocketBase :8090
-EXPOSE 80 8090
+# nginx (PWA) :80 (HTTP) / :443 (HTTPS)  |  PocketBase :8090
+EXPOSE 80 443 8090
 
 CMD ["/entrypoint.sh"]

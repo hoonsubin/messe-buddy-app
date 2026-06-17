@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MdArrowBack, MdEditNote } from "react-icons/md";
+import { MdArrowBack, MdClose, MdEditNote } from "react-icons/md";
 import type { DraftMission, Milestone, Mission } from "../../types/index.ts";
 import type { StoredDraft } from "../../utils/draftStorage.ts";
 import {
@@ -117,6 +117,25 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
       onClose();
     }
   }, [isDirty, onClose]);
+
+  // When the sheet opens, the same pointer-event sequence that triggered the
+  // open (pointerup → react re-render → backdrop becomes pointer-events:auto)
+  // fires a synthetic `click` that lands on the backdrop instead of the node
+  // underneath it. Suppress backdrop clicks for one rAF after open so the
+  // event loop drains before we accept user intent to close.
+  const suppressBackdropRef = useRef(false);
+  useEffect(() => {
+    if (!isOpen) return;
+    suppressBackdropRef.current = true;
+    const id = requestAnimationFrame(() => {
+      suppressBackdropRef.current = false;
+    });
+    return () => cancelAnimationFrame(id);
+  }, [isOpen]);
+
+  const handleBackdropClick = useCallback(() => {
+    if (!suppressBackdropRef.current) attemptClose();
+  }, [attemptClose]);
 
   const handleDragStart = useCallback((e: React.PointerEvent) => {
     // Only respond to the primary touch/mouse button
@@ -240,7 +259,7 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
         style={backdropOpacity !== undefined
           ? { opacity: backdropOpacity }
           : undefined}
-        onClick={attemptClose}
+        onClick={handleBackdropClick}
         aria-hidden="true"
       />
 
@@ -251,7 +270,6 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
         }`}
         style={{ transform: sheetTransform }}
         role="dialog"
-        aria-modal="true"
         aria-label={milestone?.name ?? "Mission editor"}
         data-testid="mission-bottom-sheet"
       >
@@ -326,6 +344,16 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
               : "Edit mission title"}
           >
             <MdEditNote size={22} aria-hidden="true" />
+          </button>
+
+          {/* Close button */}
+          <button
+            type="button"
+            className="btn btn--ghost sheet-icon-btn"
+            onClick={attemptClose}
+            aria-label="Close panel"
+          >
+            <MdClose size={22} aria-hidden="true" />
           </button>
         </div>
 

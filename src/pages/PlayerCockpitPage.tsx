@@ -86,8 +86,11 @@ const PlayerCockpitPage = () => {
   } = useSession(sessionId ?? "");
 
   const { buddy } = useBuddy(playerId);
-  const { playerProgress, progressEvents, refresh: refreshProgress } =
-    usePlayerProgress(playerId, milestones, missions);
+  const {
+    playerProgress,
+    progressEvents,
+    refresh: refreshProgress,
+  } = usePlayerProgress(playerId, milestones, missions);
   const { resources } = useResources(sessionId ?? "");
 
   // ── Tutorial (extracted hook) ──────────────────────────────────────────────
@@ -133,7 +136,7 @@ const PlayerCockpitPage = () => {
   // ── Derived data ───────────────────────────────────────────────────────────
   const currentMissions = missions.filter((m) => m.isInCurrentMissions);
   const selectedMilestone = selectedMilestoneId !== null
-    ? milestones.find((m) => m.id === selectedMilestoneId) ?? undefined
+    ? (milestones.find((m) => m.id === selectedMilestoneId) ?? undefined)
     : undefined;
   const sidebarMissions = selectedMilestoneId !== null
     ? missions.filter((m) => m.milestoneId === selectedMilestoneId)
@@ -173,10 +176,12 @@ const PlayerCockpitPage = () => {
       lines.push(`${line}.`);
     }
     if (lines.length === 0) return undefined;
-    return "<APPLICATION_CONTEXT>\n" +
+    return (
+      "<APPLICATION_CONTEXT>\n" +
       "Trusted facts about the current user (not a policy document):\n" +
       lines.join("\n") +
-      "\n</APPLICATION_CONTEXT>";
+      "\n</APPLICATION_CONTEXT>"
+    );
   })();
 
   // ── Error / no-identity guards ─────────────────────────────────────────────
@@ -318,8 +323,8 @@ const PlayerCockpitPage = () => {
           mission={popupMission}
           playerId={player.id}
           sessionId={sessionId ?? ""}
-          progressEvent={progressEvents.find(
-            (e) => e.missionId === popupMission.id,
+          progressEvent={progressEvents.find((e) =>
+            e.missionId === popupMission.id
           ) ?? null}
           onClose={() => setPopupMission(null)}
           onValidated={() => {
@@ -373,11 +378,6 @@ const PlayerCockpitPage = () => {
         {/* AI policy assistant - collapsible (collapsed by default) */}
         <div className="cockpit-grid">
           <div className="cockpit-col">
-            <AssistantChatCard
-              {...(buddy?.name !== undefined && { buddyName: buddy.name })}
-              {...(aiAppContext !== undefined && { appContext: aiAppContext })}
-            />
-
             {/* Milestones section */}
             <section aria-label="Milestones">
               <h2 className="section-label">Milestones</h2>
@@ -418,38 +418,48 @@ const PlayerCockpitPage = () => {
                     role={buddy.role}
                     {...(buddy.tenure !== undefined &&
                       { tenure: buddy.tenure })}
-                    {...(buddy.avatarUrl !== undefined &&
-                      { avatarUrl: buddy.avatarUrl })}
-                    {...(buddy.contactUrl !== undefined &&
-                      { contactUrl: buddy.contactUrl })}
+                    {...(buddy.avatarUrl !== undefined && {
+                      avatarUrl: buddy.avatarUrl,
+                    })}
+                    {...(buddy.contactUrl !== undefined && {
+                      contactUrl: buddy.contactUrl,
+                    })}
                     {...(buddy.quote !== undefined && { quote: buddy.quote })}
                     {...(buddy.email !== undefined && { email: buddy.email })}
                     {...(buddy.phone !== undefined && { phone: buddy.phone })}
                   />
                 )
-                : !isLoading && (
-                  <div className="card" style={{ padding: "var(--space-6)" }}>
-                    <p
-                      style={{
-                        fontSize: "var(--text-sm)",
-                        color: "hsl(var(--color-muted-fg))",
-                        textAlign: "center",
-                        margin: 0,
-                      }}
-                    >
-                      You'll be assigned a buddy soon.
-                    </p>
-                  </div>
+                : (
+                  !isLoading && (
+                    <div className="card" style={{ padding: "var(--space-6)" }}>
+                      <p
+                        style={{
+                          fontSize: "var(--text-sm)",
+                          color: "hsl(var(--color-muted-fg))",
+                          textAlign: "center",
+                          margin: 0,
+                        }}
+                      >
+                        You'll be assigned a buddy soon.
+                      </p>
+                    </div>
+                  )
                 )}
             </section>
 
-            {/* Resources - standalone block at the bottom (no tabs) */}
-            <section aria-label="Resources">
-              <ResourcesSection
-                resources={resources}
-                onSearch={() => undefined}
-              />
-            </section>
+            {/* Resources - collapsible search block */}
+            <ResourcesSection
+              resources={resources}
+              onSearch={() => undefined}
+            />
+
+            {/* AI policy assistant - collapsible */}
+            <AssistantChatCard
+              {...(buddy?.name !== undefined && { buddyName: buddy.name })}
+              {...(aiAppContext !== undefined && {
+                appContext: aiAppContext,
+              })}
+            />
           </div>
         </div>
       </main>

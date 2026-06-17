@@ -7,6 +7,7 @@ import FormPage from "./pages/FormPage.tsx";
 import QRScannerView from "./pages/QRScannerView.tsx";
 import ValidationPage from "./pages/ValidationPage.tsx";
 import RequireRole from "./components/layout/RequireRole.tsx";
+import NotFoundPage from "./pages/NotFoundPage.tsx";
 import { USER_ROLE } from "./types/index.ts";
 
 const router = createBrowserRouter([
@@ -45,6 +46,7 @@ const router = createBrowserRouter([
   },
   { path: "/form/:missionId", element: <FormPage /> },
   { path: "/join/:sessionId", element: <LandingPage /> },
+  { path: "*", element: <NotFoundPage /> },
 ]);
 
 const App = () => {

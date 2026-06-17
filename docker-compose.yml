@@ -213,9 +213,15 @@ services:
         VITE_USE_MOCK_CHAT: ${VITE_USE_MOCK_CHAT:-true}
     ports:
       - "${APP_PORT:-80}:80"
+      - "${APP_HTTPS_PORT:-443}:443"
     volumes:
       - pb_data:/pb_data
       - app_runtime:/runtime:ro
+      # Optional: mount mkcert certs for trusted HTTPS (no browser warning).
+      # Run on host: mkcert <your-lan-ip> localhost 127.0.0.1
+      # Then uncomment and point to the generated files:
+      # - ./certs/server.crt:/etc/nginx/ssl/server.crt:ro
+      # - ./certs/server.key:/etc/nginx/ssl/server.key:ro
     environment:
       PB_AUTO_MIGRATE: ${PB_AUTO_MIGRATE:-true}
     restart: unless-stopped
