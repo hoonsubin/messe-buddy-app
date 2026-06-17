@@ -753,7 +753,6 @@ export const MOCK_FORM_SCHEMAS: ReadonlyArray<FormSchema> = [
 // ── Players ───────────────────────────────────────────────────────────────────
 
 export const MOCK_PLAYERS: ReadonlyArray<Player> = [
-  // New hire — just arrived, tutorial not yet started
   {
     ...pb("player_alex"),
     uid: "uid_alex_001",
@@ -761,15 +760,27 @@ export const MOCK_PLAYERS: ReadonlyArray<Player> = [
     sessionId: "sess_mmt2026",
     tutorialComplete: false,
     profileComplete: false,
-    name: "",
-    role: "",
-    team: "",
+    name: "Alex Johnson",
+    preferredName: "Alex",
+    pronouns: "they/them",
+    role: "Digital Content Manager",
+    team: "Marketing & Communications",
     startDate: "2026-06-16",
-    location: "",
+    location: "Building A, Floor 2",
     timezone: "Europe/Berlin",
-    skillsConfident: [],
-    skillsDevelop: [],
-    languages: [],
+    skillsConfident: [
+      "Content strategy",
+      "Video production",
+      "Social media management",
+    ],
+    skillsDevelop: [
+      "German business communication",
+      "Trade fair operations",
+      "SAP",
+    ],
+    languages: ["English", "German (A2)"],
+    workStyle:
+      "I thrive in creative, fast-paced environments with clear deadlines.",
   },
   // Demo player — first week in, M1 partially done
   {

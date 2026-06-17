@@ -48,7 +48,7 @@ const AdminCockpitPage = () => {
   const navigate = useNavigate();
   const sid = sessionId ?? "";
   const adapter = useAdapter();
-  const { identity } = useIdentity();
+  const { identity, clearIdentity } = useIdentity();
 
   // Session data
   const {
@@ -354,37 +354,39 @@ const AdminCockpitPage = () => {
         role="Game Master"
       />
 
-      {/* Back-to-landing — only visible in ephemeral demo mode */}
-      {isEphemeralIdentity() && (
-        <div
+      {/* Session toolbar: back-to-landing (demo) or log-out (real session) */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-start",
+          padding: "var(--space-2) var(--space-4)",
+          background: "hsl(var(--color-card))",
+          borderBottom: "1px solid hsl(var(--color-border))",
+        }}
+      >
+        <button
+          type="button"
+          className="btn btn--ghost"
           style={{
+            fontSize: "var(--text-sm)",
+            color: "hsl(var(--color-muted-fg))",
             display: "flex",
-            justifyContent: "flex-start",
-            padding: "var(--space-2) var(--space-4)",
-            background: "hsl(var(--color-card))",
-            borderBottom: "1px solid hsl(var(--color-border))",
+            alignItems: "center",
+            gap: "var(--space-1)",
+          }}
+          onClick={() => {
+            if (isEphemeralIdentity()) {
+              clearEphemeralIdentity();
+            } else {
+              clearIdentity();
+            }
+            navigate("/", { replace: true });
           }}
         >
-          <button
-            type="button"
-            className="btn btn--ghost"
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "hsl(var(--color-muted-fg))",
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--space-1)",
-            }}
-            onClick={() => {
-              clearEphemeralIdentity();
-              navigate("/", { replace: true });
-            }}
-          >
-            <MdArrowBack size={16} />
-            Back to Landing
-          </button>
-        </div>
-      )}
+          <MdArrowBack size={16} />
+          {isEphemeralIdentity() ? "Back to Landing" : "Log Out"}
+        </button>
+      </div>
 
       {/* ── Tab navigation ──────────────────────────────────────────────── */}
       <nav
@@ -472,7 +474,7 @@ const AdminCockpitPage = () => {
               onMilestoneClick={(id) => {
                 missionEditor.clearSelectedMission();
                 milestoneEditor.setSelectedMilestone(
-                  milestones.find((m) => m.id === id) ?? null,
+                  draftMilestonesAsMilestones.find((m) => m.id === id) ?? null,
                 );
               }}
               onNodeDrop={milestoneEditor.handleNodeDrop}

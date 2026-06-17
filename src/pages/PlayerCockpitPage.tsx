@@ -38,7 +38,7 @@ const PlayerCockpitPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const adapter = useAdapter();
-  const { identity } = useIdentity();
+  const { identity, clearIdentity } = useIdentity();
 
   // ── Player resolution ──────────────────────────────────────────────────────
   const [player, setPlayer] = useState<Player | null>(null);
@@ -285,37 +285,39 @@ const PlayerCockpitPage = () => {
         role={player?.role ?? ""}
       />
 
-      {/* Back-to-landing — only visible in ephemeral demo mode */}
-      {isEphemeralIdentity() && (
-        <div
+      {/* Session toolbar: back-to-landing (demo) or log-out (real session) */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-start",
+          padding: "var(--space-2) var(--space-4)",
+          background: "hsl(var(--color-card))",
+          borderBottom: "1px solid hsl(var(--color-border))",
+        }}
+      >
+        <button
+          type="button"
+          className="btn btn--ghost"
           style={{
+            fontSize: "var(--text-sm)",
+            color: "hsl(var(--color-muted-fg))",
             display: "flex",
-            justifyContent: "flex-start",
-            padding: "var(--space-2) var(--space-4)",
-            background: "hsl(var(--color-card))",
-            borderBottom: "1px solid hsl(var(--color-border))",
+            alignItems: "center",
+            gap: "var(--space-1)",
+          }}
+          onClick={() => {
+            if (isEphemeralIdentity()) {
+              clearEphemeralIdentity();
+            } else {
+              clearIdentity();
+            }
+            navigate("/", { replace: true });
           }}
         >
-          <button
-            type="button"
-            className="btn btn--ghost"
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "hsl(var(--color-muted-fg))",
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--space-1)",
-            }}
-            onClick={() => {
-              clearEphemeralIdentity();
-              navigate("/", { replace: true });
-            }}
-          >
-            <MdArrowBack size={16} />
-            Back to Landing
-          </button>
-        </div>
-      )}
+          <MdArrowBack size={16} />
+          {isEphemeralIdentity() ? "Back to Landing" : "Log Out"}
+        </button>
+      </div>
 
       {/* Mission detail popup (text / link missions) */}
       {popupMission !== null && player !== null && (

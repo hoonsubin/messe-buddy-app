@@ -19,6 +19,7 @@ import { USER_ROLE } from "../types/index.ts";
 
 export type LandingView =
   | "role-select"
+  | "returning-user"
   | "join"
   | "create"
   | "recover"
@@ -38,6 +39,7 @@ export interface UseLandingFlowResult {
   readonly pendingRecoveryKey: string | null;
   readonly pendingPlayer: Player | null;
   readonly templateFileRef: RefObject<HTMLInputElement | null>;
+  readonly identity: import("../types/index.ts").LocalIdentity | null;
   readonly goToView: (view: LandingView) => void;
   readonly setSessionCode: (value: string) => void;
   readonly setSessionName: (value: string) => void;
@@ -56,20 +58,15 @@ export interface UseLandingFlowResult {
     void
   >;
   readonly handleRecoveryKeyDismiss: () => void;
+  readonly handleResumeSession: () => void;
+  readonly handleLogout: () => void;
 }
-
-// Module-level guard to prevent double-navigation under React 18+ StrictMode.
-// Unlike useRef (which is re-initialized on StrictMode unmount/remount), a
-// module-level variable survives remount and prevents the second effect fire
-// from calling navigate() - which would otherwise throw a SecurityError:
-// "Too many calls to Location or History APIs within a short timeframe."
-let hasNavigated = false;
 
 export const useLandingFlow = (): UseLandingFlowResult => {
   const navigate = useNavigate();
   const { sessionId: inviteSessionId } = useParams<{ sessionId: string }>();
   const adapter = useAdapter();
-  const { identity, setIdentity } = useIdentity();
+  const { identity, setIdentity, clearIdentity } = useIdentity();
 
   const [view, setView] = useState<LandingView>(() =>
     inviteSessionId ? "join" : "role-select"
@@ -116,26 +113,14 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     }
   }, []);
 
-  // Returning user: if identity exists in localStorage, navigate to cockpit
-  // only if the user hasn't explicitly chosen a view (i.e. landing page loads
-  // and identity is present, but the user hasn't clicked any button yet).
-  // Ephemeral demo identities are skipped — demo navigation is handled
-  // directly in the click handler.
+  // Returning user: if a persisted (non-ephemeral) identity exists in
+  // localStorage and no view has been chosen yet, show the returning-user
+  // view so the user can resume, log out, or create a new account.
   useEffect(() => {
     if (!identity || view !== "role-select") return;
-    if (hasNavigated) return;
     if (isEphemeralIdentity()) return;
-    hasNavigated = true;
-    const dest = identity.role === USER_ROLE.PLAYER
-      ? `/session/${identity.sessionId}`
-      : `/admin/${identity.sessionId}`;
-    try {
-      navigate(dest, { replace: true });
-    } catch {
-      // Suppress SecurityError from react-router when navigate() is called
-      // too rapidly (StrictMode double-fire safety net).
-    }
-  }, [identity, navigate, view]);
+    setView("returning-user");
+  }, [identity, view]);
 
   // Fetch templates when entering templates view
   useEffect(() => {
@@ -294,6 +279,19 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     navigate(pendingRedirect, { replace: true });
   }, [navigate, pendingRedirect]);
 
+  const handleResumeSession = useCallback(() => {
+    if (!identity) return;
+    const dest = identity.role === USER_ROLE.PLAYER
+      ? `/session/${identity.sessionId}`
+      : `/admin/${identity.sessionId}`;
+    navigate(dest, { replace: true });
+  }, [identity, navigate]);
+
+  const handleLogout = useCallback(() => {
+    clearIdentity();
+    setView("role-select");
+  }, [clearIdentity]);
+
   return {
     view,
     status,
@@ -306,6 +304,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     pendingRecoveryKey,
     pendingPlayer,
     templateFileRef,
+    identity,
     goToView,
     setSessionCode,
     setSessionName,
@@ -322,5 +321,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     handleLoadTemplate,
     handleTemplateImport,
     handleRecoveryKeyDismiss,
+    handleResumeSession,
+    handleLogout,
   };
 };
