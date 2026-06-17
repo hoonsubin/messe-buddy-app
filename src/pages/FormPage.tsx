@@ -10,12 +10,16 @@ import FetchErrorPanel from "../components/shared/FetchErrorPanel.tsx";
 import FormShell from "../components/form/FormShell.tsx";
 
 const FormPage = () => {
-  const { missionId } = useParams<{ missionId: string }>();
+  const { sessionId: routeSessionId, missionId } = useParams<{
+    sessionId: string;
+    missionId: string;
+  }>();
+  const sessionId = routeSessionId ?? "";
   const navigate = useNavigate();
   const adapter = useAdapter();
-  const { identity } = useIdentity();
+  const { profiles } = useIdentity();
 
-  const sessionId = identity?.sessionId ?? "";
+  const identity = profiles.find((p) => p.sessionId === sessionId) ?? null;
 
   // Resolve player PB record (upsertProgressEvent needs PB id, not UID)
   const [player, setPlayer] = useState<Player | null>(null);
@@ -156,7 +160,7 @@ const FormPage = () => {
       // Welcome step show the player's actual name and role.
       // Also mark profileComplete and tutorialComplete since the profile
       // step is the final tutorial step (Phase 5).
-      if (missionId === "mission_profile") {
+      if (missionId === "mission_m1_profile") {
         // Build a mutable patch object - Player fields are readonly so
         // we construct with a Record<string, unknown> and cast at the call site.
         const patch: Record<string, unknown> = {

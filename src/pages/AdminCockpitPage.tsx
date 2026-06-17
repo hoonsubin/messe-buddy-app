@@ -4,10 +4,6 @@ import { MdArrowBack } from "react-icons/md";
 import type { BuddyProfile, Milestone, Resource } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { useIdentity } from "../hooks/useIdentity.ts";
-import {
-  clearEphemeralIdentity,
-  isEphemeralIdentity,
-} from "../hooks/ephemeralIdentityStore.ts";
 import { useSession } from "../hooks/useSession.ts";
 import { useScrollCollapse } from "../hooks/useScrollCollapse.ts";
 import { useAdminMilestoneEditor } from "../hooks/useAdminMilestoneEditor.ts";
@@ -17,7 +13,6 @@ import { usePreBoardingChecklist } from "../hooks/usePreBoardingChecklist.ts";
 import { useCrossHireData } from "../hooks/useCrossHireData.ts";
 import { useTemplateLibrary } from "../hooks/useTemplateLibrary.ts";
 import Toast from "../components/shared/Toast.tsx";
-import FetchErrorPanel from "../components/shared/FetchErrorPanel.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
 import MilestoneMapEditor from "../components/admin/MilestoneMapEditor.tsx";
 import MissionBottomSheet from "../components/admin/MissionBottomSheet.tsx";
@@ -48,7 +43,8 @@ const AdminCockpitPage = () => {
   const navigate = useNavigate();
   const sid = sessionId ?? "";
   const adapter = useAdapter();
-  const { identity, clearIdentity } = useIdentity();
+  const { profiles, removeProfile } = useIdentity();
+  const identity = profiles.find((p) => p.sessionId === sid) ?? null;
 
   // Session data
   const {
@@ -57,7 +53,6 @@ const AdminCockpitPage = () => {
     missions,
     loading: sessionLoading,
     error: sessionError,
-    refresh: refreshSession,
   } = useSession(sid);
 
   // Local override for bgImageUrl - avoids re-fetching session on upload
@@ -325,16 +320,14 @@ const AdminCockpitPage = () => {
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  if (sessionError && !sessionLoading) {
-    return (
-      <FetchErrorPanel
-        message="Could not load session data. Please try again."
-        onRetry={refreshSession}
-        testId="admin-cockpit-page"
-        page="admin-cockpit"
-      />
-    );
-  }
+  useEffect(() => {
+    if (sessionError && !sessionLoading) {
+      sessionStorage.setItem("mb_landing_toast", "Session does not exist.");
+      navigate("/", { replace: true });
+    }
+  }, [sessionError, sessionLoading, navigate]);
+
+  if (sessionError && !sessionLoading) return null;
 
   return (
     <div
@@ -375,16 +368,14 @@ const AdminCockpitPage = () => {
             gap: "var(--space-1)",
           }}
           onClick={() => {
-            if (isEphemeralIdentity()) {
-              clearEphemeralIdentity();
-            } else {
-              clearIdentity();
+            if (identity && !identity.isDemo) {
+              removeProfile(identity.uid);
             }
             navigate("/", { replace: true });
           }}
         >
           <MdArrowBack size={16} />
-          {isEphemeralIdentity() ? "Back to Landing" : "Log Out"}
+          {identity?.isDemo ? "Back to Landing" : "Log Out"}
         </button>
       </div>
 

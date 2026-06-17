@@ -2,7 +2,9 @@
 
 > **Target outcome:** `docker compose up --build` delivers a MesseBuddy app where Game Maker and Player work across different devices — data survives browser restarts, QR codes carry real cryptographic secrets, images and templates persist, and the app graduates from a single-browser prototype to a tool you can hand to a real event organizer and real attendees. No manual UI setup, no admin panel clicking, no runtime scripts. Everything is automated in the Docker build.
 >
-> **Last updated:** 2026-06-17 — synced with actual codebase (audit report at [`pocketbase-integration-audit-report.md`](pocketbase-integration-audit-report.md)).
+> **Current reality (2026-06-17):** Docker infra (Go wrapper, migrations, nginx, supervisord) is **ready**. The PWA still hardcodes `mockAdapter` — `VITE_USE_MOCK_PB` is passed at build time but **not read in `src/`**. Multi-device persistence is **not live** until Phases 2 + 3 ship.
+>
+> **Last updated:** 2026-06-17 — synced with codebase audit in this conversation.
 
 ---
 
@@ -61,7 +63,9 @@
 
 ## End-Value Deliverables — What Users Will Actually Get
 
-> **The core behavioral shift:** The current mock adapter is a **single-browser demo** — all data lives in JavaScript memory, refresh the page and it's gone, and both Game Maker and Player must use the same browser. PocketBase integration makes it a **two-role, multi-device application** with real persistence, real concurrency, and real cryptographic security.
+> **The core behavioral shift:** The current mock adapter is a **single-browser demo** — server-side data (sessions, players, missions, progress, buddies, templates) lives in JavaScript memory and is lost on refresh. Both Game Maker and Player must use the same browser tab to share that memory. PocketBase integration makes it a **two-role, multi-device application** with real persistence, real concurrency, and real cryptographic security.
+>
+> **Note:** `mb_identity` (UID, role, sessionId, recovery key) **already persists** in `localStorage` via [`useIdentity`](src/hooks/useIdentity.ts). What mock loses on reload is everything the adapter stores — not the client identity blob itself.
 
 ### Per-Role Value
 
@@ -71,7 +75,7 @@
 |-------|-----------|-----------|
 | **Data survives browser restarts** | ❌ All data in JS memory — refresh = gone | ✅ All data in SQLite via Docker volumes |
 | **Multi-device sessions** | ❌ GM and Player must use same browser | ✅ GM on laptop, Player on phone — any device, any browser |
-| **QR codes with real secrets** | ⚠️ Uses `sessionId` as HMAC secret — guessable | ✅ 64-char hex `qrSecret` generated server-side by Go hook |
+| **QR codes with real secrets** | ⚠️ Mock uses `record.id` (session id) as HMAC secret — guessable | ✅ 64-char hex `qrSecret` generated server-side by Go hook |
 | **Background image upload** | ❌ `URL.createObjectURL` — preview disappears on reload | ✅ `FormData` upload via `pb.collection.update()` with File |
 | **Template library** | ⚠️ Mock memory — lost on refresh | ✅ Persisted in `templates` collection |
 
@@ -79,15 +83,16 @@
 
 | Value | Mock Today | PB Target |
 |-------|-----------|-----------|
-| **Cross-session identity & progress** | ❌ Identity + progress lost on reload | ✅ `mb_identity` persists via `localStorage`, progress via `players` + `progress_events` collections |
-| **Real-time validation feedback** | ⚠️ 4s `setTimeout` mock — no real server round-trip | ✅ SSE subscription fires when GM scans QR — no manual refresh |
+| **Cross-session identity & progress** | ⚠️ `mb_identity` in `localStorage` survives reload; player records + progress do not | ✅ Full player profile + progress in `players` + `progress_events` collections |
+| **Real-time validation feedback (QR)** | ⚠️ Mock auto-completes via in-memory subscription | ✅ `QRDisplay` SSE detects GM confirm write — no manual refresh on player side |
+| **Real-time validation feedback (gmApprove)** | ⚠️ 4s `setTimeout` mock auto-approval | ✅ `ValidationDisplay` SSE (or polling per OD-09) detects GM approval write |
 | **XP that accumulates persistently** | ⚠️ Mock data — gone on reload | ✅ `upsertProgressEvent` writes to real DB; `deriveXP` reads real history |
 | **Buddy assignment persists** | ❌ Gone on reload | ✅ `buddy_profiles` collection — assign once, visible forever |
-| **Form responses saved** | ⚠️ Mock memory | ✅ Responses stored in `progress_events.formResponse` — GM can review later |
+| **Form responses saved** | ⚠️ Mock memory — lost on reload | ✅ Responses stored in `progress_events.formResponse` (DB persistence). **GM review UI not built yet** — separate backlog item |
 
 ### What Stays the Same
 
-The adapter pattern (C-03) guarantees **zero UI changes** at the component level. Every button, form, map, QR display, and milestone editor looks identical. The swap from mock to PB is invisible to the user — only the correctness and persistence change.
+The adapter pattern (C-03) guarantees **minimal UI changes** at the component level. Buttons, forms, maps, QR display, and milestone editors stay the same. The swap from mock to PB is invisible for most flows — only correctness and persistence change. **Exceptions:** Phase 4 background upload (pass `File` instead of object URL) and any future GM form-response review UI.
 
 ### Before/After — The Scenario That Only Works with PocketBase
 
@@ -122,11 +127,13 @@ Phase 4: ░░░░░░░░░░   0%  (no File/FormData upload path — 
 Phase 5: ░░░░░░░░░░   0%  (no PB SSE subscription — blocked by Phase 3)
 Phase 6: ████████░░  85%  (Go hook + all consumers ready; only JS adapter missing)
 Phase 7: ██████░░░░  60%  (migration + schema + mock done; PB adapter methods missing)
-Phase 8: ██████░░░░  65%  (pb-schema.md excellent; missing cleanup + config entries)
-Phase 9: ░░░░░░░░░░   0%  (E2E smoke screen to be implemented with Playwright)
+Phase 8: ████░░░░░░  40%  (pb-schema.md done; provider swap + .env.example + AGENTS.md SSE note pending)
+Phase 9: ░░░░░░░░░░   0%  (extend scripts/smoke-landing.ts → full E2E against Docker)
 ```
 
-**The critical gap is Phase 2** — `src/adapters/pocketbase/` does not exist. Everything downstream (Phases 3, 4, 5) is blocked.
+**The critical gap is Phase 2 + Phase 3 together** — `src/adapters/pocketbase/` does not exist and [`AdapterContext.tsx`](src/adapters/AdapterContext.tsx) hardcodes `mockAdapter`. Importing `pbAdapter` without the provider swap breaks the build; shipping the swap without the adapter breaks runtime. Treat as **one PR**.
+
+> ⚠️ **Docker mismatch:** `docker-compose.yml` defaults `VITE_USE_MOCK_PB` to `"false"`, but the bundle still uses mock data until Phase 3. Document this in README until fixed, or temporarily default Docker to `"true"`.
 
 ---
 
@@ -214,12 +221,14 @@ All collections use public API rules (`setPublicRules` helper sets all rules to 
 
 [`docker-compose.yml`](docker-compose.yml) app service passes:
 - `VITE_PB_URL: /api` — same-origin proxy
-- `VITE_USE_MOCK_PB: "false"` — production PB adapter
+- `VITE_USE_MOCK_PB: ${VITE_USE_MOCK_PB:-false}` — defaults to `"false"` (intended production mode; **inert until Phase 3** wires it in `src/`)
 - `PB_AUTO_MIGRATE: "true"` — auto-create schema on first run
 
-### 1f. Pending hardening
+### 1f. Pending hardening (new migration `003_hardening.go`)
 
-- [ ] Add composite unique index on `progress_events(playerId, missionId)` to [`001_initial_collections.go`](server/pb_migrations/001_initial_collections.go) as a DB-level safety net for C-05:
+Do **not** edit `001_initial_collections.go` on deployed instances — add a forward migration:
+
+- [ ] Composite unique index on `progress_events(playerId, missionId)` — DB-level safety net for C-05:
 
 ```go
 progressEvents.AddIndex(
@@ -227,215 +236,110 @@ progressEvents.AddIndex(
 )
 ```
 
+- [ ] Change `sessions.bgImageUrl` from `TextField` → `FileField` (required for Phase 4 upload). See Phase 4.
+
+Ship this migration **before or with** the JS adapter (Phase 2), so `upsertProgressEvent` upserts are race-safe from day one.
+
 ---
 
 ## Phase 2: PocketBase JS Adapter (Frontend) — ❌ PENDING
 
-### 2a. Create `src/types/globals.d.ts`
+> **Scope:** Implement all **32 methods** of [`AppAdapter`](src/adapters/interface.ts:18). Phase 2 and Phase 3 must land in the **same PR** — `pbAdapter` import requires the provider swap.
 
-Type declaration for the runtime config injected by [`entrypoint.sh`](docker/entrypoint.sh:39-41):
+### 2a. Extend [`src/vite-env.d.ts`](src/vite-env.d.ts) (not a new `globals.d.ts`)
+
+[`vite-env.d.ts`](src/vite-env.d.ts) already declares `Window.__MB_CONFIG__` via `MesseBuddyRuntimeConfig`. Extend it:
 
 ```typescript
-// src/types/globals.d.ts
-declare global {
-  interface Window {
-    __MB_CONFIG__?: {
-      llmBaseUrl?: string;
-      llmKey?: string;
-      llmModel?: string;
-      useMockChat?: boolean;
-      systemPrompt?: string;
-      pbUrl?: string; // PocketBase URL (for dev overrides; defaults to /api in Docker)
-    };
-  }
+interface ImportMetaEnv {
+  readonly VITE_PB_URL?: string;
+  readonly VITE_USE_MOCK_PB?: string; // add — used by Phase 3 provider swap
+  // …existing LLM keys…
 }
 
-export {};
+interface MesseBuddyRuntimeConfig {
+  readonly llmBaseUrl?: string;
+  readonly llmKey?: string;
+  readonly llmModel?: string;
+  readonly useMockChat?: boolean;
+  readonly systemPrompt?: string;
+  readonly pbUrl?: string; // add — runtime override; Docker defaults to /api via VITE_PB_URL
+}
 ```
 
-Note: This was previously described as living in [`src/config/llm.ts`](src/config/llm.ts). A standalone `globals.d.ts` is cleaner — no import needed, TypeScript picks it up automatically.
+[`entrypoint.sh`](docker/entrypoint.sh) intentionally omits `pbUrl` from `config.js` (adapter falls back to `import.meta.env.VITE_PB_URL ?? "/api"`).
 
 ### 2b. Create `src/adapters/pocketbase/parsers.ts`
 
-Marshalling layer that converts between PocketBase raw records (with JSON-stringified fields per [`FormSchemaRaw`](src/types/domain.ts:114) and [`ProgressEventRaw`](src/types/domain.ts:119)) and typed app-layer interfaces (C-13). **ALL `JSON.parse` calls for PB record fields are confined to this file** (C-13 invariant).
+Marshalling layer that converts PocketBase raw records to typed app-layer interfaces (C-13). **All `JSON.parse` / file-URL resolution for PB fields lives in this file** — components and use cases never parse PB JSON (C-13 invariant).
+
+**JSONField normalization:** PB v0.39 `JSONField` values may arrive from the SDK as **already-parsed objects** or as strings depending on context. Use a shared helper that accepts both:
 
 ```typescript
-// src/adapters/pocketbase/parsers.ts
-import type {
-  FieldSchema,
-  FormSchema,
-  FormSchemaRaw,
-  Player,
-  ProgressEvent,
-  ProgressEventRaw,
-  Session,
-  Mission,
-  Milestone,
-  BuddyProfile,
-  Resource,
-  TemplateExport,
-  MissionTag,
-} from "../../types/index.ts";
+const parseJsonField = <T>(value: unknown, fallback: T): T => {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === "string") {
+    try { return JSON.parse(value) as T; } catch { return fallback; }
+  }
+  return value as T;
+};
+```
 
-// ── Sessions ────────────────────────────────────────────────────────────────
+Apply `parseJsonField` to all JSON-backed fields per [`docs/pb-schema.md`](docs/pb-schema.md):
 
-export const marshalSession = (raw: Record<string, unknown>): Session => ({
+| Collection | Field | App type |
+|-----------|-------|----------|
+| `form_schemas` | `fields` | `FieldSchema[]` |
+| `progress_events` | `formResponse` | `Record<string, string>` |
+| `missions` | `tags` | `MissionTag[]` |
+| `players` | `skillsConfident`, `skillsDevelop`, `languages`, `energizers`, `drainers` | `string[]` |
+| `sessions` | `preBoardingChecks` | `PreBoardingCheckItem[]` |
+| `templates` | `data` | `TemplateExport` |
+
+**File URL resolution:** Collections with `FileField` (`players.avatarUrl`, `buddy_profiles.avatarUrl`, `sessions.bgImageUrl` after migration 003) store filenames, not browser-ready URLs. Add:
+
+```typescript
+export const resolveFileUrl = (
+  pb: PocketBase,
+  collection: string,
+  recordId: string,
+  filename: string | undefined,
+): string | undefined =>
+  filename
+    ? pb.files.getURL({ collectionIdOrName: collection, recordId, filename })
+    : undefined;
+```
+
+Call from `marshalPlayer`, `marshalBuddyProfile`, and `marshalSession` so `<img src>` works without component changes.
+
+**Sketch — session marshal (includes JSON + file URL):**
+
+```typescript
+export const marshalSession = (
+  pb: PocketBase,
+  raw: Record<string, unknown>,
+): Session => ({
   id: raw.id as string,
   created: raw.created as string,
   updated: raw.updated as string,
   name: raw.name as string,
-  bgImageUrl: raw.bgImageUrl as string,
+  bgImageUrl: resolveFileUrl(pb, "sessions", raw.id as string, raw.bgImageUrl as string) ?? "",
   gameMakerId: raw.gameMakerId as string,
   qrSecret: raw.qrSecret as string | undefined,
-  preBoardingChecks: (raw.preBoardingChecks as unknown[]) ?? [],
+  preBoardingChecks: parseJsonField(raw.preBoardingChecks, []),
 });
-
-// ── Players ─────────────────────────────────────────────────────────────────
-
-export const marshalPlayer = (raw: Record<string, unknown>): Player => ({
-  id: raw.id as string,
-  created: raw.created as string,
-  updated: raw.updated as string,
-  uid: raw.uid as string,
-  recoveryKey: raw.recoveryKey as string,
-  sessionId: raw.sessionId as string,
-  tutorialComplete: (raw.tutorialComplete as boolean) ?? false,
-  profileComplete: (raw.profileComplete as boolean) ?? false,
-  name: (raw.name as string) ?? "",
-  preferredName: raw.preferredName as string | undefined,
-  pronouns: raw.pronouns as string | undefined,
-  avatarUrl: raw.avatarUrl as string | undefined,
-  role: (raw.role as string) ?? "",
-  team: (raw.team as string) ?? "",
-  startDate: (raw.startDate as string) ?? "",
-  location: (raw.location as string) ?? "",
-  timezone: (raw.timezone as string) ?? "",
-  skillsConfident: (raw.skillsConfident as string[]) ?? [],
-  skillsDevelop: (raw.skillsDevelop as string[]) ?? [],
-  languages: (raw.languages as string[]) ?? [],
-  workStyle: raw.workStyle as string | undefined,
-  energizers: raw.energizers as string[] | undefined,
-  drainers: raw.drainers as string[] | undefined,
-});
-
-// ── FormSchemas ─────────────────────────────────────────────────────────────
-
-export const marshalFormSchema = (raw: FormSchemaRaw): FormSchema => ({
-  id: raw.id,
-  created: raw.created,
-  updated: raw.updated,
-  missionId: raw.missionId,
-  fields: JSON.parse(raw.fields) as ReadonlyArray<FieldSchema>,
-});
-
-export const unmarshalFormSchema = (
-  fields: ReadonlyArray<FieldSchema>,
-): string => JSON.stringify(fields);
-
-// ── ProgressEvents ──────────────────────────────────────────────────────────
-
-export const marshalProgressEvent = (
-  raw: ProgressEventRaw,
-): ProgressEvent => ({
-  id: raw.id,
-  created: raw.created,
-  updated: raw.updated,
-  sessionId: raw.sessionId,
-  playerId: raw.playerId,
-  missionId: raw.missionId,
-  status: raw.status,
-  validatedBy: raw.validatedBy,
-  validatedAt: raw.validatedAt,
-  formResponse: raw.formResponse
-    ? (JSON.parse(raw.formResponse) as Readonly<Record<string, string>>)
-    : undefined,
-});
-
-// ── Missions ────────────────────────────────────────────────────────────────
-
-export const marshalMission = (raw: Record<string, unknown>): Mission => ({
-  id: raw.id as string,
-  created: raw.created as string,
-  updated: raw.updated as string,
-  sessionId: raw.sessionId as string,
-  milestoneId: raw.milestoneId as string,
-  title: raw.title as string,
-  body: (raw.body as string) ?? "",
-  type: raw.type as Mission["type"],
-  externalUrl: raw.externalUrl as string | undefined,
-  difficulty: raw.difficulty as number,
-  xpValue: raw.xpValue as number,
-  tags: (raw.tags as MissionTag[]) ?? [],
-  suggestedDueDate: raw.suggestedDueDate as string | undefined,
-  order: raw.order as number,
-  isInCurrentMissions: (raw.isInCurrentMissions as boolean) ?? false,
-  validationMethod: raw.validationMethod as Mission["validationMethod"],
-});
-
-// ── Milestones ──────────────────────────────────────────────────────────────
-
-export const marshalMilestone = (raw: Record<string, unknown>): Milestone => ({
-  id: raw.id as string,
-  created: raw.created as string,
-  updated: raw.updated as string,
-  sessionId: raw.sessionId as string,
-  name: raw.name as string,
-  xPercent: raw.xPercent as number,
-  yPercent: raw.yPercent as number,
-  xpThreshold: raw.xpThreshold as number,
-  order: raw.order as number,
-});
-
-// ── BuddyProfiles ───────────────────────────────────────────────────────────
-
-export const marshalBuddyProfile = (
-  raw: Record<string, unknown>,
-): BuddyProfile => ({
-  id: raw.id as string,
-  created: raw.created as string,
-  updated: raw.updated as string,
-  sessionId: raw.sessionId as string,
-  assignedToPlayerId: raw.assignedToPlayerId as string,
-  name: raw.name as string,
-  role: (raw.role as string) ?? "",
-  tenure: raw.tenure as string | undefined,
-  avatarUrl: raw.avatarUrl as string | undefined,
-  contactUrl: raw.contactUrl as string | undefined,
-  quote: raw.quote as string | undefined,
-  email: raw.email as string | undefined,
-  phone: raw.phone as string | undefined,
-});
-
-// ── Resources ───────────────────────────────────────────────────────────────
-
-export const marshalResource = (raw: Record<string, unknown>): Resource => ({
-  id: raw.id as string,
-  created: raw.created as string,
-  updated: raw.updated as string,
-  sessionId: raw.sessionId as string,
-  title: raw.title as string,
-  description: raw.description as string | undefined,
-  type: raw.type as Resource["type"],
-  url: raw.url as string,
-  isVisibleToPlayer: (raw.isVisibleToPlayer as boolean) ?? false,
-});
-
-// ── Templates ───────────────────────────────────────────────────────────────
-
-export const marshalTemplate = (
-  raw: Record<string, unknown>,
-): TemplateExport => JSON.parse(raw.data as string) as TemplateExport;
 ```
+
+Implement the remaining marshals (`marshalPlayer`, `marshalMission`, `marshalFormSchema`, `marshalProgressEvent`, etc.) following the same patterns. Keep `unmarshal*` helpers for writes (`JSON.stringify` where the SDK expects a string payload).
 
 ### 2c. Create `src/adapters/pocketbase/pbAdapter.ts`
 
-Implement all 29 methods of [`AppAdapter`](src/adapters/interface.ts:18). Key implementation notes:
+Implement all **32 methods** of [`AppAdapter`](src/adapters/interface.ts:18). Key implementation notes:
 
-**AbortController pattern (all Tier 2 async methods):**
-Every method that makes PB SDK requests should accept an optional `AbortSignal` parameter or use an internal `AbortController` for cancellable operations per [React Lifecycle Design Principles](SPECS.md#effect-lifecycle-tiers). The PB SDK supports cancellation via its `$cancelKey` or `signal` option.
+**Cancellation:** [`AppAdapter`](src/adapters/interface.ts) does not expose `AbortSignal`. Use PB SDK `$cancelKey` internally for in-flight request dedup, or defer signal support to a follow-up interface change. Do not block Phase 2 on extending the interface.
 
-**`upsertProgressEvent` — sessionId derivation:**
-The method signature in [`AppAdapter`](src/adapters/interface.ts:68) does not accept `sessionId`. The adapter must derive it by looking up the player:
+**`upsertProgressEvent` — sessionId derivation + C-05 safety:**
+The method signature does not accept `sessionId`. Derive it from the player record. Prefer a single upsert keyed by `(playerId, missionId)` once migration 003 unique index exists; handle create/update race with a retry on unique constraint violation:
 
 ```typescript
 const upsertProgressEvent = async (
@@ -469,7 +373,7 @@ const upsertProgressEvent = async (
 ```
 
 **`createSession` — qrSecret round-trip:**
-The Go hook in [`main.go`](server/main.go:34-43) generates `qrSecret` server-side. The JS adapter's `createSession` must receive this in the response from `pb.collection("sessions").create()`. Verify that the PB SDK returns the server-mutated record — if not, re-fetch after create.
+The Go hook in [`main.go`](server/main.go:34-43) sets `qrSecret` on create. **Verify** the PB SDK returns the post-hook record from `create()`. If `qrSecret` is empty in the response, re-fetch via `getOne(id)` before marshalling — add this to SMOKE-04 acceptance.
 
 **`subscribeProgressEvent` — SSE subscription (Phase 5):**
 
@@ -492,12 +396,12 @@ subscribeProgressEvent: (
 };
 ```
 
-**`updateSession` — File upload (Phase 4):**
+**`updateSession` — File upload (Phase 4, after migration 003):**
 
 ```typescript
 const updateSession = async (
   sessionId: string,
-  patch: Partial<Omit<Session, keyof PBRecord>>,
+  patch: Partial<Omit<Session, keyof PBRecord>> & { bgImageUrl?: string | File },
 ): Promise<Session> => {
   const formData = new FormData();
   for (const [key, value] of Object.entries(patch)) {
@@ -508,7 +412,7 @@ const updateSession = async (
     }
   }
   const record = await pb.collection("sessions").update(sessionId, formData);
-  return marshalSession(record);
+  return marshalSession(pb, record);
 };
 ```
 
@@ -548,6 +452,8 @@ export const pbAdapter = createPBAdapter(pb);
 ---
 
 ## Phase 3: Provider Swap + Wiring — ❌ PENDING
+
+> Ship in the **same PR as Phase 2**. Until this lands, `VITE_USE_MOCK_PB` in Docker is inert — [`AdapterContext.tsx`](src/adapters/AdapterContext.tsx) hardcodes `mockAdapter`.
 
 ### 3a. [`src/adapters/AdapterContext.tsx`](src/adapters/AdapterContext.tsx:3) — conditional swap
 
@@ -598,30 +504,43 @@ export const AdapterContext = createContext<AppAdapter>(
 
 ## Phase 4: Background Image Upload — ❌ PENDING
 
-The current [`handleUploadBackground`](src/pages/AdminCockpitPage.tsx:239) uses `URL.createObjectURL(file)` as a local-only workaround.
+### Schema prerequisite (migration 003)
 
-1. The `updateSession` PB adapter method handles `File` objects via `FormData` (see Phase 2c)
-2. Update [`AdminCockpitPage.tsx`](src/pages/AdminCockpitPage.tsx) to pass the raw `File`:
+`001_initial_collections.go` defines `sessions.bgImageUrl` as **`TextField`**. File upload via `FormData` requires **`FileField`** — add in `003_hardening.go` (see Phase 1f). Update [`docs/pb-schema.md`](docs/pb-schema.md) accordingly.
+
+### UI change
+
+The current [`handleUploadBackground`](src/pages/AdminCockpitPage.tsx:234) uses `URL.createObjectURL(file)` — preview works locally but nothing persists.
+
+1. `updateSession` PB adapter handles `File` via `FormData` (Phase 2c) after schema migration
+2. `marshalSession` resolves file URL via `pb.files.getURL` (Phase 2b)
+3. Update [`AdminCockpitPage.tsx`](src/pages/AdminCockpitPage.tsx) to pass the raw `File` and drop the object-URL override on success:
 
 ```typescript
 const handleUploadBackground = useCallback(
   (file: File) => {
-    void adapter.updateSession(sid, { bgImageUrl: file as unknown as string });
+    void adapter
+      .updateSession(sid, { bgImageUrl: file })
+      .then((session) => setBgImageUrlOverride(session.bgImageUrl));
   },
   [adapter, sid],
 );
 ```
 
+Widen the adapter patch type locally (intersection with `{ bgImageUrl?: string | File }`) — avoid `as unknown as string`.
+
 ---
 
 ## Phase 5: SSE Real-Time Subscription — ❌ PENDING
 
-Implementation is in the `subscribeProgressEvent` method of `pbAdapter.ts` (see Phase 2c). The consumers require **zero component changes**:
+Implementation is in the `subscribeProgressEvent` method of `pbAdapter.ts` (see Phase 2c). Existing consumers require **zero component changes** — but note **who** subscribes (per C-07 and actual code):
 
-- [`ValidationDisplay`](src/components/player/ValidationDisplay.tsx) — subscribes when `validationMethod = 'qr'` (C-07)
-- [`QRDisplay`](src/components/player/QRDisplay.tsx) — subscribes for status changes
+| Component | When it subscribes | Purpose |
+|-----------|-------------------|---------|
+| [`QRDisplay`](src/components/player/QRDisplay.tsx) | Always (QR missions) | Player sees completion after GM confirms on [`ValidationPage`](src/pages/ValidationPage.tsx) |
+| [`ValidationDisplay`](src/components/player/ValidationDisplay.tsx) | `validationMethod === "gmApprove"` only | Player sees GM approval (mock: 4s auto-fire) |
 
-nginx is already configured for SSE ([`docker/nginx.conf:39-44`](docker/nginx.conf:39-44)).
+**GM QR scan path holds no SSE** — offline HMAC verify on `ValidationPage` → GM confirm → `upsertProgressEvent` write (C-07). nginx is already configured for SSE ([`docker/nginx.conf`](docker/nginx.conf)).
 
 ---
 
@@ -673,12 +592,12 @@ PB adapter methods for templates — see Phase 2c for implementation (`listTempl
 | Item | File |
 |------|------|
 | PB schema reference | [`docs/pb-schema.md`](docs/pb-schema.md) — all 9 collections, field types, JSON schemas, API rules, C-13 table |
-| Build-time env vars | [`docker-compose.yml`](docker-compose.yml) passes `VITE_USE_MOCK_PB: "false"`, `VITE_PB_URL: /api`, `PB_AUTO_MIGRATE: true` |
-| Mock adapter conditional | [`AdapterContext.tsx`](src/adapters/AdapterContext.tsx) + [`AdapterContextValue.ts`](src/adapters/AdapterContextValue.ts) (see Phase 3) |
+| Docker build args | [`docker-compose.yml`](docker-compose.yml) passes `VITE_USE_MOCK_PB: "false"` (default), `VITE_PB_URL: /api`, `PB_AUTO_MIGRATE: true` |
 
 ### 8b. Remaining
 
-- [ ] Add `VITE_PB_URL=/api` to [`.env.example`](.env.example) (currently only `VITE_USE_MOCK_PB` is listed):
+- [ ] **Provider swap** — wire `VITE_USE_MOCK_PB` in [`AdapterContext.tsx`](src/adapters/AdapterContext.tsx) + [`AdapterContextValue.ts`](src/adapters/AdapterContextValue.ts) (Phase 3 — **not done**)
+- [ ] Add `VITE_PB_URL=/api` to [`.env.example`](.env.example):
 
 ```bash
 # -- Build args (baked into the PWA JS bundle at docker build time) --
@@ -686,22 +605,26 @@ VITE_PB_URL=/api                                       # same-origin proxy in Do
 VITE_USE_MOCK_PB=true                                  # "false" in production → real PB adapter
 ```
 
+- [ ] Update [`AGENTS.md`](AGENTS.md) SSE note — `QRDisplay` subscribes for QR; `ValidationDisplay` for `gmApprove` (currently stale: says ValidationDisplay for QR only)
+- [ ] Update [`docs/pb-schema.md`](docs/pb-schema.md) after migration 003 (`bgImageUrl` FileField, `progress_events` unique index)
+
 ---
 
 ## Phase 9: E2E Smoke Screen Testing
 
-After Phases 2–8 are complete, validate the full stack via Playwright MCP smoke tests and/or `scripts/smoke-landing.ts`. All smoke tests should run against a `docker compose up --build` environment.
+After Phases 2–8 are complete, validate the full stack via Playwright MCP smoke tests. Extend the existing [`scripts/smoke-landing.ts`](scripts/smoke-landing.ts) (landing UI only, defaults to `http://localhost:5173`) into a full Docker E2E script. All integration smoke tests run against `docker compose up --build` with `SMOKE_BASE_URL=https://localhost` (or LAN IP).
 
 ### 9a. SMOKE-01: Session Creation & Player Join
 
 **Steps:**
-1. Game Maker opens `/` → selects "Game Maker" role → creates session "E2E Smoke Test"
-2. Verifies admin cockpit loads with empty milestone map
-3. Game Maker copies session invite link
-4. Player opens invite link (`/join/:sessionId`) → session code pre-filled → joins as Player
-5. Player enters name → recovery key shown → player cockpit loads
+1. Game Maker opens `/` → selects "Admin" role → creates session "E2E Smoke Test"
+2. Game Maker enters display name (name capture modal) → recovery key shown → dismisses
+3. Verifies admin cockpit loads with empty milestone map
+4. Game Maker copies session invite link from [`SessionInviteCard`](src/components/admin/SessionInviteCard.tsx)
+5. **Second browser context:** Player opens invite link (`/join/:sessionId`) → session code pre-filled → joins as Player
+6. Player enters name → recovery key shown → player cockpit loads
 
-**Expected:** Both Game Maker and Player see the session. Player appears in Game Maker's player list.
+**Expected:** Both Game Maker and Player see the session. Player appears in Game Maker's player list. Data survives page reload in both contexts.
 
 ### 9b. SMOKE-02: Mission & Milestone CRUD (Admin → Player Visibility)
 
@@ -732,12 +655,12 @@ After Phases 2–8 are complete, validate the full stack via Playwright MCP smok
 1. Game Maker creates a mission with `validationMethod: "qr"`
 2. Player opens the mission → taps "Generate QR Code"
 3. QR code displays on player's screen
-4. Game Maker navigates to `/admin/:sessionId/scan` → scans the QR code
-5. Validation result shows success
-6. Player's mission status updates to `completed`
+4. Game Maker navigates to `/admin/:sessionId/scan` → scans the QR code → lands on [`ValidationPage`](src/pages/ValidationPage.tsx)
+5. Game Maker confirms validation
+6. Player's mission status updates to `completed` via `QRDisplay` SSE (no manual refresh)
 7. XP is awarded
 
-**Expected:** Full QR → HMAC verify → status update → XP award cycle works end-to-end. HMAC secret (`qrSecret`) must be the actual server-generated value, not the `sessionId` fallback.
+**Expected:** Full QR → HMAC verify (offline on ValidationPage) → GM confirm → `upsertProgressEvent` write → player SSE callback → XP award. HMAC secret must be the server-generated `qrSecret`, not the `sessionId` fallback.
 
 ### 9e. SMOKE-05: Buddy Assignment
 
@@ -754,11 +677,11 @@ After Phases 2–8 are complete, validate the full stack via Playwright MCP smok
 **Steps:**
 1. Game Maker creates a mission with `type: "form"` and a form schema (text + select fields)
 2. Player opens the form → fills in answers → submits
-3. Form response saved, mission auto-approved (`autoApproved` status per C-06)
+3. Form response saved to `progress_events.formResponse`, mission `autoApproved` (C-06)
 4. XP awarded immediately (no GM approval needed)
-5. Game Maker views form response in admin cockpit
+5. Reload player cockpit — mission stays completed; XP persists
 
-**Expected:** Form missions self-complete. `ValidationDisplay` never mounts (C-06).
+**Expected:** Form missions self-complete. `ValidationDisplay` never mounts (C-06). **Out of scope for this phase:** GM admin UI to read form responses (no component exists yet — track as backlog).
 
 ### 9g. SMOKE-07: Admin Players List (Cross-Hire Context)
 
@@ -802,6 +725,16 @@ After Phases 2–8 are complete, validate the full stack via Playwright MCP smok
 
 **Expected:** Template round-trip: export → save to PB → import → same structure. FK relationships (`milestoneId`, `missionId`) remapped via `_milestoneOrder`/`_missionOrder` keys (see [`exportTemplate.ts`](src/use-cases/exportTemplate.ts:27) and [`importTemplate.ts`](src/use-cases/importTemplate.ts:23)).
 
+### 9k. SMOKE-11: Recovery Key Round-Trip (optional but high value)
+
+**Steps:**
+1. Player joins session (SMOKE-01) and dismisses recovery key modal
+2. Player clears identity / opens landing in fresh context
+3. Player selects "Returning Employee" → enters recovery key + session code
+4. Player lands in same cockpit with prior progress intact
+
+**Expected:** `getPlayerByRecoveryKey` + `recoverIdentity` use case work against real PB data.
+
 ---
 
 ## Acceptance Criteria — E2E Smoke Screen
@@ -819,20 +752,22 @@ flowchart TD
     G --> H[SMOKE-08: Resources Visibility]
     H --> I[SMOKE-09: Pre-Boarding Checklist]
     I --> J[SMOKE-10: Template Export/Import]
+    A --> K[SMOKE-11: Recovery Key]
 ```
 
 | # | Scenario | What It Validates | User Value Delivered | Status |
 |---|----------|-------------------|---------------------|--------|
-| SMOKE-01 | Session create + player join | `createSession`, `createPlayer`, `getSession`, `listPlayers`, invite link route | **Multi-device sessions** — GM creates on one device, Player joins from another; data persists across both | ❌ |
-| SMOKE-02 | Mission/milestone CRUD | `createMilestone`, `createMission`, `updateMission`, `deleteMission`, `listMilestones`, `listMissions` — admin changes visible to player | **Persistent game structure** — milestones and missions survive browser restarts; changes propagate GM→Player | ❌ |
-| SMOKE-03 | XP point gains | `upsertProgressEvent`, `computeProgress`, `deriveXP` — difficulty-weighted XP accumulation (C-04) | **Persistent XP that accumulates** — difficulty-weighted scoring on real data; XP bar reflects actual multi-mission history | ❌ |
-| SMOKE-04 | QR validation flow | QR encode/decode (C-16), HMAC verify using `qrSecret`, `upsertProgressEvent` status update, XP award | **Cryptographic QR security** — real 64-char hex `qrSecret` (not guessable `sessionId`); real-time SSE status flip when GM scans | ❌ |
-| SMOKE-05 | Buddy assignment | `upsertBuddyProfile`, `getBuddyProfile` — buddy card renders on player dashboard | **Persistent buddy assignment** — buddy card stays visible across sessions; assignment survives reload | ❌ |
-| SMOKE-06 | Form mission auto-approval | `getFormSchema`, `upsertFormSchema`, `upsertProgressEvent` — form submits, auto-approved (C-06), XP awarded | **Form responses saved** — Player answers persist in DB; GM can review responses later | ❌ |
-| SMOKE-07 | Admin players list | `listPlayers` — all player profile data renders in admin cockpit | **Cross-hire context** — all player profiles (name, role, team, skills, languages) visible to GM across devices | ❌ |
-| SMOKE-08 | Resources visibility | `createResource`, `listResources`, `updateResource`, `deleteResource` — visibility toggle works | **Real resource toggling** — `isVisibleToPlayer` persists; toggled-off resources stay hidden after reload | ❌ |
-| SMOKE-09 | Pre-boarding checklist | `updateSession` — `preBoardingChecks` JSON field round-trips | **Persistent pre-boarding items** — checklist survives browser restarts; JSON field round-trips correctly | ❌ |
-| SMOKE-10 | Template export/import | `saveTemplate`, `listTemplates`, `deleteTemplate`, `bootstrapFromTemplate`, `exportTemplate` — full round-trip with FK remapping | **Reusable template library** — session structures persist in `templates` collection; import into new sessions with FK remapping | ❌ |
+| SMOKE-01 | Session create + player join | `createSession`, `createPlayer`, `getSession`, `listPlayers`, invite link, GM name capture | **Multi-device sessions** — GM on one device, Player on another; data persists across both | ❌ |
+| SMOKE-02 | Mission/milestone CRUD | `createMilestone`, `createMission`, `updateMission`, `deleteMission`, `listMilestones`, `listMissions` | **Persistent game structure** — milestones and missions survive browser restarts | ❌ |
+| SMOKE-03 | XP point gains | `upsertProgressEvent`, `computeProgress`, `deriveXP` (C-04) | **Persistent XP** — difficulty-weighted scoring on real multi-mission history | ❌ |
+| SMOKE-04 | QR validation flow | QR encode/decode (C-16), HMAC with `qrSecret`, ValidationPage confirm, player SSE | **Cryptographic QR security** — real 64-char hex secret; player status flips via `QRDisplay` subscribe | ❌ |
+| SMOKE-05 | Buddy assignment | `upsertBuddyProfile`, `getBuddyProfile` | **Persistent buddy card** — survives reload | ❌ |
+| SMOKE-06 | Form mission auto-approval | `getFormSchema`, `upsertFormSchema`, `upsertProgressEvent`, `formResponse` persistence | **Form answers in DB** — autoApproved + XP (GM review UI is backlog) | ❌ |
+| SMOKE-07 | Admin players list | `listPlayers` — profile data in admin cockpit | **Cross-hire context** — all player profiles visible to GM across devices | ❌ |
+| SMOKE-08 | Resources visibility | `createResource`, `listResources`, `updateResource`, `deleteResource` | **Real visibility toggle** — `isVisibleToPlayer` persists | ❌ |
+| SMOKE-09 | Pre-boarding checklist | `updateSession` — `preBoardingChecks` JSON round-trip | **Persistent checklist** — survives browser restarts | ❌ |
+| SMOKE-10 | Template export/import | `saveTemplate`, `listTemplates`, `deleteTemplate`, `bootstrapFromTemplate` | **Reusable template library** in PB with FK remapping | ❌ |
+| SMOKE-11 | Recovery key round-trip | `getPlayerByRecoveryKey`, `recoverIdentity` | **Returning employee flow** — rejoin without re-enrolling | ❌ |
 
 ### Test Environment
 
@@ -850,25 +785,24 @@ Any smoke scenario failure is a **blocker** for the corresponding phase. Fix the
 ## Execution Order
 
 ```
-Phase 1 (Go wrapper + migrations)     ← DONE — no further work needed
-Phase 2 (PB JS adapter)               ← NEXT — create parsers.ts + pbAdapter.ts + mod.ts + globals.d.ts
-Phase 3 (Provider swap)               ← Depends on Phase 2
-Phase 4 (Image upload)                ← Depends on Phase 3
-Phase 5 (SSE subscription)            ← Depends on Phase 3
-Phase 6 (QR session secret)           ← JS adapter methods only (Go hook done)
-Phase 7 (Templates collection)        ← JS adapter methods only (migration done)
-Phase 8 (Cleanup & docs)              ← Depends on all phases
-Phase 9 (E2E smoke screen)            ← Depends on Phases 2-8
+Phase 1 (Go wrapper + migrations)     ← DONE — add 003_hardening.go before adapter
+Phase 2 + 3 (JS adapter + swap)       ← NEXT — single PR; 32 AppAdapter methods
+Phase 4 (Image upload)                ← Depends on 003 + Phase 2/3
+Phase 5 (SSE subscription)            ← Part of pbAdapter.subscribeProgressEvent
+Phase 6 (QR session secret)           ← JS adapter createSession/getSession (Go hook done)
+Phase 7 (Templates collection)        ← JS adapter template methods (migration done)
+Phase 8 (Cleanup & docs)              ← .env.example, AGENTS.md, pb-schema update
+Phase 9 (E2E smoke screen)            ← Extend smoke-landing.ts → Docker E2E
 ```
 
 ```mermaid
 flowchart LR
-    P1[Phase 1: Go Wrapper] --> P2[Phase 2: JS Adapter]
-    P2 --> P3[Phase 3: Provider Swap]
-    P3 --> P4[Phase 4: Image Upload]
-    P3 --> P5[Phase 5: SSE]
+    P1[Phase 1: Go Wrapper] --> P1b[003_hardening migration]
+    P1b --> P2[Phase 2+3: Adapter + Swap]
+    P2 --> P4[Phase 4: Image Upload]
+    P2 --> P5[Phase 5: SSE in adapter]
     P2 --> P6[Phase 6: QR Secret JS]
-    P3 --> P7[Phase 7: Templates JS]
+    P2 --> P7[Phase 7: Templates JS]
     P4 --> P8[Phase 8: Cleanup]
     P5 --> P8
     P6 --> P8
@@ -884,21 +818,23 @@ flowchart LR
 
 | File | Purpose | Priority |
 |------|---------|----------|
-| `src/types/globals.d.ts` | `window.__MB_CONFIG__` type declaration | P1 (Phase 2) |
-| `src/adapters/pocketbase/parsers.ts` | JSON field marshalling (C-13) | P1 (Phase 2) |
-| `src/adapters/pocketbase/pbAdapter.ts` | Full `AppAdapter` implementation (29 methods) | P1 (Phase 2) |
-| `src/adapters/pocketbase/mod.ts` | Barrel export — creates PB client + adapter | P1 (Phase 2) |
-| `scripts/smoke-e2e.ts` | Playwright/Deno E2E smoke script covering SMOKE-01 through SMOKE-10 | P2 (Phase 9) |
+| `server/pb_migrations/003_hardening.go` | Unique index on `progress_events`; `sessions.bgImageUrl` → FileField | P0 (before adapter) |
+| `src/adapters/pocketbase/parsers.ts` | JSON + file URL marshalling (C-13) | P0 (Phase 2) |
+| `src/adapters/pocketbase/pbAdapter.ts` | Full `AppAdapter` implementation (**32 methods**) | P0 (Phase 2) |
+| `src/adapters/pocketbase/mod.ts` | PB client + adapter export | P0 (Phase 2) |
+| `scripts/smoke-e2e.ts` | Extend [`smoke-landing.ts`](scripts/smoke-landing.ts) — SMOKE-01 through SMOKE-11 against Docker | P1 (Phase 9) |
 
 ### Files to modify:
 
 | File | Change | Phase |
 |------|--------|-------|
-| `server/pb_migrations/001_initial_collections.go` | Add composite unique index on `progress_events(playerId, missionId)` | P4 (Hardening) |
-| `src/adapters/AdapterContext.tsx` | Add `VITE_USE_MOCK_PB` conditional, import pbAdapter | Phase 3 |
-| `src/adapters/AdapterContextValue.ts` | Add conditional default context value | Phase 3 |
-| `src/pages/AdminCockpitPage.tsx` | File upload: pass raw `File` to adapter (not object URL) | Phase 4 |
-| `.env.example` | Add `VITE_PB_URL=/api` entry | Phase 8 |
+| `src/vite-env.d.ts` | Add `VITE_USE_MOCK_PB`, `pbUrl?` on `MesseBuddyRuntimeConfig` | Phase 2 |
+| `src/adapters/AdapterContext.tsx` | `VITE_USE_MOCK_PB` conditional, import `pbAdapter` | Phase 2+3 |
+| `src/adapters/AdapterContextValue.ts` | Conditional default context value | Phase 2+3 |
+| `src/pages/AdminCockpitPage.tsx` | Pass raw `File` to adapter; resolve URL from response | Phase 4 |
+| `.env.example` | Add `VITE_PB_URL=/api` | Phase 8 |
+| `docs/pb-schema.md` | Reflect migration 003 schema changes | Phase 8 |
+| `AGENTS.md` | Fix SSE subscriber attribution (QRDisplay vs ValidationDisplay) | Phase 8 |
 
 ### Files that require NO changes (already done):
 
@@ -906,19 +842,20 @@ flowchart LR
 |------|--------|
 | `server/main.go` | Go wrapper complete with qrSecret hook |
 | `server/go.mod` | Go module configured |
-| `server/pb_migrations/001_initial_collections.go` | All 8 collections |
+| `server/pb_migrations/001_initial_collections.go` | All 8 collections (do not edit — use 003 for hardening) |
 | `server/pb_migrations/002_templates.go` | Templates collection |
 | `docker/nginx.conf` | SSE-ready proxy config |
 | `docker/supervisord.conf` | Manages nginx + pocketbase-server |
 | `docker/entrypoint.sh` | Config.js + supervisord bootstrap |
 | `Dockerfile` | Multi-stage: Deno → Go → runtime |
-| `docker-compose.yml` | Build args + env vars correct |
+| `docker-compose.yml` | Build args correct (provider swap pending in src) |
 | `deno.json` | `pocketbase@^0.27.0` present |
-| `docs/pb-schema.md` | Comprehensive schema reference |
 | `src/types/domain.ts` | `qrSecret`, `FormSchemaRaw`, `ProgressEventRaw` present |
-| `src/adapters/interface.ts` | All 29 methods defined |
+| `src/adapters/interface.ts` | All **32** methods defined |
 | `src/utils/qrPayload.ts` | Accepts `secret` parameter |
-| `src/components/player/QRDisplay.tsx` | Uses `session.qrSecret ?? sessionId` |
+| `src/components/player/QRDisplay.tsx` | Uses `session.qrSecret ?? sessionId`; holds SSE subscribe |
+| `src/components/player/ValidationDisplay.tsx` | SSE subscribe for `gmApprove` only |
 | `src/components/admin/AdminQRScannerModal.tsx` | Uses `session.qrSecret ?? sessionId` |
-| `src/hooks/useLandingFlow.ts` | Reads `inviteSessionId` from `useParams` |
+| `src/hooks/useLandingFlow.ts` | Reads `inviteSessionId` from `useParams`; GM name capture |
 | `src/pages/LandingPage.tsx` | Route `/join/:sessionId` exists |
+| `scripts/smoke-landing.ts` | Landing UI smoke baseline — extend for E2E |

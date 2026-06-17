@@ -33,10 +33,7 @@ export interface AppAdapter {
     playerId: string,
     patch: Partial<Omit<Player, keyof PBRecord>>,
   ): Promise<Player>;
-  getPlayerByRecoveryKey(
-    recoveryKey: string,
-    sessionId: string,
-  ): Promise<Player | null>;
+  getPlayerByRecoveryKey(recoveryKey: string): Promise<Player | null>;
   listPlayers(sessionId: string): Promise<ReadonlyArray<Player>>;
 
   // Milestones

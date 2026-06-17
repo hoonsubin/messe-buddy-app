@@ -50,17 +50,41 @@ const ReturningUserView = ({
         >
           {roleLabel[0]}
         </div>
-        <div>
-          <p
+        <div style={{ flex: 1 }}>
+          <div
             style={{
-              margin: 0,
-              fontSize: "var(--text-sm)",
-              fontWeight: "var(--weight-semibold)",
-              color: "hsl(var(--color-fg))",
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--space-2)",
             }}
           >
-            {roleLabel}
-          </p>
+            <p
+              style={{
+                margin: 0,
+                fontSize: "var(--text-sm)",
+                fontWeight: "var(--weight-semibold)",
+                color: "hsl(var(--color-fg))",
+              }}
+            >
+              {identity.name ?? roleLabel}
+            </p>
+            {identity.isDemo && (
+              <span
+                style={{
+                  fontSize: "var(--text-xs)",
+                  fontWeight: "var(--weight-semibold)",
+                  color: "hsl(var(--color-accent))",
+                  background: "hsl(var(--color-accent) / 0.12)",
+                  border: "1px solid hsl(var(--color-accent) / 0.3)",
+                  borderRadius: "9999px",
+                  padding: "0 var(--space-2)",
+                  lineHeight: "1.5",
+                }}
+              >
+                Demo
+              </span>
+            )}
+          </div>
           <p
             style={{
               margin: 0,
@@ -69,7 +93,7 @@ const ReturningUserView = ({
               fontFamily: "monospace",
             }}
           >
-            Session: {identity.sessionId}
+            {roleLabel} · {identity.sessionId}
           </p>
         </div>
       </div>

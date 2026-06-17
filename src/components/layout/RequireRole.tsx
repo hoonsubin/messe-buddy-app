@@ -8,17 +8,17 @@ interface RequireRoleProps {
   readonly children: ReactNode;
 }
 
-// Route guard: redirects to "/" if identity is absent, role mismatches,
-// or the identity's sessionId differs from the URL param.
+// Route guard: redirects to "/" if no stored profile matches both the URL
+// sessionId and the required role.
 const RequireRole = (props: RequireRoleProps) => {
-  const { identity } = useIdentity();
+  const { profiles } = useIdentity();
   const { sessionId } = useParams<{ sessionId: string }>();
 
-  if (
-    !identity ||
-    identity.role !== props.role ||
-    identity.sessionId !== sessionId
-  ) {
+  const identity = profiles.find(
+    (p) => p.sessionId === sessionId && p.role === props.role,
+  );
+
+  if (!identity) {
     return <Navigate to="/" replace />;
   }
 

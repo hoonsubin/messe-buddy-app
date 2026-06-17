@@ -199,11 +199,10 @@ const updatePlayer = async (
 
 const getPlayerByRecoveryKey = async (
   recoveryKey: string,
-  sessionId: string,
 ): Promise<Player | null> => {
   await Promise.resolve();
   for (const p of players.values()) {
-    if (p.recoveryKey === recoveryKey && p.sessionId === sessionId) return p;
+    if (p.recoveryKey === recoveryKey) return p;
   }
   return null;
 };

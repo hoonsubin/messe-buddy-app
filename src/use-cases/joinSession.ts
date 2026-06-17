@@ -2,7 +2,6 @@ import type { AppAdapter } from "../adapters/interface.ts";
 import type { LocalIdentity, PBRecord, Player } from "../types/index.ts";
 import { USER_ROLE } from "../types/index.ts";
 
-const IDENTITY_KEY = "mb_identity";
 const RECOVERY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 const generateRecoveryKey = (): string => {
@@ -12,16 +11,28 @@ const generateRecoveryKey = (): string => {
     .join("");
 };
 
+// ── joinSession ───────────────────────────────────────────────────────────────
+
 export interface JoinSessionResult {
   readonly identity: LocalIdentity;
   readonly player: Player;
 }
 
-// Creates a Player record in the adapter, writes LocalIdentity to localStorage,
-// and returns both. The profile fields default to empty strings - they are
-// filled in during the Tutorial's Profile Setup Mission.
+// Step 1: verify the session exists. Throws if not found.
+// Call this before showing the name input — fail fast.
+export const verifySession = async (
+  sessionId: string,
+  adapter: AppAdapter,
+): Promise<void> => {
+  await adapter.getSession(sessionId);
+};
+
+// Step 2: create the player with the name already known.
+// Returns LocalIdentity; the caller is responsible for persisting it
+// via useIdentity.setIdentity (no localStorage write here).
 export const joinSession = async (
   sessionId: string,
+  name: string,
   adapter: AppAdapter,
 ): Promise<JoinSessionResult> => {
   const uid = crypto.randomUUID();
@@ -34,7 +45,7 @@ export const joinSession = async (
     sessionId,
     tutorialComplete: false,
     profileComplete: false,
-    name: "",
+    name,
     role: "",
     team: "",
     startDate: now,
@@ -52,15 +63,18 @@ export const joinSession = async (
     recoveryKey,
     sessionId,
     role: USER_ROLE.PLAYER,
+    name,
   };
 
-  localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
   return { identity, player };
 };
 
-// Creates a Game Maker identity (no Player record - GM uses the session itself).
+// ── createGameMakerSession ────────────────────────────────────────────────────
+
+// Returns LocalIdentity; the caller persists it via useIdentity.setIdentity.
 export const createGameMakerSession = async (
   sessionName: string,
+  name: string,
   adapter: AppAdapter,
 ): Promise<LocalIdentity> => {
   const uid = crypto.randomUUID();
@@ -73,8 +87,8 @@ export const createGameMakerSession = async (
     recoveryKey,
     sessionId: session.id,
     role: USER_ROLE.GAMEMAKER,
+    name,
   };
 
-  localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
   return identity;
 };

@@ -44,7 +44,14 @@ const router = createBrowserRouter([
       </RequireRole>
     ),
   },
-  { path: "/form/:missionId", element: <FormPage /> },
+  {
+    path: "/form/:sessionId/:missionId",
+    element: (
+      <RequireRole role={USER_ROLE.PLAYER}>
+        <FormPage />
+      </RequireRole>
+    ),
+  },
   { path: "/join/:sessionId", element: <LandingPage /> },
   { path: "*", element: <NotFoundPage /> },
 ]);
