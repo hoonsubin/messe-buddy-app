@@ -77,7 +77,7 @@ const ValidationPage = () => {
 
         if (!cancelled) {
           setPayload(decoded);
-          setPlayerName(player?.name ?? player?.uid ?? decoded.playerId);
+          setPlayerName(player?.name || player?.uid || decoded.playerId);
           setMissionTitle(mission?.title ?? decoded.missionId);
           setMilestoneName(milestone?.name ?? "");
           setXpValue(mission?.xpValue ?? decoded.xpValue);

@@ -926,6 +926,35 @@ textarea.form-input {
   box-shadow: var(--shadow-sm);
 }
 
+/* ── Resources collapsed trigger bar ──────────────────────────────────────── */
+.resources-collapsed-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: start;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: hsl(var(--color-fg));
+  min-height: var(--touch-target);
+  border-radius: var(--radius-lg);
+}
+
+.resources-collapsed-bar:hover {
+  background-color: hsl(var(--color-muted));
+}
+
+/* ── Resources expanded header row (label + close button) ─────────────────── */
+.resources-expanded-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 /* ── Resources grid - 1 col on mobile, 2 col on wider viewports ──────────── */
 .resources-grid {
   display: grid;
