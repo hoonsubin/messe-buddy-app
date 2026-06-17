@@ -3,6 +3,7 @@ import NameCaptureModal from "../components/shared/NameCaptureModal.tsx";
 import { useLandingFlow } from "../hooks/useLandingFlow.ts";
 import LandingShell from "./landing/LandingShell.tsx";
 import RoleSelectView from "./landing/RoleSelectView.tsx";
+import ReturningUserView from "./landing/ReturningUserView.tsx";
 import JoinSessionView from "./landing/JoinSessionView.tsx";
 import CreateSessionView from "./landing/CreateSessionView.tsx";
 import TemplatesView from "./landing/TemplatesView.tsx";
@@ -19,6 +20,14 @@ const LandingPage = () => {
             onGoToView={flow.goToView}
             onDemoPlayer={flow.handleDemoPlayer}
             onDemoAdmin={flow.handleDemoAdmin}
+          />
+        )}
+        {flow.view === "returning-user" && flow.identity && (
+          <ReturningUserView
+            identity={flow.identity}
+            onResume={flow.handleResumeSession}
+            onLogout={flow.handleLogout}
+            onGoToView={flow.goToView}
           />
         )}
         {flow.view === "join" && (
