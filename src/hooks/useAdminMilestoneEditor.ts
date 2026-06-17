@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { DraftMilestone, Milestone } from "../types/index.ts";
 import type { AppAdapter } from "../adapters/interface.ts";
 import { makeId } from "../utils/id.ts";
+import { gridPositions } from "../utils/mapGrid.ts";
 
 const defaultDraftMilestone = (
   id: string,
@@ -26,6 +27,8 @@ interface UseAdminMilestoneEditorResult {
   ) => void;
   readonly handleRenameMilestone: (id: string, name: string) => void;
   readonly handleDeleteMilestone: (id: string) => void;
+  /** Reposition all milestones to a sequential 4-column grid layout. */
+  readonly handleResetToGrid: () => void;
   /** Save dirty milestones to the adapter. Returns the IDs that were created. */
   readonly saveMilestones: (
     sid: string,
@@ -105,6 +108,18 @@ export const useAdminMilestoneEditor = (
     setDraftMilestones((prev) => prev.filter((dm) => dm.id !== id));
   }, []);
 
+  const handleResetToGrid = useCallback(() => {
+    setDraftMilestones((prev) => {
+      const positions = gridPositions(prev.length);
+      return prev.map((dm, i) => ({
+        ...dm,
+        xPercent: positions[i]!.xPercent,
+        yPercent: positions[i]!.yPercent,
+        isDirty: true,
+      }));
+    });
+  }, []);
+
   const saveMilestones = useCallback(
     async (
       sid: string,
@@ -164,6 +179,7 @@ export const useAdminMilestoneEditor = (
     handleAddMilestoneAt,
     handleRenameMilestone,
     handleDeleteMilestone,
+    handleResetToGrid,
     saveMilestones,
     discardMilestones,
     clearDirtyMilestones,

@@ -473,6 +473,7 @@ const AdminCockpitPage = () => {
               onDelete={milestoneEditor.handleDeleteMilestone}
               onUploadBackground={handleUploadBackground}
               onOpenScanner={() => setScannerOpen(true)}
+              onResetToGrid={milestoneEditor.handleResetToGrid}
             />
           </div>
 

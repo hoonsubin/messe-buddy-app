@@ -206,8 +206,8 @@ body {
 .milestone-node__box {
   position: relative;
   overflow: hidden;
-  width: 5.5rem;
-  height: 3.75rem;
+  width: var(--node-w, 5.5rem);
+  height: calc(var(--node-w, 5.5rem) * 0.682);
   border-radius: var(--radius-sm);
   border: 2px solid hsl(var(--color-primary));
   background: hsl(var(--color-secondary));
@@ -313,8 +313,8 @@ body {
 .milestone-node__ghost {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 5.5rem;
-  height: 3.75rem;
+  width: var(--node-w, 5.5rem);
+  height: calc(var(--node-w, 5.5rem) * 0.682);
   border-radius: var(--radius-sm);
   border: 2px dashed hsl(var(--color-primary) / 0.5);
   background: hsl(var(--color-secondary) / 0.2);

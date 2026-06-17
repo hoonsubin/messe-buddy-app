@@ -13,7 +13,7 @@ const ValidationPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const adapter = useAdapter();
-  const { identity } = useIdentity();
+  const { profiles } = useIdentity();
   const sid = sessionId ?? "";
   const token = searchParams.get("t") ?? "";
 
@@ -109,7 +109,7 @@ const ValidationPage = () => {
     try {
       await adapter.upsertProgressEvent(payload.playerId, payload.missionId, {
         status: "completed",
-        validatedBy: identity?.uid ?? "gm",
+        validatedBy: profiles[0]?.uid ?? "gm",
         validatedAt: new Date().toISOString(),
       });
       goToAdmin();
@@ -122,7 +122,7 @@ const ValidationPage = () => {
     alreadyCompleted,
     confirming,
     goToAdmin,
-    identity,
+    profiles,
     payload,
   ]);
 
@@ -167,7 +167,7 @@ const ValidationPage = () => {
       }}
     >
       <TopBar
-        playerName={identity?.uid ?? "Game Master"}
+        playerName={profiles[0]?.uid ?? "Game Master"}
         totalXP={0}
         role="Game Master"
       />

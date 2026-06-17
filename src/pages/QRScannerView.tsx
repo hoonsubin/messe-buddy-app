@@ -14,7 +14,7 @@ type ScanState = "idle" | "scanning" | "success" | "invalid" | "error";
 const QRScannerView = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
-  const { identity } = useIdentity();
+  const { profiles } = useIdentity();
   const sid = sessionId ?? "";
 
   const [cameraActive, setCameraActive] = useState(false);
@@ -60,7 +60,7 @@ const QRScannerView = () => {
       }}
     >
       <TopBar
-        playerName={identity?.uid ?? "Game Master"}
+        playerName={profiles[0]?.uid ?? "Game Master"}
         totalXP={0}
         role="Game Master"
       />
