@@ -26,7 +26,6 @@ package.json
 
 .vite
 
-deno.lock
 
 .act.secrets
 .env
