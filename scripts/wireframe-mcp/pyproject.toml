@@ -1,0 +1,18 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wireframe-mcp"
+version = "0.1.0"
+description = "Local stdio MCP server for wireframe-driven agentic development"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp[cli]>=1.0.0",
+]
+
+[project.scripts]
+wireframe-mcp = "wireframe_mcp.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["wireframe_mcp"]

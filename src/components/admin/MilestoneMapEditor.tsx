@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MdAdd, MdImage, MdQrCode2, MdZoomIn, MdZoomOut } from "react-icons/md";
+import {
+  MdAdd,
+  MdFitScreen,
+  MdGridOn,
+  MdImage,
+  MdQrCode2,
+  MdZoomIn,
+  MdZoomOut,
+} from "react-icons/md";
 import type { Milestone } from "../../types/index.ts";
 import MapViewport, { type MapViewportHandle } from "../shared/MapViewport.tsx";
 import MilestoneNode from "../shared/MilestoneNode.tsx";
@@ -17,6 +25,8 @@ interface MilestoneMapEditorProps {
   readonly onDelete: (id: string) => void;
   readonly onUploadBackground: (file: File) => void;
   readonly onOpenScanner?: () => void;
+  /** Reset all node positions to the default 4-column grid layout. */
+  readonly onResetToGrid?: () => void;
 }
 
 interface DragState {
@@ -74,6 +84,7 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
     onDelete,
     onMilestoneClick,
     onUploadBackground,
+    onResetToGrid,
   } = props;
 
   // ── Viewport zoom ref ──────────────────────────────────────────────────────
@@ -320,7 +331,27 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
         >
           <MdZoomOut size={20} aria-hidden="true" />
         </button>
+        <button
+          type="button"
+          className="map-toolbar-btn"
+          aria-label="Reset view"
+          title="Reset zoom and pan"
+          onClick={() => viewportRef.current?.resetView()}
+        >
+          <MdFitScreen size={18} aria-hidden="true" />
+        </button>
         <div className="map-toolbar-sep" aria-hidden="true" />
+        {onResetToGrid && (
+          <button
+            type="button"
+            className="map-toolbar-btn"
+            aria-label="Reset to grid layout"
+            title="Arrange nodes in a grid"
+            onClick={onResetToGrid}
+          >
+            <MdGridOn size={18} aria-hidden="true" />
+          </button>
+        )}
         {props.onOpenScanner && (
           <button
             type="button"

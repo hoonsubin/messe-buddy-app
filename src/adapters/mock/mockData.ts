@@ -63,7 +63,7 @@ export const MOCK_SESSION: Session = {
 };
 
 // ── Milestones ────────────────────────────────────────────────────────────────
-// 6 milestones arranged across the map as a journey path left → right.
+// 6 milestones in a 4-column grid layout (gridPositions(6, 4)).
 // xpThreshold = exact sum of all mission xpValues in that milestone.
 
 export const MOCK_MILESTONES: ReadonlyArray<Milestone> = [
@@ -71,8 +71,8 @@ export const MOCK_MILESTONES: ReadonlyArray<Milestone> = [
     ...pb("ms_arrive"),
     sessionId: "sess_mmt2026",
     name: "Arrive & Get Set Up",
-    xPercent: 12,
-    yPercent: 28,
+    xPercent: 13,
+    yPercent: 33,
     xpThreshold: 50,
     order: 0,
   },
@@ -80,8 +80,8 @@ export const MOCK_MILESTONES: ReadonlyArray<Milestone> = [
     ...pb("ms_compliance"),
     sessionId: "sess_mmt2026",
     name: "Rules & Compliance",
-    xPercent: 30,
-    yPercent: 58,
+    xPercent: 38,
+    yPercent: 33,
     xpThreshold: 15,
     order: 1,
   },
@@ -89,8 +89,8 @@ export const MOCK_MILESTONES: ReadonlyArray<Milestone> = [
     ...pb("ms_connect"),
     sessionId: "sess_mmt2026",
     name: "Meet & Connect",
-    xPercent: 50,
-    yPercent: 28,
+    xPercent: 63,
+    yPercent: 33,
     xpThreshold: 125,
     order: 2,
   },
@@ -98,8 +98,8 @@ export const MOCK_MILESTONES: ReadonlyArray<Milestone> = [
     ...pb("ms_role"),
     sessionId: "sess_mmt2026",
     name: "Learn the Role",
-    xPercent: 68,
-    yPercent: 58,
+    xPercent: 88,
+    yPercent: 33,
     xpThreshold: 85,
     order: 3,
   },
@@ -107,8 +107,8 @@ export const MOCK_MILESTONES: ReadonlyArray<Milestone> = [
     ...pb("ms_culture"),
     sessionId: "sess_mmt2026",
     name: "Culture & Benefits",
-    xPercent: 82,
-    yPercent: 28,
+    xPercent: 13,
+    yPercent: 67,
     xpThreshold: 35,
     order: 4,
   },
@@ -116,8 +116,8 @@ export const MOCK_MILESTONES: ReadonlyArray<Milestone> = [
     ...pb("ms_contribute"),
     sessionId: "sess_mmt2026",
     name: "First Contributions",
-    xPercent: 90,
-    yPercent: 60,
+    xPercent: 38,
+    yPercent: 67,
     xpThreshold: 50,
     order: 5,
   },
@@ -788,21 +788,20 @@ export const MOCK_PLAYERS: ReadonlyArray<Player> = [
     uid: "uid_sofia_002",
     recoveryKey: "SOFIA026",
     sessionId: "sess_mmt2026",
-    tutorialComplete: true,
-    profileComplete: true,
+    tutorialComplete: false,
+    profileComplete: false,
     name: "Sofia Chen",
-    preferredName: "Sofia",
-    pronouns: "she/her",
-    role: "Junior Event Manager",
-    team: "Event Management",
-    startDate: "2026-06-09",
-    location: "Building B, Floor 3",
+    preferredName: undefined,
+    pronouns: undefined,
+    role: "Junior Engineer",
+    team: "Platform",
+    startDate: "2026-05-01",
+    location: "Munich",
     timezone: "Europe/Berlin",
-    skillsConfident: ["Project coordination", "Stakeholder communication"],
-    skillsDevelop: ["Exhibition logistics", "SAP"],
-    languages: ["English", "Mandarin", "German (beginner)"],
-    workStyle:
-      "I work best with focused mornings and collaborative afternoons.",
+    skillsConfident: [],
+    skillsDevelop: [],
+    languages: [],
+    workStyle: undefined,
   },
 ];
 
@@ -835,48 +834,9 @@ export const MOCK_BUDDY_PROFILES: ReadonlyArray<BuddyProfile> = [
 ];
 
 // ── Progress Events ───────────────────────────────────────────────────────────
-// Sofia: 3 M1 missions done (20 XP → ms_arrive in_progress),
-// safety briefing pending approval (M2 touched).
+// Sofia starts fresh (no progress events) to simulate a completely new user.
 
-export const MOCK_PROGRESS_EVENTS: ReadonlyArray<ProgressEvent> = [
-  {
-    ...pb("evt_sofia_profile"),
-    sessionId: "sess_mmt2026",
-    playerId: "player_sofia",
-    missionId: "mission_m1_profile",
-    status: "autoApproved",
-    formResponse: {
-      preferredName: "Sofia",
-      pronouns: "she/her",
-      role: "Junior Event Manager",
-      department: "Event Management",
-      startDate: "2026-06-09",
-      location: "Building B, Floor 3",
-      languages: "English, Mandarin, German",
-    },
-  },
-  {
-    ...pb("evt_sofia_video"),
-    sessionId: "sess_mmt2026",
-    playerId: "player_sofia",
-    missionId: "mission_m1_ceo_video",
-    status: "autoApproved",
-  },
-  {
-    ...pb("evt_sofia_workstation"),
-    sessionId: "sess_mmt2026",
-    playerId: "player_sofia",
-    missionId: "mission_m1_workstation",
-    status: "autoApproved",
-  },
-  {
-    ...pb("evt_sofia_safety_briefing"),
-    sessionId: "sess_mmt2026",
-    playerId: "player_sofia",
-    missionId: "mission_m2_safety_briefing",
-    status: "pendingApproval",
-  },
-];
+export const MOCK_PROGRESS_EVENTS: ReadonlyArray<ProgressEvent> = [];
 
 // ── Second session (stub — kept for adapter compatibility) ────────────────────
 

@@ -7,10 +7,12 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 
-const MIN_SCALE = 0.5;
+const MIN_SCALE = 0.3;
 const MAX_SCALE = 4;
 const ZOOM_STEP = 1.3;
-const DEFAULT_SCALE = 1.5;
+const DEFAULT_SCALE = 1.0;
+/** Pixel movement below which a touch-end is treated as a tap. */
+const TAP_THRESHOLD_PX = 5;
 
 interface MapTransform {
   readonly x: number;
@@ -22,11 +24,21 @@ interface MapViewportProps {
   readonly bgImageUrl: string;
   readonly children: ReactNode;
   readonly testId?: string;
+  /**
+   * When true, touches that start on a milestone node still pan the map.
+   * A tap (movement < TAP_THRESHOLD_PX) fires a synthetic click on the node.
+   * Use for the player view where the user should always be able to pan.
+   *
+   * When false (default), touches on nodes are ignored by the viewport so the
+   * admin editor's pointer-event handlers can take over.
+   */
+  readonly panFromNodes?: boolean;
 }
 
 export interface MapViewportHandle {
   readonly zoomIn: () => void;
   readonly zoomOut: () => void;
+  readonly resetView: () => void;
 }
 
 const dist = (a: Touch, b: Touch): number =>
@@ -40,21 +52,16 @@ const clampScale = (s: number): number =>
  * Renders children inside a transformable canvas with a background image.
  * Used by both MilestoneMapViewer (player) and MilestoneMapEditor (admin).
  *
- * Exposes zoomIn / zoomOut via forwardRef so parent toolbars can control zoom.
+ * Exposes zoomIn / zoomOut / resetView via forwardRef so parent toolbars can
+ * control the camera.
+ *
+ * Sets --node-w on itself via ResizeObserver so descendant nodes can size
+ * themselves to always fit 4 columns inside the visible viewport at scale 1.
  */
 const MapViewport = forwardRef<MapViewportHandle, MapViewportProps>(
   (props, ref) => {
+    const { panFromNodes = false } = props;
     const viewportRef = useRef<HTMLDivElement>(null);
-
-    const getCenteredTransform = (el: HTMLDivElement | null): MapTransform => {
-      if (!el) return { x: 0, y: 0, scale: DEFAULT_SCALE };
-      const { width, height } = el.getBoundingClientRect();
-      return {
-        scale: DEFAULT_SCALE,
-        x: width / 2 - (width * DEFAULT_SCALE) / 2,
-        y: height / 2 - (height * DEFAULT_SCALE) / 2,
-      };
-    };
 
     const [transform, setTransform] = useState<MapTransform>(() => ({
       x: 0,
@@ -62,15 +69,23 @@ const MapViewport = forwardRef<MapViewportHandle, MapViewportProps>(
       scale: DEFAULT_SCALE,
     }));
 
-    const centeredRef = useRef(false);
+    // ── --node-w: size nodes to fit 4 columns with 8px gaps, 12px side padding ─
 
-    const viewportCallbackRef = (el: HTMLDivElement | null) => {
-      viewportRef.current = el;
-      if (el && !centeredRef.current) {
-        centeredRef.current = true;
-        setTransform(getCenteredTransform(el));
-      }
-    };
+    useEffect(() => {
+      const el = viewportRef.current;
+      if (!el) return;
+      const observer = new ResizeObserver(([entry]) => {
+        if (!entry) return;
+        const w = entry.contentRect.width;
+        // 4 cols · 3 inner gaps (8px) · 2 side pads (12px each) = 24+24 = 48px
+        const nodeW = Math.max(44, Math.floor((w - 48) / 4));
+        el.style.setProperty("--node-w", `${nodeW}px`);
+      });
+      observer.observe(el);
+      return () => observer.disconnect();
+    }, []);
+
+    // ── Gesture state ──────────────────────────────────────────────────────────
 
     const gesture = useRef({
       dragging: false,
@@ -80,6 +95,10 @@ const MapViewport = forwardRef<MapViewportHandle, MapViewportProps>(
       pinchStartDist: 0,
       pinchStartScale: DEFAULT_SCALE,
       transformAtGestureStart: { x: 0, y: 0, scale: DEFAULT_SCALE },
+      /** Node element the current touch started on (panFromNodes mode only). */
+      startedOnNode: null as HTMLElement | null,
+      /** Whether the current touch has moved beyond the tap threshold. */
+      hasMoved: false,
     });
 
     const transformRef = useRef(transform);
@@ -87,13 +106,19 @@ const MapViewport = forwardRef<MapViewportHandle, MapViewportProps>(
       transformRef.current = transform;
     }, [transform]);
 
+    // ── Touch events ───────────────────────────────────────────────────────────
+
     useEffect(() => {
       const el = viewportRef.current;
       if (!el) return;
 
       const onTouchStart = (e: TouchEvent) => {
         const target = e.target as HTMLElement;
-        if (target.closest(".milestone-node")) return;
+        const nodeEl = target.closest(".milestone-node") as HTMLElement | null;
+
+        // In default (admin) mode: let node touches pass through to pointer handlers.
+        if (!panFromNodes && nodeEl) return;
+
         e.preventDefault();
 
         const g = gesture.current;
@@ -105,9 +130,13 @@ const MapViewport = forwardRef<MapViewportHandle, MapViewportProps>(
           g.pinching = false;
           g.startClient = { x: t.clientX, y: t.clientY };
           g.startPan = { x: cur.x, y: cur.y };
+          g.startedOnNode = panFromNodes ? nodeEl : null;
+          g.hasMoved = false;
         } else if (e.touches.length === 2) {
           g.dragging = false;
           g.pinching = true;
+          g.startedOnNode = null;
+          g.hasMoved = false;
           g.pinchStartDist = dist(e.touches[0]!, e.touches[1]!);
           g.pinchStartScale = cur.scale;
           g.transformAtGestureStart = { ...cur };
@@ -121,7 +150,10 @@ const MapViewport = forwardRef<MapViewportHandle, MapViewportProps>(
 
       const onTouchMove = (e: TouchEvent) => {
         const target = e.target as HTMLElement;
-        if (target.closest(".milestone-node")) return;
+        const nodeEl = target.closest(".milestone-node");
+
+        if (!panFromNodes && nodeEl) return;
+
         e.preventDefault();
 
         const g = gesture.current;
@@ -129,10 +161,15 @@ const MapViewport = forwardRef<MapViewportHandle, MapViewportProps>(
 
         if (g.dragging && e.touches.length === 1) {
           const t = e.touches[0]!;
+          const dx = t.clientX - g.startClient.x;
+          const dy = t.clientY - g.startClient.y;
+          if (Math.hypot(dx, dy) > TAP_THRESHOLD_PX) {
+            g.hasMoved = true;
+          }
           setTransform((prev) => ({
             ...prev,
-            x: g.startPan.x + (t.clientX - g.startClient.x),
-            y: g.startPan.y + (t.clientY - g.startClient.y),
+            x: g.startPan.x + dx,
+            y: g.startPan.y + dy,
           }));
         } else if (g.pinching && e.touches.length === 2) {
           const newDist = dist(e.touches[0]!, e.touches[1]!);
@@ -152,10 +189,22 @@ const MapViewport = forwardRef<MapViewportHandle, MapViewportProps>(
 
       const onTouchEnd = (e: TouchEvent) => {
         const target = e.target as HTMLElement;
-        if (target.closest(".milestone-node")) return;
+        const nodeEl = target.closest(".milestone-node");
+
+        if (!panFromNodes && nodeEl) return;
+
+        const g = gesture.current;
+
         if (e.touches.length === 0) {
-          gesture.current.dragging = false;
-          gesture.current.pinching = false;
+          // Tap on a node (panFromNodes=true): synthesise a click so the
+          // node's onClick fires even though we called preventDefault.
+          if (panFromNodes && g.startedOnNode && !g.hasMoved) {
+            g.startedOnNode.click();
+          }
+          g.dragging = false;
+          g.pinching = false;
+          g.startedOnNode = null;
+          g.hasMoved = false;
         }
       };
 
@@ -168,13 +217,13 @@ const MapViewport = forwardRef<MapViewportHandle, MapViewportProps>(
         el.removeEventListener("touchmove", onTouchMove);
         el.removeEventListener("touchend", onTouchEnd);
       };
-    }, []);
+    }, [panFromNodes]);
 
-    // ── Mouse drag (desktop) ─────────────────────────────────────────────────
+    // ── Mouse drag (desktop) ───────────────────────────────────────────────────
 
     const handleMouseDown = (e: React.MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.closest(".milestone-node")) return;
+      if (!panFromNodes && target.closest(".milestone-node")) return;
       gesture.current.dragging = true;
       gesture.current.startClient = { x: e.clientX, y: e.clientY };
       gesture.current.startPan = { x: transform.x, y: transform.y };
@@ -195,7 +244,7 @@ const MapViewport = forwardRef<MapViewportHandle, MapViewportProps>(
       gesture.current.dragging = false;
     };
 
-    // ── Zoom (exposed via ref) ───────────────────────────────────────────────
+    // ── Zoom (exposed via ref) ─────────────────────────────────────────────────
 
     const zoomToward = (factor: number) => {
       const el = viewportRef.current;
@@ -214,14 +263,19 @@ const MapViewport = forwardRef<MapViewportHandle, MapViewportProps>(
       });
     };
 
+    const resetView = () => {
+      setTransform({ x: 0, y: 0, scale: DEFAULT_SCALE });
+    };
+
     useImperativeHandle(ref, () => ({
       zoomIn: () => zoomToward(ZOOM_STEP),
       zoomOut: () => zoomToward(1 / ZOOM_STEP),
+      resetView,
     }));
 
     return (
       <div
-        ref={viewportCallbackRef}
+        ref={viewportRef}
         className="map-viewport"
         data-testid={props.testId ?? "map-viewport"}
         onMouseDown={handleMouseDown}

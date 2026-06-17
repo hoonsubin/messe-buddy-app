@@ -40,4 +40,6 @@ export interface LocalIdentity {
   readonly recoveryKey: string; // 8-char alphanumeric; also in players.recoveryKey
   readonly sessionId: string; // PB record ID of the session
   readonly role: UserRole; // 'player' | 'gamemaker'
+  readonly name?: string; // display name captured at profile creation
+  readonly isDemo?: boolean; // true for demo/ephemeral profiles persisted for the profile list
 }

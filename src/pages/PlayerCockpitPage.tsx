@@ -1,21 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { MdArrowBack } from "react-icons/md";
 import type { Mission, Player } from "../types/index.ts";
 import { MISSION_TYPE } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { useIdentity } from "../hooks/useIdentity.ts";
-import {
-  clearEphemeralIdentity,
-  isEphemeralIdentity,
-} from "../hooks/ephemeralIdentityStore.ts";
 import { useSession } from "../hooks/useSession.ts";
 import { usePlayerProgress } from "../hooks/usePlayerProgress.ts";
 import { useBuddy } from "../hooks/useBuddy.ts";
 import { useResources } from "../hooks/useResources.ts";
 import { useTutorial } from "../hooks/useTutorial.ts";
 import ConfirmDialog from "../components/shared/ConfirmDialog.tsx";
-import FetchErrorPanel from "../components/shared/FetchErrorPanel.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
 import AssistantChatCard from "../components/player/AssistantChatCard.tsx";
 import MilestoneMapViewer from "../components/player/MilestoneMapViewer.tsx";
@@ -38,7 +33,10 @@ const PlayerCockpitPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const adapter = useAdapter();
-  const { identity, clearIdentity } = useIdentity();
+  const { profiles, clearIdentity } = useIdentity();
+  const identity = profiles.find(
+    (p) => p.sessionId === (sessionId ?? ""),
+  ) ?? null;
 
   // ── Player resolution ──────────────────────────────────────────────────────
   const [player, setPlayer] = useState<Player | null>(null);
@@ -82,7 +80,6 @@ const PlayerCockpitPage = () => {
     missions,
     loading: sessionLoading,
     error: sessionError,
-    refresh: refreshSession,
   } = useSession(sessionId ?? "");
 
   const { buddy } = useBuddy(playerId);
@@ -93,6 +90,17 @@ const PlayerCockpitPage = () => {
   } = usePlayerProgress(playerId, milestones, missions);
   const { resources } = useResources(sessionId ?? "");
 
+  // ── Override tutorialComplete for demo accounts ────────────────────────
+  // Demo accounts always show the tutorial, even if the underlying player
+  // mock data has tutorialComplete: true.
+  const tutorialPlayer = useMemo(() => {
+    if (!player) return null;
+    if (identity?.isDemo && player.tutorialComplete) {
+      return { ...player, tutorialComplete: false };
+    }
+    return player;
+  }, [player, identity?.isDemo]);
+
   // ── Tutorial (extracted hook) ──────────────────────────────────────────────
   const {
     tutorialStep,
@@ -102,7 +110,15 @@ const PlayerCockpitPage = () => {
     handleTutorialSkip,
     handleSkipConfirm,
     handleSkipCancel,
-  } = useTutorial(player, adapter);
+  } = useTutorial(tutorialPlayer, adapter, sessionId ?? "");
+
+  // ── Session error redirect ─────────────────────────────────────────
+  useEffect(() => {
+    if (sessionError && !sessionLoading) {
+      sessionStorage.setItem("mb_landing_toast", "Session does not exist.");
+      navigate("/", { replace: true });
+    }
+  }, [sessionError, sessionLoading, navigate]);
 
   // ── UI state ───────────────────────────────────────────────────────────────
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(
@@ -125,7 +141,7 @@ const PlayerCockpitPage = () => {
         if (fromTutorial && showTutorial) {
           sessionStorage.setItem(TUTORIAL_FORM_KEY, "1");
         }
-        navigate(`/form/${missionId}`);
+        navigate(`/form/${sessionId}/${missionId}`);
       } else {
         setPopupMission(mission);
       }
@@ -221,16 +237,7 @@ const PlayerCockpitPage = () => {
     );
   }
 
-  if (sessionError && !sessionLoading) {
-    return (
-      <FetchErrorPanel
-        message="Could not load session data. Please try again."
-        onRetry={refreshSession}
-        testId="player-cockpit-page"
-        page="player-cockpit"
-      />
-    );
-  }
+  if (sessionError && !sessionLoading) return null;
 
   return (
     <div
@@ -306,16 +313,17 @@ const PlayerCockpitPage = () => {
             gap: "var(--space-1)",
           }}
           onClick={() => {
-            if (isEphemeralIdentity()) {
-              clearEphemeralIdentity();
-            } else {
+            // Clear tutorial sessionStorage so a fresh session restarts the tutorial
+            sessionStorage.removeItem("mb_tutorial_step");
+            sessionStorage.removeItem("mb_tutorial_form_pending");
+            if (identity && !identity.isDemo) {
               clearIdentity();
             }
             navigate("/", { replace: true });
           }}
         >
           <MdArrowBack size={16} />
-          {isEphemeralIdentity() ? "Back to Landing" : "Log Out"}
+          {identity?.isDemo ? "Back to Landing" : "Log Out"}
         </button>
       </div>
 

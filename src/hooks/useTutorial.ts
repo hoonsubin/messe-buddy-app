@@ -5,7 +5,7 @@ import type { AppAdapter } from "../adapters/interface.ts";
 import type { Player } from "../types/index.ts";
 
 // Profile Setup mission ID from mock data - used for tutorial final-step routing.
-const PROFILE_MISSION_ID = "mission_profile";
+const PROFILE_MISSION_ID = "mission_m1_profile";
 
 // The 0-based index of the Profile step within PLACEHOLDER_STEPS.
 const PROFILE_STEP_INDEX = 4;
@@ -61,6 +61,7 @@ interface UseTutorialResult {
 export const useTutorial = (
   player: Player | null,
   adapter: AppAdapter,
+  sessionId: string,
 ): UseTutorialResult => {
   const navigate = useNavigate();
   const [tutorialStep, setTutorialStep] = useState(0);
@@ -99,7 +100,7 @@ export const useTutorial = (
   const handleTutorialNext = useCallback(() => {
     if (tutorialStep === PROFILE_STEP_INDEX) {
       sessionStorage.setItem(TUTORIAL_FORM_KEY, "1");
-      navigate(`/form/${PROFILE_MISSION_ID}`);
+      navigate(`/form/${sessionId}/${PROFILE_MISSION_ID}`);
       return;
     }
 
@@ -108,7 +109,7 @@ export const useTutorial = (
 
     setTutorialStep(nextStep);
     persistStep(nextStep);
-  }, [tutorialStep, navigate]);
+  }, [tutorialStep, navigate, sessionId]);
 
   const handleTutorialSkip = useCallback(() => {
     setShowSkipConfirm(true);

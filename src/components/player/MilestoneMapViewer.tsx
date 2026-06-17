@@ -22,6 +22,7 @@ const MilestoneMapViewer = (props: MilestoneMapViewerProps) => {
     <MapViewport
       bgImageUrl={props.bgImageUrl}
       testId="milestone-map-viewer"
+      panFromNodes
     >
       {/* Milestone nodes */}
       {props.milestones.map((ms) => {

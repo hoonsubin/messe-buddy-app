@@ -17,6 +17,7 @@ FROM python:3.13-slim-bookworm
 COPY requirements.txt /scripts/requirements.txt
 RUN pip install --no-cache-dir -r /scripts/requirements.txt
 
+COPY helpers.py /scripts/helpers.py
 COPY init.py /scripts/init.py
 
 CMD ["python3", "/scripts/init.py"]
