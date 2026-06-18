@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   MdAdd,
+  MdCloseFullscreen,
   MdFitScreen,
   MdGridOn,
   MdImage,
+  MdOpenInFull,
   MdQrCode2,
   MdZoomIn,
   MdZoomOut,
@@ -15,10 +17,19 @@ import MilestoneNode from "../shared/MilestoneNode.tsx";
 const LONG_PRESS_MS = 500;
 const DRAG_THRESHOLD_PX = 5;
 
+// 0–1: fraction of the background covered by the node canvas.
+// 1.0  = background fills canvas exactly (no context around nodes).
+// 0.1  = nodes occupy 1% of background area (very zoomed-out floor plan).
+const NODE_SCALE_MIN = 0.1;
+const NODE_SCALE_MAX = 1.0;
+const NODE_SCALE_STEP = 0.05;
+
 interface MilestoneMapEditorProps {
   readonly milestones: ReadonlyArray<Milestone>;
   readonly missionCounts?: Readonly<Record<string, number>>;
   readonly bgImageUrl: string;
+  /** From Session.mapNodeScale — shared source of truth with the player map view. */
+  readonly mapNodeScale: number;
   readonly onMilestoneClick: (id: string) => void;
   readonly onNodeDrop: (id: string, xPercent: number, yPercent: number) => void;
   readonly onAddMilestoneAt: (xPercent: number, yPercent: number) => void;
@@ -90,6 +101,15 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
   // ── Viewport zoom ref ──────────────────────────────────────────────────────
   const viewportRef = useRef<MapViewportHandle>(null);
 
+  // ── Node scale ──────────────────────────────────────────────────────────────
+  // null = admin hasn't overridden yet → use the live prop value so late-loading
+  // session data (mapNodeScale: 0.33) is picked up after the first render.
+  // Once the admin adjusts the slider the override takes effect locally.
+  const [nodeScaleOverride, setNodeScaleOverride] = useState<number | null>(
+    null,
+  );
+  const nodeScale = nodeScaleOverride ?? props.mapNodeScale;
+
   // ── Edit mode ──────────────────────────────────────────────────────────────
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -113,6 +133,11 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
       ) as HTMLElement | null;
 
       if (nodeEl) {
+        // Prevent browser default long-press behaviors (iOS callout menu,
+        // Android text-selection) that would fire pointercancel before our
+        // 500 ms timer completes.
+        e.preventDefault();
+
         const milestoneId = nodeEl.getAttribute("data-milestone-id")!;
         const leftPct = parseFloat(nodeEl.style.left) || 0;
         const topPct = parseFloat(nodeEl.style.top) || 0;
@@ -341,6 +366,43 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
           <MdFitScreen size={18} aria-hidden="true" />
         </button>
         <div className="map-toolbar-sep" aria-hidden="true" />
+        <button
+          type="button"
+          className="map-toolbar-btn"
+          aria-label="Show less background context"
+          title={`Background: ${(1 / nodeScale).toFixed(1)}× canvas (shrink)`}
+          disabled={nodeScale >= NODE_SCALE_MAX}
+          onClick={() =>
+            setNodeScaleOverride((s) =>
+              Math.round(
+                Math.min(
+                  NODE_SCALE_MAX,
+                  (s ?? props.mapNodeScale) + NODE_SCALE_STEP,
+                ) * 100,
+              ) / 100
+            )}
+        >
+          <MdCloseFullscreen size={18} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          className="map-toolbar-btn"
+          aria-label="Show more background context"
+          title={`Background: ${(1 / nodeScale).toFixed(1)}× canvas (expand)`}
+          disabled={nodeScale <= NODE_SCALE_MIN}
+          onClick={() =>
+            setNodeScaleOverride((s) =>
+              Math.round(
+                Math.max(
+                  NODE_SCALE_MIN,
+                  (s ?? props.mapNodeScale) - NODE_SCALE_STEP,
+                ) * 100,
+              ) / 100
+            )}
+        >
+          <MdOpenInFull size={18} aria-hidden="true" />
+        </button>
+        <div className="map-toolbar-sep" aria-hidden="true" />
         {onResetToGrid && (
           <button
             type="button"
@@ -389,6 +451,7 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
         <MapViewport
           ref={viewportRef}
           bgImageUrl={bgImageUrl}
+          nodeScale={nodeScale}
           testId="milestone-map-editor-viewport"
         >
           {/* Pointer-based drag area */}

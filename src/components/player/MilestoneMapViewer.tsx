@@ -8,6 +8,8 @@ interface MilestoneMapViewerProps {
   readonly milestones: ReadonlyArray<Milestone>;
   readonly milestoneProgress: ReadonlyArray<MilestoneProgress>;
   readonly bgImageUrl: string;
+  /** From Session.mapNodeScale — shared source of truth with the admin editor. */
+  readonly mapNodeScale: number;
   readonly playerXPercent?: number;
   readonly playerYPercent?: number;
   readonly onMilestoneClick: (id: string) => void;
@@ -21,6 +23,7 @@ const MilestoneMapViewer = (props: MilestoneMapViewerProps) => {
   return (
     <MapViewport
       bgImageUrl={props.bgImageUrl}
+      nodeScale={props.mapNodeScale}
       testId="milestone-map-viewer"
       panFromNodes
     >

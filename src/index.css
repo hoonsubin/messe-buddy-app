@@ -104,6 +104,9 @@ body {
   border-radius: var(--radius-lg);
   touch-action: none;   /* hand off all touch to JS - required for non-passive pan */
   user-select: none;
+  /* Suppress iOS callout menu on long-press so pointercancel doesn't fire
+     before the admin editor's 500 ms long-press timer completes. */
+  -webkit-touch-callout: none;
   cursor: grab;
 }
 
@@ -342,6 +345,8 @@ body {
   position: absolute;
   inset: 0;
   touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 .you-are-here {
@@ -1855,11 +1860,10 @@ textarea.form-input {
 
 /* ── Admin editor specifics ──────────────────────────────────────────────── */
 
-/* Editor root fills admin-layout__map via flex */
+/* Editor — sizes to content (toolbar + 16:9 map); does not fill the map container */
 .milestone-map-editor {
   display: flex;
   flex-direction: column;
-  height: 100%;
 }
 
 /* Toolbar strip — sits above the map viewport */
@@ -1912,21 +1916,19 @@ textarea.form-input {
   flex-shrink: 0;
 }
 
-/* Canvas wrap — fills remaining height, contains viewport + FAB */
+/* Canvas wrap — sizes to the 16:9 map-viewport content; FAB is absolute within */
 .milestone-map-editor__canvas-wrap {
-  flex: 1;
+  width: 100%;
+  flex-shrink: 0;
   position: relative;
   overflow: hidden;
-  min-height: 0;
 }
 
-/* Override viewport aspect-ratio when inside the editor — fill the container */
+/* Keep the map-viewport's 16:9 aspect-ratio intact — this is intentional.
+ * Both admin editor and player viewer must share the same canvas shape so that
+ * node xPercent/yPercent coordinates map to the same pixel on the background
+ * image in both views. Only remove the border-radius for a flush fit. */
 .milestone-map-editor__canvas-wrap .map-viewport {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  aspect-ratio: unset;
   border-radius: 0;
 }
 
@@ -2250,20 +2252,19 @@ textarea.form-input {
 
 .admin-layout__map {
   order: -1;            /* map first on mobile */
-  height: 40svh;        /* explicit height enables CSS transition */
-  min-height: 0;        /* allow shrinking below 40svh when collapsed */
-  position: relative;
+  height: auto;
+  max-height: 44svh;    /* generous ceiling — 16:9 map + toolbar always fits */
   overflow: hidden;
   border-bottom: 1px solid hsl(var(--color-border));
-  transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: height;
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: max-height;
   display: flex;
   flex-direction: column;
 }
 
-/* Collapsed state - triggered by useScrollCollapse on the parent */
+/* Collapsed state — shows only the toolbar strip */
 .admin-layout[data-map-collapsed="true"] .admin-layout__map {
-  height: 20svh;
+  max-height: 3.25rem;
 }
 
 /* Gradient veil that fades in when map is collapsed, signalling "minimised" */
@@ -2372,6 +2373,7 @@ textarea.form-input {
   .admin-layout__map {
     order: 1;           /* map is second column (right) on desktop */
     height: 100%;       /* fill the grid cell */
+    max-height: unset;
     min-height: unset;
     border-bottom: none;
     border-left: 1px solid hsl(var(--color-border));
@@ -2380,9 +2382,10 @@ textarea.form-input {
     flex-direction: column;
   }
 
-  /* Disable collapse on desktop - scrollTop won't change but be defensive */
+  /* Disable collapse on desktop */
   .admin-layout[data-map-collapsed="true"] .admin-layout__map {
     height: 100%;
+    max-height: unset;
   }
 
   /* Disable gradient veil on desktop */

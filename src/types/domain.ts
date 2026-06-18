@@ -19,6 +19,15 @@ export interface PBRecord {
 export interface Session extends PBRecord {
   readonly name: string;
   readonly bgImageUrl: string;
+  /** Fraction of the background image covered by the node canvas (0–1).
+   *  1    = node canvas fills the background exactly.
+   *  0.5  = canvas covers 50% of background width/height (25% of area).
+   *  0.33 = nodes occupy the center 1/9 of the background — typical for a
+   *         venue floor plan where milestones cluster in one wing.
+   *  CSS transform applied to the background: scale(1 / mapNodeScale).
+   *  Single source of truth: changing this value propagates to both the admin
+   *  editor and the player map view. */
+  readonly mapNodeScale: number;
   readonly gameMakerId: string; // raw UID string, not a PB relation
   readonly qrSecret?: string; // HMAC key for QR signing (C-16); GM verify only
   readonly preBoardingChecks: ReadonlyArray<PreBoardingCheckItem>;

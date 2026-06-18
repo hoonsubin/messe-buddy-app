@@ -197,6 +197,30 @@ services:
       - litellm-internal
     restart: "no"
 
+  # -- File Watcher --
+  # Long-running container that watches consume-docs for changes and
+  # updates pgvector embeddings incrementally (add / modify / delete).
+  # Runs after init-vector-store completes, in parallel with the app.
+  file-watcher:
+    build:
+      context: ./docker/file-watcher
+    container_name: messebuddy-file-watcher
+    environment:
+      POSTGRES_VECTOR_DB: ${POSTGRES_VECTOR_DB:-litellm_vector}
+      POSTGRES_VECTOR_HOST: vector-db
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
+      VECTOR_STORE_ID: "messe-buddy-kb"
+      POSTGRES_USER: ${POSTGRES_USER:-litellm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - ./consume-docs:/consume-docs:ro
+    depends_on:
+      init-vector-store:
+        condition: service_completed_successfully
+    networks:
+      - litellm-internal
+    restart: unless-stopped
+
   # -- App (PWA + PocketBase) --
   # Single container: nginx (PWA :80) + PocketBase Go wrapper (:8090).
   # nginx proxies /api/* → PocketBase so the PWA uses same-origin URLs.

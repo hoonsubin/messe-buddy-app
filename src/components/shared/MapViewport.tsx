@@ -33,6 +33,16 @@ interface MapViewportProps {
    * admin editor's pointer-event handlers can take over.
    */
   readonly panFromNodes?: boolean;
+  /**
+   * Fraction of the background image covered by the node canvas (0–1).
+   * Comes from Session.mapNodeScale — single source of truth for both views.
+   * 1    = background fills the canvas exactly (no transform applied).
+   * 0.33 = nodes occupy the center 1/9 of the background; background is 3×
+   *        the canvas in each dimension (scale(1/0.33) ≈ scale(3.03)).
+   * Applied as a CSS transform on the background element; does not affect
+   * node positions or the pan/zoom camera.
+   */
+  readonly nodeScale: number;
 }
 
 export interface MapViewportHandle {
@@ -60,7 +70,7 @@ const clampScale = (s: number): number =>
  */
 const MapViewport = forwardRef<MapViewportHandle, MapViewportProps>(
   (props, ref) => {
-    const { panFromNodes = false } = props;
+    const { panFromNodes = false, nodeScale } = props;
     const viewportRef = useRef<HTMLDivElement>(null);
 
     const [transform, setTransform] = useState<MapTransform>(() => ({
@@ -298,12 +308,26 @@ const MapViewport = forwardRef<MapViewportHandle, MapViewportProps>(
                 src={props.bgImageUrl}
                 alt="Messe München floor plan"
                 draggable={false}
+                style={nodeScale !== 1
+                  ? {
+                    transform: `scale(${1 / nodeScale})`,
+                    transformOrigin: "center center",
+                  }
+                  : undefined}
               />
             )
             : (
               <div
                 className="map-canvas__bg"
-                style={{ background: "hsl(var(--color-border) / 0.3)" }}
+                style={{
+                  background: "hsl(var(--color-border) / 0.3)",
+                  ...(nodeScale !== 1
+                    ? {
+                      transform: `scale(${1 / nodeScale})`,
+                      transformOrigin: "center center",
+                    }
+                    : {}),
+                }}
               />
             )}
 
