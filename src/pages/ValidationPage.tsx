@@ -44,8 +44,10 @@ const ValidationPage = () => {
     );
   }
 
-  if (validation.errorKind === "decode" && validation.errorMessage &&
-    !validation.payload) {
+  if (
+    validation.errorKind === "decode" && validation.errorMessage &&
+    !validation.payload
+  ) {
     return (
       <FetchErrorPanel
         message={validation.errorMessage}

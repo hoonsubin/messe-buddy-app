@@ -61,7 +61,8 @@ export const useProgressPlayer = (
   const applyEvent = useCallback((event: ProgressEvent) => {
     setProgressEvents((prev) => {
       const next = prev.filter(
-        (e) => !(e.playerId === event.playerId && e.missionId === event.missionId),
+        (e) =>
+          !(e.playerId === event.playerId && e.missionId === event.missionId),
       );
       return [...next, event];
     });

@@ -171,9 +171,7 @@ export const useValidationConfirm = (
     alreadyCompleted,
     loading,
     errorKind: sessionError ? "decode" : errorKind,
-    errorMessage: sessionError
-      ? "Could not load session data."
-      : errorMessage,
+    errorMessage: sessionError ? "Could not load session data." : errorMessage,
     confirming,
     refresh,
     retry,

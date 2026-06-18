@@ -11,7 +11,9 @@ interface UseFormMissionOptions {
   ) => Promise<Player>;
   readonly markAutoApproved: (
     missionId: string,
-    patch?: Partial<Pick<import("../types/index.ts").ProgressEvent, "formResponse">>,
+    patch?: Partial<
+      Pick<import("../types/index.ts").ProgressEvent, "formResponse">
+    >,
   ) => Promise<void>;
 }
 

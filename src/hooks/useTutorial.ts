@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PLACEHOLDER_STEPS } from "../components/tutorial/TutorialOverlay.tsx";
-import type { Player, PBRecord } from "../types/index.ts";
+import type { PBRecord, Player } from "../types/index.ts";
 
 // Profile Setup mission ID from mock data - used for tutorial final-step routing.
 const PROFILE_MISSION_ID = "mission_m1_profile";

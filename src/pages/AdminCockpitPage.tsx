@@ -9,7 +9,10 @@ import { useSession } from "../hooks/useSession.ts";
 import { useScrollCollapse } from "../hooks/useScrollCollapse.ts";
 import { useAdminMilestoneEditor } from "../hooks/useAdminMilestoneEditor.ts";
 import { useAdminMissionEditor } from "../hooks/useAdminMissionEditor.ts";
-import { useProgressAdmin, useProgressCrossHire } from "../hooks/useProgress/index.ts";
+import {
+  useProgressAdmin,
+  useProgressCrossHire,
+} from "../hooks/useProgress/index.ts";
 import { useBuddyProfile } from "../hooks/useBuddyProfile.ts";
 import { useResources } from "../hooks/useResources.ts";
 import { usePreBoardingChecklist } from "../hooks/usePreBoardingChecklist.ts";
@@ -378,7 +381,8 @@ const AdminCockpitPage = () => {
                 onSelect={handlePlayerSelectWithBuddy}
               />
             )}
-            {adminProgress.selectedPlayer && adminProgress.selectedPlayerProgress && (
+            {adminProgress.selectedPlayer &&
+              adminProgress.selectedPlayerProgress && (
               <PlayerProfileCard
                 player={adminProgress.selectedPlayer}
                 totalXP={adminProgress.selectedPlayerProgress.totalXP}

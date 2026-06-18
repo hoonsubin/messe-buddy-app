@@ -20,7 +20,10 @@ export interface UseResourcesAdminResult {
     data: Omit<Resource, "id" | "created" | "updated">,
   ) => Promise<void>;
   readonly deleteResource: (resourceId: string) => Promise<void>;
-  readonly toggleVisibility: (resourceId: string, visible: boolean) => Promise<void>;
+  readonly toggleVisibility: (
+    resourceId: string,
+    visible: boolean,
+  ) => Promise<void>;
 }
 
 type UseResourcesOptions = {

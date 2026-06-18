@@ -61,7 +61,9 @@ export function useBuddyProfile(
   const adapter = useAdapter();
   const [buddy, setBuddy] = useState<BuddyProfile | null>(null);
   const [savedBuddy, setSavedBuddy] = useState<BuddyProfile | null>(null);
-  const [buddyDraft, setBuddyDraft] = useState(() => emptyBuddyDraft(sessionId));
+  const [buddyDraft, setBuddyDraft] = useState(() =>
+    emptyBuddyDraft(sessionId)
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
