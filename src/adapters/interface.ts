@@ -22,7 +22,9 @@ export interface AppAdapter {
   createSession(name: string, gameMakerUid: string): Promise<Session>;
   updateSession(
     sessionId: string,
-    patch: Partial<Omit<Session, keyof PBRecord>>,
+    patch: Partial<Omit<Session, keyof PBRecord | "bgImageUrl">> & {
+      readonly bgImageUrl?: string | File;
+    },
   ): Promise<Session>;
 
   // Players
@@ -73,7 +75,7 @@ export interface AppAdapter {
     >,
   ): Promise<ProgressEvent>;
   listProgressEvents(playerId: string): Promise<ReadonlyArray<ProgressEvent>>;
-  // Returns an unsubscribe function. Only held by ValidationDisplay. (C-07)
+  // Returns an unsubscribe function. Consumed via useWatchMission (C-20).
   subscribeProgressEvent(
     playerId: string,
     missionId: string,

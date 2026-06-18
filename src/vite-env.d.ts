@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_PB_URL?: string;
+  readonly VITE_USE_MOCK_PB?: string;
   readonly VITE_LITELLM_URL?: string;
   readonly VITE_LITELLM_KEY?: string;
   readonly VITE_LITELLM_MODEL?: string;
@@ -20,6 +21,7 @@ interface MesseBuddyRuntimeConfig {
   readonly llmModel?: string;
   readonly useMockChat?: boolean;
   readonly systemPrompt?: string;
+  readonly pbUrl?: string;
 }
 
 interface Window {

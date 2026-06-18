@@ -16,7 +16,7 @@ COPY . .
 
 # PocketBase URL is /api (same-origin nginx proxy in production).
 # VITE_USE_MOCK_PB=false ensures the real PocketBase adapter is used.
-ARG VITE_PB_URL=/api
+ARG VITE_PB_URL=/
 ARG VITE_USE_MOCK_PB=false
 ARG VITE_LITELLM_URL=http://localhost:4000
 ARG VITE_LITELLM_KEY=

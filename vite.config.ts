@@ -13,8 +13,15 @@ const base = process.env.GITHUB_ACTIONS === "true" && repoName &&
   ? `/${repoName}/`
   : "/";
 
+const apiProxy = {
+  target: "http://127.0.0.1:8090",
+  changeOrigin: true,
+} as const;
+
 // https://vite.dev/config/
 export default defineConfig({
   base,
   plugins: [react()],
+  server: { proxy: { "/api": apiProxy } },
+  preview: { proxy: { "/api": apiProxy } },
 });

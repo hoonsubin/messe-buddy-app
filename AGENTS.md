@@ -20,7 +20,7 @@ Agent guidance for this repository. Complements [`README.md`](README.md:1). Read
 **Non-obvious facts:**
 - **No auth system** - identity is UID-based, stored in `localStorage` as [`mb_identity`](src/hooks/useIdentity.ts:4). `role` is client-stored, **not** server-validated.
 - **No tests yet** - when adding, use `Deno.test`, co-locate as `*.test.ts`/`.tsx`, fixture via [`mockAdapter`](src/adapters/mock/mockAdapter.ts:367).
-- **Only mock adapter exists** - [`src/adapters/pocketbase/`](src/adapters/pocketbase/) is empty. PB adapter is the next major architectural step.
+- **Only mock adapter exists** - [`src/adapters/pocketbase/`](src/adapters/pocketbase/) implements `pbAdapter`; selected via `VITE_USE_MOCK_PB` in [`AdapterContext.tsx`](src/adapters/AdapterContext.tsx).
 - **Long file edits WILL get truncated** - NEVER make file edits that are longer than 500 lines. Always make edits based on logical and manageable chunks.
 
 ---
@@ -193,7 +193,7 @@ See [`.env.example`](.env.example:1). `VITE_PB_URL` and `VITE_LITELLM_URL` are *
 
 - **Mock adapter** simulates GM approval with 4s `setTimeout` ([`mockAdapter.ts`](src/adapters/mock/mockAdapter.ts:79)): `pendingApproval` auto-transitions to `completed` after 4s.
 - **Form missions** always `autoApproved` regardless of `validationMethod` (C-06). `ValidationDisplay` never mounts for `type: "form"`.
-- **SSE subscription** only held by `ValidationDisplay` and only when `validationMethod = 'qr'` (C-07). Everything else fetched once on mount.
+- **SSE subscription** via `useWatchMission` → `subscribeProgressEvent`: [`QRDisplay`](src/components/player/QRDisplay.tsx) for `qr`, [`ValidationDisplay`](src/components/player/ValidationDisplay.tsx) for `gmApprove` only (C-07, C-20). Everything else fetched once on mount.
 - **Template export** embeds `_milestoneOrder`/`_missionOrder` ([`exportTemplate.ts`](src/use-cases/exportTemplate.ts:27)) - FK remapping keys for import ([`importTemplate.ts`](src/use-cases/importTemplate.ts:13)).
 - **`useChatStream`** is a Phase 1 stub ([`useChatStream.ts`](src/hooks/useChatStream.ts:20)) - returns empty state.
 - **`consume-docs/`** feeds the RAG pipeline - documents chunked, embedded, stored in pgvector.

@@ -154,10 +154,24 @@ const createSession = async (
 
 const updateSession = async (
   sessionId: string,
-  patch: Partial<Omit<Session, keyof PBRecord>>,
+  patch: Partial<Omit<Session, keyof PBRecord | "bgImageUrl">> & {
+    readonly bgImageUrl?: string | File;
+  },
 ): Promise<Session> => {
+  const { bgImageUrl, ...rest } = patch;
   const existing = await getSession(sessionId);
-  const updated: Session = { ...existing, ...patch, updated: now() };
+  let nextBg = existing.bgImageUrl;
+  if (typeof File !== "undefined" && bgImageUrl instanceof File) {
+    nextBg = URL.createObjectURL(bgImageUrl);
+  } else if (typeof bgImageUrl === "string") {
+    nextBg = bgImageUrl;
+  }
+  const updated: Session = {
+    ...existing,
+    ...rest,
+    bgImageUrl: nextBg,
+    updated: now(),
+  };
   sessions.set(sessionId, updated);
   return updated;
 };

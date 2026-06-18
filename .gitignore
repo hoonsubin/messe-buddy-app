@@ -42,3 +42,6 @@ pb_data/
 pocketbase-server/
 
 __pycache__
+
+.pb-data
+.pb-server

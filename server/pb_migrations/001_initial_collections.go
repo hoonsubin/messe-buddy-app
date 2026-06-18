@@ -3,6 +3,7 @@ package migrations
 import (
 	"github.com/pocketbase/pocketbase/core"
 	m "github.com/pocketbase/pocketbase/migrations"
+	"github.com/pocketbase/pocketbase/tools/types"
 )
 
 func init() {
@@ -164,12 +165,13 @@ func init() {
 	})
 }
 
-// setPublicRules clears all API rules — C-03: no auth system.
-// The PWA enforces role-based access at the component level via mb_identity.
+// setPublicRules opens all API rules — C-03: no auth system.
+// PB v0.39: nil = deny; "" = allow public access.
 func setPublicRules(c *core.Collection) {
-	c.ListRule = nil
-	c.ViewRule = nil
-	c.CreateRule = nil
-	c.UpdateRule = nil
-	c.DeleteRule = nil
+	open := types.Pointer("")
+	c.ListRule = open
+	c.ViewRule = open
+	c.CreateRule = open
+	c.UpdateRule = open
+	c.DeleteRule = open
 }

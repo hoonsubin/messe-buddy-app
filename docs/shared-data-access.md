@@ -45,7 +45,7 @@ The adapter **never** reads or writes `localStorage` / `sessionStorage`.
 | `VITE_USE_MOCK_PB=false` | [`pbAdapter`](src/adapters/pocketbase/mod.ts) (pending) | Docker production, multi-device |
 
 Wired in [`AdapterContext.tsx`](src/adapters/AdapterContext.tsx) + [`AdapterContextValue.ts`](src/adapters/AdapterContextValue.ts).  
-PB URL: `import.meta.env.VITE_PB_URL ?? "/api"` (Docker proxy) or `http://localhost:8090` for `deno task dev`.
+PB URL: `import.meta.env.VITE_PB_URL ?? "/"` (same-origin; SDK paths include `/api`) or `http://127.0.0.1:8090` for direct local PB.
 
 ## Hook registry
 
