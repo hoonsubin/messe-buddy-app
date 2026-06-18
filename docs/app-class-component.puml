@@ -1,0 +1,487 @@
+@startuml diagram_05_class_component_architecture
+title Component Class Diagram
+
+' ── APP SHELL ──────────────────────────────────────────────────
+class App {
+    +currentRoute: string
+    +sessionId: string
+    +playerId: string
+    +userRole: string
+}
+class LandingPage {
+    -sessionIdInput: string
+    -mode: string
+    +onCreateJourney(): void
+    +onJoinSession(): void
+}
+class WelcomePage {
+    +playerName: string
+    +role: string
+    +team: string
+    +startDate: string
+    +onSetupProfile(): void
+    +onSkip(): void
+}
+class ProfilePage {
+    +onBack(): void
+    +onSave(): void
+    +onSaveForLater(): void
+    +onSubmit(): void
+    -isDirty: boolean
+    -savedAt: Date
+}
+class MentoringPage {
+    +onBack(): void
+    +onSave(): void
+    +onSaveForLater(): void
+    +onSubmit(): void
+}
+class HowIWorkPage {
+    +onBack(): void
+    +onSave(): void
+    +onSaveForLater(): void
+    +onSubmit(): void
+}
+class FormShell {
+    +title: string
+    +description: string
+    +onBack(): void
+    +onSave(): void
+    +onSaveForLater(): void
+    +savedAt: Date
+    +onSubmit(): void
+    +submitLabel: string
+}
+class TopBar {
+    +playerName: string
+    +avatarUrl: string
+    +totalXP: number
+    +role: string
+}
+class TutorialOverlay {
+    +steps: TutorialStep[]
+    +onComplete(): void
+    -currentStep: number
+    +next(): void
+}
+class TagBadge {
+    +label: string
+    +variant: string
+}
+class XPBadge {
+    +value: number
+}
+
+' ── SHARED MAP PRIMITIVE ───────────────────────────────────────
+class BackgroundCanvas {
+    +imageUrl: string
+    +alt: string
+    +objectFit: string
+}
+class MilestoneNode {
+    +id: string
+    +label: string
+    +xPercent: number
+    +yPercent: number
+    +progressPercent: number
+    +status: string
+    +draggable: boolean
+    +onClick(): void
+    +onDragEnd(x: number, y: number): void
+}
+
+' ── PLAYER COCKPIT ─────────────────────────────────────────────
+class PlayerCockpitPage {
+    +sessionId: string
+    +playerId: string
+    -selectedMilestoneId: string
+    -activeMissionId: string
+    -showTutorial: boolean
+}
+class MilestoneMapViewer {
+    +milestones: Milestone[]
+    +bgImageUrl: string
+    +onMilestoneClick(id: string): void
+    -hoveredNodeId: string
+}
+class YouAreHereMarker {
+    +xPercent: number
+    +yPercent: number
+}
+class ProgressLegend {
+    +items: LegendItem[]
+}
+class MilestoneSidebarViewer {
+    +milestoneId: string
+    +milestoneName: string
+    +xpThreshold: number
+    +currentXP: number
+    +missions: Mission[]
+    +progressEvents: ProgressEvent[]
+    +onClose(): void
+    +onMissionClick(id: string): void
+}
+class CurrentMissionsList {
+    +missions: Mission[]
+    +progressEvents: ProgressEvent[]
+    +onMissionClick(id: string): void
+    +onMarkComplete(id: string): void
+}
+class MissionCard {
+    +mission: Mission
+    +isCompleted: boolean
+    +editable: boolean
+    +onClick(): void
+    +onToggleComplete(): void
+    +onEdit(): void
+    +onDelete(): void
+    +onSendToCurrent(): void
+}
+class MissionDetailPopup {
+    +mission: Mission
+    +onClose(): void
+    +onMarkComplete(): void
+    -isSubmitting: boolean
+}
+class ValidationDisplay {
+    +playerId: string
+    +missionId: string
+    +mission: Mission
+    +onValidated(): void
+    -validationMethod: ValidationMethod
+    -isValidated: boolean
+}
+class QRDisplay {
+    +playerId: string
+    +missionId: string
+    +xpValue: number
+    +onValidated(): void
+    -qrValue: string
+    ' Payload: {playerId, missionId, sessionId, xpValue, issuedAt, hmac}
+    ' HMAC signed with session-scoped key. No SSE. No server call.
+    ' Only rendered when validationMethod = "qr"
+}
+class ValidationResult {
+    +scanData: ScanData
+    +onConfirm(): void
+    +onReject(): void
+    ' Rendered by QRScannerPage after successful offline HMAC decode.
+    ' Confirm triggers upsertProgressEvent write to PocketBase.
+}
+class PendingApprovalDisplay {
+    +missionTitle: string
+    +onValidated(): void
+    -isWaiting: boolean
+    ' Only rendered when validationMethod = "gmApprove"
+}
+class BuddyCard {
+    +name: string
+    +role: string
+    +tenure: string
+    +avatarUrl: string
+    +contactUrl: string
+}
+class ResourcesChat {
+    +resources: Resource[]
+    -activeTab: string
+    ' Tabs: "resources" | "ask-ai"
+    ' Replaces standalone ResourcesSection in PlayerCockpitPage
+}
+class ResourcesSection {
+    +resources: Resource[]
+    -searchQuery: string
+    -filteredResources: Resource[]
+    +onSearch(query: string): void
+}
+class SearchBar {
+    +placeholder: string
+    +onSearch(query: string): void
+    -inputValue: string
+}
+class ResourceCard {
+    +title: string
+    +type: string
+    +url: string
+}
+class ChatPanel {
+    -messages: ChatMessage[]
+    -inputValue: string
+    -isStreaming: boolean
+    +onSend(text: string): void
+}
+class ChatMessage {
+    +role: string
+    +content: string
+    +streaming: boolean
+}
+class useChatStream {
+    +send(messages: ChatMessage[]): void
+    +messages: ChatMessage[]
+    +isStreaming: boolean
+    ' POSTs to VITE_LITELLM_URL/chat/completions
+    ' stream: true — reads SSE chunks into message state
+}
+
+' ── FORM PAGE ──────────────────────────────────────────────────
+class FormPage {
+    +mission: Mission
+    +playerId: string
+    +onBack(): void
+    +onSaveProgress(): void
+    +onSubmit(): void
+    -formData: object
+    -isDirty: boolean
+    -isSubmitting: boolean
+}
+class FormField {
+    +schema: FieldSchema
+    +value: string
+    +error: string
+    +onChange(value: string): void
+}
+
+' ── QR SCANNER ─────────────────────────────────────────────────
+class QRScannerView {
+    +onScanConfirmed(): void
+    +onScanRejected(): void
+    -scanResult: ScanData
+    -isScanning: boolean
+}
+class CameraFeed {
+    +onDecode(result: string): void
+    -isActive: boolean
+    -hasPermission: boolean
+}
+
+' ── ADMIN COCKPIT ──────────────────────────────────────────────
+class AdminCockpitPage {
+    +sessionId: string
+    -selectedPlayerId: string
+    -selectedMilestoneId: string
+    -isDirty: boolean
+}
+class PendingApprovalsPanel {
+    +pendingEvents: ProgressEvent[]
+    +onApprove(playerId: string, missionId: string): void
+    +onReject(playerId: string, missionId: string): void
+}
+class ApprovalRequestCard {
+    +playerName: string
+    +missionTitle: string
+    +xpValue: number
+    +onApprove(): void
+    +onReject(): void
+}
+class PlayerSelectorDropdown {
+    +players: PlayerProfile[]
+    +selectedId: string
+    +onSelect(id: string): void
+}
+class PlayerProfileCard {
+    +player: PlayerProfile
+}
+class MilestoneMapEditor {
+    +milestones: Milestone[]
+    +bgImageUrl: string
+    +onMilestoneClick(id: string): void
+    +onNodeDrop(id: string, x: number, y: number): void
+    +onAddMilestone(): void
+    +onRename(id: string, name: string): void
+    +onDelete(id: string): void
+    -snapToGrid: boolean
+    -draggingNodeId: string
+}
+class BackgroundImageUploader {
+    +currentImageUrl: string
+    +onUpload(file: File): void
+    -previewUrl: string
+    -isUploading: boolean
+    -dragOver: boolean
+}
+class GridOverlay {
+    +enabled: boolean
+    +columns: number
+    +rows: number
+    +onToggle(): void
+}
+class MilestoneSidebarEditor {
+    +milestoneId: string
+    +missions: Mission[]
+    +onClose(): void
+    +onAddMission(): void
+    +onDeleteMission(id: string): void
+    +onReorder(ids: string[]): void
+    +onSendToCurrent(id: string): void
+    -editingMissionId: string
+}
+class TemplateLibrary {
+    +onSelectTemplate(type: MissionType): void
+    ' Entry point for Game Maker mission creation.
+    ' Launches MissionEditor with selected template pre-loaded.
+}
+class MissionEditor {
+    +mission: Mission
+    +templateType: MissionType
+    +onSave(): void
+    +onCancel(): void
+    -localDraft: Mission
+    +onChange(mission: Mission): void
+}
+class TemplateFields {
+    +type: MissionType
+    +draft: DraftMission
+    +onChange(draft: DraftMission): void
+    ' Variants: TextMission | LinkMission | FormMission
+    ' Switched on MissionType. Keeps MissionEditor clean.
+}
+class MarkdownEditor {
+    +value: string
+    +placeholder: string
+    +onChange(value: string): void
+}
+class DifficultySelector {
+    +value: number
+    +xpPreview: number
+    +onChange(value: number): void
+}
+class TagSelector {
+    +selected: string[]
+    +availableTags: string[]
+    +onChange(tags: string[]): void
+}
+class MissionTypeSelector {
+    +value: string
+    +onChange(type: string): void
+}
+class ValidationMethodSelector {
+    +value: ValidationMethod
+    +onChange(method: ValidationMethod): void
+    ' Hidden when mission.type = "form"
+}
+class FormEditor {
+    +fields: FieldSchema[]
+    +onAddField(): void
+    +onDeleteField(id: string): void
+    +onReorder(ids: string[]): void
+    +onFieldChange(field: FieldSchema): void
+    -editingFieldId: string
+}
+class FormFieldEditor {
+    +field: FieldSchema
+    +onChange(field: FieldSchema): void
+    +onDelete(): void
+}
+class BuddyAssignmentForm {
+    +currentBuddy: BuddyProfile
+    +onAssign(buddy: BuddyProfile): void
+    -searchQuery: string
+    -results: BuddyProfile[]
+}
+class ResourcesEditor {
+    +resources: Resource[]
+    +onAdd(resource: Resource): void
+    +onDelete(id: string): void
+    +onToggleVisible(id: string): void
+}
+class SaveActions {
+    +isDirty: boolean
+    +onSave(): void
+    +onSaveAsTemplate(): void
+    +onLoadTemplate(): void
+}
+class SaveTemplateModal {
+    +onConfirm(name: string): void
+    +onCancel(): void
+    -templateName: string
+}
+
+' ── ROUTING ────────────────────────────────────────────────────
+App --> LandingPage
+App --> WelcomePage
+App --> ProfilePage
+App --> MentoringPage
+App --> HowIWorkPage
+App --> PlayerCockpitPage
+App --> AdminCockpitPage
+App --> FormPage
+App --> QRScannerView
+
+' ── ONBOARDING FORM COMPOSITION ────────────────────────────────
+ProfilePage *-- FormShell
+MentoringPage *-- FormShell
+HowIWorkPage *-- FormShell
+
+' ── PLAYER COCKPIT COMPOSITION ─────────────────────────────────
+PlayerCockpitPage *-- TopBar
+PlayerCockpitPage *-- TutorialOverlay
+PlayerCockpitPage *-- MilestoneMapViewer
+PlayerCockpitPage *-- MilestoneSidebarViewer
+PlayerCockpitPage *-- CurrentMissionsList
+PlayerCockpitPage *-- MissionDetailPopup
+PlayerCockpitPage *-- ValidationDisplay
+ValidationDisplay *-- QRDisplay
+ValidationDisplay *-- PendingApprovalDisplay
+PlayerCockpitPage *-- BuddyCard
+PlayerCockpitPage *-- ResourcesChat
+
+ResourcesChat *-- ResourcesSection
+ResourcesChat *-- ChatPanel
+ChatPanel *-- ChatMessage
+ChatPanel *-- useChatStream
+
+MilestoneMapViewer *-- BackgroundCanvas
+MilestoneMapViewer *-- MilestoneNode
+MilestoneMapViewer *-- YouAreHereMarker
+MilestoneMapViewer *-- ProgressLegend
+
+MilestoneSidebarViewer *-- MissionCard
+CurrentMissionsList *-- MissionCard
+MissionCard *-- TagBadge
+MissionCard *-- XPBadge
+MissionDetailPopup *-- TagBadge
+MissionDetailPopup *-- XPBadge
+
+ResourcesSection *-- SearchBar
+ResourcesSection *-- ResourceCard
+
+FormPage *-- FormField
+
+QRScannerView *-- CameraFeed
+QRScannerView *-- ValidationResult
+
+' ── ADMIN COCKPIT COMPOSITION ──────────────────────────────────
+AdminCockpitPage *-- TopBar
+AdminCockpitPage *-- PlayerSelectorDropdown
+AdminCockpitPage *-- PlayerProfileCard
+AdminCockpitPage *-- PendingApprovalsPanel
+PendingApprovalsPanel *-- ApprovalRequestCard
+AdminCockpitPage *-- MilestoneMapEditor
+AdminCockpitPage *-- MilestoneSidebarEditor
+AdminCockpitPage *-- CurrentMissionsList
+AdminCockpitPage *-- BuddyAssignmentForm
+AdminCockpitPage *-- ResourcesEditor
+AdminCockpitPage *-- SaveActions
+
+MilestoneMapEditor *-- BackgroundCanvas
+MilestoneMapEditor *-- BackgroundImageUploader
+MilestoneMapEditor *-- GridOverlay
+MilestoneMapEditor *-- MilestoneNode
+
+AdminCockpitPage *-- TemplateLibrary
+TemplateLibrary --> MissionEditor : launches
+MilestoneSidebarEditor *-- MissionCard
+MilestoneSidebarEditor *-- MissionEditor
+
+MissionEditor *-- TemplateFields
+MissionEditor *-- MarkdownEditor
+MissionEditor *-- DifficultySelector
+MissionEditor *-- TagSelector
+MissionEditor *-- MissionTypeSelector
+MissionEditor *-- ValidationMethodSelector
+MissionEditor *-- FormEditor
+
+FormEditor *-- FormFieldEditor
+ResourcesEditor *-- ResourceCard
+SaveActions *-- SaveTemplateModal
+
+@enduml

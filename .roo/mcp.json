@@ -1,45 +1,55 @@
 {
-  "mcpServers": {
-	"superdesign": {
-      "command": "npx",
-      "args": ["-y", "cold-mcp-super-design"],
-      "type": "stdio"
-    },
-    "playwright": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@playwright/mcp@latest",
-        "--browser=firefox",
-        "--device=iPhone 15"
-      ],
-      "alwaysAllow": [
-        "browser_navigate",
-        "browser_install",
-        "browser_click",
-        "browser_type",
-        "browser_snapshot",
-        "browser_resize",
-        "browser_console_messages",
-        "browser_take_screenshot",
-        "browser_wait_for",
-        "browser_tabs",
-        "browser_close",
-        "browser_fill_form",
-        "browser_evaluate",
-        "browser_select_option",
-        "browser_network_request",
-        "browser_press_key"
-      ]
-    },
-    "searxng": {
-      "command": "npx",
-      "args": ["-y", "mcp-searxng"],
-      "env": {
-        "SEARXNG_URL": "https://search.hoonlabs.xyz"
-      },
-      "alwaysAllow": ["searxng_web_search", "web_url_read"],
-      "disabled": false
-    }
-  }
+	"mcpServers": {
+		"superdesign": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"cold-mcp-super-design"
+			],
+			"type": "stdio"
+		},
+		"playwright": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"@playwright/mcp@latest",
+				"--browser=firefox",
+				"--device=iPhone 15"
+			],
+			"alwaysAllow": [
+				"browser_navigate",
+				"browser_install",
+				"browser_click",
+				"browser_type",
+				"browser_snapshot",
+				"browser_resize",
+				"browser_console_messages",
+				"browser_take_screenshot",
+				"browser_wait_for",
+				"browser_tabs",
+				"browser_close",
+				"browser_fill_form",
+				"browser_evaluate",
+				"browser_select_option",
+				"browser_network_request",
+				"browser_press_key"
+			]
+		},
+		"searxng": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"mcp-searxng"
+			],
+			"env": {
+				"SEARXNG_URL": "https://search.hoonlabs.xyz"
+			},
+			"alwaysAllow": [
+				"searxng_web_search",
+				"web_url_read",
+				"searxng_instance_info"
+			],
+			"disabled": false
+		}
+	}
 }

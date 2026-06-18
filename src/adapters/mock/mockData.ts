@@ -16,7 +16,7 @@ import type {
 // 6 milestones, 33 missions, 360 XP total.
 // IDs are descriptive for readability; real PB IDs are 15-char alphanumeric.
 
-const NOW = "2026-06-13T08:00:00.000Z";
+const NOW = new Date().toISOString();
 const pb = (id: string) => ({ id, created: NOW, updated: NOW });
 
 // ── Pre-Boarding Checklist Defaults ───────────────────────────────────────────

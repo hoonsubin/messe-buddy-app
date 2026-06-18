@@ -1,0 +1,43 @@
+@startuml diagram_02_c4_container
+!include <C4/C4_Container>
+
+title Layer 2 Container Diagram
+
+Person(player, "Player", "New employee")
+Person(gameMaker, "Game Maker", "Admin / HR")
+
+System_Ext(aiProvider, "AI Provider", "Upstream LLM API — OpenAI, Anthropic, Azure OpenAI, or any OpenAI-compatible endpoint. Credentials and model selection are managed in litellm.yaml.")
+
+System_Boundary(docker, "Docker Compose Services") {
+    Container(app, "App (PWA + PocketBase)", "nginx + PocketBase Go wrapper", "Single container: nginx serves the React PWA on :80; PocketBase Go binary runs on :8090. Handles REST API, SSE push, file storage, SQLite database, and admin UI.")
+    ContainerDb(sqlite, "SQLite", "Embedded in PocketBase", "Stores sessions, players, milestones, missions, progress_events, buddy_profiles, resources, form_schemas.")
+    ContainerDb(filestore, "File Storage", "PocketBase managed", "Stores uploaded background images and player avatars.")
+
+    Container(litellm, "LiteLLM Proxy", "Python / LiteLLM", "Single OpenAI-compatible /chat/completions endpoint. Handles model routing, provider auth, system prompt injection, RAG retrieval via pgvector connector, caching, and rate-limiting. Config-driven: swap providers and update embedded documents by editing litellm.yaml without touching PWA code.")
+    ContainerDb(litellm_db, "LiteLLM Metadata DB", "PostgreSQL (pgvector/pg16)", "Stores LiteLLM keys, spend logs, model configs, vector stores registry. Separate from vector-db to avoid Prisma schema conflicts.")
+
+    Container(litellm_pgvector, "PG Vector Store Connector", "Python / uvicorn", "OpenAI-compatible /v1/vector_stores/* endpoints backed by pgvector. Handles document upload, embedding generation via LiteLLM proxy, and semantic search. Bridges the PWA's RAG needs to PostgreSQL.")
+    ContainerDb(vector_db, "Vector DB", "PostgreSQL + pgvector extension (pgvector/pg16)", "Stores vector_stores and embeddings tables for the pgvector connector. Holds embedded company documents (policies, onboarding guides, FAQs).")
+
+    Container(init_vs, "Vector Store Initializer", "Python / one-shot", "Bootstraps the vector store in pgvector and registers it in LiteLLM on first deploy. Runs once then exits.")
+    Container(file_watcher, "File Watcher", "Python / long-running", "Watches consume-docs/ directory for changes and updates pgvector embeddings incrementally (add / modify / delete). Runs after init-vector-store completes, in parallel with the app.")
+
+    ContainerDb(redis, "Redis", "redis:8.8-trixie", "LiteLLM cache and rate-limit state storage.")
+}
+
+Rel(player, app, "Uses PWA", "HTTPS / browser")
+Rel(gameMaker, app, "Uses PWA", "HTTPS / browser")
+Rel(app, litellm, "POST /chat/completions with stream:true", "HTTP / SSE")
+Rel(litellm, aiProvider, "Forwards augmented prompt to configured provider", "HTTPS / REST")
+Rel(litellm, litellm_pgvector, "Semantic search for relevant document chunks", "HTTP / OpenAI-compatible API")
+Rel(litellm_pgvector, vector_db, "Reads / writes embeddings", "PostgreSQL / pgvector ANN")
+Rel(init_vs, vector_db, "Bootstraps vector store tables", "PostgreSQL")
+Rel(init_vs, litellm, "Registers vector store in LiteLLM", "HTTP")
+Rel(file_watcher, consume_docs["consume-docs/"], "Watches for file changes", "volume mount")
+Rel(file_watcher, litellm_pgvector, "Updates embeddings incrementally", "HTTP / OpenAI-compatible API")
+Rel(litellm, redis, "Cache + rate-limit state", "Redis protocol")
+
+Rel(app, sqlite, "Reads / writes", "internal")
+Rel(app, filestore, "Stores / serves files", "internal")
+
+@enduml
