@@ -1,5 +1,5 @@
 import type { AppAdapter } from "../adapters/interface.ts";
-import type { LocalIdentity, PBRecord, Player } from "../types/index.ts";
+import type { CachedIdentity, PBRecord, Player } from "../types/index.ts";
 import { USER_ROLE } from "../types/index.ts";
 
 const RECOVERY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -14,7 +14,7 @@ const generateRecoveryKey = (): string => {
 // ── joinSession ───────────────────────────────────────────────────────────────
 
 export interface JoinSessionResult {
-  readonly identity: LocalIdentity;
+  readonly identity: CachedIdentity;
   readonly player: Player;
 }
 
@@ -28,7 +28,7 @@ export const verifySession = async (
 };
 
 // Step 2: create the player with the name already known.
-// Returns LocalIdentity; the caller is responsible for persisting it
+// Returns CachedIdentity; the caller is responsible for persisting it
 // via useIdentity.setIdentity (no localStorage write here).
 export const joinSession = async (
   sessionId: string,
@@ -58,7 +58,7 @@ export const joinSession = async (
 
   const player = await adapter.createPlayer(playerData);
 
-  const identity: LocalIdentity = {
+  const identity: CachedIdentity = {
     uid,
     recoveryKey,
     sessionId,
@@ -71,18 +71,18 @@ export const joinSession = async (
 
 // ── createGameMakerSession ────────────────────────────────────────────────────
 
-// Returns LocalIdentity; the caller persists it via useIdentity.setIdentity.
+// Returns CachedIdentity; the caller persists it via useIdentity.setIdentity.
 export const createGameMakerSession = async (
   sessionName: string,
   name: string,
   adapter: AppAdapter,
-): Promise<LocalIdentity> => {
+): Promise<CachedIdentity> => {
   const uid = crypto.randomUUID();
   const recoveryKey = generateRecoveryKey();
 
   const session = await adapter.createSession(sessionName, uid);
 
-  const identity: LocalIdentity = {
+  const identity: CachedIdentity = {
     uid,
     recoveryKey,
     sessionId: session.id,

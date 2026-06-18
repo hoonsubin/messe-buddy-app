@@ -8,12 +8,12 @@ import {
   verifySession,
 } from "../use-cases/joinSession.ts";
 import { recoverIdentity } from "../use-cases/recoverIdentity.ts";
-import type { LocalIdentity } from "../types/index.ts";
+import type { CachedIdentity } from "../types/index.ts";
 import { USER_ROLE } from "../types/index.ts";
 
 // ── Demo profiles (pre-seeded, always at top of list) ────────────────────────
 
-export const DEMO_PROFILES: readonly LocalIdentity[] = [
+export const DEMO_PROFILES: readonly CachedIdentity[] = [
   {
     uid: "uid_sofia_002",
     recoveryKey: "SOFIA026",
@@ -43,7 +43,7 @@ export type ActiveForm = "employee" | "admin" | null;
 export type EmployeeStep = "code" | "name";
 
 export interface UseLandingFlowResult {
-  readonly profiles: ReadonlyArray<LocalIdentity>;
+  readonly profiles: ReadonlyArray<CachedIdentity>;
   readonly activeForm: ActiveForm;
   readonly employeeStep: EmployeeStep;
   readonly verifiedSessionId: string;
@@ -66,7 +66,7 @@ export interface UseLandingFlowResult {
   readonly handleJoinSession: () => Promise<void>;
   readonly handleCreateAdmin: () => Promise<void>;
   readonly handleRecover: () => Promise<void>;
-  readonly handleResume: (identity: LocalIdentity) => void;
+  readonly handleResume: (identity: CachedIdentity) => void;
   readonly handleRemoveProfile: (uid: string) => void;
   readonly handleShowKey: (uid: string) => void;
   readonly handleHideKey: () => void;
@@ -215,7 +215,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
   }, [adapter, recoveryKeyInput, setIdentity, navigate, resetError]);
 
   // ── Profile actions ───────────────────────────────────────────────────────
-  const handleResume = useCallback((identity: LocalIdentity) => {
+  const handleResume = useCallback((identity: CachedIdentity) => {
     const dest = identity.role === USER_ROLE.PLAYER
       ? `/session/${identity.sessionId}`
       : `/admin/${identity.sessionId}`;

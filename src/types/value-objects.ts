@@ -35,7 +35,7 @@ export interface ScanData {
 }
 
 // Written to localStorage.getItem('mb_identity'). (C-03)
-export interface LocalIdentity {
+export interface CachedIdentity {
   readonly uid: string; // client-generated UUID
   readonly recoveryKey: string; // 8-char alphanumeric; also in players.recoveryKey
   readonly sessionId: string; // PB record ID of the session
