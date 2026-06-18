@@ -11,10 +11,15 @@ interface AdapterContextProviderProps {
   readonly children: ReactNode;
 }
 
-const USE_MOCK_PB = import.meta.env.VITE_USE_MOCK_PB === "true";
+const resolveUseMockPb = (): boolean => {
+  const rt = typeof window !== "undefined" && window.__MB_CONFIG__ || {};
+  if (rt.useMockPb !== undefined) return rt.useMockPb;
+  // Default: true (safe — mock adapter, no backend required)
+  return import.meta.env.VITE_USE_MOCK_PB !== "false";
+};
 
 export const AdapterContextProvider = ({
-  adapter = USE_MOCK_PB ? mockAdapter : pbAdapter,
+  adapter = resolveUseMockPb() ? mockAdapter : pbAdapter,
   children,
 }: AdapterContextProviderProps) => {
   return (

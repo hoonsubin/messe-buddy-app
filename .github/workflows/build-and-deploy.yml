@@ -36,6 +36,9 @@ jobs:
 
       - name: Type check & build
         run: deno task build
+        env:
+          VITE_USE_MOCK_PB: "true"
+          VITE_USE_MOCK_CHAT: "true"
 
   deploy:
     needs: check
@@ -53,6 +56,9 @@ jobs:
 
       - name: Build
         run: deno task build
+        env:
+          VITE_USE_MOCK_PB: "true"
+          VITE_USE_MOCK_CHAT: "true"
 
       - name: Generate package.json
         run: deno run -A scripts/generate-package-json.ts

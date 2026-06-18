@@ -158,16 +158,8 @@ const AdminCockpitPage = () => {
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
-      const milestoneIdMap = await milestoneEditor.saveMilestones(
-        sid,
-        milestones,
-      );
-      await missionEditor.saveMissions(
-        sid,
-        missions,
-        missionEditor.xpPreview,
-        milestoneIdMap,
-      );
+      await milestoneEditor.saveMilestones(sid, milestones);
+      await missionEditor.saveMissions(sid, missions, missionEditor.xpPreview);
       milestoneEditor.clearDirtyMilestones();
       missionEditor.clearDirtyMissions();
       missionEditor.clearOrderChanges();

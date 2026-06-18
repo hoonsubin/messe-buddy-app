@@ -65,7 +65,7 @@ envsubst '${KEY}' < "$NGINX_TEMPLATE" > "$NGINX_CONF"
 # useMockChat: false in production (real LLM streaming).
 # pbUrl: unset (browser uses same-origin /api; the adapter defaults to /api).
 cat > "$CONFIG_JS" <<'EOF'
-window.__MB_CONFIG__ = { llmBaseUrl: "/llm", useMockChat: false };
+window.__MB_CONFIG__ = { llmBaseUrl: "/llm", useMockChat: false, useMockPb: false };
 EOF
 
 echo "entrypoint: configured /llm proxy and config.js; starting supervisord"

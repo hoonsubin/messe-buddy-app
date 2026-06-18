@@ -31,13 +31,13 @@ interface UseAdminMilestoneEditorResult {
   readonly handleResetToGrid: () => void;
   /**
    * Save dirty milestones to the adapter.
-   * Returns a map from draft ID → server ID for any newly created milestones,
-   * so callers can remap mission milestoneIds before saving missions.
+   * Passes `id: dm.id` to the adapter on create, so the server assigns our
+   * client-generated ID — draft ID === server ID from creation onward.
    */
   readonly saveMilestones: (
     sid: string,
     milestones: ReadonlyArray<Milestone>,
-  ) => Promise<ReadonlyMap<string, string>>;
+  ) => Promise<void>;
   readonly discardMilestones: (milestones: ReadonlyArray<Milestone>) => void;
   /** Clears dirty flags after a successful save. */
   readonly clearDirtyMilestones: () => void;
@@ -131,10 +131,7 @@ export const useAdminMilestoneEditor = (
     async (
       sid: string,
       serverMilestones: ReadonlyArray<Milestone>,
-    ): Promise<ReadonlyMap<string, string>> => {
-      // Maps local draft ID → server-assigned ID for newly created milestones.
-      // Existing milestones keep the same ID, so they map to themselves.
-      const idMap = new Map<string, string>();
+    ): Promise<void> => {
       for (const dm of draftMilestones) {
         const real = serverMilestones.find((m) => m.id === dm.id);
         if (real) {
@@ -145,13 +142,15 @@ export const useAdminMilestoneEditor = (
               yPercent: dm.yPercent,
             });
           }
-          idMap.set(dm.id, dm.id);
         } else {
           const maxOrder = serverMilestones.reduce(
             (max, m) => Math.max(max, m.order),
             0,
           );
-          const created = await adapter.createMilestone({
+          // Pass id: dm.id so PocketBase assigns our client-generated ID.
+          // Draft ID === server ID — no post-save remapping needed.
+          await adapter.createMilestone({
+            id: dm.id,
             sessionId: sid,
             name: dm.name,
             xPercent: dm.xPercent,
@@ -159,12 +158,8 @@ export const useAdminMilestoneEditor = (
             xpThreshold: 100,
             order: maxOrder + 1,
           });
-          // Map the local draft ID to the server-assigned ID so that any
-          // mission drafts using the draft milestoneId can be remapped.
-          idMap.set(dm.id, created.id);
         }
       }
-      return idMap;
     },
     [adapter, draftMilestones],
   );

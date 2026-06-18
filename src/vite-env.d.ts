@@ -20,6 +20,7 @@ interface MesseBuddyRuntimeConfig {
   readonly llmKey?: string;
   readonly llmModel?: string;
   readonly useMockChat?: boolean;
+  readonly useMockPb?: boolean;
   readonly systemPrompt?: string;
   readonly pbUrl?: string;
 }

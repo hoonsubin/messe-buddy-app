@@ -58,7 +58,6 @@ interface UseAdminMissionEditorResult {
     sid: string,
     missions: ReadonlyArray<Mission>,
     xpPreview: number,
-    milestoneIdMap?: ReadonlyMap<string, string>,
   ) => Promise<void>;
   readonly discardMissions: () => void;
   readonly clearDirtyMissions: () => void;
@@ -190,7 +189,6 @@ export const useAdminMissionEditor = (
       sid: string,
       serverMissions: ReadonlyArray<Mission>,
       xp: number,
-      milestoneIdMap?: ReadonlyMap<string, string>,
     ) => {
       const drafts = draftMissionsRef.current;
 
@@ -214,13 +212,12 @@ export const useAdminMissionEditor = (
             });
           }
         } else {
-          // Remap draft milestoneId → server milestoneId if a new milestone
-          // was just created (server assigns a different ID than the local draft).
-          const resolvedMilestoneId = milestoneIdMap?.get(draft.milestoneId) ??
-            draft.milestoneId;
+          // draft.milestoneId is the client-generated ID. Since we pass id: dm.id
+          // to createMilestone, the server assigns that same ID, so no remapping
+          // needed — draft milestoneId is already the server ID.
           await adapter.createMission({
             sessionId: sid,
-            milestoneId: resolvedMilestoneId,
+            milestoneId: draft.milestoneId,
             title: draft.title ?? "New mission",
             body: draft.body ?? "",
             type: draft.type ?? MISSION_TYPE.TEXT,
