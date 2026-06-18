@@ -57,7 +57,7 @@ export const MOCK_SESSION: Session = {
   ...pb("sess_mmt2026"),
   name: "Messe München Onboarding - Summer 2026",
   bgImageUrl: mapBackground,
-  mapNodeScale: 0.33,
+  mapNodeScale: 0.55,
   gameMakerId: "uid_gamemaker_peter",
   qrSecret: "sess_mmt2026",
   preBoardingChecks: MOCK_PRE_BOARDING_CHECKS,
