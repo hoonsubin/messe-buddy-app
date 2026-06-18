@@ -28,4 +28,46 @@ export default defineConfig([
       "react-hooks/preserve-manual-memoization": "warn",
     },
   },
+  {
+    files: ["src/pages/**/*.{ts,tsx}", "src/components/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "../adapters/useAdapter.ts",
+              message: "C-18: pages/components must use shared hooks, not useAdapter.",
+            },
+            {
+              name: "../../adapters/useAdapter.ts",
+              message: "C-18: pages/components must use shared hooks, not useAdapter.",
+            },
+            {
+              name: "../../../adapters/useAdapter.ts",
+              message: "C-18: pages/components must use shared hooks, not useAdapter.",
+            },
+            {
+              name: "../adapters/interface.ts",
+              message: "C-18: pages/components must not import AppAdapter.",
+            },
+            {
+              name: "../../adapters/interface.ts",
+              message: "C-18: pages/components must not import AppAdapter.",
+            },
+            {
+              name: "../../../adapters/interface.ts",
+              message: "C-18: pages/components must not import AppAdapter.",
+            },
+          ],
+          patterns: [
+            {
+              group: ["**/adapters/useAdapter", "**/adapters/interface"],
+              message: "C-18: pages/components must use shared hooks only.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);

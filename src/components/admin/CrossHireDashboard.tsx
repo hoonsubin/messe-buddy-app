@@ -1,14 +1,7 @@
 import { useMemo, useState } from "react";
 import { MdWarning } from "react-icons/md";
 
-interface HireProgressRow {
-  readonly playerId: string;
-  readonly playerName: string;
-  readonly sessionName: string;
-  readonly progressPercent: number;
-  readonly daysSinceLastActivity: number | null;
-  readonly isStalled: boolean;
-}
+import type { HireProgressRow } from "../../hooks/useProgress/types.ts";
 
 interface CrossHireDashboardProps {
   readonly hires: ReadonlyArray<HireProgressRow>;
