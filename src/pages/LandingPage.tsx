@@ -1,6 +1,6 @@
 import { MdAdd, MdCheck, MdClose, MdPersonAdd, MdVpnKey } from "react-icons/md";
 import { DEMO_PROFILES, useLandingFlow } from "../hooks/useLandingFlow.ts";
-import type { LocalIdentity } from "../types/index.ts";
+import type { CachedIdentity } from "../types/index.ts";
 import { USER_ROLE } from "../types/index.ts";
 import Toast from "../components/shared/Toast.tsx";
 
@@ -35,9 +35,9 @@ const isDemoProfile = (uid: string) => DEMO_PROFILES.some((d) => d.uid === uid);
 // ── Profile card ──────────────────────────────────────────────────────────────
 
 interface ProfileCardProps {
-  readonly identity: LocalIdentity;
+  readonly identity: CachedIdentity;
   readonly isKeyOpen: boolean;
-  readonly onResume: (identity: LocalIdentity) => void;
+  readonly onResume: (identity: CachedIdentity) => void;
   readonly onRemove: (uid: string) => void;
   readonly onShowKey: (uid: string) => void;
   readonly onHideKey: () => void;

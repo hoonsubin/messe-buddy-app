@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdClose } from "react-icons/md";
-import { useAdapter } from "../../adapters/useAdapter.ts";
+import { useQRScanContext } from "../../hooks/useQRScanContext.ts";
 import CameraFeed from "../qr/CameraFeed.tsx";
 import ValidationResult from "../qr/ValidationResult.tsx";
-import { encodeQRPayload } from "../../utils/qrPayload.ts";
 import {
-  buildValidationUrl,
   parseValidationToken,
   validationPathFromToken,
 } from "../../utils/qrUrl.ts";
@@ -21,7 +19,7 @@ interface AdminQRScannerModalProps {
 
 const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
   const navigate = useNavigate();
-  const adapter = useAdapter();
+  const scanContext = useQRScanContext(props.sessionId);
   const [cameraReady, setCameraReady] = useState(false);
   const [validationState, setValidationState] = useState<ScanState>("scanning");
   const [errorMessage, setErrorMessage] = useState("");
@@ -57,44 +55,24 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
 
   const handleSimulate = useCallback(async () => {
     try {
-      const [players, missions, session] = await Promise.all([
-        adapter.listPlayers(props.sessionId),
-        adapter.listMissions(props.sessionId),
-        adapter.getSession(props.sessionId),
-      ]);
-      const player = players[0];
-      const mission = missions.find((m) => m.validationMethod === "qr");
-      if (!player || !mission) {
+      const url = await scanContext.buildSimulateScanUrl();
+      if (!url) {
         setValidationState("error");
         setErrorMessage("No QR mission available to simulate.");
         return;
       }
-
-      const secret = session.qrSecret ?? props.sessionId;
-      const encoded = await encodeQRPayload(
-        {
-          playerId: player.id,
-          missionId: mission.id,
-          sessionId: props.sessionId,
-          xpValue: mission.xpValue,
-          issuedAt: Date.now(),
-        },
-        secret,
-      );
-      const url = buildValidationUrl(props.sessionId, encoded);
       handleDecode(url);
     } catch {
       setValidationState("error");
       setErrorMessage("Simulate scan failed. Please try again.");
     }
-  }, [adapter, handleDecode, props.sessionId]);
+  }, [handleDecode, scanContext]);
 
   const handleCancel = useCallback(() => {
     setCameraReady(false);
     props.onClose();
   }, [props]);
 
-  // Start camera after the modal is painted (avoids first-open getUserMedia races).
   useEffect(() => {
     if (!props.isOpen) return;
 

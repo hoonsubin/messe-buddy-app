@@ -1,16 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { MdArrowBack } from "react-icons/md";
-import type { BuddyProfile, Milestone, Resource } from "../types/index.ts";
-import { useAdapter } from "../adapters/useAdapter.ts";
+import type { Milestone } from "../types/index.ts";
+import { USER_ROLE } from "../types/index.ts";
+import { useActiveProfile } from "../hooks/useActiveProfile.ts";
 import { useIdentity } from "../hooks/useIdentity.ts";
 import { useSession } from "../hooks/useSession.ts";
 import { useScrollCollapse } from "../hooks/useScrollCollapse.ts";
 import { useAdminMilestoneEditor } from "../hooks/useAdminMilestoneEditor.ts";
 import { useAdminMissionEditor } from "../hooks/useAdminMissionEditor.ts";
-import { useAdminPlayers } from "../hooks/useAdminPlayers.ts";
+import {
+  useProgressAdmin,
+  useProgressCrossHire,
+} from "../hooks/useProgress/index.ts";
+import { useBuddyProfile } from "../hooks/useBuddyProfile.ts";
+import { useResources } from "../hooks/useResources.ts";
 import { usePreBoardingChecklist } from "../hooks/usePreBoardingChecklist.ts";
-import { useCrossHireData } from "../hooks/useCrossHireData.ts";
 import { useTemplateLibrary } from "../hooks/useTemplateLibrary.ts";
 import Toast from "../components/shared/Toast.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
@@ -36,80 +41,59 @@ const ADMIN_TABS = {
 } as const;
 type AdminTab = (typeof ADMIN_TABS)[keyof typeof ADMIN_TABS];
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
 const AdminCockpitPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const sid = sessionId ?? "";
-  const adapter = useAdapter();
-  const { profiles, removeProfile } = useIdentity();
-  const identity = profiles.find((p) => p.sessionId === sid) ?? null;
+  const { removeProfile } = useIdentity();
+  const identity = useActiveProfile(sid, USER_ROLE.GAMEMAKER);
 
-  // Session data
+  const sessionData = useSession(sid, { role: "gamemaker" });
   const {
     session,
     milestones,
     missions,
     loading: sessionLoading,
     error: sessionError,
-  } = useSession(sid);
+    refresh: refreshSession,
+    uploadBackground,
+    updateMapNodeScale,
+  } = sessionData;
 
-  // Local override for bgImageUrl - avoids re-fetching session on upload
   const [bgImageUrlOverride, setBgImageUrlOverride] = useState<string | null>(
     null,
   );
   const bgImageUrl = bgImageUrlOverride ?? session?.bgImageUrl ?? "";
 
-  // ── Tab navigation (declared early - used as resetKey for useScrollCollapse) ─
   const [activeTab, setActiveTab] = useState<AdminTab>(
     ADMIN_TABS.ACTIVE_SESSION,
   );
   const [scannerOpen, setScannerOpen] = useState(false);
 
-  // ── Scroll-collapse for the sidebar on mobile ──────────────────────────────
   const sidebarRef = useRef<HTMLDivElement>(null);
   const mapCollapsed = useScrollCollapse(sidebarRef, activeTab);
-
-  // ── Domain hooks ───────────────────────────────────────────────────────────
 
   const milestoneEditor = useAdminMilestoneEditor(milestones);
   const missionEditor = useAdminMissionEditor(missions);
 
-  const {
-    players,
-    selectedPlayerId,
-    selectedPlayer,
-    selectedPlayerProgress,
-    pendingEvents,
-    handlePlayerSelect,
-    handleApprove,
-    handleReject,
-  } = useAdminPlayers({
+  const adminProgress = useProgressAdmin({
     sid,
     milestones,
     missions,
     validatorUid: identity?.uid,
-    adapter,
   });
 
-  const preBoardingChecklist = usePreBoardingChecklist(sid, session, adapter);
+  const buddyProfile = useBuddyProfile(sid, adminProgress.selectedPlayerId, {
+    role: "gamemaker",
+  });
 
-  const crossHireRows = useCrossHireData(
-    adapter,
-    activeTab === ADMIN_TABS.ALL_NEW_HIRES,
-  );
+  const adminResources = useResources(sid, { role: "gamemaker" });
 
-  // ── Resources (admin owns full CRUD - useResources is player-only) ─────────
-  // Declared before useTemplateLibrary which consumes adminResources.
+  const preBoardingChecklist = usePreBoardingChecklist(sid, session);
 
-  const [adminResources, setAdminResources] = useState<
-    ReadonlyArray<Resource>
-  >([]);
-  useEffect(() => {
-    if (!sid) return;
-    void adapter.listResources(sid).then(setAdminResources);
-  }, [adapter, sid]);
+  const crossHire = useProgressCrossHire({
+    active: activeTab === ADMIN_TABS.ALL_NEW_HIRES,
+  });
 
   const templateLibrary = useTemplateLibrary({
     sid,
@@ -117,95 +101,16 @@ const AdminCockpitPage = () => {
     session,
     milestones,
     missions,
-    resources: adminResources,
+    resources: adminResources.resources,
     gmUid: identity?.uid,
-    adapter,
   });
-
-  const handleResourceAdd = useCallback(
-    (data: Omit<Resource, "id" | "created" | "updated">) => {
-      void adapter.createResource(data).then((created) => {
-        setAdminResources((prev) => [...prev, created]);
-      });
-    },
-    [adapter],
-  );
-
-  const handleResourceDelete = useCallback(
-    (resourceId: string) => {
-      void adapter.deleteResource(resourceId).then(() => {
-        setAdminResources((prev) => prev.filter((r) => r.id !== resourceId));
-      });
-    },
-    [adapter],
-  );
-
-  const handleResourceToggleVisibility = useCallback(
-    (resourceId: string, visible: boolean) => {
-      void adapter.updateResource(resourceId, {
-        isVisibleToPlayer: visible,
-      }).then((updated) => {
-        setAdminResources((prev) =>
-          prev.map((r) => (r.id === resourceId ? updated : r))
-        );
-      });
-    },
-    [adapter],
-  );
-
-  // ── Buddy assignment ───────────────────────────────────────────────────────
-
-  const emptyBuddyDraft = useCallback(
-    (): Omit<
-      BuddyProfile,
-      "id" | "created" | "updated" | "assignedToPlayerId"
-    > => ({
-      sessionId: sid,
-      name: "",
-      role: "",
-      tenure: "",
-      contactUrl: "",
-    }),
-    [sid],
-  );
-
-  const [buddyDraft, setBuddyDraft] = useState(() => emptyBuddyDraft());
-  const buddyProfileRef = useRef<BuddyProfile | null>(null);
-
-  const loadBuddyProfile = useCallback(
-    (playerId: string) => {
-      if (!playerId) {
-        buddyProfileRef.current = null;
-        setBuddyDraft(emptyBuddyDraft());
-        return;
-      }
-      void adapter.getBuddyProfile(playerId).then((profile) => {
-        buddyProfileRef.current = profile;
-        if (profile) {
-          setBuddyDraft({
-            sessionId: profile.sessionId,
-            name: profile.name,
-            role: profile.role,
-            tenure: profile.tenure ?? "",
-            contactUrl: profile.contactUrl ?? "",
-          });
-        } else {
-          setBuddyDraft(emptyBuddyDraft());
-        }
-      });
-    },
-    [adapter, emptyBuddyDraft],
-  );
 
   const handlePlayerSelectWithBuddy = useCallback(
     (playerId: string) => {
-      handlePlayerSelect(playerId);
-      loadBuddyProfile(playerId);
+      adminProgress.handlePlayerSelect(playerId);
     },
-    [handlePlayerSelect, loadBuddyProfile],
+    [adminProgress],
   );
-
-  // ── Save / discard ─────────────────────────────────────────────────────────
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveToast, setSaveToast] = useState<string | null>(null);
@@ -216,28 +121,26 @@ const AdminCockpitPage = () => {
   }, []);
 
   const handleBuddySave = useCallback(() => {
-    if (!selectedPlayerId) return;
-    void adapter.upsertBuddyProfile(selectedPlayerId, {
-      sessionId: buddyDraft.sessionId,
-      name: buddyDraft.name,
-      role: buddyDraft.role,
-      tenure: buddyDraft.tenure,
-      contactUrl: buddyDraft.contactUrl,
-    }).then((profile) => {
-      buddyProfileRef.current = profile;
+    if (!adminProgress.selectedPlayerId) return;
+    void buddyProfile.upsertBuddy().then(() => {
       showToast("Buddy assigned");
     });
-  }, [adapter, selectedPlayerId, buddyDraft, showToast]);
-
-  // ── Background upload ──────────────────────────────────────────────────────
+  }, [adminProgress.selectedPlayerId, buddyProfile, showToast]);
 
   const handleUploadBackground = useCallback(
     (file: File) => {
-      const localUrl = URL.createObjectURL(file);
-      setBgImageUrlOverride(localUrl);
-      void adapter.updateSession(sid, { bgImageUrl: localUrl });
+      void uploadBackground(file).then(({ displayUrl }) => {
+        setBgImageUrlOverride(displayUrl);
+      });
     },
-    [adapter, sid],
+    [uploadBackground],
+  );
+
+  const handleMapNodeScaleChange = useCallback(
+    (scale: number) => {
+      void updateMapNodeScale(scale);
+    },
+    [updateMapNodeScale],
   );
 
   const isDirty = useMemo(
@@ -255,16 +158,16 @@ const AdminCockpitPage = () => {
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
-      await milestoneEditor.saveMilestones(sid, adapter, milestones);
+      await milestoneEditor.saveMilestones(sid, milestones);
       await missionEditor.saveMissions(
         sid,
-        adapter,
         missions,
         missionEditor.xpPreview,
       );
       milestoneEditor.clearDirtyMilestones();
       missionEditor.clearDirtyMissions();
       missionEditor.clearOrderChanges();
+      refreshSession();
       showToast("All changes saved");
     } catch {
       showToast("Save failed");
@@ -272,12 +175,12 @@ const AdminCockpitPage = () => {
       setIsSaving(false);
     }
   }, [
-    adapter,
     sid,
     milestones,
     missions,
     milestoneEditor,
     missionEditor,
+    refreshSession,
     showToast,
   ]);
 
@@ -286,9 +189,6 @@ const AdminCockpitPage = () => {
     missionEditor.discardMissions();
   }, [milestones, milestoneEditor, missionEditor]);
 
-  // ── Computed values for render ─────────────────────────────────────────────
-
-  // Build the Milestone[] shape for MilestoneMapEditor from draft state
   const draftMilestonesAsMilestones: ReadonlyArray<Milestone> = useMemo(
     () =>
       milestoneEditor.draftMilestones.map((dm) => {
@@ -308,7 +208,6 @@ const AdminCockpitPage = () => {
     [milestoneEditor.draftMilestones, milestones, sid],
   );
 
-  // Mission count per milestone — passed to map nodes as pills
   const missionCounts = useMemo<Record<string, number>>(
     () =>
       missions.reduce<Record<string, number>>((acc, m) => {
@@ -317,8 +216,6 @@ const AdminCockpitPage = () => {
       }, {}),
     [missions],
   );
-
-  // ── Render ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (sessionError && !sessionLoading) {
@@ -347,7 +244,6 @@ const AdminCockpitPage = () => {
         role="Game Master"
       />
 
-      {/* Session toolbar: back-to-landing (demo) or log-out (real session) */}
       <div
         style={{
           display: "flex",
@@ -379,7 +275,6 @@ const AdminCockpitPage = () => {
         </button>
       </div>
 
-      {/* ── Tab navigation ──────────────────────────────────────────────── */}
       <nav
         aria-label="Admin views"
         className="tab-bar"
@@ -449,14 +344,12 @@ const AdminCockpitPage = () => {
         </ul>
       </nav>
 
-      {/* ── Active Session view ─────────────────────────────────────────── */}
       {activeTab === ADMIN_TABS.ACTIVE_SESSION && (
         <main
           className="admin-layout"
           data-map-collapsed={mapCollapsed ? "true" : undefined}
           style={{ flex: 1 }}
         >
-          {/* Map canvas */}
           <div className="admin-layout__map">
             <MilestoneMapEditor
               milestones={draftMilestonesAsMilestones}
@@ -473,51 +366,54 @@ const AdminCockpitPage = () => {
               onAddMilestoneAt={milestoneEditor.handleAddMilestoneAt}
               onDelete={milestoneEditor.handleDeleteMilestone}
               onUploadBackground={handleUploadBackground}
+              onMapNodeScaleChange={handleMapNodeScaleChange}
               onOpenScanner={() => setScannerOpen(true)}
               onResetToGrid={milestoneEditor.handleResetToGrid}
             />
           </div>
 
-          {/* Sidebar panels */}
           <div ref={sidebarRef} className="admin-layout__sidebar">
             <SessionInviteCard sessionId={sid} />
-            {players.length > 0 && (
+            {adminProgress.players.length > 0 && (
               <PlayerSelectorDropdown
-                players={players}
-                selectedId={selectedPlayerId}
+                players={adminProgress.players}
+                selectedId={adminProgress.selectedPlayerId}
                 onSelect={handlePlayerSelectWithBuddy}
               />
             )}
-            {selectedPlayer && selectedPlayerProgress && (
+            {adminProgress.selectedPlayer &&
+              adminProgress.selectedPlayerProgress && (
               <PlayerProfileCard
-                player={selectedPlayer}
-                totalXP={selectedPlayerProgress.totalXP}
-                milestoneProgress={selectedPlayerProgress.milestoneProgress}
+                player={adminProgress.selectedPlayer}
+                totalXP={adminProgress.selectedPlayerProgress.totalXP}
+                milestoneProgress={adminProgress.selectedPlayerProgress
+                  .milestoneProgress}
               />
             )}
             <PendingApprovalsPanel
-              pendingEvents={pendingEvents}
-              players={players}
+              pendingEvents={adminProgress.pendingEvents}
+              players={adminProgress.players}
               missions={missions}
               onApprove={(playerId, missionId) =>
-                void handleApprove(playerId, missionId)}
+                void adminProgress.handleApprove(playerId, missionId)}
               onReject={(playerId, missionId) =>
-                void handleReject(playerId, missionId)}
+                void adminProgress.handleReject(playerId, missionId)}
             />
             <BuddyAssignmentForm
-              players={players}
-              draft={buddyDraft}
-              selectedPlayerId={selectedPlayerId}
+              players={adminProgress.players}
+              draft={buddyProfile.buddyDraft}
+              selectedPlayerId={adminProgress.selectedPlayerId}
               onPlayerChange={handlePlayerSelectWithBuddy}
-              onDraftChange={setBuddyDraft}
+              onDraftChange={buddyProfile.setBuddyDraft}
               onSave={handleBuddySave}
             />
             <ResourcesEditor
-              resources={adminResources}
+              resources={adminResources.resources}
               sessionId={sid}
-              onAdd={handleResourceAdd}
-              onDelete={handleResourceDelete}
-              onToggleVisibility={handleResourceToggleVisibility}
+              onAdd={(data) => void adminResources.addResource(data)}
+              onDelete={(id) => void adminResources.deleteResource(id)}
+              onToggleVisibility={(id, visible) =>
+                void adminResources.toggleVisibility(id, visible)}
             />
             <TemplateLibrary
               templates={toTemplateSummaries(templateLibrary.templates)}
@@ -528,7 +424,6 @@ const AdminCockpitPage = () => {
         </main>
       )}
 
-      {/* ── Pre-Boarding Checklist view ─────────────────────────────────── */}
       {activeTab === ADMIN_TABS.PRE_BOARDING && (
         <main
           style={{
@@ -540,7 +435,7 @@ const AdminCockpitPage = () => {
           }}
         >
           <PreBoardingChecklist
-            playerName={selectedPlayer?.name.split(" ")[0]}
+            playerName={adminProgress.selectedPlayer?.name.split(" ")[0]}
             items={preBoardingChecklist.items}
             onToggle={preBoardingChecklist.onToggle}
             onAdd={preBoardingChecklist.onAdd}
@@ -549,7 +444,6 @@ const AdminCockpitPage = () => {
         </main>
       )}
 
-      {/* ── All New Hires view ───────────────────────────────────────────── */}
       {activeTab === ADMIN_TABS.ALL_NEW_HIRES && (
         <main
           style={{
@@ -571,18 +465,16 @@ const AdminCockpitPage = () => {
           >
             All New Hires
           </h2>
-          <CrossHireDashboard hires={crossHireRows} />
+          <CrossHireDashboard hires={crossHire.rows} />
         </main>
       )}
 
-      {/* ── QR Scanner modal ────────────────────────────────────────────── */}
       <AdminQRScannerModal
         isOpen={scannerOpen}
         sessionId={sid}
         onClose={() => setScannerOpen(false)}
       />
 
-      {/* ── Full-screen mission editor bottom sheet ──────────────────────── */}
       <MissionBottomSheet
         isOpen={milestoneEditor.selectedMilestone !== null}
         milestone={milestoneEditor.selectedMilestone}
@@ -625,13 +517,11 @@ const AdminCockpitPage = () => {
         }}
       />
 
-      {/* ── Save toast ──────────────────────────────────────────────────── */}
       <Toast
         message={saveToast}
         isError={saveToast?.includes("fail") ?? false}
       />
 
-      {/* ── Save Template modal ──────────────────────────────────────────── */}
       <SaveTemplateModal
         isOpen={templateLibrary.saveTemplateOpen}
         templateName={templateLibrary.templateName}

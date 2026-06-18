@@ -35,6 +35,7 @@ interface MilestoneMapEditorProps {
   readonly onAddMilestoneAt: (xPercent: number, yPercent: number) => void;
   readonly onDelete: (id: string) => void;
   readonly onUploadBackground: (file: File) => void;
+  readonly onMapNodeScaleChange?: (scale: number) => void;
   readonly onOpenScanner?: () => void;
   /** Reset all node positions to the default 4-column grid layout. */
   readonly onResetToGrid?: () => void;
@@ -101,14 +102,8 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
   // ── Viewport zoom ref ──────────────────────────────────────────────────────
   const viewportRef = useRef<MapViewportHandle>(null);
 
-  // ── Node scale ──────────────────────────────────────────────────────────────
-  // null = admin hasn't overridden yet → use the live prop value so late-loading
-  // session data (mapNodeScale: 0.33) is picked up after the first render.
-  // Once the admin adjusts the slider the override takes effect locally.
-  const [nodeScaleOverride, setNodeScaleOverride] = useState<number | null>(
-    null,
-  );
-  const nodeScale = nodeScaleOverride ?? props.mapNodeScale;
+  // ── Node scale (persisted via onMapNodeScaleChange — UX-012) ─────────────
+  const nodeScale = props.mapNodeScale;
 
   // ── Edit mode ──────────────────────────────────────────────────────────────
   const [isEditMode, setIsEditMode] = useState(false);
@@ -372,15 +367,12 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
           aria-label="Show less background context"
           title={`Background: ${(1 / nodeScale).toFixed(1)}× canvas (shrink)`}
           disabled={nodeScale >= NODE_SCALE_MAX}
-          onClick={() =>
-            setNodeScaleOverride((s) =>
-              Math.round(
-                Math.min(
-                  NODE_SCALE_MAX,
-                  (s ?? props.mapNodeScale) + NODE_SCALE_STEP,
-                ) * 100,
-              ) / 100
-            )}
+          onClick={() => {
+            const next = Math.round(
+              Math.min(NODE_SCALE_MAX, nodeScale + NODE_SCALE_STEP) * 100,
+            ) / 100;
+            props.onMapNodeScaleChange?.(next);
+          }}
         >
           <MdCloseFullscreen size={18} aria-hidden="true" />
         </button>
@@ -390,15 +382,12 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
           aria-label="Show more background context"
           title={`Background: ${(1 / nodeScale).toFixed(1)}× canvas (expand)`}
           disabled={nodeScale <= NODE_SCALE_MIN}
-          onClick={() =>
-            setNodeScaleOverride((s) =>
-              Math.round(
-                Math.max(
-                  NODE_SCALE_MIN,
-                  (s ?? props.mapNodeScale) - NODE_SCALE_STEP,
-                ) * 100,
-              ) / 100
-            )}
+          onClick={() => {
+            const next = Math.round(
+              Math.max(NODE_SCALE_MIN, nodeScale - NODE_SCALE_STEP) * 100,
+            ) / 100;
+            props.onMapNodeScaleChange?.(next);
+          }}
         >
           <MdOpenInFull size={18} aria-hidden="true" />
         </button>

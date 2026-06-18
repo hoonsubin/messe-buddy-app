@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PLACEHOLDER_STEPS } from "../components/tutorial/TutorialOverlay.tsx";
-import type { AppAdapter } from "../adapters/interface.ts";
-import type { Player } from "../types/index.ts";
+import type { PBRecord, Player } from "../types/index.ts";
 
 // Profile Setup mission ID from mock data - used for tutorial final-step routing.
 const PROFILE_MISSION_ID = "mission_m1_profile";
@@ -60,7 +59,9 @@ interface UseTutorialResult {
  */
 export const useTutorial = (
   player: Player | null,
-  adapter: AppAdapter,
+  updatePlayer: (
+    patch: Partial<Omit<Player, keyof PBRecord>>,
+  ) => Promise<Player>,
   sessionId: string,
 ): UseTutorialResult => {
   const navigate = useNavigate();
@@ -117,14 +118,14 @@ export const useTutorial = (
 
   const handleSkipConfirm = useCallback(() => {
     if (player?.id) {
-      adapter.updatePlayer(player.id, { tutorialComplete: true }).catch(() => {
+      updatePlayer({ tutorialComplete: true }).catch(() => {
         // Silent failure
       });
     }
     clearTutorialStorage();
     setShowSkipConfirm(false);
     setShowTutorial(false);
-  }, [player, adapter]);
+  }, [player, updatePlayer]);
 
   const handleSkipCancel = useCallback(() => {
     setShowSkipConfirm(false);

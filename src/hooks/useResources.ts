@@ -1,21 +1,61 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Resource } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 
-export interface UseResourcesResult {
+export interface UseResourcesPlayerResult {
+  readonly role: "player";
   readonly resources: ReadonlyArray<Resource>;
   readonly loading: boolean;
   readonly error: Error | null;
+  readonly refresh: () => void;
 }
 
-// Fetches resources for a session, filters to visible-to-player only.
-export const useResources = (sessionId: string): UseResourcesResult => {
+export interface UseResourcesAdminResult {
+  readonly role: "gamemaker";
+  readonly resources: ReadonlyArray<Resource>;
+  readonly loading: boolean;
+  readonly error: Error | null;
+  readonly refresh: () => void;
+  readonly addResource: (
+    data: Omit<Resource, "id" | "created" | "updated">,
+  ) => Promise<void>;
+  readonly deleteResource: (resourceId: string) => Promise<void>;
+  readonly toggleVisibility: (
+    resourceId: string,
+    visible: boolean,
+  ) => Promise<void>;
+}
+
+type UseResourcesOptions = {
+  readonly role: "player" | "gamemaker";
+};
+
+export function useResources(
+  sessionId: string,
+  options: { role: "player" },
+): UseResourcesPlayerResult;
+export function useResources(
+  sessionId: string,
+  options: { role: "gamemaker" },
+): UseResourcesAdminResult;
+export function useResources(
+  sessionId: string,
+  options: UseResourcesOptions,
+): UseResourcesPlayerResult | UseResourcesAdminResult {
   const adapter = useAdapter();
   const [resources, setResources] = useState<ReadonlyArray<Resource>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   useEffect(() => {
+    if (!sessionId) {
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     const fetch = async () => {
@@ -24,7 +64,11 @@ export const useResources = (sessionId: string): UseResourcesResult => {
       try {
         const all = await adapter.listResources(sessionId);
         if (!cancelled) {
-          setResources(all.filter((r) => r.isVisibleToPlayer));
+          setResources(
+            options.role === "player"
+              ? all.filter((r) => r.isVisibleToPlayer)
+              : all,
+          );
         }
       } catch (e) {
         if (!cancelled) {
@@ -35,14 +79,52 @@ export const useResources = (sessionId: string): UseResourcesResult => {
       }
     };
 
-    if (sessionId) {
-      void fetch();
-    }
-
+    void fetch();
     return () => {
       cancelled = true;
     };
-  }, [adapter, sessionId]);
+  }, [adapter, options.role, sessionId, refreshKey]);
 
-  return { resources, loading, error };
-};
+  const addResource = useCallback(
+    async (data: Omit<Resource, "id" | "created" | "updated">) => {
+      const created = await adapter.createResource(data);
+      setResources((prev) => [...prev, created]);
+    },
+    [adapter],
+  );
+
+  const deleteResource = useCallback(
+    async (resourceId: string) => {
+      await adapter.deleteResource(resourceId);
+      setResources((prev) => prev.filter((r) => r.id !== resourceId));
+    },
+    [adapter],
+  );
+
+  const toggleVisibility = useCallback(
+    async (resourceId: string, visible: boolean) => {
+      const updated = await adapter.updateResource(resourceId, {
+        isVisibleToPlayer: visible,
+      });
+      setResources((prev) =>
+        prev.map((r) => (r.id === resourceId ? updated : r))
+      );
+    },
+    [adapter],
+  );
+
+  if (options.role === "gamemaker") {
+    return {
+      role: "gamemaker",
+      resources,
+      loading,
+      error,
+      refresh,
+      addResource,
+      deleteResource,
+      toggleVisibility,
+    };
+  }
+
+  return { role: "player", resources, loading, error, refresh };
+}

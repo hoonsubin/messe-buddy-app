@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PreBoardingCheckItem, Session } from "../types/index.ts";
-import type { AppAdapter } from "../adapters/interface.ts";
+import { useAdapter } from "../adapters/useAdapter.ts";
 import { makeId } from "../utils/id.ts";
 
 interface UsePreBoardingChecklistResult {
@@ -18,12 +18,11 @@ interface UsePreBoardingChecklistResult {
 export const usePreBoardingChecklist = (
   sid: string,
   session: Session | null,
-  adapter: AppAdapter,
 ): UsePreBoardingChecklistResult => {
+  const adapter = useAdapter();
   const [items, setItems] = useState<ReadonlyArray<PreBoardingCheckItem>>([]);
   const prevSessionRef = useRef<Session | null>(null);
 
-  // Seed from session on first load / when session changes reference
   useEffect(() => {
     if (session && session !== prevSessionRef.current) {
       prevSessionRef.current = session;

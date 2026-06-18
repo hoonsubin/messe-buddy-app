@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { FormSchema, TemplateExport } from "../types/index.ts";
 import { MISSION_TYPE } from "../types/index.ts";
-import type { AppAdapter } from "../adapters/interface.ts";
+import { useAdapter } from "../adapters/useAdapter.ts";
 import type { Mission, Session } from "../types/index.ts";
 import { exportTemplate } from "../use-cases/exportTemplate.ts";
 import { bootstrapFromTemplate } from "../use-cases/bootstrapFromTemplate.ts";
@@ -17,7 +17,6 @@ interface UseTemplateLibraryOptions {
   readonly missions: ReadonlyArray<Mission>;
   readonly resources: ReadonlyArray<Resource>;
   readonly gmUid: string | undefined;
-  readonly adapter: AppAdapter;
 }
 
 interface UseTemplateLibraryResult {
@@ -46,8 +45,8 @@ export const useTemplateLibrary = ({
   missions,
   resources,
   gmUid,
-  adapter,
 }: UseTemplateLibraryOptions): UseTemplateLibraryResult => {
+  const adapter = useAdapter();
   const navigate = useNavigate();
 
   const [templates, setTemplates] = useState<ReadonlyArray<TemplateExport>>([]);

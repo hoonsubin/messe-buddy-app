@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as QRCode from "qrcode";
-import type { ProgressEvent } from "../../types/index.ts";
-import { useAdapter } from "../../adapters/useAdapter.ts";
+import { useSession } from "../../hooks/useSession.ts";
+import { useWatchMission } from "../../hooks/useProgress/index.ts";
 import { encodeQRPayload } from "../../utils/qrPayload.ts";
 import { buildValidationUrl } from "../../utils/qrUrl.ts";
 
@@ -14,9 +14,10 @@ interface QRDisplayProps {
 }
 
 const QRDisplay = (props: QRDisplayProps) => {
-  const adapter = useAdapter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [encodeError, setEncodeError] = useState<string | null>(null);
+  const { session } = useSession(props.sessionId);
+  const { watchMission } = useWatchMission(props.playerId);
 
   const { playerId, missionId, sessionId, xpValue, onValidated } = props;
 
@@ -24,10 +25,9 @@ const QRDisplay = (props: QRDisplayProps) => {
     let cancelled = false;
 
     const render = async () => {
-      if (!canvasRef.current) return;
+      if (!canvasRef.current || !session) return;
 
       try {
-        const session = await adapter.getSession(sessionId);
         const secret = session.qrSecret ?? sessionId;
 
         const encoded = await encodeQRPayload(
@@ -63,20 +63,16 @@ const QRDisplay = (props: QRDisplayProps) => {
     return () => {
       cancelled = true;
     };
-  }, [adapter, playerId, missionId, sessionId, xpValue]);
+  }, [playerId, missionId, session, sessionId, xpValue]);
 
   useEffect(() => {
-    const unsubscribe = adapter.subscribeProgressEvent(
-      playerId,
-      missionId,
-      (event: ProgressEvent) => {
-        if (event.status === "completed" || event.status === "autoApproved") {
-          onValidated();
-        }
-      },
-    );
+    const unsubscribe = watchMission(missionId, (event) => {
+      if (event.status === "completed" || event.status === "autoApproved") {
+        onValidated();
+      }
+    });
     return unsubscribe;
-  }, [adapter, playerId, missionId, onValidated]);
+  }, [missionId, onValidated, watchMission]);
 
   return (
     <div

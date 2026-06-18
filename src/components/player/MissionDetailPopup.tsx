@@ -10,7 +10,6 @@ import {
 import { marked } from "marked";
 import type { Mission, ProgressEvent } from "../../types/index.ts";
 import { MISSION_TYPE } from "../../types/index.ts";
-import { useAdapter } from "../../adapters/useAdapter.ts";
 import TagBadge from "../shared/TagBadge.tsx";
 import XPBadge from "../shared/XPBadge.tsx";
 import ValidationDisplay from "./ValidationDisplay.tsx";
@@ -50,6 +49,8 @@ interface MissionDetailPopupProps {
   readonly playerId: string;
   readonly sessionId: string;
   readonly progressEvent?: ProgressEvent | null;
+  readonly markSelfComplete: () => Promise<void>;
+  readonly markPending: () => Promise<void>;
   readonly onClose: () => void;
   readonly onValidated: () => void;
 }
@@ -57,7 +58,6 @@ interface MissionDetailPopupProps {
 const SWIPE_DOWN_THRESHOLD = 80;
 
 const MissionDetailPopup = (props: MissionDetailPopupProps) => {
-  const adapter = useAdapter();
   const mission = props.mission;
 
   // Tracks whether the validation view is showing (gmApprove / qr paths)
@@ -90,20 +90,15 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
     if (method === "selfApprove") {
       setIsSubmitting(true);
       try {
-        await adapter.upsertProgressEvent(props.playerId, mission.id, {
-          status: "autoApproved",
-        });
+        await props.markSelfComplete();
         props.onValidated();
       } finally {
         setIsSubmitting(false);
       }
     } else if (method === "gmApprove") {
-      // Write pendingApproval first; mock adapter fires subscription after 4 s.
       setIsSubmitting(true);
       try {
-        await adapter.upsertProgressEvent(props.playerId, mission.id, {
-          status: "pendingApproval",
-        });
+        await props.markPending();
       } finally {
         setIsSubmitting(false);
       }
@@ -112,7 +107,7 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
       // qr - C-07: no PB write before GM scans. Just show QR + subscribe.
       setShowValidation(true);
     }
-  }, [adapter, isCompleted, isSubmitting, mission, props]);
+  }, [isCompleted, isSubmitting, mission, props]);
 
   // ── Render body ──────────────────────────────────────────────────────────
   const bodyHtml = mission.body ? (marked.parse(mission.body) as string) : "";

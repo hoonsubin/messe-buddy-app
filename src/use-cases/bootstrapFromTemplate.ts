@@ -1,5 +1,5 @@
 import type { AppAdapter } from "../adapters/interface.ts";
-import type { LocalIdentity, TemplateExport } from "../types/index.ts";
+import type { CachedIdentity, TemplateExport } from "../types/index.ts";
 import { USER_ROLE } from "../types/index.ts";
 import { importTemplate } from "./importTemplate.ts";
 
@@ -11,7 +11,7 @@ export interface BootstrapFromTemplateOptions {
 export interface BootstrapFromTemplateResult {
   readonly sessionId: string;
   readonly gmUid: string;
-  readonly identity: LocalIdentity;
+  readonly identity: CachedIdentity;
 }
 
 /** Import a template into a new GM session and return the new identity. */
@@ -27,7 +27,7 @@ export const bootstrapFromTemplate = async (
     gmUid,
     adapter,
   );
-  const identity: LocalIdentity = {
+  const identity: CachedIdentity = {
     uid: gmUid,
     recoveryKey: options.recoveryKey ?? "",
     sessionId,

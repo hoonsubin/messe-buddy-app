@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { DraftMilestone, Milestone } from "../types/index.ts";
-import type { AppAdapter } from "../adapters/interface.ts";
+import { useAdapter } from "../adapters/useAdapter.ts";
 import { makeId } from "../utils/id.ts";
 import { gridPositions } from "../utils/mapGrid.ts";
 
@@ -32,7 +32,6 @@ interface UseAdminMilestoneEditorResult {
   /** Save dirty milestones to the adapter. Returns the IDs that were created. */
   readonly saveMilestones: (
     sid: string,
-    adapter: AppAdapter,
     milestones: ReadonlyArray<Milestone>,
   ) => Promise<void>;
   readonly discardMilestones: (milestones: ReadonlyArray<Milestone>) => void;
@@ -49,6 +48,7 @@ interface UseAdminMilestoneEditorResult {
 export const useAdminMilestoneEditor = (
   milestones: ReadonlyArray<Milestone>,
 ): UseAdminMilestoneEditorResult => {
+  const adapter = useAdapter();
   const [draftMilestones, setDraftMilestones] = useState<
     ReadonlyArray<DraftMilestone>
   >([]);
@@ -123,7 +123,6 @@ export const useAdminMilestoneEditor = (
   const saveMilestones = useCallback(
     async (
       sid: string,
-      adapter: AppAdapter,
       serverMilestones: ReadonlyArray<Milestone>,
     ) => {
       for (const dm of draftMilestones) {
@@ -150,7 +149,7 @@ export const useAdminMilestoneEditor = (
         }
       }
     },
-    [draftMilestones],
+    [adapter, draftMilestones],
   );
 
   const discardMilestones = useCallback(

@@ -4,13 +4,13 @@ version: 2.1
 date_created: 2026-06-18
 last_updated: 2026-06-18
 owner: Architecture
-status: Planned
+status: Done
 tags: refactor, architecture, phase-a, c-18, data-unification, pocketbase-prep
 ---
 
 # Introduction
 
-![Status: Planned](https://img.shields.io/badge/status-planned-blue)
+![Status: Done](https://img.shields.io/badge/status-done-green)
 
 **Phase A** of the two-phase data unification refactoring. Delivers a **C-18-compliant** shared hook layer so pages and components never call [`AppAdapter`](src/adapters/interface.ts:18) directly. Consolidates fragmented progress/buddy/resources hooks, adds missing domain hooks (player resolution, form mission, QR validation, session writes), and aligns identity with [`SPECS.md`](SPECS.md:244) (`CachedIdentity` cache + `Player` canonical record).
 
@@ -20,14 +20,14 @@ tags: refactor, architecture, phase-a, c-18, data-unification, pocketbase-prep
 
 ### Success criteria (Phase A exit gate)
 
-- [ ] `rg 'useAdapter' src/pages src/components` returns **zero** matches (excluding test files if any)
-- [ ] `rg 'from.*adapters/interface' src/pages src/components` returns **zero** matches
-- [ ] All domain adapter methods are consumed **only** from `src/hooks/` and `src/use-cases/`
-- [ ] Every data-fetching hook exposes `loading`, `error`, and `refresh` (REQ-005)
-- [ ] Real-time progress updates flow through `useProgress.watchMission` (C-20) — no component calls `subscribeProgressEvent`
-- [ ] [UX preservation checklist](#ux-preservation-checklist) — all P0 items verified
-- [ ] `deno task lint && deno task build` pass
-- [ ] Manual smoke tests TEST-001 through TEST-018 pass
+- [x] `rg 'useAdapter' src/pages src/components` returns **zero** matches (excluding test files if any)
+- [x] `rg 'from.*adapters/interface' src/pages src/components` returns **zero** matches
+- [x] All domain adapter methods are consumed **only** from `src/hooks/` and `src/use-cases/`
+- [x] Every data-fetching hook exposes `loading`, `error`, and `refresh` (REQ-005)
+- [x] Real-time progress updates flow through `useProgress.watchMission` (C-20) — no component calls `subscribeProgressEvent`
+- [x] [UX preservation checklist](#ux-preservation-checklist) — all P0 items verified
+- [x] `deno task lint && deno task build` pass
+- [x] Manual smoke tests TEST-001 through TEST-018 pass
 
 ---
 
@@ -220,84 +220,84 @@ Sourced from [`docs/admin-view-data.md`](docs/admin-view-data.md) and [`docs/pla
 
 | Task | Description | Done | Date |
 |------|-------------|------|------|
-| TASK-001 | Rename `LocalIdentity` → `CachedIdentity`. No re-export alias. | | |
-| TASK-002 | `useIdentity` types → `CachedIdentity` only (multi-profile array already implemented). | | |
-| TASK-003 | Create `useActiveProfile(sessionId, role?)`. | | |
-| TASK-004 | Update landing, RequireRole, use-cases, LandingPage. | | |
-| TASK-005 | Delete `ephemeralIdentityStore.ts` stub. | | |
-| TASK-006 | TEST-007, TEST-008 cross-tab + demo profiles. | | |
+| TASK-001 | Rename `LocalIdentity` → `CachedIdentity`. No re-export alias. | ✅ | 2026-06-18 |
+| TASK-002 | `useIdentity` types → `CachedIdentity` only (multi-profile array already implemented). | ✅ | 2026-06-18 |
+| TASK-003 | Create `useActiveProfile(sessionId, role?)`. | ✅ | 2026-06-18 |
+| TASK-004 | Update landing, RequireRole, use-cases, LandingPage. | ✅ | 2026-06-18 |
+| TASK-005 | Delete `ephemeralIdentityStore.ts` stub. | ✅ | 2026-06-18 |
+| TASK-006 | TEST-007, TEST-008 cross-tab + demo profiles. | ✅ | 2026-06-18 |
 
 ### Phase 2: `useResolvedPlayer` + extend `useSession`
 
 | Task | Description | Done | Date |
 |------|-------------|------|------|
-| TASK-010 | Create `useResolvedPlayer(uid)`. | | |
-| TASK-011 | Extend `useSession`: `updateSession(patch)`, `uploadBackground(file)` → `{ displayUrl }` for override pattern (UX-003). | | |
-| TASK-011b | Add `updateMapNodeScale(scale)` → `updateSession({ mapNodeScale })` (UX-012). Wire MilestoneMapEditor slider to call hook instead of local-only override. | | |
-| TASK-012 | Migrate PlayerCockpitPage. | | |
-| TASK-013 | Migrate FormPage (player resolution only; form logic Phase 5). | | |
+| TASK-010 | Create `useResolvedPlayer(uid)`. | ✅ | 2026-06-18 |
+| TASK-011 | Extend `useSession`: `updateSession(patch)`, `uploadBackground(file)` → `{ displayUrl }` for override pattern (UX-003). | ✅ | 2026-06-18 |
+| TASK-011b | Add `updateMapNodeScale(scale)` → `updateSession({ mapNodeScale })` (UX-012). Wire MilestoneMapEditor slider to call hook instead of local-only override. | ✅ | 2026-06-18 |
+| TASK-012 | Migrate PlayerCockpitPage. | ✅ | 2026-06-18 |
+| TASK-013 | Migrate FormPage (player resolution only; form logic Phase 5). | ✅ | 2026-06-18 |
 
 ### Phase 3: `useProgress`
 
 | Task | Description | Done | Date |
 |------|-------------|------|------|
-| TASK-020 | Discriminated types + `useProgress/` modules. | | |
-| TASK-021 | Player mode: progress + `markPending`, `markSelfComplete`, `markAutoApproved`; mutations refresh local state (UX-009). | | |
-| TASK-022 | Admin mode: port useAdminPlayers including **auto-select first player** (UX-001), `pendingEvents` filter (UX-007). | | |
-| TASK-023 | Cross-hire: `active` guard + cancellation (UX-006). | | |
-| TASK-024 | `watchMission` → internal `subscribeProgressEvent`. | | |
-| TASK-025 | `refresh` + error clear; `watchMission` callback triggers `computeProgress` re-run. | | |
+| TASK-020 | Discriminated types + `useProgress/` modules. | ✅ | 2026-06-18 |
+| TASK-021 | Player mode: progress + `markPending`, `markSelfComplete`, `markAutoApproved`; mutations refresh local state (UX-009). | ✅ | 2026-06-18 |
+| TASK-022 | Admin mode: port useAdminPlayers including **auto-select first player** (UX-001), `pendingEvents` filter (UX-007). | ✅ | 2026-06-18 |
+| TASK-023 | Cross-hire: `active` guard + cancellation (UX-006). | ✅ | 2026-06-18 |
+| TASK-024 | `watchMission` → internal `subscribeProgressEvent`. | ✅ | 2026-06-18 |
+| TASK-025 | `refresh` + error clear; `watchMission` callback triggers `computeProgress` re-run. | ✅ | 2026-06-18 |
 
 ### Phase 4: `useBuddyProfile` + `useResources`
 
 | Task | Description | Done | Date |
 |------|-------------|------|------|
-| TASK-030 | `useBuddyProfile`: reload on `playerId` change (UX-002); admin `savedBuddy` after upsert; `refresh` (UX-019). | | |
-| TASK-031 | `useResources`: role param, admin optimistic CRUD, `refresh`; search stays in ResourcesSection (UX-017). | | |
+| TASK-030 | `useBuddyProfile`: reload on `playerId` change (UX-002); admin `savedBuddy` after upsert; `refresh` (UX-019). | ✅ | 2026-06-18 |
+| TASK-031 | `useResources`: role param, admin optimistic CRUD, `refresh`; search stays in ResourcesSection (UX-017). | ✅ | 2026-06-18 |
 
 ### Phase 5: Domain-specific hooks
 
 | Task | Description | Done | Date |
 |------|-------------|------|------|
-| TASK-040 | `useFormMission`: schema fetch + submit; **profile mission branch** for `mission_m1_profile` — mirror 11 fields, `profileComplete`, `tutorialComplete` (UX-008). | | |
-| TASK-041 | `useValidationConfirm`: decode, confirm, discrete errors (missing token, HMAC fail, wrong session, confirm fail) + retry (UX-015). | | |
-| TASK-042 | `useQRScanContext`: prefetch data + **`buildSimulateScanUrl()`** (UX-013). | | |
-| TASK-043 | `usePreBoardingChecklist`: internal `useAdapter()`; seed on session ref change. | | |
-| TASK-044 | `useTutorial`: `updatePlayer` callback injection (UX-011). | | |
-| TASK-045 | `useTemplateLibrary`: internal `useAdapter()`, remove `adapter` prop, keep **`active` guard** (UX-006). | | |
+| TASK-040 | `useFormMission`: schema fetch + submit; **profile mission branch** for `mission_m1_profile` — mirror 11 fields, `profileComplete`, `tutorialComplete` (UX-008). | ✅ | 2026-06-18 |
+| TASK-041 | `useValidationConfirm`: decode, confirm, discrete errors (missing token, HMAC fail, wrong session, confirm fail) + retry (UX-015). | ✅ | 2026-06-18 |
+| TASK-042 | `useQRScanContext`: prefetch data + **`buildSimulateScanUrl()`** (UX-013). | ✅ | 2026-06-18 |
+| TASK-043 | `usePreBoardingChecklist`: internal `useAdapter()`; seed on session ref change. | ✅ | 2026-06-18 |
+| TASK-044 | `useTutorial`: `updatePlayer` callback injection (UX-011). | ✅ | 2026-06-18 |
+| TASK-045 | `useTemplateLibrary`: internal `useAdapter()`, remove `adapter` prop, keep **`active` guard** (UX-006). | ✅ | 2026-06-18 |
 
 ### Phase 5b: Editor hooks — internal adapter (C-18 completion)
 
 | Task | Description | Done | Date |
 |------|-------------|------|------|
-| TASK-061 | `useAdminMilestoneEditor.saveMilestones(sid, serverMilestones)` — no `adapter` arg; internal `useAdapter()` (UX-018). | | |
-| TASK-062 | `useAdminMissionEditor.saveMissions(sid, serverMissions, xpPreview)` — no `adapter` arg (UX-018). | | |
+| TASK-061 | `useAdminMilestoneEditor.saveMilestones(sid, serverMilestones)` — no `adapter` arg; internal `useAdapter()` (UX-018). | ✅ | 2026-06-18 |
+| TASK-062 | `useAdminMissionEditor.saveMissions(sid, serverMissions, xpPreview)` — no `adapter` arg (UX-018). | ✅ | 2026-06-18 |
 
 ### Phase 6: Migrate pages & components
 
 | Task | Description | Done | Date |
 |------|-------------|------|------|
-| TASK-050 | ESLint C-18 rule. | | |
-| TASK-051 | PlayerCockpitPage — preserve session-error redirect + toast (UX-016); tutorial demo override. | | |
-| TASK-052 | AdminCockpitPage — wire buddy on `selectPlayer`; `bgImageUrlOverride`; call `session.refresh()` after save (UX-020); demo vs real logout. | | |
-| TASK-053 | FormPage → `useFormMission`. | | |
-| TASK-054 | ValidationPage → `useValidationConfirm` + `useActiveProfile` (UX-014). | | |
-| TASK-055 | MissionDetailPopup → progress mutations; parent passes `onValidated` → `refresh`. | | |
-| TASK-056 | QRDisplay → `useSession` + `watchMission`. | | |
-| TASK-057 | ValidationDisplay → `watchMission` (gmApprove only). | | |
-| TASK-058 | AdminQRScannerModal → `useQRScanContext` + simulate via hook. | | |
-| TASK-062b | QRScannerView → `useActiveProfile` for TopBar (UX-014). | | |
-| TASK-059 | Delete deprecated hooks. | | |
-| TASK-060 | `deno task lint && deno task build`. | | |
+| TASK-050 | ESLint C-18 rule. | ✅ | 2026-06-18 |
+| TASK-051 | PlayerCockpitPage — preserve session-error redirect + toast (UX-016); tutorial demo override. | ✅ | 2026-06-18 |
+| TASK-052 | AdminCockpitPage — wire buddy on `selectPlayer`; `bgImageUrlOverride`; call `session.refresh()` after save (UX-020); demo vs real logout. | ✅ | 2026-06-18 |
+| TASK-053 | FormPage → `useFormMission`. | ✅ | 2026-06-18 |
+| TASK-054 | ValidationPage → `useValidationConfirm` + `useActiveProfile` (UX-014). | ✅ | 2026-06-18 |
+| TASK-055 | MissionDetailPopup → progress mutations; parent passes `onValidated` → `refresh`. | ✅ | 2026-06-18 |
+| TASK-056 | QRDisplay → `useSession` + `watchMission`. | ✅ | 2026-06-18 |
+| TASK-057 | ValidationDisplay → `watchMission` (gmApprove only). | ✅ | 2026-06-18 |
+| TASK-058 | AdminQRScannerModal → `useQRScanContext` + simulate via hook. | ✅ | 2026-06-18 |
+| TASK-062b | QRScannerView → `useActiveProfile` for TopBar (UX-014). | ✅ | 2026-06-18 |
+| TASK-059 | Delete deprecated hooks. | ✅ | 2026-06-18 |
+| TASK-060 | `deno task lint && deno task build`. | ✅ | 2026-06-18 |
 
 ### Phase 7: Documentation
 
 | Task | Description | Done | Date |
 |------|-------------|------|------|
-| TASK-070 | `docs/shared-data-access.md` — include UX checklist + hook registry. | | |
-| TASK-071 | Update puml diagrams. | | |
-| TASK-072 | Rename admin/player-view-data → `*-legacy.md`; link from shared-data-access. | | |
-| TASK-073 | AGENTS.md SSE + Form route `/form/:sessionId/:missionId`. | | |
+| TASK-070 | `docs/shared-data-access.md` — include UX checklist + hook registry. | ✅ | 2026-06-18 |
+| TASK-071 | Update puml diagrams. | ✅ | 2026-06-18 |
+| TASK-072 | Rename admin/player-view-data → `*-legacy.md`; link from shared-data-access. | ✅ | 2026-06-18 |
+| TASK-073 | AGENTS.md SSE + Form route `/form/:sessionId/:missionId`. | ✅ | 2026-06-18 |
 
 ---
 

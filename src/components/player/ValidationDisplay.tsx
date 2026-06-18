@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import type { Mission, ProgressEvent } from "../../types/index.ts";
-import { useAdapter } from "../../adapters/useAdapter.ts";
+import type { Mission } from "../../types/index.ts";
+import { useWatchMission } from "../../hooks/useProgress/index.ts";
 import QRDisplay from "./QRDisplay.tsx";
 import PendingApprovalDisplay from "./PendingApprovalDisplay.tsx";
 
@@ -13,27 +13,21 @@ interface ValidationDisplayProps {
 }
 
 const ValidationDisplay = (props: ValidationDisplayProps) => {
-  const adapter = useAdapter();
   const { playerId, missionId, sessionId, mission, onValidated } = props;
   const method = mission.validationMethod;
+  const { watchMission } = useWatchMission(playerId);
 
-  // ── gmApprove: subscribe and wait for completed status ──────────────────
-  // Mock adapter auto-fires after 4 s via simulateGmApproval.
   useEffect(() => {
     if (method !== "gmApprove") return;
 
-    const unsubscribe = adapter.subscribeProgressEvent(
-      playerId,
-      missionId,
-      (event: ProgressEvent) => {
-        if (event.status === "completed" || event.status === "autoApproved") {
-          onValidated();
-        }
-      },
-    );
+    const unsubscribe = watchMission(missionId, (event) => {
+      if (event.status === "completed" || event.status === "autoApproved") {
+        onValidated();
+      }
+    });
 
     return unsubscribe;
-  }, [adapter, method, playerId, missionId, onValidated]);
+  }, [method, missionId, onValidated, watchMission]);
 
   return (
     <div
