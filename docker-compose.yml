@@ -248,6 +248,8 @@ services:
       # - ./certs/server.key:/etc/nginx/ssl/server.key:ro
     environment:
       PB_AUTO_MIGRATE: ${PB_AUTO_MIGRATE:-true}
+      PB_ADMIN_EMAIL: ${PB_ADMIN_EMAIL:-}
+      PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-}
     restart: unless-stopped
     depends_on:
       init-vector-store:
