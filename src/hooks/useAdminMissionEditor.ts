@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DraftMission, Mission } from "../types/index.ts";
 import { MISSION_TYPE } from "../types/index.ts";
-import type { AppAdapter } from "../adapters/interface.ts";
+import { useAdapter } from "../adapters/useAdapter.ts";
 import { deriveXP } from "../use-cases/deriveXP.ts";
 import { makeId } from "../utils/id.ts";
 
@@ -55,7 +55,6 @@ interface UseAdminMissionEditorResult {
   readonly clearSelectedMission: () => void;
   readonly saveMissions: (
     sid: string,
-    adapter: AppAdapter,
     missions: ReadonlyArray<Mission>,
     xpPreview: number,
   ) => Promise<void>;
@@ -72,6 +71,7 @@ interface UseAdminMissionEditorResult {
 export const useAdminMissionEditor = (
   missions: ReadonlyArray<Mission>,
 ): UseAdminMissionEditorResult => {
+  const adapter = useAdapter();
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(
     null,
   );
@@ -186,7 +186,6 @@ export const useAdminMissionEditor = (
   const saveMissions = useCallback(
     async (
       sid: string,
-      adapter: AppAdapter,
       serverMissions: ReadonlyArray<Mission>,
       xp: number,
     ) => {
@@ -241,7 +240,7 @@ export const useAdminMissionEditor = (
         await adapter.updateMission(missionId, { order: newOrder });
       }
     },
-    [missionOrderChanges],
+    [adapter, missionOrderChanges],
   );
 
   const discardMissions = useCallback(() => {
