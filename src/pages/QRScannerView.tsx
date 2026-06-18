@@ -3,7 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import TopBar from "../components/shared/TopBar.tsx";
 import CameraFeed from "../components/qr/CameraFeed.tsx";
 import ValidationResult from "../components/qr/ValidationResult.tsx";
-import { useIdentity } from "../hooks/useIdentity.ts";
+import { useActiveProfile } from "../hooks/useActiveProfile.ts";
+import { USER_ROLE } from "../types/index.ts";
 import {
   parseValidationToken,
   validationPathFromToken,
@@ -14,8 +15,8 @@ type ScanState = "idle" | "scanning" | "success" | "invalid" | "error";
 const QRScannerView = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
-  const { profiles } = useIdentity();
   const sid = sessionId ?? "";
+  const identity = useActiveProfile(sid, USER_ROLE.GAMEMAKER);
 
   const [cameraActive, setCameraActive] = useState(false);
   const [validationState, setValidationState] = useState<ScanState>("idle");
@@ -60,7 +61,7 @@ const QRScannerView = () => {
       }}
     >
       <TopBar
-        playerName={profiles[0]?.uid ?? "Game Master"}
+        playerName={identity?.name ?? identity?.uid ?? "Game Master"}
         totalXP={0}
         role="Game Master"
       />

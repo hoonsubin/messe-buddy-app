@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { MdArrowBack } from "react-icons/md";
-import type { Mission, Player } from "../types/index.ts";
-import { MISSION_TYPE } from "../types/index.ts";
-import { useAdapter } from "../adapters/useAdapter.ts";
+import type { Mission } from "../types/index.ts";
+import { MISSION_TYPE, USER_ROLE } from "../types/index.ts";
+import { useActiveProfile } from "../hooks/useActiveProfile.ts";
 import { useIdentity } from "../hooks/useIdentity.ts";
+import { useResolvedPlayer } from "../hooks/useResolvedPlayer.ts";
 import { useSession } from "../hooks/useSession.ts";
-import { usePlayerProgress } from "../hooks/usePlayerProgress.ts";
-import { useBuddy } from "../hooks/useBuddy.ts";
+import { useProgressPlayer } from "../hooks/useProgress/index.ts";
+import { useBuddyProfile } from "../hooks/useBuddyProfile.ts";
 import { useResources } from "../hooks/useResources.ts";
 import { useTutorial } from "../hooks/useTutorial.ts";
 import ConfirmDialog from "../components/shared/ConfirmDialog.tsx";
@@ -32,48 +33,18 @@ const TUTORIAL_FORM_KEY = "mb_tutorial_form_pending";
 const PlayerCockpitPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
-  const adapter = useAdapter();
-  const { profiles, clearIdentity } = useIdentity();
-  const identity = profiles.find(
-    (p) => p.sessionId === (sessionId ?? ""),
-  ) ?? null;
+  const { removeProfile } = useIdentity();
+  const identity = useActiveProfile(sessionId, USER_ROLE.PLAYER);
 
-  // ── Player resolution ──────────────────────────────────────────────────────
-  const [player, setPlayer] = useState<Player | null>(null);
-  const [playerLoading, setPlayerLoading] = useState(true);
-  const [playerError, setPlayerError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const resolve = async () => {
-      if (!identity) {
-        setPlayerLoading(false);
-        return;
-      }
-      setPlayerLoading(true);
-      setPlayerError(null);
-      try {
-        const p = await adapter.getPlayer(identity.uid);
-        if (!cancelled) setPlayer(p);
-      } catch (e) {
-        if (!cancelled) {
-          setPlayerError(e instanceof Error ? e : new Error(String(e)));
-        }
-      } finally {
-        if (!cancelled) setPlayerLoading(false);
-      }
-    };
-
-    void resolve();
-    return () => {
-      cancelled = true;
-    };
-  }, [adapter, identity]);
+  const {
+    player,
+    loading: playerLoading,
+    error: playerError,
+    updatePlayer,
+  } = useResolvedPlayer(identity?.uid);
 
   const playerId = player?.id ?? "";
 
-  // ── Session / progress / buddy / resources ─────────────────────────────────
   const {
     session,
     milestones,
@@ -82,17 +53,17 @@ const PlayerCockpitPage = () => {
     error: sessionError,
   } = useSession(sessionId ?? "");
 
-  const { buddy } = useBuddy(playerId);
-  const {
-    playerProgress,
-    progressEvents,
-    refresh: refreshProgress,
-  } = usePlayerProgress(playerId, milestones, missions);
-  const { resources } = useResources(sessionId ?? "");
+  const progress = useProgressPlayer({
+    playerId,
+    milestones,
+    missions,
+  });
 
-  // ── Override tutorialComplete for demo accounts ────────────────────────
-  // Demo accounts always show the tutorial, even if the underlying player
-  // mock data has tutorialComplete: true.
+  const { buddy } = useBuddyProfile(sessionId ?? "", playerId, {
+    role: "player",
+  });
+  const { resources } = useResources(sessionId ?? "", { role: "player" });
+
   const tutorialPlayer = useMemo(() => {
     if (!player) return null;
     if (identity?.isDemo && player.tutorialComplete) {
@@ -101,7 +72,6 @@ const PlayerCockpitPage = () => {
     return player;
   }, [player, identity?.isDemo]);
 
-  // ── Tutorial (extracted hook) ──────────────────────────────────────────────
   const {
     tutorialStep,
     showTutorial,
@@ -110,9 +80,8 @@ const PlayerCockpitPage = () => {
     handleTutorialSkip,
     handleSkipConfirm,
     handleSkipCancel,
-  } = useTutorial(tutorialPlayer, adapter, sessionId ?? "");
+  } = useTutorial(tutorialPlayer, updatePlayer, sessionId ?? "");
 
-  // ── Session error redirect ─────────────────────────────────────────
   useEffect(() => {
     if (sessionError && !sessionLoading) {
       sessionStorage.setItem("mb_landing_toast", "Session does not exist.");
@@ -120,24 +89,23 @@ const PlayerCockpitPage = () => {
     }
   }, [sessionError, sessionLoading, navigate]);
 
-  // ── UI state ───────────────────────────────────────────────────────────────
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(
     null,
   );
   const [popupMission, setPopupMission] = useState<Mission | null>(null);
 
-  // ── Mission click - single handler for both list and sidebar ───────────────
   const handleMissionClick = useCallback(
     (missionId: string, fromTutorial = false) => {
       const mission = missions.find((m) => m.id === missionId);
       if (!mission) return;
 
-      const progress = progressEvents.find((e) => e.missionId === missionId);
-      const isCompleted = progress?.status === "autoApproved" ||
-        progress?.status === "completed";
+      const event = progress.progressEvents.find((e) =>
+        e.missionId === missionId
+      );
+      const isCompleted = event?.status === "autoApproved" ||
+        event?.status === "completed";
 
       if (mission.type === MISSION_TYPE.FORM && !isCompleted) {
-        // Store tutorial state before navigating away if tutorial is active
         if (fromTutorial && showTutorial) {
           sessionStorage.setItem(TUTORIAL_FORM_KEY, "1");
         }
@@ -146,10 +114,9 @@ const PlayerCockpitPage = () => {
         setPopupMission(mission);
       }
     },
-    [missions, progressEvents, navigate, showTutorial],
+    [missions, progress.progressEvents, navigate, showTutorial, sessionId],
   );
 
-  // ── Derived data ───────────────────────────────────────────────────────────
   const currentMissions = missions.filter((m) => m.isInCurrentMissions);
   const selectedMilestone = selectedMilestoneId !== null
     ? (milestones.find((m) => m.id === selectedMilestoneId) ?? undefined)
@@ -157,16 +124,20 @@ const PlayerCockpitPage = () => {
   const sidebarMissions = selectedMilestoneId !== null
     ? missions.filter((m) => m.milestoneId === selectedMilestoneId)
     : [];
-  const msProgress = selectedMilestoneId !== null && playerProgress !== null
-    ? playerProgress.milestoneProgress.find(
+  const msProgress = selectedMilestoneId !== null &&
+      progress.playerProgress !== null
+    ? progress.playerProgress.milestoneProgress.find(
       (mp) => mp.milestoneId === selectedMilestoneId,
     )
     : undefined;
 
   const currentMilestone = (() => {
-    if (!playerProgress || milestones.length === 0) return null;
+    if (!progress.playerProgress || milestones.length === 0) return null;
     const mpMap = new Map(
-      playerProgress.milestoneProgress.map((mp) => [mp.milestoneId, mp]),
+      progress.playerProgress.milestoneProgress.map((mp) => [
+        mp.milestoneId,
+        mp,
+      ]),
     );
     for (const ms of milestones) {
       const mp = mpMap.get(ms.id);
@@ -177,8 +148,6 @@ const PlayerCockpitPage = () => {
 
   const isLoading = sessionLoading || playerLoading;
 
-  // Trusted per-user context for the AI assistant: name + assigned buddy only.
-  // Wrapped in <APPLICATION_CONTEXT> tags the system prompt recognizes.
   const aiAppContext = (() => {
     const lines: string[] = [];
     const userName = player?.preferredName?.trim() || player?.name?.trim();
@@ -200,7 +169,6 @@ const PlayerCockpitPage = () => {
     );
   })();
 
-  // ── Error / no-identity guards ─────────────────────────────────────────────
   if (!identity) {
     return (
       <div
@@ -266,7 +234,6 @@ const PlayerCockpitPage = () => {
         </div>
       )}
 
-      {/* ── Tutorial Overlay ─────────────────────────────────────────── */}
       <TutorialOverlayWithStep
         isVisible={showTutorial}
         currentStepIndex={tutorialStep}
@@ -276,7 +243,6 @@ const PlayerCockpitPage = () => {
         onSkip={handleTutorialSkip}
       />
 
-      {/* ── Skip Confirmation Dialog ─────────────────────────────────── */}
       <ConfirmDialog
         isOpen={showSkipConfirm}
         title="Skip tutorial?"
@@ -288,11 +254,10 @@ const PlayerCockpitPage = () => {
 
       <TopBar
         playerName={player?.name ?? ""}
-        totalXP={playerProgress?.totalXP ?? 0}
+        totalXP={progress.playerProgress?.totalXP ?? 0}
         role={player?.role ?? ""}
       />
 
-      {/* Session toolbar: back-to-landing (demo) or log-out (real session) */}
       <div
         style={{
           display: "flex",
@@ -313,11 +278,10 @@ const PlayerCockpitPage = () => {
             gap: "var(--space-1)",
           }}
           onClick={() => {
-            // Clear tutorial sessionStorage so a fresh session restarts the tutorial
             sessionStorage.removeItem("mb_tutorial_step");
             sessionStorage.removeItem("mb_tutorial_form_pending");
             if (identity && !identity.isDemo) {
-              clearIdentity();
+              removeProfile(identity.uid);
             }
             navigate("/", { replace: true });
           }}
@@ -327,30 +291,30 @@ const PlayerCockpitPage = () => {
         </button>
       </div>
 
-      {/* Mission detail popup (text / link missions) */}
       {popupMission !== null && player !== null && (
         <MissionDetailPopup
           mission={popupMission}
           playerId={player.id}
           sessionId={sessionId ?? ""}
-          progressEvent={progressEvents.find((e) =>
+          progressEvent={progress.progressEvents.find((e) =>
             e.missionId === popupMission.id
           ) ?? null}
+          markSelfComplete={() => progress.markSelfComplete(popupMission.id)}
+          markPending={() => progress.markPending(popupMission.id)}
           onClose={() => setPopupMission(null)}
           onValidated={() => {
             setPopupMission(null);
-            refreshProgress();
+            progress.refresh();
           }}
         />
       )}
 
-      {/* Milestone sidebar overlay */}
       {selectedMilestoneId !== null && selectedMilestone !== undefined && (
         <MilestoneSidebarViewer
           milestoneId={selectedMilestone.id}
           milestoneName={selectedMilestone.name}
           missions={sidebarMissions}
-          progressEvents={progressEvents}
+          progressEvents={progress.progressEvents}
           currentXP={msProgress?.earnedXP ?? 0}
           xpThreshold={selectedMilestone.xpThreshold}
           onClose={() => setSelectedMilestoneId(null)}
@@ -358,9 +322,7 @@ const PlayerCockpitPage = () => {
         />
       )}
 
-      {/* Scrollable page body */}
       <main className="cockpit-main">
-        {/* Welcome header */}
         <header style={{ paddingTop: "var(--space-6)" }}>
           <h1
             style={{
@@ -385,10 +347,8 @@ const PlayerCockpitPage = () => {
           </p>
         </header>
 
-        {/* AI policy assistant - collapsible (collapsed by default) */}
         <div className="cockpit-grid">
           <div className="cockpit-col">
-            {/* Milestones section */}
             <section aria-label="Milestones">
               <h2 className="section-label">Milestones</h2>
               <div
@@ -402,7 +362,8 @@ const PlayerCockpitPage = () => {
                   milestones={milestones}
                   bgImageUrl={session?.bgImageUrl ?? ""}
                   mapNodeScale={session?.mapNodeScale ?? 1}
-                  milestoneProgress={playerProgress?.milestoneProgress ?? []}
+                  milestoneProgress={progress.playerProgress?.milestoneProgress ??
+                    []}
                   playerXPercent={currentMilestone?.xPercent}
                   playerYPercent={currentMilestone?.yPercent}
                   onMilestoneClick={(id) => setSelectedMilestoneId(id)}
@@ -410,17 +371,15 @@ const PlayerCockpitPage = () => {
               </div>
             </section>
 
-            {/* Current missions */}
             <CurrentMissionsList
               missions={currentMissions}
-              progressEvents={progressEvents}
+              progressEvents={progress.progressEvents}
               onMissionClick={handleMissionClick}
               onMarkComplete={() => undefined}
             />
           </div>
 
           <div className="cockpit-col">
-            {/* Your buddy */}
             <section aria-label="Your buddy">
               {buddy
                 ? (
@@ -458,13 +417,11 @@ const PlayerCockpitPage = () => {
                 )}
             </section>
 
-            {/* Resources - collapsible search block */}
             <ResourcesSection
               resources={resources}
               onSearch={() => undefined}
             />
 
-            {/* AI policy assistant - collapsible */}
             <AssistantChatCard
               {...(buddy?.name !== undefined && { buddyName: buddy.name })}
               {...(aiAppContext !== undefined && {
