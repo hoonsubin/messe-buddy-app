@@ -1,0 +1,31 @@
+@startuml diagram_02_c4_container
+!include <C4/C4_Container>
+
+title Layer 2 Container Diagram
+
+Person(player, "Player", "New employee")
+Person(gameMaker, "Game Maker", "Admin / HR")
+
+System_Ext(aiProvider, "AI Provider", "Upstream LLM API — OpenAI, Anthropic, Azure OpenAI, or any OpenAI-compatible endpoint. Credentials and model selection are managed in litellm.yaml.")
+
+System_Boundary(docker, "Docker Compose Services") {
+    Container(pwa, "React PWA", "React + Vite + TypeScript", "Mobile-first Progressive Web App. Served as static assets. Handles all UI for Player and Game Maker roles. Includes AI policy chatbot (streaming) and offline QR validation.")
+    Container(sw, "Service Worker", "Workbox / vite-plugin-pwa", "Caches static assets for offline use. Intercepts network requests.")
+    Container(pb, "PocketBase", "Go binary", "Provides REST API, SSE push, file storage, SQLite database, and an admin UI on :8090.")
+    ContainerDb(sqlite, "SQLite", "Embedded in PocketBase", "Stores sessions, players, milestones, missions, progress_events, buddy_profiles, resources, form_schemas.")
+    ContainerDb(filestore, "File Storage", "PocketBase managed", "Stores uploaded background images and player avatars.")
+    Container(litellm, "LiteLLM Proxy", "Python / LiteLLM", "Abstraction layer between the PWA and upstream AI providers. Exposes a single OpenAI-compatible /chat/completions endpoint. Handles model routing, provider auth, and system prompt injection. Augments requests with retrieved document context (RAG via pgvector). Config-driven: swap providers and update embedded documents by editing litellm.yaml without touching PWA code.")
+    ContainerDb(pgvector, "pgvector", "PostgreSQL + pgvector extension", "Stores vector embeddings of company documents (policies, onboarding guides, FAQs). Queried by LiteLLM at request time to retrieve relevant context that is injected into the prompt before forwarding to the AI provider.")
+}
+
+Rel(player, pwa, "Uses", "HTTPS / browser")
+Rel(gameMaker, pwa, "Uses", "HTTPS / browser")
+Rel(pwa, sw, "Managed by", "Browser API")
+Rel(pwa, pb, "REST API calls + SSE subscription", "HTTP/JSON, SSE")
+Rel(pwa, litellm, "POST /chat/completions with stream:true", "HTTP / SSE")
+Rel(litellm, pgvector, "Semantic search for relevant document chunks", "SQL / pgvector ANN")
+Rel(litellm, aiProvider, "Forwards augmented prompt to configured provider", "HTTPS / REST")
+Rel(pb, sqlite, "Reads / writes", "internal")
+Rel(pb, filestore, "Stores / serves files", "internal")
+
+@enduml

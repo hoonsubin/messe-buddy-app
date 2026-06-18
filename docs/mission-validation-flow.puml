@@ -1,0 +1,92 @@
+@startuml diagram_03_sequence_mission_validation
+title Mission Validation Flow (multi-strategy)
+
+actor Player
+actor GameMaker
+participant ValidationDisplay
+participant useCases as "Use Cases"
+participant upsertProgressEvent as "Use Case: upsertProgressEvent"
+participant PBAdapter as "PocketBase Adapter"
+participant PocketBase
+
+Player -> ValidationDisplay : Marks Mission complete\n(text or link type)
+
+note over ValidationDisplay : Reads mission.validationMethod\nand routes to correct strategy
+
+== Strategy: gmApprove (default) ==
+
+ValidationDisplay -> upsertProgressEvent : {playerId, missionId, status: 'pendingApproval'}
+upsertProgressEvent -> PBAdapter : query progress_events WHERE playerId & missionId
+PBAdapter -> PocketBase : GET progress_events filter
+PocketBase --> PBAdapter : existing record or empty
+
+alt record exists
+    PBAdapter -> PocketBase : PATCH record with status: pendingApproval
+else no record
+    PBAdapter -> PocketBase : POST new ProgressEvent
+end
+
+ValidationDisplay -> ValidationDisplay : Show "Waiting for approval" state\n(polls or SSE — see OD-09)
+
+GameMaker -> PocketBase : Sees ApprovalRequestCard in PendingApprovalsPanel
+GameMaker -> useCases : validateMission(missionId, playerId, gameMakerUid)
+useCases -> upsertProgressEvent : {playerId, missionId, status: 'completed', validatedBy}
+upsertProgressEvent -> PBAdapter : PATCH progress_events
+PBAdapter -> PocketBase : update record
+PocketBase --> ValidationDisplay : status update received
+ValidationDisplay -> ValidationDisplay : Dismiss → computeProgress
+
+== Strategy: selfApprove ==
+
+ValidationDisplay -> upsertProgressEvent : {playerId, missionId, status: 'autoApproved'}
+upsertProgressEvent -> PBAdapter : POST/PATCH progress_events
+PBAdapter -> PocketBase : write record
+note over ValidationDisplay : No GM action required
+ValidationDisplay -> ValidationDisplay : Dismiss immediately → computeProgress
+
+== Strategy: qr (offline — physical co-location required) ==
+
+note over ValidationDisplay
+  Player side: encodes QRPayload client-side
+  {playerId, missionId, sessionId, xpValue, issuedAt, hmac}
+  HMAC is derived from session token in memory.
+  No network call. QR is self-contained and verifiable.
+end note
+
+ValidationDisplay -> ValidationDisplay : Render QRDisplay component\n(encoded payload as QR image)
+
+note over GameMaker : Opens QRScannerPage\non their own device
+
+GameMaker -> GameMaker : Camera decodes raw QR string
+
+participant qrPayloadUtil as "qrPayload.ts (util)"
+
+GameMaker -> qrPayloadUtil : decode(rawQrString)
+qrPayloadUtil -> qrPayloadUtil : parse JSON payload
+qrPayloadUtil -> qrPayloadUtil : recompute HMAC from sessionToken
+qrPayloadUtil -> qrPayloadUtil : compare recomputed vs payload.hmac
+
+alt HMAC valid and issuedAt within tolerance
+    qrPayloadUtil --> GameMaker : ScanData { playerId, missionId, xpValue, ... }
+    GameMaker -> GameMaker : Render ValidationResult\n(player name, mission, XP)
+    GameMaker -> useCases : validateMission(ScanData, gameMakerUid)
+    useCases -> upsertProgressEvent : {playerId, missionId, status: 'completed', validatedBy}
+    upsertProgressEvent -> PBAdapter : query progress_events WHERE playerId & missionId
+    PBAdapter -> PocketBase : GET progress_events filter
+    PocketBase --> PBAdapter : existing record or empty
+    alt record exists
+        PBAdapter -> PocketBase : PATCH record with status: completed
+    else no record
+        PBAdapter -> PocketBase : POST new ProgressEvent
+    end
+    note over ValidationDisplay
+      Player's ValidationDisplay is NOT subscribed to SSE.
+      Progress update appears on next cockpit load / pull-to-refresh.
+      No real-time feedback required for offline flow.
+    end note
+else HMAC invalid or payload expired
+    qrPayloadUtil --> GameMaker : ValidationError
+    GameMaker -> GameMaker : Render error state in ValidationResult
+end
+
+@enduml

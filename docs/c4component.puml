@@ -1,0 +1,88 @@
+@startuml diagram_04_c4_component
+!include <C4/C4_Component>
+
+title Layer 3 Component Diagram
+
+Container_Boundary(pwa, "React PWA") {
+    Component(landing, "LandingPage", "React Page", "Entry point. Routes user to Join (New Employee / Admin role selector), or Recover Progress flows.")
+    Component(welcomePage, "WelcomePage", "React Page", "Post-login greeting. Shows employee name, role, team, and start date. CTA to set up profile or skip to dashboard.")
+    Component(profilePage, "ProfilePage", "React Page", "Full profile setup form (name, location, skills, work style). Uses FormShell wrapper. Navigates to Dashboard on save.")
+    Component(playerCockpit, "PlayerCockpitPage", "React Page", "Main player dashboard. Shows Milestone Map, Current Missions, Buddy Card, ResourcesChat panel, and Tutorial Overlay.")
+    Component(adminCockpit, "AdminCockpitPage", "React Page", "Game Maker dashboard. Includes Pending Approvals Panel, Milestone Map Editor, template-driven Mission Editor, Buddy Assignment, and Resources Editor.")
+    Component(mentoringPage, "MentoringPage", "React Page", "Mentoring & learning preferences form. Uses FormShell wrapper. Navigable from Dashboard.")
+    Component(howIWorkPage, "HowIWorkPage", "React Page", "Work style and tool preferences form. Uses FormShell wrapper. Navigable from Dashboard.")
+    Component(formPage, "FormPage", "React Page", "Renders dynamic form fields driven by FieldSchema[]. Handles autoApproved form-type missions.")
+    Component(qrScanner, "QRScannerPage", "React Page", "Accesses device camera. Decodes QR payload and passes raw string to offline validator. No network call at scan time.")
+
+    Component(formShell, "FormShell", "Shared Component", "Reusable full-screen form wrapper: TopBar with Logo + Save button, back navigation, title/description, save-for-later and submit actions. Used by ProfilePage, MentoringPage, and HowIWorkPage.")
+    Component(milestoneMap, "MilestoneMapViewer/Editor", "Shared Component", "Renders interactive Milestone node map over a background canvas. Draggable in edit mode (Game Maker only).")
+    Component(missionCard, "MissionCard", "Shared Component", "Displays a single Mission. editable=true adds edit controls for Game Maker.")
+    Component(validationDisplay, "ValidationDisplay", "Component", "Full-screen validation gate for Player. Routes to QRDisplay (offline), PendingApprovalDisplay, or immediate dismiss based on mission.validationMethod.")
+
+    Component(qrPayloadUtil, "qrPayload.ts", "Utility module", "Encodes and decodes QR payload. Signs with session-scoped HMAC key on encode; verifies HMAC on decode. No server call required at validation time.")
+    Component(validationResult, "ValidationResult", "Component", "Displayed after offline QR decode. Shows player name, mission, XP value. Triggers local progress write to PocketBase after confirmation.")
+
+    Component(pendingApprovalsPanel, "PendingApprovalsPanel", "Component", "Shows all missions in pendingApproval state across players. Game Maker approves directly from here.")
+    Component(templateLibrary, "TemplateLibrary", "Component", "Game Maker entry point for mission creation. Browse and select a template type (text / link / form). Launches MissionEditor with the selected template pre-loaded.")
+    Component(missionEditor, "MissionEditor", "Component", "Template-driven mission editor. Renders TemplateFields child based on selected MissionType. Fields: title, body/URL/form-builder, XP, tags, due date, validation method.")
+    Component(templateFields, "TemplateFields", "Component", "Type-specific field set inside MissionEditor. Three variants: TextMission (rich body), LinkMission (URL + label), FormMission (dynamic field builder). Switched on MissionType.")
+
+    Component(resourcesChat, "ResourcesChat", "Component", "Tabbed container rendered in PlayerCockpit. Resources tab renders existing ResourcesSection. Ask AI tab renders ChatPanel. Replaces the standalone ResourcesSection.")
+    Component(chatPanel, "ChatPanel", "Component", "Chat UI: scrollable message list, text input, send button. Calls useChatStream on submit. Renders streaming tokens incrementally via ChatMessage.")
+    Component(useChatStream, "useChatStream", "React Hook", "Sends POST /chat/completions to LiteLLM proxy with stream:true. Reads SSE chunks and appends tokens to message state. Auth header sourced from session context. No client-side model logic — provider selection, RAG retrieval, and prompt augmentation all happen at the proxy layer.")
+
+    Component(useCases, "Use Cases", "Pure TS modules", "deriveXP, computeProgress, upsertProgressEvent, validateMission, completeForm, joinSession, recoverIdentity, exportTemplate, importTemplate")
+    Component(pbAdapter, "PocketBase Adapter", "TS module", "Single boundary for all PB SDK calls. Parses raw JSON fields into typed app-layer interfaces.")
+    Component(localStorage, "LocalStorage", "Browser API", "Stores LocalIdentity: uid, recoveryKey, sessionId, role.")
+}
+
+ContainerDb(pb, "PocketBase", "REST + SSE")
+Container(litellm, "LiteLLM Proxy", "Python / LiteLLM", "Abstraction layer between PWA and AI providers. Receives standard OpenAI-shaped requests from useChatStream. Retrieves relevant document chunks from pgvector (RAG), augments the prompt, then forwards to the configured upstream provider. Provider, model, and embedded documents are all config-driven — no PWA code changes required to swap them.")
+ContainerDb(pgvector, "pgvector", "PostgreSQL + pgvector", "Vector store for embedded company documents. LiteLLM queries it at request time.")
+System_Ext(aiProvider, "AI Provider", "Upstream LLM API (OpenAI / Anthropic / Azure / other). Called by LiteLLM only.")
+
+' ── PLAYER FLOW ────────────────────────────────────────────────
+Rel(landing, useCases, "joinSession / recoverIdentity")
+Rel(landing, welcomePage, "navigates after auth")
+Rel(welcomePage, profilePage, "Set up profile CTA")
+Rel(welcomePage, playerCockpit, "Skip for now")
+Rel(profilePage, formShell, "wrapped by")
+Rel(mentoringPage, formShell, "wrapped by")
+Rel(howIWorkPage, formShell, "wrapped by")
+Rel(profilePage, useCases, "saves player profile")
+
+' ── PLAYER COCKPIT ─────────────────────────────────────────────
+Rel(playerCockpit, milestoneMap, "renders (read-only)")
+Rel(playerCockpit, missionCard, "editable=false")
+Rel(playerCockpit, validationDisplay, "mounts on Mark Complete (non-form missions)")
+Rel(playerCockpit, resourcesChat, "renders")
+Rel(resourcesChat, chatPanel, "Ask AI tab")
+Rel(chatPanel, useChatStream, "calls on send")
+Rel(useChatStream, litellm, "POST /chat/completions stream:true", "HTTP / SSE")
+
+' ── LiteLLM PROXY FLOW ─────────────────────────────────────────
+Rel(litellm, pgvector, "Semantic search for relevant document chunks", "SQL / pgvector ANN")
+Rel(litellm, aiProvider, "Forwards RAG-augmented prompt to configured provider", "HTTPS / REST")
+
+' ── QR OFFLINE FLOW ────────────────────────────────────────────
+Rel(validationDisplay, qrPayloadUtil, "encodes payload (player side)")
+Rel(qrScanner, qrPayloadUtil, "decodes + verifies HMAC (no network)")
+Rel(qrScanner, validationResult, "renders on successful decode")
+Rel(validationResult, useCases, "upsertProgressEvent after confirmation")
+
+' ── ADMIN / GAME MAKER ─────────────────────────────────────────
+Rel(adminCockpit, milestoneMap, "renders (draggable=true)")
+Rel(adminCockpit, missionCard, "editable=true")
+Rel(adminCockpit, pendingApprovalsPanel, "renders")
+Rel(adminCockpit, templateLibrary, "mission creation entry point")
+Rel(templateLibrary, missionEditor, "launches with selected template")
+Rel(missionEditor, templateFields, "renders type-specific fields")
+Rel(pendingApprovalsPanel, useCases, "validateMission (gmApprove path)")
+Rel(formPage, useCases, "completeForm")
+
+' ── SHARED INFRASTRUCTURE ──────────────────────────────────────
+Rel(useCases, pbAdapter, "calls")
+Rel(pbAdapter, pb, "REST PATCH/POST/GET, SSE", "HTTP")
+Rel(useCases, localStorage, "reads/writes LocalIdentity")
+
+@enduml
