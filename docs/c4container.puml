@@ -33,7 +33,7 @@ Rel(litellm, litellm_pgvector, "Semantic search for relevant document chunks", "
 Rel(litellm_pgvector, vector_db, "Reads / writes embeddings", "PostgreSQL / pgvector ANN")
 Rel(init_vs, vector_db, "Bootstraps vector store tables", "PostgreSQL")
 Rel(init_vs, litellm, "Registers vector store in LiteLLM", "HTTP")
-Rel(file_watcher, consume_docs["consume-docs/"], "Watches for file changes", "volume mount")
+Rel(file_watcher, consume_docs, "consume-docs/", "Watches for file changes", "volume mount")
 Rel(file_watcher, litellm_pgvector, "Updates embeddings incrementally", "HTTP / OpenAI-compatible API")
 Rel(litellm, redis, "Cache + rate-limit state", "Redis protocol")
 

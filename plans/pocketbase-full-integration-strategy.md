@@ -2,28 +2,31 @@
 
 > **Target outcome:** `docker compose up --build` delivers a MesseBuddy app where Game Maker and Player work across different devices — data survives browser restarts, QR codes carry real cryptographic secrets, images and templates persist, and the app graduates from a single-browser prototype to a tool you can hand to a real event organizer and real attendees. No manual UI setup, no admin panel clicking, no runtime scripts. Everything is automated in the Docker build.
 >
-> **Current reality (2026-06-17):** Docker infra (Go wrapper, migrations, nginx, supervisord) is **ready**. The PWA still hardcodes `mockAdapter` — `VITE_USE_MOCK_PB` is passed at build time but **not read in `src/`**. Multi-device persistence is **not live** until Phases 2 + 3 ship.
+> **Current reality (2026-06-18):** Docker infra (Go wrapper, migrations, nginx, supervisord) is **ready**. The PWA still hardcodes `mockAdapter` — `VITE_USE_MOCK_PB` is passed at build time but **not read in `src/`**. Multi-device persistence is **not live** until Phases 2 + 3 ship. Target schema (incl. `mapNodeScale`) documented in [`docs/pb-schema.md`](docs/pb-schema.md); migration `003_hardening.go` not yet implemented.
 >
-> **Last updated:** 2026-06-17 — synced with codebase audit in this conversation.
+> **Last updated:** 2026-06-18 — amended for `mapNodeScale`, hook-layer boundaries, local vs synced data split, and target schema alignment.
 
 ---
 
 ## Table of Contents
 
 1. [Architectural Overview](#architectural-overview)
-2. [Implementation Status Summary](#implementation-status-summary)
-3. [Phase 1: Go Wrapper + Migrations — ✅ IMPLEMENTED](#phase-1-go-wrapper--migrations--%E2%9C%85-implemented)
-4. [Phase 2: PocketBase JS Adapter (Frontend) — ❌ PENDING](#phase-2-pocketbase-js-adapter-frontend)
-5. [Phase 3: Provider Swap + Wiring — ❌ PENDING](#phase-3-provider-swap--wiring)
-6. [Phase 4: Background Image Upload — ❌ PENDING](#phase-4-background-image-upload)
-7. [Phase 5: SSE Real-Time Subscription — ❌ PENDING](#phase-5-sse-real-time-subscription)
-8. [Phase 6: QR Session Secret — 🟡 PARTIALLY](#phase-6-qr-session-secret)
-9. [Phase 7: Templates Collection — 🟡 PARTIALLY](#phase-7-templates-collection)
-10. [Phase 8: Cleanup & Documentation — 🟡 PARTIALLY](#phase-8-cleanup--documentation)
-11. [Phase 9: E2E Smoke Screen Testing](#phase-9-e2e-smoke-screen-testing)
-12. [Acceptance Criteria — E2E Smoke Screen](#acceptance-criteria--e2e-smoke-screen)
-13. [Execution Order](#execution-order)
-14. [Quick Reference: All New/Modified Files](#quick-reference-all-newmodified-files)
+2. [Implementation Principles](#implementation-principles)
+3. [Data Boundary — Local vs PocketBase-Synced](#data-boundary--local-vs-pocketbase-synced)
+4. [Hook Coverage Map (CRUD by Role)](#hook-coverage-map-crud-by-role)
+5. [Implementation Status Summary](#implementation-status-summary)
+6. [Phase 1: Go Wrapper + Migrations — ✅ IMPLEMENTED](#phase-1-go-wrapper--migrations--%E2%9C%85-implemented)
+7. [Phase 2: PocketBase JS Adapter (Frontend) — ❌ PENDING](#phase-2-pocketbase-js-adapter-frontend)
+8. [Phase 3: Provider Swap + Wiring — ❌ PENDING](#phase-3-provider-swap--wiring)
+9. [Phase 4: Background Image Upload — ❌ PENDING](#phase-4-background-image-upload)
+10. [Phase 5: SSE Real-Time Subscription — ❌ PENDING](#phase-5-sse-real-time-subscription)
+11. [Phase 6: QR Session Secret — 🟡 PARTIALLY](#phase-6-qr-session-secret)
+12. [Phase 7: Templates Collection — 🟡 PARTIALLY](#phase-7-templates-collection)
+13. [Phase 8: Cleanup & Documentation — 🟡 PARTIALLY](#phase-8-cleanup--documentation)
+14. [Phase 9: E2E Smoke Screen Testing](#phase-9-e2e-smoke-screen-testing)
+15. [Acceptance Criteria — E2E Smoke Screen](#acceptance-criteria--e2e-smoke-screen)
+16. [Execution Order](#execution-order)
+17. [Quick Reference: All New/Modified Files](#quick-reference-all-newmodified-files)
 
 ---
 
@@ -61,6 +64,97 @@
 
 ---
 
+## Implementation Principles
+
+This is a **UX-first prototyping task**: ship real multi-device persistence without changing what users see or how they interact. Structural flexibility comes from the existing adapter + shared-hook layer (C-18), not from rewriting pages or components.
+
+| Principle | Rule |
+|-----------|------|
+| **No UI regression** | Pages and components under `src/pages/` and `src/components/` must not change behavior, layout, or interaction flows. PocketBase work lands in `src/adapters/pocketbase/`, [`AdapterContext.tsx`](src/adapters/AdapterContext.tsx), and at most one hook fix ([`useSession.uploadBackground`](src/hooks/useSession.ts:92)). |
+| **Hook boundary (C-18)** | All synced CRUD flows through shared hooks and use-cases documented in [`docs/shared-data-access.md`](docs/shared-data-access.md). The PB adapter implements [`AppAdapter`](src/adapters/interface.ts:18) only — hooks keep their public API. |
+| **Local stays local** | Identity, drafts, tutorial state, and ephemeral toasts never touch PocketBase. See [Data Boundary](#data-boundary--local-vs-pocketbase-synced). |
+| **Feature map is authoritative** | GM CRUD: [`docs/admin-view-data.md`](docs/admin-view-data.md). Player reads/writes: [`docs/player-view-data.md`](docs/player-view-data.md). Implement exactly what those docs list — no speculative adapter methods. |
+| **Schema follows domain types** | [`src/types/domain.ts`](src/types/domain.ts) is the contract. Migration 003 closes gaps between domain and PB (`mapNodeScale`, `bgImageUrl` FileField, C-05 index). |
+| **Mock remains dev fallback** | `VITE_USE_MOCK_PB=true` keeps offline/single-browser prototyping. Docker production path uses `false` once Phase 3 ships. |
+
+---
+
+## Data Boundary — Local vs PocketBase-Synced
+
+```mermaid
+flowchart TB
+    subgraph local ["Client-only — never in PocketBase"]
+        ID["mb_identity<br/>CachedIdentity[]"]
+        DRAFT["mb_draft_*<br/>mission editor drafts"]
+        TUT["mb_tutorial_*<br/>sessionStorage"]
+        TOAST["mb_landing_toast<br/>sessionStorage"]
+    end
+
+    subgraph pb ["PocketBase — synced across devices"]
+        S[sessions]
+        P[players]
+        M[milestones / missions]
+        PE[progress_events]
+        BP[buddy_profiles]
+        R[resources]
+        T[templates]
+    end
+
+    subgraph hooks ["Shared hooks — sole PB consumers"]
+        H[useSession · useProgress* · useBuddyProfile · …]
+    end
+
+    local -->|"useIdentity only"| Pages
+    hooks --> pb
+    Pages --> hooks
+```
+
+| Storage | Keys / types | Hooks / utils | PB? |
+|---------|--------------|---------------|-----|
+| `localStorage` | `mb_identity` → `CachedIdentity[]` | [`useIdentity`](src/hooks/useIdentity.ts), [`useActiveProfile`](src/hooks/useActiveProfile.ts) | **No** — UID, role, recovery key, session routing (C-03) |
+| `localStorage` | `mb_draft_<sessionId>_<missionId>` → `StoredDraft` | [`draftStorage.ts`](src/utils/draftStorage.ts), [`useAdminMissionEditor`](src/hooks/useAdminMissionEditor.ts) | **No** — in-progress mission edits; explicit Save writes to PB |
+| `sessionStorage` | `mb_tutorial_step`, `mb_tutorial_form_pending` | [`useTutorial`](src/hooks/useTutorial.ts) | **No** — tutorial UX only (`tutorialComplete` on Player **does** sync via `updatePlayer`) |
+| `sessionStorage` | `mb_landing_toast` | [`useLandingFlow`](src/hooks/useLandingFlow.ts) | **No** — transient landing messages |
+| PocketBase | 9 collections | All other hooks in [`docs/shared-data-access.md`](docs/shared-data-access.md) | **Yes** |
+
+**Implication for Phase 2:** The adapter must satisfy every `AppAdapter` method invoked by hooks/use-cases in the view-data docs. It must **not** read or write `localStorage` / `sessionStorage` — that remains hook responsibility.
+
+---
+
+## Hook Coverage Map (CRUD by Role)
+
+Canonical method lists live in the view-data docs. This table is the implementation checklist for `pbAdapter.ts`.
+
+### Game Maker (admin) — [`docs/admin-view-data.md`](docs/admin-view-data.md) §7
+
+| User-facing feature | Hook | Adapter methods |
+|---------------------|------|-----------------|
+| Session + map structure | `useSession` (gamemaker) | `getSession`, `listMilestones`, `listMissions`, `updateSession` |
+| Map node scale (UX-012) | `useSession.updateMapNodeScale` | `updateSession({ mapNodeScale })` — requires `sessions.mapNodeScale` in PB |
+| Background image | `useSession.uploadBackground` | `updateSession` with `File` (Phase 4) |
+| Pre-boarding checklist | `usePreBoardingChecklist` | `updateSession({ preBoardingChecks })` |
+| Milestone CRUD | `useAdminMilestoneEditor` | `createMilestone`, `updateMilestone`, `deleteMilestone` |
+| Mission + form schema CRUD | `useAdminMissionEditor` | `createMission`, `updateMission`, `deleteMission`, `getFormSchema`, `upsertFormSchema` |
+| Players + approvals | `useProgressAdmin` | `listPlayers`, `listProgressEvents`, `upsertProgressEvent` |
+| Cross-hire dashboard | `useProgressCrossHire` | `listSessions`, `listPlayers`, `listProgressEvents` |
+| Buddy assignment | `useBuddyProfile` (gamemaker) | `getBuddyProfile`, `upsertBuddyProfile` |
+| Resources | `useResources` (gamemaker) | `listResources`, `createResource`, `updateResource`, `deleteResource` |
+| Templates | `useTemplateLibrary` | `listTemplates`, `saveTemplate` (upsert by name), `deleteTemplate` |
+| QR scan + confirm | `useValidationConfirm`, `useQRScanContext` | `getSession`, `getPlayerById`, `listProgressEvents`, `upsertProgressEvent` |
+
+### Player — [`docs/player-view-data.md`](docs/player-view-data.md) §6
+
+| User-facing feature | Hook / use-case | Adapter methods |
+|---------------------|-----------------|-----------------|
+| Join / recover | `joinSession`, `recoverIdentity` | `getSession`, `createPlayer`, `createSession`, `getPlayerByRecoveryKey` |
+| Cockpit reads | `useSession`, `useResolvedPlayer`, `useProgressPlayer`, `useBuddyProfile`, `useResources` | `getSession`, `getPlayer`, `listMilestones`, `listMissions`, `listProgressEvents`, `getBuddyProfile`, `listResources` |
+| Mission completion | `useProgressPlayer` | `upsertProgressEvent` |
+| Validation wait (QR / gmApprove) | `useWatchMission` → `subscribeProgressEvent` | SSE in adapter (C-20 — opaque to components) |
+| Form submit | `useFormMission` | `getFormSchema`, `upsertProgressEvent`, `updatePlayer` |
+| Tutorial skip | `useTutorial` | `updatePlayer` |
+
+---
+
 ## End-Value Deliverables — What Users Will Actually Get
 
 > **The core behavioral shift:** The current mock adapter is a **single-browser demo** — server-side data (sessions, players, missions, progress, buddies, templates) lives in JavaScript memory and is lost on refresh. Both Game Maker and Player must use the same browser tab to share that memory. PocketBase integration makes it a **two-role, multi-device application** with real persistence, real concurrency, and real cryptographic security.
@@ -92,7 +186,18 @@
 
 ### What Stays the Same
 
-The adapter pattern (C-03) guarantees **minimal UI changes** at the component level. Buttons, forms, maps, QR display, and milestone editors stay the same. The swap from mock to PB is invisible for most flows — only correctness and persistence change. **Exceptions:** Phase 4 background upload (pass `File` instead of object URL) and any future GM form-response review UI.
+The adapter pattern (C-03) plus shared hooks (C-18) guarantee **no UI regression** at the component level. Buttons, forms, maps, QR display, milestone editors, draft auto-save, and tutorial overlays stay identical. The swap from mock to PB is invisible for all user flows — only persistence, multi-device correctness, and cryptographic QR security change.
+
+**Allowed code changes outside the adapter module:**
+
+| Change | File | Why |
+|--------|------|-----|
+| Provider swap | [`AdapterContext.tsx`](src/adapters/AdapterContext.tsx), [`AdapterContextValue.ts`](src/adapters/AdapterContextValue.ts) | Wire `VITE_USE_MOCK_PB` |
+| Background upload persistence | [`useSession.uploadBackground`](src/hooks/useSession.ts:92) | Replace `URL.createObjectURL` with `File` → adapter; keep `displayUrl` return shape for [`AdminCockpitPage`](src/pages/AdminCockpitPage.tsx) |
+| Env types | [`vite-env.d.ts`](src/vite-env.d.ts) | `VITE_USE_MOCK_PB`, optional `pbUrl` on runtime config |
+| Stale comments | [`interface.ts`](src/adapters/interface.ts), [`AGENTS.md`](AGENTS.md) | SSE attribution via `useWatchMission` |
+
+**Explicitly out of scope:** GM form-response review UI, `FullSessionExport` backup UI, new pages/components, layout changes.
 
 ### Before/After — The Scenario That Only Works with PocketBase
 
@@ -127,7 +232,7 @@ Phase 4: ░░░░░░░░░░   0%  (no File/FormData upload path — 
 Phase 5: ░░░░░░░░░░   0%  (no PB SSE subscription — blocked by Phase 3)
 Phase 6: ████████░░  85%  (Go hook + all consumers ready; only JS adapter missing)
 Phase 7: ██████░░░░  60%  (migration + schema + mock done; PB adapter methods missing)
-Phase 8: ████░░░░░░  40%  (pb-schema.md done; provider swap + .env.example + AGENTS.md SSE note pending)
+Phase 8: ██████░░░░  60%  (pb-schema + shared-data-access target docs done; provider swap + .env.example + AGENTS.md SSE note pending)
 Phase 9: ░░░░░░░░░░   0%  (extend scripts/smoke-landing.ts → full E2E against Docker)
 ```
 
@@ -228,6 +333,15 @@ All collections use public API rules (`setPublicRules` helper sets all rules to 
 
 Do **not** edit `001_initial_collections.go` on deployed instances — add a forward migration:
 
+- [ ] Add `sessions.mapNodeScale` (`NumberField`, default `0.33` on create — matches mock and [`Session`](src/types/domain.ts:30); shared by admin editor + player map per UX-012):
+
+```go
+sessions.Fields.Add(
+    &core.NumberField{Name: "mapNodeScale"},
+)
+// Adapter createSession sets mapNodeScale: 0.33 when absent
+```
+
 - [ ] Composite unique index on `progress_events(playerId, missionId)` — DB-level safety net for C-05:
 
 ```go
@@ -236,15 +350,19 @@ progressEvents.AddIndex(
 )
 ```
 
-- [ ] Change `sessions.bgImageUrl` from `TextField` → `FileField` (required for Phase 4 upload). See Phase 4.
+- [ ] Change `sessions.bgImageUrl` from `TextField` → `FileField` (required for Phase 4 upload). Existing text values on upgraded instances are discarded (greenfield Docker deploys are unaffected). See Phase 4.
 
-Ship this migration **before or with** the JS adapter (Phase 2), so `upsertProgressEvent` upserts are race-safe from day one.
+Ship this migration **before or with** the JS adapter (Phase 2), so `upsertProgressEvent` upserts are race-safe from day one and `mapNodeScale` persists across devices.
+
+Target schema documented in [`docs/pb-schema.md`](docs/pb-schema.md) (post-003 section).
 
 ---
 
 ## Phase 2: PocketBase JS Adapter (Frontend) — ❌ PENDING
 
 > **Scope:** Implement all **32 methods** of [`AppAdapter`](src/adapters/interface.ts:18). Phase 2 and Phase 3 must land in the **same PR** — `pbAdapter` import requires the provider swap.
+>
+> **UX constraint:** Match mock adapter semantics exactly — same return shapes, same error surfaces, same optimistic-update compatibility hooks rely on. Use [`mockAdapter.ts`](src/adapters/mock/mockAdapter.ts) as the behavioral reference, not just the interface.
 
 ### 2a. Extend [`src/vite-env.d.ts`](src/vite-env.d.ts) (not a new `globals.d.ts`)
 
@@ -324,6 +442,7 @@ export const marshalSession = (
   updated: raw.updated as string,
   name: raw.name as string,
   bgImageUrl: resolveFileUrl(pb, "sessions", raw.id as string, raw.bgImageUrl as string) ?? "",
+  mapNodeScale: (raw.mapNodeScale as number | undefined) ?? 0.33,
   gameMakerId: raw.gameMakerId as string,
   qrSecret: raw.qrSecret as string | undefined,
   preBoardingChecks: parseJsonField(raw.preBoardingChecks, []),
@@ -372,10 +491,51 @@ const upsertProgressEvent = async (
 };
 ```
 
-**`createSession` — qrSecret round-trip:**
-The Go hook in [`main.go`](server/main.go:34-43) sets `qrSecret` on create. **Verify** the PB SDK returns the post-hook record from `create()`. If `qrSecret` is empty in the response, re-fetch via `getOne(id)` before marshalling — add this to SMOKE-04 acceptance.
+**`createSession` — defaults + qrSecret round-trip:**
+
+Mirror mock defaults so GM/player maps render identically on first load:
+
+```typescript
+const createSession = async (name: string, gameMakerUid: string): Promise<Session> => {
+  const record = await pb.collection("sessions").create({
+    name,
+    gameMakerId: gameMakerUid,
+    bgImageUrl: "",
+    mapNodeScale: 0.33,
+    preBoardingChecks: [],
+  });
+  // Go hook sets qrSecret on create — verify response includes it (SMOKE-04)
+  const withSecret = record.qrSecret
+    ? record
+    : await pb.collection("sessions").getOne(record.id);
+  return marshalSession(pb, withSecret);
+};
+```
+
+**`saveTemplate` — upsert by name:**
+
+`templates.idx_name` is unique. Match mock overwrite semantics:
+
+```typescript
+const saveTemplate = async (template: TemplateExport): Promise<void> => {
+  const filter = `name = "${template.name}"`;
+  const existing = await pb.collection("templates").getFullList({ filter });
+  const payload = { name: template.name, data: template };
+  if (existing.length > 0) {
+    await pb.collection("templates").update(existing[0].id, payload);
+  } else {
+    await pb.collection("templates").create(payload);
+  }
+};
+```
+
+**`deleteTemplate` — resolve by name:**
+
+The [`AppAdapter`](src/adapters/interface.ts:105) signature is `deleteTemplate(name: string): Promise<void>`.
 
 **`subscribeProgressEvent` — SSE subscription (Phase 5):**
+
+Consumed only via [`useWatchMission`](src/hooks/useProgress/watchMission.ts) (C-20). [`QRDisplay`](src/components/player/QRDisplay.tsx) and [`ValidationDisplay`](src/components/player/ValidationDisplay.tsx) delegate to the hook — no component changes.
 
 ```typescript
 subscribeProgressEvent: (
@@ -506,39 +666,40 @@ export const AdapterContext = createContext<AppAdapter>(
 
 ### Schema prerequisite (migration 003)
 
-`001_initial_collections.go` defines `sessions.bgImageUrl` as **`TextField`**. File upload via `FormData` requires **`FileField`** — add in `003_hardening.go` (see Phase 1f). Update [`docs/pb-schema.md`](docs/pb-schema.md) accordingly.
+`001_initial_collections.go` defines `sessions.bgImageUrl` as **`TextField`**. File upload via `FormData` requires **`FileField`** — add in `003_hardening.go` (see Phase 1f). [`docs/pb-schema.md`](docs/pb-schema.md) documents the target type.
 
-### UI change
+### Hook change (not a page change)
 
-The current [`handleUploadBackground`](src/pages/AdminCockpitPage.tsx:234) uses `URL.createObjectURL(file)` — preview works locally but nothing persists.
+Upload is orchestrated by [`useSession.uploadBackground`](src/hooks/useSession.ts:92) (gamemaker overload). [`AdminCockpitPage`](src/pages/AdminCockpitPage.tsx) only calls `uploadBackground(file)` and sets `bgImageUrlOverride` from `{ displayUrl }` — **that page stays unchanged**.
 
-1. `updateSession` PB adapter handles `File` via `FormData` (Phase 2c) after schema migration
+1. `updateSession` in PB adapter handles `File` via `FormData` (Phase 2c) after schema migration
 2. `marshalSession` resolves file URL via `pb.files.getURL` (Phase 2b)
-3. Update [`AdminCockpitPage.tsx`](src/pages/AdminCockpitPage.tsx) to pass the raw `File` and drop the object-URL override on success:
+3. Update **`useSession.uploadBackground`** to pass the raw `File` to the adapter and return the persisted URL:
 
 ```typescript
-const handleUploadBackground = useCallback(
-  (file: File) => {
-    void adapter
-      .updateSession(sid, { bgImageUrl: file })
-      .then((session) => setBgImageUrlOverride(session.bgImageUrl));
+const uploadBackground = useCallback(
+  async (file: File) => {
+    const updated = await adapter.updateSession(sessionId, { bgImageUrl: file });
+    return { displayUrl: updated.bgImageUrl };
   },
-  [adapter, sid],
+  [adapter, sessionId],
 );
 ```
 
-Widen the adapter patch type locally (intersection with `{ bgImageUrl?: string | File }`) — avoid `as unknown as string`.
+Widen the adapter `updateSession` patch type with `{ bgImageUrl?: string | File }` at the adapter boundary only — avoid `as unknown as string` in hooks.
+
+**UX check:** Background preview must still update immediately after upload; reload must show the same image (SMOKE-02 map tab manual check or dedicated assertion).
 
 ---
 
 ## Phase 5: SSE Real-Time Subscription — ❌ PENDING
 
-Implementation is in the `subscribeProgressEvent` method of `pbAdapter.ts` (see Phase 2c). Existing consumers require **zero component changes** — but note **who** subscribes (per C-07 and actual code):
+Implementation is in `subscribeProgressEvent` inside `pbAdapter.ts` (see Phase 2c). Per C-20, components consume [`useWatchMission`](src/hooks/useProgress/watchMission.ts) — **zero component changes**.
 
-| Component | When it subscribes | Purpose |
-|-----------|-------------------|---------|
-| [`QRDisplay`](src/components/player/QRDisplay.tsx) | Always (QR missions) | Player sees completion after GM confirms on [`ValidationPage`](src/pages/ValidationPage.tsx) |
-| [`ValidationDisplay`](src/components/player/ValidationDisplay.tsx) | `validationMethod === "gmApprove"` only | Player sees GM approval (mock: 4s auto-fire) |
+| Consumer | When it subscribes | Purpose |
+|----------|-------------------|---------|
+| [`QRDisplay`](src/components/player/QRDisplay.tsx) via `useWatchMission` | QR missions (`validationMethod === "qr"`) | Player sees completion after GM confirms on [`ValidationPage`](src/pages/ValidationPage.tsx) |
+| [`ValidationDisplay`](src/components/player/ValidationDisplay.tsx) via `useWatchMission` | `validationMethod === "gmApprove"` only | Player sees GM approval (mock: 4s auto-fire; PB: real SSE) |
 
 **GM QR scan path holds no SSE** — offline HMAC verify on `ValidationPage` → GM confirm → `upsertProgressEvent` write (C-07). nginx is already configured for SSE ([`docker/nginx.conf`](docker/nginx.conf)).
 
@@ -581,7 +742,7 @@ Implementation is in the `subscribeProgressEvent` method of `pbAdapter.ts` (see 
 
 ### What's remaining
 
-PB adapter methods for templates — see Phase 2c for implementation (`listTemplates`, `saveTemplate`, `deleteTemplate` with name-to-ID resolution).
+PB adapter methods for templates — see Phase 2c (`listTemplates`, `saveTemplate` upsert-by-name, `deleteTemplate` with name-to-ID resolution). Template import/export UX in [`useTemplateLibrary`](src/hooks/useTemplateLibrary.ts) stays unchanged.
 
 ---
 
@@ -591,22 +752,28 @@ PB adapter methods for templates — see Phase 2c for implementation (`listTempl
 
 | Item | File |
 |------|------|
-| PB schema reference | [`docs/pb-schema.md`](docs/pb-schema.md) — all 9 collections, field types, JSON schemas, API rules, C-13 table |
+| PB schema reference (target post-003) | [`docs/pb-schema.md`](docs/pb-schema.md) — collections, indexes, C-13 table, local-only exclusion |
+| Shared data access map | [`docs/shared-data-access.md`](docs/shared-data-access.md) — hook registry, local vs synced, CRUD checklist |
 | Docker build args | [`docker-compose.yml`](docker-compose.yml) passes `VITE_USE_MOCK_PB: "false"` (default), `VITE_PB_URL: /api`, `PB_AUTO_MIGRATE: true` |
 
 ### 8b. Remaining
 
 - [ ] **Provider swap** — wire `VITE_USE_MOCK_PB` in [`AdapterContext.tsx`](src/adapters/AdapterContext.tsx) + [`AdapterContextValue.ts`](src/adapters/AdapterContextValue.ts) (Phase 3 — **not done**)
-- [ ] Add `VITE_PB_URL=/api` to [`.env.example`](.env.example):
+- [x] Add `VITE_PB_URL` to [`.env.example`](.env.example) (`VITE_USE_MOCK_PB` was already present)
+- [x] Target schema in [`docs/pb-schema.md`](docs/pb-schema.md) — includes `mapNodeScale`, FileField `bgImageUrl`, `idx_player_mission`
+- [x] [`docs/shared-data-access.md`](docs/shared-data-access.md) — local vs synced boundary + PB hook map
+- [ ] Update [`AGENTS.md`](AGENTS.md) + [`interface.ts`](src/adapters/interface.ts) SSE note — subscriptions via `useWatchMission`
+- [ ] Implement migration `003_hardening.go` (schema doc is target state until this ships)
 
-```bash
-# -- Build args (baked into the PWA JS bundle at docker build time) --
-VITE_PB_URL=/api                                       # same-origin proxy in Docker; change for dev
-VITE_USE_MOCK_PB=true                                  # "false" in production → real PB adapter
+### 8c. Local dev without Docker
+
+```sh
+# Terminal 1 — PocketBase (from compiled server binary or docker compose app service :8090)
+# Terminal 2
+VITE_USE_MOCK_PB=false VITE_PB_URL=http://localhost:8090 deno task dev
 ```
 
-- [ ] Update [`AGENTS.md`](AGENTS.md) SSE note — `QRDisplay` subscribes for QR; `ValidationDisplay` for `gmApprove` (currently stale: says ValidationDisplay for QR only)
-- [ ] Update [`docs/pb-schema.md`](docs/pb-schema.md) after migration 003 (`bgImageUrl` FileField, `progress_events` unique index)
+Mock path unchanged: `VITE_USE_MOCK_PB=true deno task dev` (no PB required).
 
 ---
 
@@ -758,7 +925,7 @@ flowchart TD
 | # | Scenario | What It Validates | User Value Delivered | Status |
 |---|----------|-------------------|---------------------|--------|
 | SMOKE-01 | Session create + player join | `createSession`, `createPlayer`, `getSession`, `listPlayers`, invite link, GM name capture | **Multi-device sessions** — GM on one device, Player on another; data persists across both | ❌ |
-| SMOKE-02 | Mission/milestone CRUD | `createMilestone`, `createMission`, `updateMission`, `deleteMission`, `listMilestones`, `listMissions` | **Persistent game structure** — milestones and missions survive browser restarts | ❌ |
+| SMOKE-02 | Mission/milestone CRUD | `createMilestone`, `createMission`, `updateMission`, `deleteMission`, `listMilestones`, `listMissions`, `updateSession({ mapNodeScale })` | **Persistent game structure** — milestones and missions survive browser restarts; map scale shared GM → player | ❌ |
 | SMOKE-03 | XP point gains | `upsertProgressEvent`, `computeProgress`, `deriveXP` (C-04) | **Persistent XP** — difficulty-weighted scoring on real multi-mission history | ❌ |
 | SMOKE-04 | QR validation flow | QR encode/decode (C-16), HMAC with `qrSecret`, ValidationPage confirm, player SSE | **Cryptographic QR security** — real 64-char hex secret; player status flips via `QRDisplay` subscribe | ❌ |
 | SMOKE-05 | Buddy assignment | `upsertBuddyProfile`, `getBuddyProfile` | **Persistent buddy card** — survives reload | ❌ |
@@ -818,7 +985,7 @@ flowchart LR
 
 | File | Purpose | Priority |
 |------|---------|----------|
-| `server/pb_migrations/003_hardening.go` | Unique index on `progress_events`; `sessions.bgImageUrl` → FileField | P0 (before adapter) |
+| `server/pb_migrations/003_hardening.go` | `mapNodeScale`, unique index on `progress_events`, `sessions.bgImageUrl` → FileField | P0 (before adapter) |
 | `src/adapters/pocketbase/parsers.ts` | JSON + file URL marshalling (C-13) | P0 (Phase 2) |
 | `src/adapters/pocketbase/pbAdapter.ts` | Full `AppAdapter` implementation (**32 methods**) | P0 (Phase 2) |
 | `src/adapters/pocketbase/mod.ts` | PB client + adapter export | P0 (Phase 2) |
@@ -831,10 +998,12 @@ flowchart LR
 | `src/vite-env.d.ts` | Add `VITE_USE_MOCK_PB`, `pbUrl?` on `MesseBuddyRuntimeConfig` | Phase 2 |
 | `src/adapters/AdapterContext.tsx` | `VITE_USE_MOCK_PB` conditional, import `pbAdapter` | Phase 2+3 |
 | `src/adapters/AdapterContextValue.ts` | Conditional default context value | Phase 2+3 |
-| `src/pages/AdminCockpitPage.tsx` | Pass raw `File` to adapter; resolve URL from response | Phase 4 |
-| `.env.example` | Add `VITE_PB_URL=/api` | Phase 8 |
-| `docs/pb-schema.md` | Reflect migration 003 schema changes | Phase 8 |
-| `AGENTS.md` | Fix SSE subscriber attribution (QRDisplay vs ValidationDisplay) | Phase 8 |
+| `src/hooks/useSession.ts` | `uploadBackground`: pass `File` to adapter; return persisted `displayUrl` | Phase 4 |
+| `.env.example` | Add `VITE_PB_URL` (dev + Docker) | Phase 8 |
+| `docs/pb-schema.md` | Target schema post-003 | Phase 8 |
+| `docs/shared-data-access.md` | Local vs synced boundary + PB integration map | Phase 8 |
+| `AGENTS.md` | Fix SSE subscriber attribution (`useWatchMission`) | Phase 8 |
+| `src/adapters/interface.ts` | Fix stale `subscribeProgressEvent` comment | Phase 8 |
 
 ### Files that require NO changes (already done):
 
