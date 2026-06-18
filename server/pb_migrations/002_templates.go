@@ -11,6 +11,8 @@ func init() {
 		templates.Fields.Add(
 			&core.TextField{Name: "name", Required: true},
 			&core.JSONField{Name: "data"}, // Full TemplateExport JSON
+			&core.AutodateField{Name: "created", OnCreate: true},
+			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
 		)
 		templates.AddIndex("idx_name", true, "name", "")
 		setPublicRules(templates)

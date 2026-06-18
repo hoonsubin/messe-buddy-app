@@ -1,5 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AdapterContextProvider } from "./adapters/AdapterContext.tsx";
+import { DemoAwareAdapterProvider } from "./adapters/DemoAwareAdapterProvider.tsx";
 import LandingPage from "./pages/LandingPage.tsx";
 import PlayerCockpitPage from "./pages/PlayerCockpitPage.tsx";
 import AdminCockpitPage from "./pages/AdminCockpitPage.tsx";
@@ -16,7 +17,9 @@ const router = createBrowserRouter([
     path: "/session/:sessionId",
     element: (
       <RequireRole role={USER_ROLE.PLAYER}>
-        <PlayerCockpitPage />
+        <DemoAwareAdapterProvider>
+          <PlayerCockpitPage />
+        </DemoAwareAdapterProvider>
       </RequireRole>
     ),
   },
@@ -24,7 +27,9 @@ const router = createBrowserRouter([
     path: "/admin/:sessionId",
     element: (
       <RequireRole role={USER_ROLE.GAMEMAKER}>
-        <AdminCockpitPage />
+        <DemoAwareAdapterProvider>
+          <AdminCockpitPage />
+        </DemoAwareAdapterProvider>
       </RequireRole>
     ),
   },
@@ -32,7 +37,9 @@ const router = createBrowserRouter([
     path: "/admin/:sessionId/scan",
     element: (
       <RequireRole role={USER_ROLE.GAMEMAKER}>
-        <QRScannerView />
+        <DemoAwareAdapterProvider>
+          <QRScannerView />
+        </DemoAwareAdapterProvider>
       </RequireRole>
     ),
   },
@@ -40,7 +47,9 @@ const router = createBrowserRouter([
     path: "/validate/:sessionId",
     element: (
       <RequireRole role={USER_ROLE.GAMEMAKER}>
-        <ValidationPage />
+        <DemoAwareAdapterProvider>
+          <ValidationPage />
+        </DemoAwareAdapterProvider>
       </RequireRole>
     ),
   },
@@ -48,7 +57,9 @@ const router = createBrowserRouter([
     path: "/form/:sessionId/:missionId",
     element: (
       <RequireRole role={USER_ROLE.PLAYER}>
-        <FormPage />
+        <DemoAwareAdapterProvider>
+          <FormPage />
+        </DemoAwareAdapterProvider>
       </RequireRole>
     ),
   },

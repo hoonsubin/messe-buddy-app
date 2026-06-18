@@ -86,7 +86,7 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
 
   const listSessions = async (): Promise<ReadonlyArray<Session>> => {
     const records = await pb.collection("sessions").getFullList({
-      sort: "-created",
+      sort: "-id",
     });
     return records.map((r) => marshalSession(pb, r));
   };
@@ -182,7 +182,7 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
   ): Promise<ReadonlyArray<Player>> => {
     const records = await pb.collection("players").getFullList({
       filter: pb.filter("sessionId = {:sessionId}", { sessionId }),
-      sort: "created",
+      sort: "id",
     });
     return records.map((r) => marshalPlayer(pb, r));
   };
@@ -413,7 +413,7 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
   ): Promise<ReadonlyArray<Resource>> => {
     const records = await pb.collection("resources").getFullList({
       filter: pb.filter("sessionId = {:sessionId}", { sessionId }),
-      sort: "created",
+      sort: "id",
     });
     return records.map(marshalResource);
   };

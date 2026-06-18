@@ -29,11 +29,15 @@ interface UseAdminMilestoneEditorResult {
   readonly handleDeleteMilestone: (id: string) => void;
   /** Reposition all milestones to a sequential 4-column grid layout. */
   readonly handleResetToGrid: () => void;
-  /** Save dirty milestones to the adapter. Returns the IDs that were created. */
+  /**
+   * Save dirty milestones to the adapter.
+   * Returns a map from draft ID → server ID for any newly created milestones,
+   * so callers can remap mission milestoneIds before saving missions.
+   */
   readonly saveMilestones: (
     sid: string,
     milestones: ReadonlyArray<Milestone>,
-  ) => Promise<void>;
+  ) => Promise<ReadonlyMap<string, string>>;
   readonly discardMilestones: (milestones: ReadonlyArray<Milestone>) => void;
   /** Clears dirty flags after a successful save. */
   readonly clearDirtyMilestones: () => void;
@@ -83,7 +87,7 @@ export const useAdminMilestoneEditor = (
     const id = makeId();
     setDraftMilestones((prev) => [
       ...prev,
-      defaultDraftMilestone(id, "New milestone", 50, 50),
+      { ...defaultDraftMilestone(id, "New Milestone", 50, 50), isDirty: true },
     ]);
   }, []);
 
@@ -92,7 +96,10 @@ export const useAdminMilestoneEditor = (
       const id = makeId();
       setDraftMilestones((prev) => [
         ...prev,
-        defaultDraftMilestone(id, "New Milestone", xPercent, yPercent),
+        {
+          ...defaultDraftMilestone(id, "New Milestone", xPercent, yPercent),
+          isDirty: true,
+        },
       ]);
     },
     [],
@@ -124,21 +131,27 @@ export const useAdminMilestoneEditor = (
     async (
       sid: string,
       serverMilestones: ReadonlyArray<Milestone>,
-    ) => {
+    ): Promise<ReadonlyMap<string, string>> => {
+      // Maps local draft ID → server-assigned ID for newly created milestones.
+      // Existing milestones keep the same ID, so they map to themselves.
+      const idMap = new Map<string, string>();
       for (const dm of draftMilestones) {
         const real = serverMilestones.find((m) => m.id === dm.id);
         if (real) {
-          await adapter.updateMilestone(dm.id, {
-            name: dm.name,
-            xPercent: dm.xPercent,
-            yPercent: dm.yPercent,
-          });
+          if (dm.isDirty) {
+            await adapter.updateMilestone(dm.id, {
+              name: dm.name,
+              xPercent: dm.xPercent,
+              yPercent: dm.yPercent,
+            });
+          }
+          idMap.set(dm.id, dm.id);
         } else {
           const maxOrder = serverMilestones.reduce(
             (max, m) => Math.max(max, m.order),
             0,
           );
-          await adapter.createMilestone({
+          const created = await adapter.createMilestone({
             sessionId: sid,
             name: dm.name,
             xPercent: dm.xPercent,
@@ -146,8 +159,12 @@ export const useAdminMilestoneEditor = (
             xpThreshold: 100,
             order: maxOrder + 1,
           });
+          // Map the local draft ID to the server-assigned ID so that any
+          // mission drafts using the draft milestoneId can be remapped.
+          idMap.set(dm.id, created.id);
         }
       }
+      return idMap;
     },
     [adapter, draftMilestones],
   );

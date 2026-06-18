@@ -35,6 +35,7 @@ const computeXPPreview = (
 const defaultDraftMission = (milestoneId: string): DraftMission => ({
   milestoneId,
   isDirty: false,
+  difficulty: 1, // Matches UI default so xpPreview doesn't short-circuit on undefined
 });
 
 // ── Hook ───────────────────────────────────────────────────────────────────────
@@ -57,6 +58,7 @@ interface UseAdminMissionEditorResult {
     sid: string,
     missions: ReadonlyArray<Mission>,
     xpPreview: number,
+    milestoneIdMap?: ReadonlyMap<string, string>,
   ) => Promise<void>;
   readonly discardMissions: () => void;
   readonly clearDirtyMissions: () => void;
@@ -188,6 +190,7 @@ export const useAdminMissionEditor = (
       sid: string,
       serverMissions: ReadonlyArray<Mission>,
       xp: number,
+      milestoneIdMap?: ReadonlyMap<string, string>,
     ) => {
       const drafts = draftMissionsRef.current;
 
@@ -211,16 +214,20 @@ export const useAdminMissionEditor = (
             });
           }
         } else {
+          // Remap draft milestoneId → server milestoneId if a new milestone
+          // was just created (server assigns a different ID than the local draft).
+          const resolvedMilestoneId = milestoneIdMap?.get(draft.milestoneId) ??
+            draft.milestoneId;
           await adapter.createMission({
             sessionId: sid,
-            milestoneId: draft.milestoneId,
+            milestoneId: resolvedMilestoneId,
             title: draft.title ?? "New mission",
             body: draft.body ?? "",
             type: draft.type ?? MISSION_TYPE.TEXT,
             difficulty: draft.difficulty ?? 1,
-            xpValue: xp,
+            xpValue: Math.max(1, xp), // PB Required rejects 0; clamp to 1 as floor
             tags: draft.tags ?? [],
-            order: 0,
+            order: drafts.size,
             isInCurrentMissions: draft.isInCurrentMissions ?? true,
             validationMethod: draft.validationMethod ?? "gmApprove",
           });
