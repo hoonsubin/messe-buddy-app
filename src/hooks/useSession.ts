@@ -1,19 +1,40 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Milestone, Mission, Session } from "../types/index.ts";
+import type { Milestone, Mission, PBRecord, Session } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 
-export interface UseSessionResult {
+export interface UseSessionBaseResult {
   readonly session: Session | null;
   readonly milestones: ReadonlyArray<Milestone>;
   readonly missions: ReadonlyArray<Mission>;
   readonly loading: boolean;
   readonly error: Error | null;
-  /** Force a re-fetch of session data (e.g. after transient network failure). */
   readonly refresh: () => void;
 }
 
-// Fetches Session + Milestones + Missions for a session ID.
-export const useSession = (sessionId: string): UseSessionResult => {
+export interface UseSessionGamemakerResult extends UseSessionBaseResult {
+  readonly updateSession: (
+    patch: Partial<Omit<Session, keyof PBRecord>>,
+  ) => Promise<Session>;
+  readonly uploadBackground: (file: File) => Promise<{ displayUrl: string }>;
+  readonly updateMapNodeScale: (scale: number) => Promise<void>;
+}
+
+type UseSessionOptions = {
+  readonly role?: "player" | "gamemaker";
+};
+
+export function useSession(
+  sessionId: string,
+  options: { role: "gamemaker" },
+): UseSessionGamemakerResult;
+export function useSession(
+  sessionId: string,
+  options?: UseSessionOptions,
+): UseSessionBaseResult;
+export function useSession(
+  sessionId: string,
+  options?: UseSessionOptions,
+): UseSessionBaseResult | UseSessionGamemakerResult {
   const adapter = useAdapter();
   const [session, setSession] = useState<Session | null>(null);
   const [milestones, setMilestones] = useState<ReadonlyArray<Milestone>>([]);
@@ -59,5 +80,43 @@ export const useSession = (sessionId: string): UseSessionResult => {
     };
   }, [adapter, sessionId, refreshKey]);
 
-  return { session, milestones, missions, loading, error, refresh };
-};
+  const updateSession = useCallback(
+    async (patch: Partial<Omit<Session, keyof PBRecord>>) => {
+      const updated = await adapter.updateSession(sessionId, patch);
+      setSession(updated);
+      return updated;
+    },
+    [adapter, sessionId],
+  );
+
+  const uploadBackground = useCallback(
+    async (file: File) => {
+      const displayUrl = URL.createObjectURL(file);
+      await updateSession({ bgImageUrl: displayUrl });
+      return { displayUrl };
+    },
+    [updateSession],
+  );
+
+  const updateMapNodeScale = useCallback(
+    async (scale: number) => {
+      await updateSession({ mapNodeScale: scale });
+    },
+    [updateSession],
+  );
+
+  const base: UseSessionBaseResult = {
+    session,
+    milestones,
+    missions,
+    loading,
+    error,
+    refresh,
+  };
+
+  if (options?.role === "gamemaker") {
+    return { ...base, updateSession, uploadBackground, updateMapNodeScale };
+  }
+
+  return base;
+}
