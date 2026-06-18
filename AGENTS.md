@@ -21,6 +21,7 @@ Agent guidance for this repository. Complements [`README.md`](README.md:1). Read
 - **No auth system** - identity is UID-based, stored in `localStorage` as [`mb_identity`](src/hooks/useIdentity.ts:4). `role` is client-stored, **not** server-validated.
 - **No tests yet** - when adding, use `Deno.test`, co-locate as `*.test.ts`/`.tsx`, fixture via [`mockAdapter`](src/adapters/mock/mockAdapter.ts:367).
 - **Only mock adapter exists** - [`src/adapters/pocketbase/`](src/adapters/pocketbase/) is empty. PB adapter is the next major architectural step.
+- **Long file edits WILL get truncated** - NEVER make file edits that are longer than 500 lines. Always make edits based on logical and manageable chunks.
 
 ---
 
