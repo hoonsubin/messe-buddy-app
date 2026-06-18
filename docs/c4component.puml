@@ -36,9 +36,10 @@ Container_Boundary(pwa, "React PWA") {
     Component(localStorage, "LocalStorage", "Browser API", "Stores LocalIdentity: uid, recoveryKey, sessionId, role.")
 }
 
-ContainerDb(pb, "PocketBase", "REST + SSE")
-Container(litellm, "LiteLLM Proxy", "Python / LiteLLM", "Abstraction layer between PWA and AI providers. Receives standard OpenAI-shaped requests from useChatStream. Retrieves relevant document chunks from pgvector (RAG), augments the prompt, then forwards to the configured upstream provider. Provider, model, and embedded documents are all config-driven — no PWA code changes required to swap them.")
-ContainerDb(pgvector, "pgvector", "PostgreSQL + pgvector", "Vector store for embedded company documents. LiteLLM queries it at request time.")
+ContainerDb(app_pb, "App (PWA + PocketBase)", "nginx + PocketBase Go binary", "Single container serving the PWA and providing REST/SSE API. SQLite backend for sessions, players, milestones, missions, progress_events, buddy_profiles, resources, form_schemas.")
+Container(litellm_proxy, "LiteLLM Proxy", "Python / LiteLLM", "Abstraction layer between PWA and AI providers. Receives standard OpenAI-shaped requests from useChatStream. Delegates RAG retrieval to the pgvector connector service, augments the prompt, then forwards to the configured upstream provider.")
+Container(litellm_pgvector, "PG Vector Store Connector", "Python / uvicorn", "OpenAI-compatible /v1/vector_stores/* endpoints backed by PostgreSQL + pgvector. Handles document upload, embedding generation via LiteLLM proxy, and semantic search for RAG retrieval.")
+ContainerDb(vector_db, "Vector DB", "PostgreSQL + pgvector extension", "Stores vector_stores and embeddings tables for the pgvector connector. Holds embedded company documents (policies, onboarding guides, FAQs).")
 System_Ext(aiProvider, "AI Provider", "Upstream LLM API (OpenAI / Anthropic / Azure / other). Called by LiteLLM only.")
 
 ' ── PLAYER FLOW ────────────────────────────────────────────────
@@ -58,11 +59,12 @@ Rel(playerCockpit, validationDisplay, "mounts on Mark Complete (non-form mission
 Rel(playerCockpit, resourcesChat, "renders")
 Rel(resourcesChat, chatPanel, "Ask AI tab")
 Rel(chatPanel, useChatStream, "calls on send")
-Rel(useChatStream, litellm, "POST /chat/completions stream:true", "HTTP / SSE")
+Rel(useChatStream, litellm_proxy, "POST /chat/completions stream:true", "HTTP / SSE")
 
-' ── LiteLLM PROXY FLOW ─────────────────────────────────────────
-Rel(litellm, pgvector, "Semantic search for relevant document chunks", "SQL / pgvector ANN")
-Rel(litellm, aiProvider, "Forwards RAG-augmented prompt to configured provider", "HTTPS / REST")
+' ── LiteLLM PROXY + RAG PIPELINE ───────────────────────────────
+Rel(litellm_proxy, litellm_pgvector, "Semantic search for relevant document chunks", "HTTP / OpenAI-compatible API")
+Rel(litellm_pgvector, vector_db, "Reads / writes embeddings", "PostgreSQL / pgvector ANN")
+Rel(litellm_proxy, aiProvider, "Forwards RAG-augmented prompt to configured provider", "HTTPS / REST")
 
 ' ── QR OFFLINE FLOW ────────────────────────────────────────────
 Rel(validationDisplay, qrPayloadUtil, "encodes payload (player side)")
@@ -82,7 +84,7 @@ Rel(formPage, useCases, "completeForm")
 
 ' ── SHARED INFRASTRUCTURE ──────────────────────────────────────
 Rel(useCases, pbAdapter, "calls")
-Rel(pbAdapter, pb, "REST PATCH/POST/GET, SSE", "HTTP")
+Rel(pbAdapter, app_pb, "REST PATCH/POST/GET, SSE", "HTTP")
 Rel(useCases, localStorage, "reads/writes LocalIdentity")
 
 @enduml

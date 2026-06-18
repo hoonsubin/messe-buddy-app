@@ -6,13 +6,15 @@ title Layer 1 System Context
 Person(player, "Player", "New employee completing an onboarding journey via the PWA")
 Person(gameMaker, "Game Maker", "Admin who configures sessions, missions, and validates completions (directly or via QR scan)")
 
-System(messeBuddy, "MesseBuddy", "Mobile-first PWA that gamifies corporate onboarding. Tracks progress via XP, configurable validation mechanisms, and an AI policy chatbot. Includes an internally-deployed LLM abstraction layer (LiteLLM) that routes requests to the configured AI provider and augments them with embedded company documents (RAG).")
+System(messeBuddy, "MesseBuddy", "Mobile-first PWA that gamifies corporate onboarding. Tracks progress via XP, configurable validation mechanisms, and an AI policy chatbot. Includes an internally-deployed LLM abstraction layer (LiteLLM) with a dedicated pgvector connector for RAG — routes requests to the configured AI provider and augments them with embedded company documents.")
 
 System_Ext(aiProvider, "AI Provider", "Upstream LLM API. OpenAI, Anthropic, Azure OpenAI, or any OpenAI-compatible endpoint. Selected and authenticated at the LiteLLM proxy layer — the PWA never calls the provider directly.")
+System_Ext(pgvectorConnector, "PG Vector Store Connector", "OpenAI-compatible /v1/vector_stores/* endpoints backed by PostgreSQL + pgvector. Handles document upload, embedding generation, and semantic search for RAG retrieval.")
 
 Rel(player, messeBuddy, "Joins session, completes missions, submits validation requests, asks policy questions via AI chat", "HTTPS / PWA")
 Rel(gameMaker, messeBuddy, "Creates sessions, edits milestones/missions via templates, approves completions, uploads policy documents", "HTTPS / PWA")
 Rel(messeBuddy, player, "Shows cockpit, mission progress, XP, buddy info, and AI chat responses", "SSE / REST")
 Rel(messeBuddy, aiProvider, "Routes chat completions via LiteLLM proxy (RAG-augmented)", "HTTPS / REST")
+Rel(messeBuddy, pgvectorConnector, "Semantic search for relevant document chunks (RAG)", "HTTP / OpenAI-compatible API")
 
 @enduml

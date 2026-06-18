@@ -77,6 +77,11 @@ This glossary is authoritative.
 | **Buddy**              | A company-assigned mentor figure displayed on the Player's cockpit. Not a system user - their info is manually entered by the Game Maker.                                                                                                                                                                                |
 | **Template**           | A named, portable snapshot of a Session's structure (Milestones, Missions, Resources) with no player data. Used to bootstrap new sessions.                                                                                                                                                                               |
 | **Recovery Key**       | An 8-character alphanumeric token shown to a user on first join, used to restore their identity if localStorage is cleared.                                                                                                                                                                                              |
+| **Shared Hook**         | A React hook that serves both Player and GameMaker roles from a single implementation. Accepts a `role` parameter (or infers it from context) to return role-appropriate data and callbacks. Examples: `useProgress`, `useBuddyProfile`, `useResources`. Components never call [`AppAdapter`](src/adapters/interface.ts:18) directly — they consume data exclusively through shared hooks. |
+| **Canonical Domain Type** | The single authoritative TypeScript interface for a PocketBase-persisted entity, defined in [`domain.ts`](src/types/domain.ts:1). All views, hooks, and adapter methods derive from these types. Never forked — variations are created via `Omit<>`, `Pick<>`, or `Readonly<>` utility types. |
+| **View Type**            | (Phase B) A role-scoped projection of a canonical domain type. Player components receive `Player*View` types (e.g., `PlayerSessionView` omits `qrSecret` and `gameMakerId`). Admin components receive full domain types. Created via TypeScript utility types — zero runtime cost. Defined in `src/types/views.ts`. |
+| **SharedDataProvider**   | (Phase B) A React context provider that wraps [`AdapterContext`](src/adapters/AdapterContext.tsx:13) and Phase A shared hooks. Components call `useSharedData(entity, role)` to receive typed, role-appropriate data views. Encapsulates the adapter boundary — components never import `AppAdapter` or shared hooks directly. |
+| **DataVisibility**       | (Phase B) Type-level classification of domain fields: `admin-only` (never exposed to Player views), `player-readonly` (Player can read, never mutate), `both-readwrite` (both roles can read; write paths are role-gated by hook callbacks). Encoded in view types via TypeScript utility types — not a runtime enum. |
 
 ## Tech Stack
 
@@ -231,23 +236,42 @@ Replace the placeholder text with actual Messe München onboarding context.
 There is no authentication system. Identity is UID-based.
 
 - **Player UID:** client-generated UUID on first join, stored in `localStorage`
+  and in the `players` PocketBase collection
 - **Game Maker UID:** client-generated UUID on session creation, stored in
   `localStorage` and in `sessions.gameMakerId`
 - **No Pocketbase auth collections are used**
 
-### LocalIdentity Shape
+### Unified Identity Model
+
+The [`Player`](src/types/domain.ts:36) domain type is the canonical identity
+record. Every participant — Player or Game Maker — corresponds to a single
+`players` row in PocketBase. The `Player` type carries both identity fields
+(`uid`, `recoveryKey`, `role`) and profile fields (`name`, `team`,
+`skillsConfident`, etc.).
+
+**`localStorage` caches an identity subset for offline resolution.** The
+`mb_identity` key stores only the fields needed to re-establish identity without
+a network call:
 
 ```ts
-interface LocalIdentity {
-  uid: string; // client-generated UUID
-  recoveryKey: string; // 8-char alphanumeric, also in players.recoveryKey
-  sessionId: string; // PB record ID of the session
-  role: UserRole; // 'player' | 'gamemaker'
+// Subset of Player stored in localStorage under key mb_identity
+interface CachedIdentity {
+  uid: string;            // client-generated UUID — matches players.uid
+  recoveryKey: string;    // 8-char alphanumeric — matches players.recoveryKey
+  sessionId: string;      // PB record ID of the session — matches players.sessionId
+  role: UserRole;         // 'player' | 'gamemaker'
+  name?: string;          // display name cached for offline rendering
+  isDemo?: boolean;       // true for pre-seeded demo identities
 }
 ```
 
+The [`useIdentity()`](src/hooks/useIdentity.ts:41) hook resolves identity from
+this cache and returns the full `Player` record (fetched from PB when online).
+All route guards, data hooks, and components consume `Player`, never
+`CachedIdentity`.
+
 > **[NEED-UPDATE — UX / data storage]** _Reason: `role` is client-stored only
-> today; route guards read `LocalIdentity.role` without server verification.
+> today; route guards read `Player.role` without server verification.
 > Future: persist roles in a `SessionRole` (or equivalent) collection and
 > validate on every mutation. See `SessionRole` type and OD-14._
 
@@ -258,7 +282,7 @@ The app does **not** use PocketBase auth. Identity is resolved client-side via
 
 | Source | Storage | Written by | Cleared by |
 | ------ | ------- | ---------- | ---------- |
-| **Persisted** | `localStorage` key `mb_identity` | `joinSession`, `recoverIdentity`, `createGameMakerSession`, `setIdentity` | `clearIdentity`, browser data wipe |
+| **Persisted** | `localStorage` key `mb_identity` (stores `CachedIdentity` — a `Player` subset) | `joinSession`, `recoverIdentity`, `createGameMakerSession`, `setIdentity` | `clearIdentity`, browser data wipe |
 | **Ephemeral demo** | In-memory `ephemeralIdentityStore` (module singleton) | Landing page demo buttons via `setEphemeralIdentity` | `clearEphemeralIdentity` (e.g. ephemeral admin "back to landing") |
 
 **Resolution order:** `readEphemeralIdentity()` first; if absent, parse
@@ -1044,7 +1068,7 @@ interface FullSessionExport {
 | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | C-01 | One user identity per session                                                                                                                                                                                                           | `players.uid` unique globally                                                                         |
 | C-02 | Progress is always recoverable                                                                                                                                                                                                          | `recoveryKey` stored in PB, shown once on first join                                                  |
-| C-03 | No auth system required                                                                                                                                                                                                                 | Pocketbase auth collections unused; identity via `LocalIdentity` + `RequireRole` (client-trusted role) |
+| C-03 | No auth system required                                                                                                                                                                                                                 | Pocketbase auth collections unused; identity via unified `Player` type + `RequireRole` (client-trusted role). `localStorage.mb_identity` caches a `CachedIdentity` subset of `Player` fields for offline resolution. |
 | C-04 | `xpThreshold` is always 100 per Milestone                                                                                                                                                                                               | Constant; not stored as a variable field                                                              |
 | C-05 | One `ProgressEvent` per `(playerId, missionId)`                                                                                                                                                                                         | Enforced at `upsertProgressEvent` - the single write path                                             |
 | C-06 | Form missions always `autoApproved`, regardless of `validationMethod`                                                                                                                                                                   | `autoApproved` status set on submit; `ValidationDisplay` never mounts for `form` type                 |
@@ -1059,6 +1083,10 @@ interface FullSessionExport {
 | C-15 | `validationMethod` defaults to `'gmApprove'` for all new Missions                                                                                                                                                                       | Set in `MissionEditor` default state; form missions ignore this field                                 |
 | C-16 | QR payloads must include HMAC-SHA256 keyed with `sessions.qrSecret`. `qrPayload.ts` is the single encode/decode point; `qrUrl.ts` wraps payloads in validation URLs. No component calls `JSON.stringify`/`JSON.parse` on QR strings directly. | `qrPayload.ts`, `qrUrl.ts`; `QRDisplay`, scanners, `ValidationPage` |
 | C-17 | `ChatThread` and `ChatMessage` are ephemeral client-only state. Chat history is never written to PocketBase and is reset on page navigation                                                                                             | `useChatStream` hook holds state in React; no PB adapter call for chat data                           |
+| C-18 | All domain data access flows through shared hooks. No component or page calls [`AppAdapter`](src/adapters/interface.ts:18) methods directly.                                                                                            | `useProgress`, `useBuddyProfile`, `useResources` are the sole consumers of `AppAdapter` for their respective domains. Pages and components consume data exclusively through these hooks. |
+| C-19 | (Phase B) Role-scoped view types enforce compile-time field access. Player components receive `Player*View` types that omit admin-only fields (e.g., `PlayerSessionView` omits `qrSecret`, `gameMakerId`). Admin components receive full domain types. TypeScript enforces this at build time. | `src/types/views.ts`; `SharedDataProvider` returns typed views via `useSharedData(entity, role)`. |
+| C-20 | Shared hooks may maintain real-time subscriptions (SSE, polling) as an implementation detail. The subscription strategy is opaque to components — they consume reactive data without knowing how updates arrive.                          | Internal to shared hooks; not a component concern. Hook authors choose SSE or polling per data freshness requirements. |
+| C-21 | (Phase B) [`PreBoardingCheckItem`](src/types/ephemeral.ts:11) is a separate PocketBase collection, not embedded in `Session.preBoardingChecks` JSON. Both roles can read; only GameMaker can write.                                       | `pre_boarding_checks` collection with `sessionId`, `label`, `checked`, `dueDate?`; `listPreBoardingChecks` / `upsertPreBoardingCheck` adapter methods. |
 
 ## Open Decisions [APPEND-ONLY]
 
@@ -1072,9 +1100,9 @@ interface FullSessionExport {
 | OD-06 | What is the offline behavior for form submission - queue and sync, or block until online?                                                                                                                   | Service Worker strategy                                                    | Sprint 3       |
 | OD-07 | In production, should `xpValue` be re-derived from `missions.xpValue` at scan time rather than trusted from the QR payload?                                                                                 | Security; out of scope for prototype; applies only to `qr` method          | Post-prototype |
 | OD-08 | Should `validationMethod` be configurable at session level (all missions inherit a session-wide default), or per-mission only?                                                                              | Game Maker UX and template design complexity                               | Sprint 3       |
-| OD-09 | For `gmApprove` missions, should `ValidationDisplay` use polling or SSE to detect approval? SSE keeps the existing real-time pattern but extends the subscription scope.                                    | Real-time UX vs. infrastructure simplicity                                 | Sprint 3       |
+| OD-09 | For `gmApprove` missions, should `ValidationDisplay` use polling or SSE to detect approval? SSE keeps the existing real-time pattern but extends the subscription scope.                                    | Real-time UX vs. infrastructure simplicity                                 | Sprint 3 — Partially resolved by C-20: the subscription strategy is now an implementation detail of the shared `useProgress` hook, not a component-level decision. The `ValidationDisplay` delegates to the hook; the hook author chooses SSE or polling. |
 | OD-10 | Should the Player see the `pendingApproval` state inline (e.g., greyed-out mission card with "Waiting for approval") rather than a full-screen `ValidationDisplay`?                                         | Player UX feedback loop; affects when `ValidationDisplay` dismisses        | Sprint 3       |
-| OD-11 | What is the auth mechanism for the LiteLLM proxy? Options: (a) Bearer token hardcoded in env var at build time, (b) session token passed from `LocalIdentity`, (c) unauthenticated (internal network only). | Security posture of the AI gateway; affects `useChatStream` implementation | Sprint 3       |
+| OD-11 | What is the auth mechanism for the LiteLLM proxy? Options: (a) Bearer token hardcoded in env var at build time, (b) session token passed from `Player`, (c) unauthenticated (internal network only).         | Security posture of the AI gateway; affects `useChatStream` implementation | Sprint 3       |
 | OD-12 | Should the QR payload's `issuedAt` expiry tolerance be configurable per session, or a fixed constant (e.g., 5 minutes)?                                                                                     | UX for slow QR scans; security for replayed tokens                         | Sprint 3       |
 | OD-13 | How should player-side QR signing obtain the HMAC key in production? Options: server-signed token endpoint, short-lived player signing key, or accept prototype `sessionId` stand-in in mock only.          | Security of `qr` path; `qrSecret` must not leak to untrusted clients       | Post-prototype |
-| OD-14 | Should identity move from `localStorage` + ephemeral demo to persisted `SessionRole` records with server-validated roles?                                                                                  | Multi-session UX, route guard trust, recovery flows                        | Post-prototype |
+| OD-14 | Should identity move from `localStorage` + ephemeral demo to persisted `SessionRole` records with server-validated roles?                                                                                  | Multi-session UX, route guard trust, recovery flows                        | Post-prototype — Simplified by the unified `Player`/identity model. Identity is already a canonical `players` PB row; the remaining step is server-validating the `role` field on mutations. |
