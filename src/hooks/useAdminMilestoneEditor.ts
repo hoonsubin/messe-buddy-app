@@ -29,7 +29,11 @@ interface UseAdminMilestoneEditorResult {
   readonly handleDeleteMilestone: (id: string) => void;
   /** Reposition all milestones to a sequential 4-column grid layout. */
   readonly handleResetToGrid: () => void;
-  /** Save dirty milestones to the adapter. Returns the IDs that were created. */
+  /**
+   * Save dirty milestones to the adapter.
+   * Passes `id: dm.id` to the adapter on create, so the server assigns our
+   * client-generated ID — draft ID === server ID from creation onward.
+   */
   readonly saveMilestones: (
     sid: string,
     milestones: ReadonlyArray<Milestone>,
@@ -83,7 +87,7 @@ export const useAdminMilestoneEditor = (
     const id = makeId();
     setDraftMilestones((prev) => [
       ...prev,
-      defaultDraftMilestone(id, "New milestone", 50, 50),
+      { ...defaultDraftMilestone(id, "New Milestone", 50, 50), isDirty: true },
     ]);
   }, []);
 
@@ -92,7 +96,10 @@ export const useAdminMilestoneEditor = (
       const id = makeId();
       setDraftMilestones((prev) => [
         ...prev,
-        defaultDraftMilestone(id, "New Milestone", xPercent, yPercent),
+        {
+          ...defaultDraftMilestone(id, "New Milestone", xPercent, yPercent),
+          isDirty: true,
+        },
       ]);
     },
     [],
@@ -124,21 +131,26 @@ export const useAdminMilestoneEditor = (
     async (
       sid: string,
       serverMilestones: ReadonlyArray<Milestone>,
-    ) => {
+    ): Promise<void> => {
       for (const dm of draftMilestones) {
         const real = serverMilestones.find((m) => m.id === dm.id);
         if (real) {
-          await adapter.updateMilestone(dm.id, {
-            name: dm.name,
-            xPercent: dm.xPercent,
-            yPercent: dm.yPercent,
-          });
+          if (dm.isDirty) {
+            await adapter.updateMilestone(dm.id, {
+              name: dm.name,
+              xPercent: dm.xPercent,
+              yPercent: dm.yPercent,
+            });
+          }
         } else {
           const maxOrder = serverMilestones.reduce(
             (max, m) => Math.max(max, m.order),
             0,
           );
+          // Pass id: dm.id so PocketBase assigns our client-generated ID.
+          // Draft ID === server ID — no post-save remapping needed.
           await adapter.createMilestone({
+            id: dm.id,
             sessionId: sid,
             name: dm.name,
             xPercent: dm.xPercent,

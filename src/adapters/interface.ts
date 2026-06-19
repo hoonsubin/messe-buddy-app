@@ -22,7 +22,9 @@ export interface AppAdapter {
   createSession(name: string, gameMakerUid: string): Promise<Session>;
   updateSession(
     sessionId: string,
-    patch: Partial<Omit<Session, keyof PBRecord>>,
+    patch: Partial<Omit<Session, keyof PBRecord | "bgImageUrl">> & {
+      readonly bgImageUrl?: string | File;
+    },
   ): Promise<Session>;
 
   // Players
@@ -38,7 +40,9 @@ export interface AppAdapter {
 
   // Milestones
   listMilestones(sessionId: string): Promise<ReadonlyArray<Milestone>>;
-  createMilestone(data: Omit<Milestone, keyof PBRecord>): Promise<Milestone>;
+  createMilestone(
+    data: Omit<Milestone, keyof PBRecord> & { readonly id?: string },
+  ): Promise<Milestone>;
   updateMilestone(
     milestoneId: string,
     patch: Partial<Omit<Milestone, keyof PBRecord>>,
@@ -47,7 +51,9 @@ export interface AppAdapter {
 
   // Missions
   listMissions(sessionId: string): Promise<ReadonlyArray<Mission>>;
-  createMission(data: Omit<Mission, keyof PBRecord>): Promise<Mission>;
+  createMission(
+    data: Omit<Mission, keyof PBRecord> & { readonly id?: string },
+  ): Promise<Mission>;
   updateMission(
     missionId: string,
     patch: Partial<Omit<Mission, keyof PBRecord>>,
@@ -73,7 +79,7 @@ export interface AppAdapter {
     >,
   ): Promise<ProgressEvent>;
   listProgressEvents(playerId: string): Promise<ReadonlyArray<ProgressEvent>>;
-  // Returns an unsubscribe function. Only held by ValidationDisplay. (C-07)
+  // Returns an unsubscribe function. Consumed via useWatchMission (C-20).
   subscribeProgressEvent(
     playerId: string,
     missionId: string,

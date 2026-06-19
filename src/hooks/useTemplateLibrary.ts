@@ -88,6 +88,7 @@ export const useTemplateLibrary = ({
         );
 
         await adapter.saveTemplate(template);
+        void adapter.listTemplates().then(setTemplates);
 
         // Download as JSON file
         const blob = new Blob([JSON.stringify(template, null, 2)], {

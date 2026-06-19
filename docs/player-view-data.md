@@ -7,9 +7,9 @@ The player experience spans four pages, each serving a distinct role in the onbo
 | # | Page | Route | Role | Purpose |
 |---|------|-------|------|---------|
 | 1 | [`LandingPage`](src/pages/LandingPage.tsx:501) | `/` or `/join/:sessionId` | Public | Identity selection, session join, new admin session creation, recovery |
-| 2 | [`PlayerCockpitPage`](src/pages/PlayerCockpitPage.tsx:32) | `/session/:sessionId` | Player (read-only) | Dashboard — milestone map, current missions, buddy card, resources, AI assistant, tutorial |
-| 3 | [`FormPage`](src/pages/FormPage.tsx:12) | `/form/:missionId` | Player (form submit) | Dedicated form-filling page for [`MISSION_TYPE.FORM`](src/types/unions.ts:7) missions |
-| 4 | [`ValidationPage`](src/pages/ValidationPage.tsx:11) | `/validate/:sessionId` | GameMaker (confirm) | GM confirms a QR-code validation from a deep link; displays decoded payload and confirms XP award |
+| 2 | [`PlayerCockpitPage`](src/pages/PlayerCockpitPage.tsx:33) | `/session/:sessionId` | Player (read-only) | Dashboard — milestone map, current missions, buddy card, resources, AI assistant, tutorial |
+| 3 | [`FormPage`](src/pages/FormPage.tsx:13) | `/form/:sessionId/:missionId` | Player (form submit) | Dedicated form-filling page for [`MISSION_TYPE.FORM`](src/types/unions.ts:4) missions |
+| 4 | [`ValidationPage`](src/pages/ValidationPage.tsx:9) | `/validate/:sessionId` | GameMaker (confirm) | GM confirms a QR-code validation from a deep link; displays decoded payload and confirms XP award |
 
 **Key distinction from admin view:** Players are **read-only consumers** of session config, milestones, missions, resources, and buddy profiles. Their only writes are `upsertProgressEvent` (self-approve, request-approval, or form submission) and `updatePlayer` (profile mission only). They never mutate session structure, create/edit milestones or missions, manage resources, or handle templates.
 
@@ -45,10 +45,10 @@ No adapter-fetched data. All state lives in [`useLandingFlow`](src/hooks/useLand
 
 | Component | Props | Source |
 |-----------|-------|--------|
-| `ProfileCard` (×N) | `identity: LocalIdentity`, `isKeyOpen`, `onResume`, `onRemove`, `onShowKey`, `onHideKey` | [`profiles`](src/hooks/useLandingFlow.ts:46) from `useIdentity` |
+| `ProfileCard` (×N) | `identity: CachedIdentity`, `isKeyOpen`, `onResume`, `onRemove`, `onShowKey`, `onHideKey` | [`profiles`](src/hooks/useLandingFlow.ts:46) from `useIdentity` |
 | `EmployeeForm` | `step`, `sessionCode`, `playerName`, `verifiedSessionId`, `status`, `errorMessage`, handlers | `useLandingFlow` form fields |
 | `AdminForm` | `sessionName`, `adminName`, `status`, `errorMessage`, handlers | `useLandingFlow` form fields |
-| `Toast` | `message` | [`flow.toast`](src/hooks/useLandingFlow.ts:58) from `sessionStorage` |
+| `Toast` | `message` | [`flow.toast`](src/hooks/useLandingFlow.ts:109) from `sessionStorage` |
 
 **Adapter calls triggered from this page:**
 
@@ -59,19 +59,19 @@ No adapter-fetched data. All state lives in [`useLandingFlow`](src/hooks/useLand
 | "Create & save profile" | [`adapter.createSession(name, uid)`](src/use-cases/joinSession.ts:82) | `createGameMakerSession()` — creates session + GM identity |
 | "Recover" | [`adapter.getPlayerByRecoveryKey(key)`](src/use-cases/recoverIdentity.ts:13) | `recoverIdentity()` — looks up player by recovery key |
 
-### 2.2 [`PlayerCockpitPage`](src/pages/PlayerCockpitPage.tsx:32)
+### 2.2 [`PlayerCockpitPage`](src/pages/PlayerCockpitPage.tsx:33)
 
 The central player dashboard. All data flows through hooks; the page orchestrates render.
 
 | Component | Key Props | Source Hook |
 |-----------|-----------|-------------|
-| `TopBar` | `playerName`, `totalXP`, `role` | `player` state + [`playerProgress?.totalXP`](src/hooks/usePlayerProgress.ts:32) |
-| `MilestoneMapViewer` | `milestones`, `bgImageUrl`, `mapNodeScale`, `milestoneProgress`, `playerXPercent`, `playerYPercent`, `onMilestoneClick` | [`useSession`](src/hooks/useSession.ts:16) + [`usePlayerProgress`](src/hooks/usePlayerProgress.ts:21) + computed `currentMilestone` |
+| `TopBar` | `playerName`, `totalXP`, `role` | `player` state + [`playerProgress?.totalXP`](src/hooks/useProgress/player.ts:54) |
+| `MilestoneMapViewer` | `milestones`, `bgImageUrl`, `mapNodeScale`, `milestoneProgress`, `playerXPercent`, `playerYPercent`, `onMilestoneClick` | [`useSession`](src/hooks/useSession.ts:16) + [`useProgressPlayer`](src/hooks/useProgress/player.ts:10) + computed `currentMilestone` |
 | `MilestoneSidebarViewer` | `milestoneId`, `milestoneName`, `missions`, `progressEvents`, `currentXP`, `xpThreshold`, `onClose`, `onMissionClick` | Derived from `selectedMilestoneId` filtering |
-| `MissionDetailPopup` | `mission`, `playerId`, `sessionId`, `progressEvent`, `onClose`, `onValidated` | [`popupMission`](src/pages/PlayerCockpitPage.tsx:127) state + `progressEvents` lookup |
-| `CurrentMissionsList` | `missions` (filtered to `isInCurrentMissions`), `progressEvents`, `onMissionClick`, `onMarkComplete` | [`currentMissions`](src/pages/PlayerCockpitPage.tsx:153) derivation |
-| `BuddyCard` | `name`, `role`, `tenure?`, `avatarUrl?`, `contactUrl?`, `quote?`, `email?`, `phone?` | [`useBuddy`](src/hooks/useBuddy.ts:12) |
-| `ResourcesSection` | `resources`, `onSearch` | [`useResources`](src/hooks/useResources.ts:12) |
+| `MissionDetailPopup` | `mission`, `playerId`, `sessionId`, `progressEvent`, `onClose`, `onValidated` | [`popupMission`](src/pages/PlayerCockpitPage.tsx:95) state + `progressEvents` lookup |
+| `CurrentMissionsList` | `missions` (filtered to `isInCurrentMissions`), `progressEvents`, `onMissionClick`, `onMarkComplete` | [`currentMissions`](src/pages/PlayerCockpitPage.tsx:120) derivation |
+| `BuddyCard` | `name`, `role`, `tenure?`, `avatarUrl?`, `contactUrl?`, `quote?`, `email?`, `phone?` | [`useBuddyProfile`](src/hooks/useBuddyProfile.ts:46) |
+| `ResourcesSection` | `resources`, `onSearch` | [`useResources`](src/hooks/useResources.ts:41) |
 | `AssistantChatCard` | `buddyName?`, `appContext?` | Derived from `player` + `buddy` |
 | `TutorialOverlayWithStep` | `isVisible`, `currentStepIndex`, `steps`, `playerName`, `onNext`, `onSkip` | [`useTutorial`](src/hooks/useTutorial.ts:61) |
 | `ConfirmDialog` | `isOpen`, `title`, `body`, `confirmLabel`, `onConfirm`, `onCancel` | `useTutorial` skip flow |
@@ -82,27 +82,30 @@ The central player dashboard. All data flows through hooks; the page orchestrate
 sequenceDiagram
     participant Page as PlayerCockpitPage
     participant Identity as useIdentity()
-    participant PlayerResolve as inline useEffect
+    participant ActiveProfile as useActiveProfile(sid, player)
+    participant Player as useResolvedPlayer(uid)
     participant Session as useSession(sid)
-    participant Progress as usePlayerProgress(playerId)
-    participant Buddy as useBuddy(playerId)
-    participant Resources as useResources(sid)
+    participant Progress as useProgressPlayer(playerId, milestones, missions)
+    participant Buddy as useBuddyProfile(sid, playerId, player)
+    participant Resources as useResources(sid, player)
     participant Tutorial as useTutorial(player)
     participant Adapter as AppAdapter
 
     Page->>Identity: mount → read localStorage
     Identity-->>Page: profiles[]
 
-    Page->>Page: find identity by sessionId
-    Page->>PlayerResolve: useEffect(identity)
-    PlayerResolve->>Adapter: getPlayer(uid)
-    Adapter-->>PlayerResolve: Player | null
+    Page->>ActiveProfile: mount (sessionId, USER_ROLE.PLAYER)
+    ActiveProfile-->>Page: CachedIdentity | null
+
+    Page->>Player: mount (identity.uid)
+    Player->>Adapter: getPlayer(uid)
+    Adapter-->>Player: Player | null
 
     Page->>Session: mount (sessionId)
     Session->>Adapter: getSession(sid) + listMilestones(sid) + listMissions(sid)
     Adapter-->>Session: session, milestones[], missions[]
 
-    PlayerResolve-->>Page: setPlayer → triggers downstream
+    Player-->>Page: setPlayer → triggers downstream
 
     Page->>Progress: mount (playerId, milestones, missions)
     Progress->>Adapter: listProgressEvents(playerId)
@@ -110,24 +113,24 @@ sequenceDiagram
     Progress->>Progress: computeProgress(playerId, missions, milestones, events)
     Progress-->>Page: playerProgress, progressEvents
 
-    Page->>Buddy: mount (playerId)
+    Page->>Buddy: mount (sessionId, playerId, { role: "player" })
     Buddy->>Adapter: getBuddyProfile(playerId)
     Adapter-->>Buddy: BuddyProfile | null
 
-    Page->>Resources: mount (sessionId)
+    Page->>Resources: mount (sessionId, { role: "player" })
     Resources->>Adapter: listResources(sid)
     Adapter-->>Resources: resources[]
     Resources->>Resources: filter(isVisibleToPlayer)
     Resources-->>Page: resources[] (filtered)
 
-    Page->>Tutorial: mount (player, adapter, sid)
+    Page->>Tutorial: mount (player, updatePlayer, sid)
     Tutorial->>Tutorial: read sessionStorage (mb_tutorial_step, mb_tutorial_form_pending)
     Tutorial-->>Page: showTutorial, tutorialStep
 ```
 
-### 2.3 [`FormPage`](src/pages/FormPage.tsx:12)
+### 2.3 [`FormPage`](src/pages/FormPage.tsx:13)
 
-A dedicated full-page form for [`MISSION_TYPE.FORM`](src/types/unions.ts:7) missions. Per [C-06](SPECS.md:946), form missions are always `autoApproved` — the [`ValidationDisplay`](src/components/player/ValidationDisplay.tsx:15) never mounts for `type: "form"`.
+A dedicated full-page form for [`MISSION_TYPE.FORM`](src/types/unions.ts:4) missions. Per [C-06](SPECS.md:946), form missions are always `autoApproved` — the [`ValidationDisplay`](src/components/player/ValidationDisplay.tsx:15) never mounts for `type: "form"`.
 
 | Component | Key Props | Source |
 |-----------|-----------|--------|
@@ -135,18 +138,18 @@ A dedicated full-page form for [`MISSION_TYPE.FORM`](src/types/unions.ts:7) miss
 | `FormShell` | `missionTitle`, `description`, `fields`, `values`, `errors`, `isSubmitting`, `isDraft`, handlers | `formSchema.fields` + local form state |
 | `FetchErrorPanel` | `message`, `onRetry`, `testId`, `page` | On session error |
 
-**Adapter calls from this page:**
+**Adapter calls from this page (via [`useFormMission`](src/hooks/useFormMission.ts:30)):**
 
 | Trigger | Adapter Method | Purpose |
 |---------|---------------|---------|
-| Mount | [`adapter.getPlayer(uid)`](src/pages/FormPage.tsx:36) | Resolve PB player record |
-| Mount | [`adapter.getFormSchema(missionId)`](src/pages/FormPage.tsx:81) | Fetch form field definitions |
-| Submit | [`adapter.upsertProgressEvent(playerId, missionId, { status: "autoApproved", formResponse })`](src/pages/FormPage.tsx:153) | Save form response (C-06: auto-approved) |
-| Profile mission only | [`adapter.updatePlayer(playerId, patch)`](src/pages/FormPage.tsx:206) | Mirror profile fields from form to Player record |
+| Mount | [`adapter.getPlayer(uid)`](src/pages/FormPage.tsx:26) via [`useResolvedPlayer`](src/hooks/useResolvedPlayer.ts:16) | Resolve PB player record |
+| Mount | [`adapter.getFormSchema(missionId)`](src/hooks/useFormMission.ts:59) | Fetch form field definitions |
+| Submit | [`adapter.upsertProgressEvent(playerId, missionId, { status: "autoApproved", formResponse })`](src/hooks/useFormMission.ts:82) | Save form response (C-06: auto-approved) |
+| Profile mission only | [`adapter.updatePlayer(playerId, patch)`](src/hooks/useFormMission.ts:84) | Mirror profile fields from form to Player record |
 
-**Profile mirroring (`mission_m1_profile`):** When the profile form is submitted, the page mirrors 11 fields (name, preferredName, pronouns, role, team, location, timezone, workStyle, languages, skillsConfident, skillsDevelop) from the form response to the Player record. It also sets `profileComplete: true` and `tutorialComplete: true`.
+**Profile mirroring (`mission_m1_profile`):** When the profile form is submitted, the page mirrors 11 profile fields (name, preferredName, pronouns, role, team, location, timezone, workStyle, languages, skillsConfident, skillsDevelop) from the form response to the Player record. It also sets `profileComplete: true` and `tutorialComplete: true` — 13 fields written total.
 
-### 2.4 [`ValidationPage`](src/pages/ValidationPage.tsx:11)
+### 2.4 [`ValidationPage`](src/pages/ValidationPage.tsx:9)
 
 Rendered for GameMakers via a deep link (`/validate/:sessionId?t=<token>`). This page:
 1. Decodes the QR payload token using [`decodeQRPayload()`](src/utils/qrPayload.ts:1) with the session secret
@@ -162,13 +165,13 @@ Rendered for GameMakers via a deep link (`/validate/:sessionId?t=<token>`). This
 | `FetchErrorPanel` | `message`, `onRetry`, `onBack`, `testId`, `page` | On error or missing token |
 | Confirmation card (inline) | `milestoneName`, `missionTitle`, `playerName`, `xpValue`, `alreadyCompleted` | Decoded from QR + adapter lookups |
 
-**Adapter calls from this page:**
+**Adapter calls from this page (via [`useValidationConfirm`](src/hooks/useValidationConfirm.ts:30)):**
 
 | Trigger | Adapter Method | Purpose |
 |---------|---------------|---------|
-| Mount | [`adapter.getPlayerById(playerId)`](src/pages/ValidationPage.tsx:72) | Lookup player by PB ID from QR payload |
-| Mount | [`adapter.listProgressEvents(playerId)`](src/pages/ValidationPage.tsx:73) | Check for existing completion |
-| Confirm | [`adapter.upsertProgressEvent(playerId, missionId, { status: "completed", validatedBy, validatedAt })`](src/pages/ValidationPage.tsx:110) | Persist GM validation |
+| Mount | [`adapter.getPlayerById(playerId)`](src/hooks/useValidationConfirm.ts:100) | Lookup player by PB ID from QR payload |
+| Mount | [`adapter.listProgressEvents(playerId)`](src/hooks/useValidationConfirm.ts:101) | Check for existing completion |
+| Confirm | [`adapter.upsertProgressEvent(playerId, missionId, { status: "completed", validatedBy, validatedAt })`](src/hooks/useValidationConfirm.ts:150) | Persist GM validation |
 
 ---
 
@@ -176,7 +179,7 @@ Rendered for GameMakers via a deep link (`/validate/:sessionId?t=<token>`). This
 
 ### A. Identity (localStorage — [`mb_identity`](src/hooks/useIdentity.ts:4))
 
-**Source:** [`useIdentity()`](src/hooks/useIdentity.ts:41) reads/writes [`LocalIdentity[]`](src/types/value-objects.ts:38) from `localStorage`. Cross-tab sync via `window` `"storage"` event.
+**Source:** [`useIdentity()`](src/hooks/useIdentity.ts:41) reads/writes [`CachedIdentity[]`](src/types/value-objects.ts:38) from `localStorage`. Cross-tab sync via `window` `"storage"` event.
 
 **Constraints:** Per [C-03](SPECS.md:946), there is **no auth system**. Identity is UID-based, stored client-side. `role` is client-stored, not server-validated.
 
@@ -193,7 +196,9 @@ Rendered for GameMakers via a deep link (`/validate/:sessionId?t=<token>`). This
 
 ### B. Session Configuration (Read-Only for Players)
 
-**Source:** [`useSession(sessionId)`](src/hooks/useSession.ts:16) fetches via `adapter.getSession()` + `adapter.listMilestones()` + `adapter.listMissions()` in parallel ([`line 34-38`](src/hooks/useSession.ts:34)).
+**Source:** [`useSession(sessionId)`](src/hooks/useSession.ts:16) fetches via `adapter.getSession()` + `adapter.listMilestones()` + `adapter.listMissions()` in parallel ([`line 55-58`](src/hooks/useSession.ts:55)).
+
+`useSession` has an [overloaded return type](src/hooks/useSession.ts:14): player mode returns [`UseSessionBaseResult`](src/hooks/useSession.ts:5) (read-only), while gamemaker mode returns [`UseSessionGamemakerResult`](src/hooks/useSession.ts:14) with `updateSession`, `uploadBackground`, and `updateMapNodeScale`. Player code only uses the base result.
 
 Players consume these fields; **none are editable**:
 
@@ -202,7 +207,7 @@ Players consume these fields; **none are editable**:
 | [`Session.name`](src/types/domain.ts:20) | Rendered in TopBar (as "Game Master" session context) |
 | [`Session.bgImageUrl`](src/types/domain.ts:21) | Passed to [`MilestoneMapViewer`](src/components/player/MilestoneMapViewer.tsx:10) as background image |
 | [`Session.mapNodeScale`](src/types/domain.ts:30) | Passed to [`MilestoneMapViewer`](src/components/player/MilestoneMapViewer.tsx:12) for canvas scaling |
-| [`Session.qrSecret`](src/types/domain.ts:33) | Read by [`QRDisplay`](src/components/player/QRDisplay.tsx:31) to encode QR payload HMAC |
+| [`Session.qrSecret`](src/types/domain.ts:33) | Read by [`QRDisplay`](src/components/player/QRDisplay.tsx:19) to encode QR payload HMAC, and by [`useValidationConfirm`](src/hooks/useValidationConfirm.ts:83) to decode QR payload |
 
 The player never calls `updateSession` — the admin owns session mutation.
 
@@ -246,6 +251,8 @@ Players do **not** call `createMilestone`, `updateMilestone`, or `deleteMileston
 | [`tags`](src/types/domain.ts:90) | Rendered as [`TagBadge`](src/components/shared/TagBadge.tsx) components |
 | [`isInCurrentMissions`](src/types/domain.ts:93) | Filter for [`CurrentMissionsList`](src/components/player/CurrentMissionsList.tsx:31) |
 | [`validationMethod`](src/types/domain.ts:94) | Controls the validation flow: `selfApprove` → instant auto-approve; `gmApprove` → request approval + subscribe; `qr` → show QR + subscribe |
+| [`suggestedDueDate`](src/types/domain.ts:91) | Displayed as calendar icon on mission items |
+| [`order`](src/types/domain.ts:92) | Display ordering of mission items |
 
 **Routing decision ([`handleMissionClick`](src/pages/PlayerCockpitPage.tsx:130)):**
 
@@ -260,7 +267,7 @@ graph TD
 
 ### E. Progress Events (Player-Read + Selective Write)
 
-**Source:** [`usePlayerProgress(playerId, milestones, missions)`](src/hooks/usePlayerProgress.ts:21) fetches all progress events for the player on mount ([`line 46`](src/hooks/usePlayerProgress.ts:46)), then calls [`computeProgress()`](src/use-cases/computeProgress.ts:19) to derive [`PlayerProgress`](src/types/ephemeral.ts:29).
+**Source:** [`useProgressPlayer(playerId, milestones, missions)`](src/hooks/useProgress/player.ts:10) fetches all progress events for the player on mount ([`line 37`](src/hooks/useProgress/player.ts:37)), then calls [`computeProgress()`](src/use-cases/computeProgress.ts:19) to derive [`PlayerProgress`](src/types/ephemeral.ts:29).
 
 **Per [C-11](SPECS.md:946):** Progress is **never snapshotted** — [`computeProgress()`](src/use-cases/computeProgress.ts:19) re-derives at read time every time. This means retroactive difficulty changes affect earned XP because `xpValue` is read from the current mission record, not from the progress event.
 
@@ -272,9 +279,9 @@ graph TD
 |--------|---------|-------------|----------------|
 | Self-approve | "Mark Complete" on `selfApprove` mission | [`upsertProgressEvent(playerId, missionId, { status: "autoApproved" })`](src/components/player/MissionDetailPopup.tsx:93) | `autoApproved` |
 | Request approval | "Mark Complete" on `gmApprove` mission | [`upsertProgressEvent(playerId, missionId, { status: "pendingApproval" })`](src/components/player/MissionDetailPopup.tsx:104) | `pendingApproval` |
-| Form submit | Submit button on FormPage | [`upsertProgressEvent(playerId, missionId, { status: "autoApproved", formResponse })`](src/pages/FormPage.tsx:153) | `autoApproved` |
+| Form submit | Submit button on FormPage | [`upsertProgressEvent(playerId, missionId, { status: "autoApproved", formResponse })`](src/hooks/useFormMission.ts:82) | `autoApproved` |
 
-**Per [C-07](SPECS.md:946):** For `qr` validation, the player does **not** write to PB. The player shows a QR code and subscribes to completion events. Only the GameMaker writes via [`ValidationPage`](src/pages/ValidationPage.tsx:110) after scanning.
+**Per [C-07](SPECS.md:946):** For `qr` validation, the player does **not** write to PB. The player shows a QR code and subscribes to completion events. Only the GameMaker writes via [`useValidationConfirm`](src/hooks/useValidationConfirm.ts:150) after scanning.
 
 **How players consume progress events:**
 
@@ -284,7 +291,7 @@ graph TD
 | [`CurrentMissionsList`](src/components/player/CurrentMissionsList.tsx:16) | `progressEvents` → determines completion checkmark per mission |
 | [`MilestoneSidebarViewer`](src/components/player/MilestoneSidebarViewer.tsx:15) | `progressEvents` → per-mission completion status in sidebar mission list |
 | [`MissionDetailPopup`](src/components/player/MissionDetailPopup.tsx:52) | `progressEvent` → whether mission is completed; controls action button label and behavior |
-| `TopBar` (via [`PlayerCockpitPage`](src/pages/PlayerCockpitPage.tsx:291)) | `playerProgress.totalXP` → displayed in top bar |
+| `TopBar` (via [`PlayerCockpitPage`](src/pages/PlayerCockpitPage.tsx:257)) | `playerProgress.totalXP` → displayed in top bar |
 | FormPage `TopBar` | `playerProgress?.totalXP` → displayed in top bar |
 
 **SSE subscription flow (gmApprove + qr only):**
@@ -307,7 +314,7 @@ sequenceDiagram
 
 ### F. Buddy Assignment (Read-Only for Players)
 
-**Source:** [`useBuddy(playerId)`](src/hooks/useBuddy.ts:12) fetches via `adapter.getBuddyProfile(playerId)` on mount.
+**Source:** [`useBuddyProfile(sessionId, playerId, { role: "player" })`](src/hooks/useBuddyProfile.ts:46) fetches via `adapter.getBuddyProfile(playerId)` on mount.
 
 **Rendered in:** [`BuddyCard`](src/components/player/BuddyCard.tsx:24) — shows buddy name, role, tenure, avatar (or initials), contact info (email, phone, or link), and personal quote.
 
@@ -317,7 +324,7 @@ Players do **not** call `upsertBuddyProfile` — the admin owns buddy assignment
 
 ### G. Resources (Read-Only, Filtered for Players)
 
-**Source:** [`useResources(sessionId)`](src/hooks/useResources.ts:12) fetches all resources via `adapter.listResources(sessionId)`, then filters to `isVisibleToPlayer: true` only ([`line 27`](src/hooks/useResources.ts:27)).
+**Source:** [`useResources(sessionId, { role: "player" })`](src/hooks/useResources.ts:41) fetches all resources via `adapter.listResources(sessionId)`, then filters to `isVisibleToPlayer: true` only ([`line 67-69`](src/hooks/useResources.ts:67)).
 
 **Rendered in:** [`ResourcesSection`](src/components/player/ResourcesSection.tsx:33) — a collapsible search block. Resources are shown only after the player types a search query; filtered results match `title` or `description` against the query.
 
@@ -325,7 +332,7 @@ Players do **not** call `createResource`, `updateResource`, or `deleteResource`.
 
 ### H. Tutorial State (sessionStorage + Player Field)
 
-**Source:** [`useTutorial(player, adapter, sessionId)`](src/hooks/useTutorial.ts:61) combines three data sources:
+**Source:** [`useTutorial(player, updatePlayer, sessionId)`](src/hooks/useTutorial.ts:61) combines three data sources:
 
 | Source | Key | Purpose |
 |--------|-----|---------|
@@ -342,9 +349,9 @@ Players do **not** call `createResource`, `updateResource`, or `deleteResource`.
 
 ### I. AI Assistant Context (Derived, Not Persisted)
 
-**Source:** Derived inline in [`PlayerCockpitPage`](src/pages/PlayerCockpitPage.tsx:182) from `player` and `buddy`.
+**Source:** Derived inline in [`PlayerCockpitPage`](src/pages/PlayerCockpitPage.tsx:151) from `player` and `buddy`.
 
-The [`aiAppContext`](src/pages/PlayerCockpitPage.tsx:182) string wraps user name and buddy info in `<APPLICATION_CONTEXT>` tags recognized by the LiteLLM system prompt. Passed to [`AssistantChatCard`](src/components/player/AssistantChatCard.tsx:16) which delegates to [`useChat`](src/hooks/useChat.ts:12) (currently a stub via [`useMockChat`](src/hooks/useMockChat.ts) per the `VITE_USE_MOCK_CHAT` build flag; the live [`useChatStream`](src/hooks/useChatStream.ts:1) is a Phase 1 stub returning empty state).
+The [`aiAppContext`](src/pages/PlayerCockpitPage.tsx:151) string wraps user name and buddy info in `<APPLICATION_CONTEXT>` tags recognized by the LiteLLM system prompt. Passed to [`AssistantChatCard`](src/components/player/AssistantChatCard.tsx:16) which delegates to [`useChat`](src/hooks/useChat.ts:12). The [`useChatStream`](src/hooks/useChatStream.ts:72) hook implements a full SSE streaming client with `AbortController` cancellation, while [`useMockChat`](src/hooks/useMockChat.ts) provides offline mock responses — the switch is controlled by the `VITE_USE_MOCK_CHAT` build flag. The live `useChatStream` is a fully working implementation using `ReadableStream` for server-sent events.
 
 ---
 
@@ -376,12 +383,16 @@ graph TB
     subgraph Hooks["Player Hooks"]
         H1[useIdentity]
         H2[useSession]
-        H3[usePlayerProgress]
-        H4[useBuddy]
+        H3[useProgressPlayer]
+        H4[useBuddyProfile]
         H5[useResources]
         H6[useTutorial]
         H7[useLandingFlow]
         H8[useChat]
+        H9[useActiveProfile]
+        H10[useResolvedPlayer]
+        H11[useFormMission]
+        H12[useValidationConfirm]
     end
 
     subgraph Pages["Player Pages"]
@@ -406,18 +417,20 @@ graph TB
     end
 
     A1 --> H2
+    A2 --> H10
     A3 --> H2
     A4 --> H2
     A5 --> H3
     A6 --> C3
-    A6 --> P3
-    A6 --> P4
+    A6 --> H11
+    A6 --> H12
     A7 --> C9
     A8 --> H4
     A9 --> H5
-    A10 --> P3
+    A10 --> H11
+    A11 --> H10
     A11 --> P3
-    A12 --> P4
+    A12 --> H12
     A13 --> H7
     A14 --> H7
     A15 --> H7
@@ -436,6 +449,11 @@ graph TB
     H5 --> P2
     H6 --> P2
     H8 --> C7
+    H9 --> P2
+    H10 --> P2
+    H10 --> P3
+    H11 --> P3
+    H12 --> P4
 
     P2 --> C1
     P2 --> C2
@@ -467,7 +485,7 @@ graph TB
 | [`Player`](src/types/domain.ts:36) | `domain.ts` | 36 | `uid`, `recoveryKey`, `sessionId`, `tutorialComplete`, `profileComplete`, `name`, `preferredName`, `pronouns`, `avatarUrl`, `role`, `team`, `startDate`, `location`, `timezone`, `skillsConfident`, `skillsDevelop`, `languages`, `workStyle` |
 | [`BuddyProfile`](src/types/domain.ts:59) | `domain.ts` | 59 | `name`, `role`, `tenure`, `avatarUrl`, `contactUrl`, `quote`, `email`, `phone` |
 | [`Milestone`](src/types/domain.ts:72) | `domain.ts` | 72 | `name`, `xPercent`, `yPercent`, `xpThreshold`, `order` |
-| [`Mission`](src/types/domain.ts:81) | `domain.ts` | 81 | `title`, `body`, `type`, `xpValue`, `difficulty`, `tags`, `isInCurrentMissions`, `validationMethod`, `externalUrl`, `milestoneId` |
+| [`Mission`](src/types/domain.ts:81) | `domain.ts` | 81 | `title`, `body`, `type`, `xpValue`, `difficulty`, `tags`, `isInCurrentMissions`, `validationMethod`, `suggestedDueDate`, `order`, `externalUrl`, `milestoneId` |
 | [`ProgressEvent`](src/types/domain.ts:102) | `domain.ts` | 102 | `status`, `validatedBy`, `validatedAt`, `formResponse`, `missionId`, `playerId` |
 | [`Resource`](src/types/domain.ts:112) | `domain.ts` | 112 | `title`, `description`, `type`, `url`, `isVisibleToPlayer` |
 | [`FormSchema`](src/types/domain.ts:97) | `domain.ts` | 97 | `fields` (array of [`FieldSchema`](src/types/value-objects.ts:5)) |
@@ -478,7 +496,7 @@ graph TB
 | Type | File | Line | Player Usage |
 |------|------|------|-------------|
 | [`FieldSchema`](src/types/value-objects.ts:5) | `value-objects.ts` | 5 | Rendered by [`FormShell`](src/components/form/FormShell.tsx) as form inputs |
-| [`LocalIdentity`](src/types/value-objects.ts:38) | `value-objects.ts` | 38 | Read/written by [`useIdentity()`](src/hooks/useIdentity.ts:41); `uid` used for player lookup; `role` + `sessionId` used for routing |
+| [`CachedIdentity`](src/types/value-objects.ts:38) | `value-objects.ts` | 38 | Read/written by [`useIdentity()`](src/hooks/useIdentity.ts:41); `uid` used for player lookup; `role` + `sessionId` used for routing |
 | [`QRPayload`](src/types/value-objects.ts:17) | `value-objects.ts` | 17 | Encoded by [`QRDisplay`](src/components/player/QRDisplay.tsx:33); decoded by [`ValidationPage`](src/pages/ValidationPage.tsx:57) |
 
 ### Derived Types (computed at read time per C-11)
@@ -508,20 +526,20 @@ Only a subset of the [`AppAdapter`](src/adapters/interface.ts:18) contract is ca
 
 | Method | Caller(s) | Read or Write | Constraint |
 |--------|-----------|---------------|------------|
-| `getSession(sessionId)` | [`useSession`](src/hooks/useSession.ts:35), [`useLandingFlow` → `verifySession`](src/use-cases/joinSession.ts:27), [`QRDisplay`](src/components/player/QRDisplay.tsx:30) | Read | Fetch session config + qrSecret |
+| `getSession(sessionId)` | [`useSession`](src/hooks/useSession.ts:35), [`useLandingFlow` → `verifySession`](src/use-cases/joinSession.ts:27), [`useValidationConfirm`](src/hooks/useValidationConfirm.ts:83), [`QRDisplay`](src/components/player/QRDisplay.tsx:19) | Read | Fetch session config + qrSecret |
 | `createSession(name, uid)` | [`useLandingFlow` → `createGameMakerSession`](src/use-cases/joinSession.ts:82) | Write | Admin session creation from landing page |
-| `getPlayer(uid)` | [`PlayerCockpitPage`](src/pages/PlayerCockpitPage.tsx:57), [`FormPage`](src/pages/FormPage.tsx:36) | Read | Resolve PB Player record from identity UID |
+| `getPlayer(uid)` | [`useResolvedPlayer`](src/hooks/useResolvedPlayer.ts:36), [`PlayerCockpitPage`](src/pages/PlayerCockpitPage.tsx:57), [`FormPage`](src/pages/FormPage.tsx:26) | Read | Resolve PB Player record from identity UID |
 | `getPlayerByRecoveryKey(key)` | [`useLandingFlow` → `recoverIdentity`](src/use-cases/recoverIdentity.ts:13) | Read | Recovery flow on landing page |
 | `createPlayer(data)` | [`useLandingFlow` → `joinSession`](src/use-cases/joinSession.ts:59) | Write | Player join from landing page |
 | `updatePlayer(id, patch)` | [`useTutorial` → `handleSkipConfirm`](src/hooks/useTutorial.ts:120), [`FormPage` → profile mirror](src/pages/FormPage.tsx:206) | Write | Set `tutorialComplete: true` on skip; mirror profile fields on form submit |
-| `listMilestones(sessionId)` | [`useSession`](src/hooks/useSession.ts:36) | Read | Milestones for map and sidebar |
-| `listMissions(sessionId)` | [`useSession`](src/hooks/useSession.ts:37) | Read | All missions for filtering and display |
-| `getFormSchema(missionId)` | [`FormPage`](src/pages/FormPage.tsx:81) | Read | Form field definitions for render |
-| `upsertProgressEvent(playerId, missionId, patch)` | [`MissionDetailPopup` → selfApprove](src/components/player/MissionDetailPopup.tsx:93), [`MissionDetailPopup` → gmApprove](src/components/player/MissionDetailPopup.tsx:104), [`FormPage` → submit](src/pages/FormPage.tsx:153) | Write | Single upsert point ([C-05](SPECS.md:946)) |
-| `listProgressEvents(playerId)` | [`usePlayerProgress`](src/hooks/usePlayerProgress.ts:46) | Read | All progress events for progress derivation |
-| `subscribeProgressEvent(playerId, missionId, cb)` | [`ValidationDisplay`](src/components/player/ValidationDisplay.tsx:25), [`QRDisplay`](src/components/player/QRDisplay.tsx:69) | Subscribe | SSE for gmApprove + qr validation completion ([C-07](SPECS.md:946)) |
-| `getBuddyProfile(playerId)` | [`useBuddy`](src/hooks/useBuddy.ts:25) | Read | Buddy card display |
-| `listResources(sessionId)` | [`useResources`](src/hooks/useResources.ts:25) | Read | Resources filtered to `isVisibleToPlayer` only |
+| `listMilestones(sessionId)` | [`useSession`](src/hooks/useSession.ts:56) | Read | Milestones for map and sidebar |
+| `listMissions(sessionId)` | [`useSession`](src/hooks/useSession.ts:57) | Read | All missions for filtering and display |
+| `getFormSchema(missionId)` | [`useFormMission`](src/hooks/useFormMission.ts:59) | Read | Form field definitions for render |
+| `upsertProgressEvent(playerId, missionId, patch)` | [`MissionDetailPopup` → selfApprove](src/components/player/MissionDetailPopup.tsx:93), [`MissionDetailPopup` → gmApprove](src/components/player/MissionDetailPopup.tsx:104), [`useFormMission` → submit](src/hooks/useFormMission.ts:82), [`useValidationConfirm` → confirm](src/hooks/useValidationConfirm.ts:150) | Write | Single upsert point ([C-05](SPECS.md:946)) |
+| `listProgressEvents(playerId)` | [`useProgressPlayer`](src/hooks/useProgress/player.ts:43), [`useValidationConfirm`](src/hooks/useValidationConfirm.ts:101) | Read | All progress events for progress derivation |
+| `subscribeProgressEvent(playerId, missionId, cb)` | [`useWatchMission`](src/hooks/useProgress/watchMission.ts:10) (called by [`ValidationDisplay`](src/components/player/ValidationDisplay.tsx:25) and [`QRDisplay`](src/components/player/QRDisplay.tsx:69)) | Subscribe | SSE for gmApprove + qr validation completion ([C-07](SPECS.md:946)) |
+| `getBuddyProfile(playerId)` | [`useBuddyProfile`](src/hooks/useBuddyProfile.ts:87) | Read | Buddy card display |
+| `listResources(sessionId)` | [`useResources`](src/hooks/useResources.ts:61) | Read | Resources filtered to `isVisibleToPlayer` only |
 
 ### Adapter Methods NOT Called by Player Code
 
@@ -553,7 +571,7 @@ These methods exist on [`AppAdapter`](src/adapters/interface.ts:18) but are **on
 | [C-06](SPECS.md:946) | Form missions are always `autoApproved` regardless of `validationMethod` | [`ValidationDisplay`](src/components/player/ValidationDisplay.tsx:15) never mounts for form missions. FormPage writes `status: "autoApproved"` directly. |
 | [C-07](SPECS.md:946) | QR validation is fully offline: HMAC verify → GM confirm → PB write | Player never writes to PB for QR missions. Player shows QR code + subscribes to completion. Only GM writes via ValidationPage. |
 | [C-08](SPECS.md:946) | Milestone positions are percentage-based (`xPercent`/`yPercent` 0–100) | [`MilestoneMapViewer`](src/components/player/MilestoneMapViewer.tsx:18) renders nodes at percentage positions within the [`MapViewport`](src/components/shared/MapViewport.tsx). Same positioning as admin editor. |
-| [C-11](SPECS.md:946) | Progress never snapshotted — `computeProgress` re-derives at read time | [`usePlayerProgress`](src/hooks/usePlayerProgress.ts:50) calls `computeProgress()` on every fetch. Retroactive difficulty changes affect displayed XP. No stale progress snapshots. |
+| [C-11](SPECS.md:946) | Progress never snapshotted — `computeProgress` re-derives at read time | [`useProgressPlayer`](src/hooks/useProgress/player.ts:54) calls `computeProgress()` on every fetch. Retroactive difficulty changes affect displayed XP. No stale progress snapshots. |
 | [C-12](SPECS.md:946) | No TypeScript `enum` — use `const` object + `keyof` union | All union types use `as const` objects. Player code compares against string literals (e.g., `"autoApproved"`, `"form"`, `"selfApprove"`). |
 | [C-13](SPECS.md:946) | No component calls `JSON.parse` on PB fields | Form schemas and form responses arrive pre-parsed from the adapter. Player components receive typed objects. |
 | [C-16](SPECS.md:946) | `qrPayload.ts` is the single encode/decode point (HMAC-SHA256) | [`QRDisplay`](src/components/player/QRDisplay.tsx:33) calls `encodeQRPayload()`; [`ValidationPage`](src/pages/ValidationPage.tsx:57) calls `decodeQRPayload()`. No other code touches QR encoding. |
@@ -569,10 +587,10 @@ These methods exist on [`AppAdapter`](src/adapters/interface.ts:18) but are **on
 | Session config | [`useSession`](src/hooks/useSession.ts:16) | `getSession` | Yes — `refresh()` via counter state |
 | Milestones | [`useSession`](src/hooks/useSession.ts:16) | `listMilestones` | Yes — same `refresh()` |
 | Missions | [`useSession`](src/hooks/useSession.ts:16) | `listMissions` | Yes — same `refresh()` |
-| Progress events | [`usePlayerProgress`](src/hooks/usePlayerProgress.ts:21) | `listProgressEvents` | Yes — `refresh()` called after validation completes |
-| Buddy profile | [`useBuddy`](src/hooks/useBuddy.ts:12) | `getBuddyProfile` | No — no refresh exposed |
-| Resources | [`useResources`](src/hooks/useResources.ts:12) | `listResources` + filter | No — no refresh exposed |
-| Form schema | Inline in [`FormPage`](src/pages/FormPage.tsx:73) | `getFormSchema` | No — fetched once per `missionId` change |
+| Progress events | [`useProgressPlayer`](src/hooks/useProgress/player.ts:24) | `listProgressEvents` | Yes — `refresh()` called after validation completes |
+| Buddy profile | [`useBuddyProfile`](src/hooks/useBuddyProfile.ts:46) | `getBuddyProfile` | No — no refresh exposed |
+| Resources | [`useResources`](src/hooks/useResources.ts:41) | `listResources` + filter | No — no refresh exposed |
+| Form schema | [`useFormMission`](src/hooks/useFormMission.ts:55) | `getFormSchema` | No — fetched once per `missionId` change |
 
 ### Write Operations (player-initiated)
 
@@ -590,7 +608,7 @@ These methods exist on [`AppAdapter`](src/adapters/interface.ts:18) but are **on
 ```mermaid
 graph TD
     subgraph localStorage
-        ID[mb_identity<br/>LocalIdentity[]]
+        ID[mb_identity<br/>CachedIdentity[]]
         SS1[mb_tutorial_step]
         SS2[mb_tutorial_form_pending]
     end

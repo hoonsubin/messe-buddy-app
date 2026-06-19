@@ -35,6 +35,7 @@ const computeXPPreview = (
 const defaultDraftMission = (milestoneId: string): DraftMission => ({
   milestoneId,
   isDirty: false,
+  difficulty: 1, // Matches UI default so xpPreview doesn't short-circuit on undefined
 });
 
 // ── Hook ───────────────────────────────────────────────────────────────────────
@@ -211,6 +212,9 @@ export const useAdminMissionEditor = (
             });
           }
         } else {
+          // draft.milestoneId is the client-generated ID. Since we pass id: dm.id
+          // to createMilestone, the server assigns that same ID, so no remapping
+          // needed — draft milestoneId is already the server ID.
           await adapter.createMission({
             sessionId: sid,
             milestoneId: draft.milestoneId,
@@ -218,9 +222,9 @@ export const useAdminMissionEditor = (
             body: draft.body ?? "",
             type: draft.type ?? MISSION_TYPE.TEXT,
             difficulty: draft.difficulty ?? 1,
-            xpValue: xp,
+            xpValue: Math.max(1, xp), // PB Required rejects 0; clamp to 1 as floor
             tags: draft.tags ?? [],
-            order: 0,
+            order: drafts.size,
             isInCurrentMissions: draft.isInCurrentMissions ?? true,
             validationMethod: draft.validationMethod ?? "gmApprove",
           });

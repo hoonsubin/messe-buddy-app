@@ -3,6 +3,7 @@ package migrations
 import (
 	"github.com/pocketbase/pocketbase/core"
 	m "github.com/pocketbase/pocketbase/migrations"
+	"github.com/pocketbase/pocketbase/tools/types"
 )
 
 func init() {
@@ -15,6 +16,8 @@ func init() {
 			&core.TextField{Name: "gameMakerId", Required: true},
 			&core.JSONField{Name: "preBoardingChecks"},
 			&core.TextField{Name: "qrSecret"},
+			&core.AutodateField{Name: "created", OnCreate: true},
+			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
 		)
 		setPublicRules(sessions)
 		if err := app.Save(sessions); err != nil {
@@ -44,6 +47,8 @@ func init() {
 			&core.TextField{Name: "workStyle"},
 			&core.JSONField{Name: "energizers"},
 			&core.JSONField{Name: "drainers"},
+			&core.AutodateField{Name: "created", OnCreate: true},
+			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
 		)
 		players.AddIndex("idx_uid", true, "uid", "")
 		players.AddIndex("idx_recoveryKey", true, "recoveryKey", "")
@@ -61,6 +66,8 @@ func init() {
 			&core.NumberField{Name: "yPercent", Required: true},
 			&core.NumberField{Name: "xpThreshold", Required: true},
 			&core.NumberField{Name: "order", Required: true},
+			&core.AutodateField{Name: "created", OnCreate: true},
+			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
 		)
 		setPublicRules(milestones)
 		if err := app.Save(milestones); err != nil {
@@ -83,6 +90,8 @@ func init() {
 			&core.NumberField{Name: "order", Required: true},
 			&core.BoolField{Name: "isInCurrentMissions"},
 			&core.TextField{Name: "validationMethod", Required: true},
+			&core.AutodateField{Name: "created", OnCreate: true},
+			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
 		)
 		setPublicRules(missions)
 		if err := app.Save(missions); err != nil {
@@ -95,6 +104,8 @@ func init() {
 		formSchemas.Fields.Add(
 			&core.TextField{Name: "missionId", Required: true},
 			&core.JSONField{Name: "fields"},
+			&core.AutodateField{Name: "created", OnCreate: true},
+			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
 		)
 		formSchemas.AddIndex("idx_missionId", true, "missionId", "")
 		setPublicRules(formSchemas)
@@ -114,6 +125,8 @@ func init() {
 			&core.TextField{Name: "validatedBy"},
 			&core.TextField{Name: "validatedAt"},
 			&core.JSONField{Name: "formResponse"},
+			&core.AutodateField{Name: "created", OnCreate: true},
+			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
 		)
 		setPublicRules(progressEvents)
 		if err := app.Save(progressEvents); err != nil {
@@ -133,6 +146,8 @@ func init() {
 			&core.TextField{Name: "quote"},
 			&core.TextField{Name: "email"},
 			&core.TextField{Name: "phone"},
+			&core.AutodateField{Name: "created", OnCreate: true},
+			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
 		)
 		buddyProfiles.AddIndex(
 			"idx_assignedToPlayerId", true, "assignedToPlayerId", "",
@@ -151,6 +166,8 @@ func init() {
 			&core.TextField{Name: "type", Required: true},
 			&core.URLField{Name: "url", Required: true},
 			&core.BoolField{Name: "isVisibleToPlayer"},
+			&core.AutodateField{Name: "created", OnCreate: true},
+			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
 		)
 		setPublicRules(resources)
 		if err := app.Save(resources); err != nil {
@@ -164,12 +181,13 @@ func init() {
 	})
 }
 
-// setPublicRules clears all API rules — C-03: no auth system.
-// The PWA enforces role-based access at the component level via mb_identity.
+// setPublicRules opens all API rules — C-03: no auth system.
+// PB v0.39: nil = deny; "" = allow public access.
 func setPublicRules(c *core.Collection) {
-	c.ListRule = nil
-	c.ViewRule = nil
-	c.CreateRule = nil
-	c.UpdateRule = nil
-	c.DeleteRule = nil
+	open := types.Pointer("")
+	c.ListRule = open
+	c.ViewRule = open
+	c.CreateRule = open
+	c.UpdateRule = open
+	c.DeleteRule = open
 }

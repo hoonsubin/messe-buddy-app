@@ -13,7 +13,9 @@ export interface UseSessionBaseResult {
 
 export interface UseSessionGamemakerResult extends UseSessionBaseResult {
   readonly updateSession: (
-    patch: Partial<Omit<Session, keyof PBRecord>>,
+    patch: Partial<Omit<Session, keyof PBRecord | "bgImageUrl">> & {
+      readonly bgImageUrl?: string | File;
+    },
   ) => Promise<Session>;
   readonly uploadBackground: (file: File) => Promise<{ displayUrl: string }>;
   readonly updateMapNodeScale: (scale: number) => Promise<void>;
@@ -81,7 +83,11 @@ export function useSession(
   }, [adapter, sessionId, refreshKey]);
 
   const updateSession = useCallback(
-    async (patch: Partial<Omit<Session, keyof PBRecord>>) => {
+    async (
+      patch: Partial<Omit<Session, keyof PBRecord | "bgImageUrl">> & {
+        readonly bgImageUrl?: string | File;
+      },
+    ) => {
       const updated = await adapter.updateSession(sessionId, patch);
       setSession(updated);
       return updated;
@@ -91,9 +97,8 @@ export function useSession(
 
   const uploadBackground = useCallback(
     async (file: File) => {
-      const displayUrl = URL.createObjectURL(file);
-      await updateSession({ bgImageUrl: displayUrl });
-      return { displayUrl };
+      const updated = await updateSession({ bgImageUrl: file });
+      return { displayUrl: updated.bgImageUrl };
     },
     [updateSession],
   );

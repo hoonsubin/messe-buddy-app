@@ -8,15 +8,21 @@ WORKDIR /app
 COPY deno.json deno.lock ./
 COPY scripts/ scripts/
 
-# Pre-fetch all npm dependencies declared in deno.json imports
-RUN deno install
+# Pre-fetch all npm dependencies declared in deno.json imports.
+# Retry loop: transient registry drops (especially during parallel Docker Compose builds)
+# are common and non-deterministic. Retry avoids brittle build failures.
+RUN for i in 1 2 3; do \
+      deno install && break; \
+      echo "deno install failed (attempt $i) — retrying in 3s..."; \
+      sleep 3; \
+    done
 
 # Copy source
 COPY . .
 
 # PocketBase URL is /api (same-origin nginx proxy in production).
 # VITE_USE_MOCK_PB=false ensures the real PocketBase adapter is used.
-ARG VITE_PB_URL=/api
+ARG VITE_PB_URL=/
 ARG VITE_USE_MOCK_PB=false
 ARG VITE_LITELLM_URL=http://localhost:4000
 ARG VITE_LITELLM_KEY=

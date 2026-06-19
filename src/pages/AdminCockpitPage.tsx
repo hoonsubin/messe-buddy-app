@@ -159,11 +159,7 @@ const AdminCockpitPage = () => {
     setIsSaving(true);
     try {
       await milestoneEditor.saveMilestones(sid, milestones);
-      await missionEditor.saveMissions(
-        sid,
-        missions,
-        missionEditor.xpPreview,
-      );
+      await missionEditor.saveMissions(sid, missions, missionEditor.xpPreview);
       milestoneEditor.clearDirtyMilestones();
       missionEditor.clearDirtyMissions();
       missionEditor.clearOrderChanges();

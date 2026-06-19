@@ -26,6 +26,9 @@ jobs:
 
       - name: Type check & build
         run: deno task build
+        env:
+          VITE_USE_MOCK_PB: "true"
+          VITE_USE_MOCK_CHAT: "true"
 
       - name: Setup Python
         uses: actions/setup-python@v5

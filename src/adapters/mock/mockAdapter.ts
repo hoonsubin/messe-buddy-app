@@ -154,10 +154,24 @@ const createSession = async (
 
 const updateSession = async (
   sessionId: string,
-  patch: Partial<Omit<Session, keyof PBRecord>>,
+  patch: Partial<Omit<Session, keyof PBRecord | "bgImageUrl">> & {
+    readonly bgImageUrl?: string | File;
+  },
 ): Promise<Session> => {
+  const { bgImageUrl, ...rest } = patch;
   const existing = await getSession(sessionId);
-  const updated: Session = { ...existing, ...patch, updated: now() };
+  let nextBg = existing.bgImageUrl;
+  if (typeof File !== "undefined" && bgImageUrl instanceof File) {
+    nextBg = URL.createObjectURL(bgImageUrl);
+  } else if (typeof bgImageUrl === "string") {
+    nextBg = bgImageUrl;
+  }
+  const updated: Session = {
+    ...existing,
+    ...rest,
+    bgImageUrl: nextBg,
+    updated: now(),
+  };
   sessions.set(sessionId, updated);
   return updated;
 };
@@ -227,10 +241,11 @@ const listMilestones = async (
 };
 
 const createMilestone = async (
-  data: Omit<Milestone, keyof PBRecord>,
+  data: Omit<Milestone, keyof PBRecord> & { readonly id?: string },
 ): Promise<Milestone> => {
   await Promise.resolve();
-  const ms: Milestone = { ...makeRecord(), ...data };
+  const record = makeRecord();
+  const ms: Milestone = { ...record, ...data, id: data.id ?? record.id };
   milestones.set(ms.id, ms);
   return ms;
 };
@@ -264,10 +279,11 @@ const listMissions = async (
 };
 
 const createMission = async (
-  data: Omit<Mission, keyof PBRecord>,
+  data: Omit<Mission, keyof PBRecord> & { readonly id?: string },
 ): Promise<Mission> => {
   await Promise.resolve();
-  const mission: Mission = { ...makeRecord(), ...data };
+  const record = makeRecord();
+  const mission: Mission = { ...record, ...data, id: data.id ?? record.id };
   missions.set(mission.id, mission);
   return mission;
 };
