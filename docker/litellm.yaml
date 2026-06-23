@@ -13,7 +13,7 @@ model_list:
     litellm_params:
       model: openai/ibm/granite-4.0-h-tiny
       api_base: https://litellm.hoonlabs.xyz/v1
-      api_key: os.environ/LLM_PROXY_KEY
+      api_key: os.environ/LLM_SERVER_API_KEY
       vector_store_ids: ["messe-buddy-kb"]
 
   # ── Anthropic (uncomment to use instead) ────────────────────────────────────
@@ -34,7 +34,7 @@ model_list:
 
   # ── HoonLabs LiteLLM Proxy ──────────────────────────────────────────────────
   # Upstream LiteLLM proxy at https://litellm.hoonlabs.xyz.
-  # API key stored in LLM_PROXY_KEY environment variable.
+  # API key stored in LLM_SERVER_API_KEY environment variable.
   # All models use openai/ provider prefix since the upstream is
   # an OpenAI-compatible LiteLLM proxy.
 
@@ -43,14 +43,14 @@ model_list:
     litellm_params:
       model: openai/ibm/granite-4.0-h-tiny
       api_base: https://litellm.hoonlabs.xyz/v1
-      api_key: os.environ/LLM_PROXY_KEY
+      api_key: os.environ/LLM_SERVER_API_KEY
 
   # Embedding: Nomic Embed Text v2 MoE (768 dim, Matryoshka-capable)
   - model_name: nomic-embed-text-v2-moe
     litellm_params:
       model: openai/nomic-ai/embed-text-v2-moe
       api_base: https://litellm.hoonlabs.xyz/v1
-      api_key: os.environ/LLM_PROXY_KEY
+      api_key: os.environ/LLM_SERVER_API_KEY
 
   # Reranker: BGE Reranker v2 M3 (cross-encoder, used by the pgvector connector
   # to re-rank retrieved chunks before they're injected into the prompt).
@@ -61,7 +61,7 @@ model_list:
     litellm_params:
       model: hosted_vllm/gpustack/bge-reranker-v2-m3
       api_base: https://litellm.hoonlabs.xyz/v1
-      api_key: os.environ/LLM_PROXY_KEY
+      api_key: os.environ/LLM_SERVER_API_KEY
 
 
 # ── Vector Store Registry ─────────────────────────────────────────────────────
