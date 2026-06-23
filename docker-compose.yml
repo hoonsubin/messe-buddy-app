@@ -1,7 +1,7 @@
 # MesseBuddy - Docker Compose
 #
 # Quick start:
-#   cp .env.example .env          # fill in LITELLM_MASTER_KEY / LLM_PROXY_KEY
+#   cp .env.example .env          # fill in LITELLM_MASTER_KEY / LLM_SERVER_API_KEY
 #   docker compose up --build
 #
 # Services:
@@ -132,8 +132,8 @@ services:
       ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "1"]
     environment:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
-      UI_USERNAME: ${UI_USERNAME:-admin}
-      LLM_PROXY_KEY: ${LLM_PROXY_KEY:-}
+      UI_USERNAME: ${LITELLM_UI_USERNAME:-admin}
+      LLM_SERVER_API_KEY: ${LLM_SERVER_API_KEY:-}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text-v2-moe}
       PG_VECTOR_API_BASE: http://litellm-pgvector:8001
       PG_VECTOR_API_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
@@ -232,7 +232,6 @@ services:
         VITE_PB_URL: /
         VITE_USE_MOCK_PB: ${VITE_USE_MOCK_PB:-false}
         VITE_LITELLM_URL: ${VITE_LITELLM_URL:-http://localhost:4000}
-        VITE_LITELLM_KEY: ${VITE_LITELLM_KEY:-}
         VITE_LITELLM_MODEL: ${VITE_LITELLM_MODEL:-policy-assistant}
         VITE_USE_MOCK_CHAT: ${VITE_USE_MOCK_CHAT:-true}
     ports:

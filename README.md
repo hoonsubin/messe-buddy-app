@@ -80,7 +80,7 @@ git clone <repo-url> && cd messe-buddy-app
 # 2. Configure environment
 cp .env.example .env
 
-# 3. Edit .env — set at least LLM_PROXY_KEY and LITELLM_MASTER_KEY
+# 3. Edit .env — set at least LLM_SERVER_API_KEY and LITELLM_MASTER_KEY
 
 # 4. Build and start all services
 docker compose up --build
@@ -155,12 +155,11 @@ Copy [`.env.example`](.env.example) to `.env` and configure. Key variables:
 
 | Variable | Required | Default | Purpose |
 |----------|----------|---------|---------|
-| `LLM_PROXY_KEY` | Yes | — | LLM API key for embeddings + chat + reranker |
+| `LLM_SERVER_API_KEY` | Yes | — | LLM API key for embeddings + chat + reranker |
 | `LITELLM_MASTER_KEY` | Yes | `sk-change-me-in-prod` | Proxy management + pgvector connector auth |
 | `VITE_USE_MOCK_PB` | No | `true` | `"false"` in production — real PocketBase adapter |
-| `VITE_USE_MOCK_CHAT` | No | `true` | `"false"` + valid `VITE_LITELLM_KEY` → live AI streaming |
+| `VITE_USE_MOCK_CHAT` | No | `true` | `"false"` in docker-compose → live AI streaming via the runtime-injected virtual key |
 | `VITE_LITELLM_URL` | No | `http://localhost:4000` | Build-time: LiteLLM proxy URL |
-| `VITE_LITELLM_KEY` | No | — | Scoped virtual key (bundle-visible). Empty = mock chat |
 | `VITE_LITELLM_MODEL` | No | `policy-assistant` | Stable model alias the PWA sends |
 | `PB_AUTO_MIGRATE` | No | `true` | `"false"` after initial deploy to prevent re-migration |
 | `POSTGRES_PASSWORD` | Yes* | `changeme` | PostgreSQL password (change in production) |
@@ -170,6 +169,10 @@ Copy [`.env.example`](.env.example) to `.env` and configure. Key variables:
 
 > [!NOTE]
 > `VITE_*` variables are **build-time** — they are frozen into the JS bundle and require a rebuild to change. Override via Docker build args for non-localhost deployments.
+>
+> The `messebuddy-pwa` LiteLLM virtual key is never a build arg: `init-vector-store` mints it after the image is built and `entrypoint.sh` injects it into the nginx `/llm` proxy at container start, so the browser bundle never sees a key. There is no `VITE_LITELLM_KEY` to set for a `docker compose up` deployment.
+>
+> `VITE_PB_URL` is hardcoded to `/` in `docker-compose.yml` (same-origin nginx proxy) and is **not** read from `.env`. For a split-host deployment, pass it as an explicit CLI override — see [Docker Build](#docker-build) below.
 
 ### RAG Knowledge Base
 
