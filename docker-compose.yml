@@ -232,7 +232,6 @@ services:
         VITE_PB_URL: /
         VITE_USE_MOCK_PB: ${VITE_USE_MOCK_PB:-false}
         VITE_LITELLM_URL: ${VITE_LITELLM_URL:-http://localhost:4000}
-        VITE_LITELLM_KEY: ${VITE_LITELLM_KEY:-}
         VITE_LITELLM_MODEL: ${VITE_LITELLM_MODEL:-policy-assistant}
         VITE_USE_MOCK_CHAT: ${VITE_USE_MOCK_CHAT:-true}
     ports:
