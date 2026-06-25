@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAdapter } from "../../adapters/useAdapter.ts";
+import { MILESTONE_STATUS } from "../../types/index.ts";
 import { computeProgress } from "../../use-cases/computeProgress.ts";
 import type {
   HireProgressRow,
@@ -35,13 +36,18 @@ export const useProgressCrossHire = (
         for (const s of sessions) {
           if (cancelled) return;
 
-          const [sessionPlayers, sessionMilestones, sessionMissions] =
+          const [sessionPlayers, sessionMilestonesRaw, sessionMissions] =
             await Promise.all([
               adapter.listPlayers(s.id),
               adapter.listMilestones(s.id),
               adapter.listMissions(s.id),
             ]);
           if (cancelled) return;
+
+          // Sort milestones by .order so index-based position is meaningful
+          const sessionMilestones = [...sessionMilestonesRaw].sort(
+            (a, b) => a.order - b.order,
+          );
 
           for (const p of sessionPlayers) {
             if (cancelled) return;
@@ -54,15 +60,31 @@ export const useProgressCrossHire = (
               events,
             );
 
-            const progressPercent = (() => {
-              const { milestoneProgress } = progress;
-              if (milestoneProgress.length === 0) return 0;
-              const total = milestoneProgress.reduce(
-                (sum, mp) => sum + mp.percentComplete,
-                0,
+            const { milestoneProgress, totalXP } = progress;
+
+            const progressPercent = milestoneProgress.length === 0
+              ? 0
+              : Math.round(
+                (milestoneProgress.reduce(
+                  (sum, mp) => sum + mp.percentComplete,
+                  0,
+                ) / milestoneProgress.length) * 100,
               );
-              return Math.round((total / milestoneProgress.length) * 100);
+
+            // Current milestone: first in-progress, else first upcoming, else last
+            const activeIdx = (() => {
+              const inProgress = milestoneProgress.findIndex(
+                (mp) => mp.status === MILESTONE_STATUS.IN_PROGRESS,
+              );
+              if (inProgress >= 0) return inProgress;
+              const upcoming = milestoneProgress.findIndex(
+                (mp) => mp.status === MILESTONE_STATUS.UPCOMING,
+              );
+              return upcoming >= 0 ? upcoming : milestoneProgress.length - 1;
             })();
+
+            const currentMilestoneName = sessionMilestones[activeIdx]?.name ??
+              "—";
 
             const lastActivityMs = events.length > 0
               ? Math.max(...events.map((e) => new Date(e.updated).getTime()))
@@ -82,6 +104,10 @@ export const useProgressCrossHire = (
               daysSinceLastActivity,
               isStalled: daysSinceLastActivity !== null &&
                 daysSinceLastActivity > 3,
+              totalXP,
+              currentMilestoneName,
+              currentMilestoneIndex: activeIdx + 1,
+              totalMilestones: sessionMilestones.length,
             });
           }
         }

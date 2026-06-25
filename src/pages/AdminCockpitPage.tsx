@@ -15,7 +15,6 @@ import {
 } from "../hooks/useProgress/index.ts";
 import { useBuddyProfile } from "../hooks/useBuddyProfile.ts";
 import { useResources } from "../hooks/useResources.ts";
-import { usePreBoardingChecklist } from "../hooks/usePreBoardingChecklist.ts";
 import { useTemplateLibrary } from "../hooks/useTemplateLibrary.ts";
 import Toast from "../components/shared/Toast.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
@@ -29,15 +28,14 @@ import { toTemplateSummaries } from "../utils/templateSummary.ts";
 import BuddyAssignmentForm from "../components/admin/BuddyAssignmentForm.tsx";
 import ResourcesEditor from "../components/admin/ResourcesEditor.tsx";
 import SaveTemplateModal from "../components/admin/SaveTemplateModal.tsx";
-import PreBoardingChecklist from "../components/admin/PreBoardingChecklist.tsx";
+import ConfirmSheet from "../components/admin/ConfirmSheet.tsx";
 import CrossHireDashboard from "../components/admin/CrossHireDashboard.tsx";
 import AdminQRScannerModal from "../components/admin/AdminQRScannerModal.tsx";
 import SessionInviteCard from "../components/admin/SessionInviteCard.tsx";
 
 const ADMIN_TABS = {
-  ACTIVE_SESSION: "activeSession",
-  PRE_BOARDING: "preBoarding",
-  ALL_NEW_HIRES: "allNewHires",
+  NEW_HIRES: "newHires",
+  SESSION_SETUP: "sessionSetup",
 } as const;
 type AdminTab = (typeof ADMIN_TABS)[keyof typeof ADMIN_TABS];
 
@@ -65,9 +63,16 @@ const AdminCockpitPage = () => {
   );
   const bgImageUrl = bgImageUrlOverride ?? session?.bgImageUrl ?? "";
 
-  const [activeTab, setActiveTab] = useState<AdminTab>(
-    ADMIN_TABS.ACTIVE_SESSION,
+  const [activeTab, setActiveTab] = useState<AdminTab>(ADMIN_TABS.NEW_HIRES);
+  const [contextPlayerId, setContextPlayerId] = useState<string | null>(null);
+  const [pendingTabSwitch, setPendingTabSwitch] = useState<AdminTab | null>(
+    null,
   );
+  const hasVisitedSetup = useRef(false);
+  // Track first visit so keep-mounted can activate; safe to set during render
+  if (activeTab === ADMIN_TABS.SESSION_SETUP) {
+    hasVisitedSetup.current = true;
+  }
   const [scannerOpen, setScannerOpen] = useState(false);
 
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -89,15 +94,13 @@ const AdminCockpitPage = () => {
 
   const adminResources = useResources(sid, { role: "gamemaker" });
 
-  const preBoardingChecklist = usePreBoardingChecklist(sid, session);
-
   const crossHire = useProgressCrossHire({
-    active: activeTab === ADMIN_TABS.ALL_NEW_HIRES,
+    active: activeTab === ADMIN_TABS.NEW_HIRES,
   });
 
   const templateLibrary = useTemplateLibrary({
     sid,
-    active: activeTab === ADMIN_TABS.ACTIVE_SESSION,
+    active: activeTab === ADMIN_TABS.SESSION_SETUP,
     session,
     milestones,
     missions,
@@ -110,6 +113,32 @@ const AdminCockpitPage = () => {
       adminProgress.handlePlayerSelect(playerId);
     },
     [adminProgress],
+  );
+
+  const handleViewOnMap = useCallback(
+    (playerId: string) => {
+      adminProgress.handlePlayerSelect(playerId);
+      setContextPlayerId(playerId);
+      setActiveTab(ADMIN_TABS.SESSION_SETUP);
+    },
+    [adminProgress],
+  );
+
+  const handleApproveFromDashboard = useCallback(
+    (playerId: string) => {
+      adminProgress.handlePlayerSelect(playerId);
+      setActiveTab(ADMIN_TABS.SESSION_SETUP);
+    },
+    [adminProgress],
+  );
+
+  const pendingCountByPlayer = useMemo<Record<string, number>>(
+    () =>
+      adminProgress.pendingEvents.reduce<Record<string, number>>((acc, e) => {
+        acc[e.playerId] = (acc[e.playerId] ?? 0) + 1;
+        return acc;
+      }, {}),
+    [adminProgress.pendingEvents],
   );
 
   const [isSaving, setIsSaving] = useState(false);
@@ -184,6 +213,21 @@ const AdminCockpitPage = () => {
     milestoneEditor.discardMilestones(milestones);
     missionEditor.discardMissions();
   }, [milestones, milestoneEditor, missionEditor]);
+
+  const handleTabClick = useCallback(
+    (tab: AdminTab) => {
+      if (
+        isDirty &&
+        activeTab === ADMIN_TABS.SESSION_SETUP &&
+        tab !== ADMIN_TABS.SESSION_SETUP
+      ) {
+        setPendingTabSwitch(tab);
+      } else {
+        setActiveTab(tab);
+      }
+    },
+    [isDirty, activeTab],
+  );
 
   const draftMilestonesAsMilestones: ReadonlyArray<Milestone> = useMemo(
     () =>
@@ -296,9 +340,8 @@ const AdminCockpitPage = () => {
         >
           {(
             [
-              { key: ADMIN_TABS.ACTIVE_SESSION, label: "Active Session" },
-              { key: ADMIN_TABS.PRE_BOARDING, label: "Pre-Boarding Checklist" },
-              { key: ADMIN_TABS.ALL_NEW_HIRES, label: "All New Hires" },
+              { key: ADMIN_TABS.NEW_HIRES, label: "New Hires" },
+              { key: ADMIN_TABS.SESSION_SETUP, label: "Session Setup" },
             ] as const
           ).map((tab) => {
             const isActive = activeTab === tab.key;
@@ -308,7 +351,7 @@ const AdminCockpitPage = () => {
                   type="button"
                   role="tab"
                   aria-selected={isActive}
-                  onClick={() => setActiveTab(tab.key)}
+                  onClick={() => handleTabClick(tab.key)}
                   style={{
                     padding: "var(--space-2) var(--space-4)",
                     background: isActive
@@ -340,11 +383,54 @@ const AdminCockpitPage = () => {
         </ul>
       </nav>
 
-      {activeTab === ADMIN_TABS.ACTIVE_SESSION && (
+      {activeTab === ADMIN_TABS.SESSION_SETUP && contextPlayerId && (() => {
+        const ctxPlayer = adminProgress.players.find(
+          (p) => p.id === contextPlayerId,
+        );
+        return (
+          <div
+            data-testid="player-context-bar"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "var(--space-2) var(--space-4)",
+              background: "hsl(var(--color-accent) / 0.08)",
+              borderBottom: "1px solid hsl(var(--color-accent) / 0.2)",
+              fontSize: "var(--text-sm)",
+              color: "hsl(var(--color-fg))",
+              minHeight: "var(--min-touch)",
+            }}
+          >
+            <span>
+              Viewing: <strong>{ctxPlayer?.name ?? contextPlayerId}</strong>
+            </span>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              aria-label="Clear player context"
+              onClick={() => setContextPlayerId(null)}
+              style={{
+                fontSize: "var(--text-xs)",
+                padding: "var(--space-1) var(--space-2)",
+              }}
+            >
+              Clear
+            </button>
+          </div>
+        );
+      })()}
+
+      {/* Keep-mounted: mounts on first visit, hidden when not active */}
+      {hasVisitedSetup.current && (
         <main
           className="admin-layout"
+          data-testid="session-setup-main"
           data-map-collapsed={mapCollapsed ? "true" : undefined}
-          style={{ flex: 1 }}
+          style={{
+            flex: 1,
+            display: activeTab === ADMIN_TABS.SESSION_SETUP ? "grid" : "none",
+          }}
         >
           <div className="admin-layout__map">
             <MilestoneMapEditor
@@ -420,49 +506,50 @@ const AdminCockpitPage = () => {
         </main>
       )}
 
-      {activeTab === ADMIN_TABS.PRE_BOARDING && (
+      {activeTab === ADMIN_TABS.NEW_HIRES && (
         <main
           style={{
             flex: 1,
-            padding: "var(--space-6) var(--space-4)",
-            maxWidth: "40rem",
-            marginInline: "auto",
-            width: "100%",
-          }}
-        >
-          <PreBoardingChecklist
-            playerName={adminProgress.selectedPlayer?.name.split(" ")[0]}
-            items={preBoardingChecklist.items}
-            onToggle={preBoardingChecklist.onToggle}
-            onAdd={preBoardingChecklist.onAdd}
-            onMarkAllDone={preBoardingChecklist.onMarkAllDone}
-          />
-        </main>
-      )}
-
-      {activeTab === ADMIN_TABS.ALL_NEW_HIRES && (
-        <main
-          style={{
-            flex: 1,
-            padding: "var(--space-6) var(--space-4)",
             maxWidth: "48rem",
             marginInline: "auto",
             width: "100%",
           }}
         >
-          <h2
-            style={{
-              margin: "0 0 var(--space-4)",
-              fontFamily: "var(--font-display)",
-              fontSize: "var(--text-xl)",
-              fontWeight: "var(--weight-semibold)",
-              color: "hsl(var(--color-fg))",
-            }}
-          >
-            All New Hires
-          </h2>
-          <CrossHireDashboard hires={crossHire.rows} />
+          <CrossHireDashboard
+            hires={crossHire.rows}
+            pendingCountByPlayer={pendingCountByPlayer}
+            onViewOnMap={handleViewOnMap}
+            onApprove={handleApproveFromDashboard}
+          />
         </main>
+      )}
+
+      {/* Dirty navigation guard */}
+      {pendingTabSwitch !== null && (
+        <div
+          data-testid="dirty-nav-backdrop"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 200,
+            background: "hsl(var(--color-overlay, 0 0% 0% / 0.5))",
+          }}
+        >
+          <ConfirmSheet
+            onKeepEditing={() => setPendingTabSwitch(null)}
+            onSaveDraft={() => {
+              const target = pendingTabSwitch;
+              setPendingTabSwitch(null);
+              void handleSave().then(() => setActiveTab(target));
+            }}
+            onDiscardAndClose={() => {
+              const target = pendingTabSwitch;
+              setPendingTabSwitch(null);
+              handleDiscard();
+              setActiveTab(target);
+            }}
+          />
+        </div>
       )}
 
       <AdminQRScannerModal
