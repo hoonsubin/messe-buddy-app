@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { MdArrowBack } from "react-icons/md";
 import type { Mission } from "../types/index.ts";
 import { MISSION_TYPE, USER_ROLE } from "../types/index.ts";
 import { useActiveProfile } from "../hooks/useActiveProfile.ts";
@@ -118,6 +117,10 @@ const PlayerCockpitPage = () => {
   );
 
   const currentMissions = missions.filter((m) => m.isInCurrentMissions);
+  const missionCountsByMilestone = missions.reduce<Record<string, number>>(
+    (acc, m) => { acc[m.milestoneId] = (acc[m.milestoneId] ?? 0) + 1; return acc; },
+    {},
+  );
   const selectedMilestone = selectedMilestoneId !== null
     ? (milestones.find((m) => m.id === selectedMilestoneId) ?? undefined)
     : undefined;
@@ -256,40 +259,15 @@ const PlayerCockpitPage = () => {
         playerName={player?.name ?? ""}
         totalXP={progress.playerProgress?.totalXP ?? 0}
         role={player?.role ?? ""}
-      />
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-start",
-          padding: "var(--space-2) var(--space-4)",
-          background: "hsl(var(--color-card))",
-          borderBottom: "1px solid hsl(var(--color-border))",
+        onLogout={() => {
+          sessionStorage.removeItem("mb_tutorial_step");
+          sessionStorage.removeItem("mb_tutorial_form_pending");
+          if (identity && !identity.isDemo) {
+            removeProfile(identity.uid);
+          }
+          navigate("/", { replace: true });
         }}
-      >
-        <button
-          type="button"
-          className="btn btn--ghost"
-          style={{
-            fontSize: "var(--text-sm)",
-            color: "hsl(var(--color-muted-fg))",
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--space-1)",
-          }}
-          onClick={() => {
-            sessionStorage.removeItem("mb_tutorial_step");
-            sessionStorage.removeItem("mb_tutorial_form_pending");
-            if (identity && !identity.isDemo) {
-              removeProfile(identity.uid);
-            }
-            navigate("/", { replace: true });
-          }}
-        >
-          <MdArrowBack size={16} />
-          {identity?.isDemo ? "Back to Landing" : "Log Out"}
-        </button>
-      </div>
+      />
 
       {popupMission !== null && player !== null && (
         <MissionDetailPopup
@@ -365,6 +343,7 @@ const PlayerCockpitPage = () => {
                   milestoneProgress={progress.playerProgress
                     ?.milestoneProgress ??
                     []}
+                  missionCounts={missionCountsByMilestone}
                   playerXPercent={currentMilestone?.xPercent}
                   playerYPercent={currentMilestone?.yPercent}
                   onMilestoneClick={(id) => setSelectedMilestoneId(id)}

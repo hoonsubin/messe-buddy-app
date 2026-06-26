@@ -277,51 +277,75 @@ Notes:
 
 ---
 
-## PS-3 · Admin Sidebar — Template Elevation + Section Grouping
+## PS-3 · Admin Navigation — Hire-First Architecture + Per-Hire Onboarding Checklist
 
-**Problem:** Within the current Active Session sidebar, elements are stacked in an arbitrary order:
-1. SessionInviteCard
-2. PlayerSelectorDropdown
-3. PlayerProfileCard
-4. PendingApprovalsPanel
-5. BuddyAssignmentForm
-6. ResourcesEditor
-7. TemplateLibrary ← buried last
+**Problem:** The two-tab admin layout (New Hires | Session Setup) creates a flat hierarchy. The milestone map occupies 72.5% of the desktop viewport at 1280px. Seven ungrouped sidebar panels compete for attention. The New Hires tab is secondary, not primary. The pre-boarding checklist (PS-4 original) is per-session, not per-hire.
 
-The TemplateLibrary is a session-setup action (GM loads a template before the session starts), so it should appear near the top of the setup workflow, not at the bottom. More broadly, the sidebar mixes setup-time tools and runtime-monitoring tools without visual separation.
+**Goal:** Three-view navigation architecture replacing the tab bar:
+1. **Hire list** (root/default): stats + program management strip (Templates, Resources as always-visible buttons) + hire rows that navigate directly to hire detail
+2. **Hire detail** (per-hire): read-only map viewer showing hire's progress + progress panel + pending approvals + buddy + admin-only onboarding checklist
+3. **Session setup** (existing map editor, accessible from program management strip and hire detail)
 
-**Goal:** Reorganize sidebar into two clearly labeled groups:
-- **Session Setup** (TemplateLibrary, ResourcesEditor) — top
-- **Player Management** (PlayerSelectorDropdown, PlayerProfileCard, PendingApprovalsPanel, BuddyAssignmentForm) — below
+**Milestones are per-hire (OD-D resolved 2026-06-26):** Each hire gets their own milestone array. This is a major data model refactor (Session → milestones[] → Player → milestones[]). Deferred to a separate phase. Prototype uses session-scoped milestones with per-hire progress overlay.
+
+**Program management buttons placement:** Always-visible strip between stats row and hire list. Two equal-weight explicitly-labeled buttons (not gear icon, not tabs): "Templates" and "Resources". For this prototype, both navigate to the existing Session Setup view.
+
+**Per-hire onboarding checklist:**
+- Lives in hire detail view, below the three panel cards
+- Admin-only (marked with "admin only" badge; not visible to hire)
+- 8 hard-coded default items, ephemeral state per-hire:
+  1. Contract signed  2. Tax forms submitted  3. ID documents verified  4. IT account created
+  5. Access badge issued  6. Equipment assigned  7. First day email sent  8. Buddy introduced
+- Merges and supersedes PS-4 (Per-Boarding Checklist Per-Player Linking)
 
 **Affected files:**
-- `src/pages/AdminCockpitPage.tsx` — sidebar section ordering + grouping markup
+- `src/pages/AdminCockpitPage.tsx` — replace `activeTab` + tab bar with `viewMode` state; add `selectedHireId` + `hireChecklists` state; program management strip
+- `src/components/admin/CrossHireDashboard.tsx` — replace expand panel with direct-navigate rows (`onSelectHire`); remove `onViewOnMap`/`onApprove` props
+- New: `src/components/admin/HireDetailView.tsx` — hire detail page component
+- New: `src/components/admin/HireChecklist.tsx` — per-hire checklist component
 
-**In scope:** Order change, section headers/dividers, visual grouping.  
-**Out of scope:** Any changes to the components themselves.
+**In scope:** Navigation restructure, program management strip, hire detail view, per-hire checklist.  
+**Out of scope:** Per-hire milestone data model refactor (deferred), Template/Resource management views (stubbed).
 
-**Note:** This chunk's scope may shrink if PS-1 moves sidebar content elsewhere.
+**Wireframe status:** `[x] Agreed` *(2026-06-26)*
 
-**Wireframe status:** `[ ] Not started`
+**Agreed design decisions:**
+- `viewMode: 'list' | 'detail' | 'setup'` replaces `activeTab: 'newHires' | 'sessionSetup'`. No tab bar.
+- Navigation: back buttons and view transitions. "← Back to Landing" always visible.
+- Program management strip: between stats row and hire list. Two equal-weight buttons.
+- Hire rows: direct navigation (click row → hire detail). Remove expand/collapse.
+- Hire detail map: read-only `MilestoneMapViewer` (player's progress), not editable `MilestoneMapEditor`.
+- Checklist: `Record<playerId, PreBoardingCheckItem[]>` ephemeral state in AdminCockpitPage, initialized from `DEFAULT_CHECKLIST` (exported from `HireChecklist.tsx`) on first hire visit.
+- Dirty nav guard: retained for transitions away from setup view when `isDirty === true`.
+- PS-4 (Pre-Boarding Checklist Per-Player Linking) is merged into this chunk and marked resolved.
+
+### Regression tests — PS-3
+
+```
+T3.1  Admin cockpit opens in hire list view (no tab bar visible)
+T3.2  Program management strip shows two buttons: "Templates" and "Resources"
+T3.3  Clicking a hire row navigates to hire detail view (not expand)
+T3.4  Hire detail shows back button "← Hire list"
+T3.5  Hire detail shows hire name and role in sub-header
+T3.6  Hire detail shows milestone map in read-only mode (MilestoneMapViewer)
+T3.7  Hire detail shows Progress panel with XP and milestone position
+T3.8  Hire detail shows Pending Approvals panel for that hire only
+T3.9  Hire detail shows Buddy panel
+T3.10 Hire detail shows Onboarding Checklist section with "admin only" badge
+T3.11 Checklist shows 8 items for a new hire with all unchecked initially
+T3.12 Checking an item updates that hire's checklist (ephemeral state)
+T3.13 Checking an item for Hire A does not affect Hire B's checklist
+T3.14 Back button in hire detail navigates to hire list
+T3.15 "Configure" / "Templates" / "Resources" navigates to setup view
+T3.16 Setup view shows "← Hire list" back navigation
+T3.17 Dirty nav guard fires when leaving setup view with isDirty === true
+```
 
 ---
 
 ## PS-4 · Pre-Boarding Checklist — Per-Player Linking
 
-**Problem:** The pre-boarding checklist is currently an isolated tab. It is GM-only (correct), but it has no relationship to individual players — the GM can't see "what's still pending for Alex before she starts." The checklist should be scoped per player, surfaced on each player's card/row, but still only editable by the GM.
-
-**Goal:** Each hire in the New Hires list (PS-1) has a visual indicator of their pre-boarding checklist completion (e.g., a progress badge or expandable section). Clicking it opens the checklist scoped to that player. The checklist is not visible to the player — it's the GM's internal reference only.
-
-**Affected files:**
-- `src/components/admin/PreBoardingChecklist.tsx` — may need a per-player prop
-- `src/components/admin/CrossHireDashboard.tsx` / new player card component — checklist indicator + expand
-- `src/pages/AdminCockpitPage.tsx` — wire `usePreBoardingChecklist` per-player (currently it uses `adminProgress.selectedPlayer`)
-- `src/hooks/usePreBoardingChecklist.ts` — check if it already supports per-player scoping
-
-**In scope:** Per-player checklist linkage, indicator in hire list.  
-**Out of scope:** Checklist content itself, checklist sharing with player.
-
-**Wireframe status:** `[ ] Not started`
+**Status: Merged into PS-3 (2026-06-26).** The per-hire onboarding checklist is implemented in the hire detail view as part of PS-3. See PS-3 for implementation details. This chunk is resolved.
 
 ---
 
@@ -663,8 +687,8 @@ PS-11B (active mission view)      ← player cockpit only; audit sidebar overlap
 |----|-----------|----------------|
 | PS-1 · Admin Cockpit Primary View | ✅ Agreed 2026-06-25 | ✅ Implemented 2026-06-25 |
 | PS-2 · Map + Mission Lazy Render | ✅ Agreed 2026-06-25 | ✅ Implemented 2026-06-25 |
-| PS-3 · Admin Sidebar Grouping | ⬜ Not started | — |
-| PS-4 · Checklist Per-Player | ⬜ Not started | — |
+| PS-3 · Admin Hire-First Architecture | ✅ Agreed 2026-06-26 | 🔄 In progress |
+| PS-4 · Checklist Per-Player | ✅ Merged into PS-3 | ✅ Resolved |
 | PS-5 · Profile Edit Views | ⬜ Not started | — |
 | PS-6 · AI Chat Expanded | ⬜ Not started | — |
 | PS-7 · Hire List + Map Sizing | ⬜ Not started | — |
@@ -682,8 +706,8 @@ PS-11B (active mission view)      ← player cockpit only; audit sidebar overlap
 
 - [x] **PS-1 · Admin restructure** — agreed 2026-06-25; see implementation steps above
 - [x] **PS-2 · Lazy map tab** — agreed 2026-06-25; see implementation steps above
-- [ ] **PS-3 · Sidebar reorder** — wireframe: grouped sidebar layout (setup vs. player management)
-- [ ] **PS-4 · Checklist per player** — wireframe: how checklist indicator appears on hire card; expand/collapse behavior
+- [x] **PS-3 · Admin hire-first architecture** — agreed 2026-06-26; see implementation steps above; PS-4 merged in
+- [x] **PS-4 · Checklist per player** — merged into PS-3; resolved
 - [ ] **PS-5 · Profile edit views** — wireframe: player profile sheet triggered by topbar avatar tap; GM variant; department display location
 - [ ] **PS-6 · AI chat expanded** — decision: pattern A/B/C; wireframe accordingly
 - [ ] **PS-7 · Sizing adjustments** — wireframe: hire list row layout; map container proportions

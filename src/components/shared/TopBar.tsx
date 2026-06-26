@@ -1,10 +1,11 @@
-import { MdPerson } from "react-icons/md";
+import { MdLogout, MdPerson } from "react-icons/md";
 
 interface TopBarProps {
   readonly playerName: string;
   readonly avatarUrl?: string;
   readonly totalXP: number;
   readonly role: string;
+  readonly onLogout?: () => void;
 }
 
 // First letters of the first and last name parts (max 2), uppercased.
@@ -32,6 +33,29 @@ const TopBar = (props: TopBarProps) => {
         {props.totalXP} XP
       </span>
       <span className="visually-hidden">{props.role}</span>
+      {props.onLogout && (
+        <button
+          type="button"
+          onClick={props.onLogout}
+          aria-label="Log out"
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "hsl(var(--color-primary-fg) / 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "var(--space-1)",
+            borderRadius: "var(--radius)",
+            flexShrink: 0,
+            minWidth: "var(--min-touch)",
+            minHeight: "var(--min-touch)",
+          }}
+        >
+          <MdLogout size={18} aria-hidden="true" />
+        </button>
+      )}
     </header>
   );
 };

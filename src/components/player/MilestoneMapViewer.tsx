@@ -10,6 +10,8 @@ interface MilestoneMapViewerProps {
   readonly bgImageUrl: string;
   /** From Session.mapNodeScale — shared source of truth with the admin editor. */
   readonly mapNodeScale: number;
+  /** Per-milestone mission counts — same shape as MilestoneMapEditor. If omitted, nodes show 0. */
+  readonly missionCounts?: Readonly<Record<string, number>>;
   readonly playerXPercent?: number;
   readonly playerYPercent?: number;
   readonly onMilestoneClick: (id: string) => void;
@@ -19,6 +21,7 @@ const MilestoneMapViewer = (props: MilestoneMapViewerProps) => {
   const progressById = new Map(
     props.milestoneProgress.map((mp) => [mp.milestoneId, mp]),
   );
+  const missionCounts = props.missionCounts ?? {};
 
   return (
     <MapViewport
@@ -39,6 +42,7 @@ const MilestoneMapViewer = (props: MilestoneMapViewerProps) => {
             yPercent={ms.yPercent}
             progressPercent={mp?.percentComplete ?? 0}
             status={mp?.status ?? "upcoming"}
+            missionCount={missionCounts[ms.id] ?? 0}
             onClick={() => props.onMilestoneClick(ms.id)}
           />
         );

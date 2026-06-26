@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { MdArrowBack } from "react-icons/md";
-import type { Milestone } from "../types/index.ts";
+import { MdArrowBack, MdAttachment, MdLayers } from "react-icons/md";
+// MdArrowBack used for in-app sub-navigation only; logout is handled by TopBar
+import type { Milestone, PreBoardingCheckItem } from "../types/index.ts";
 import { USER_ROLE } from "../types/index.ts";
 import { useActiveProfile } from "../hooks/useActiveProfile.ts";
 import { useIdentity } from "../hooks/useIdentity.ts";
@@ -32,12 +33,15 @@ import ConfirmSheet from "../components/admin/ConfirmSheet.tsx";
 import CrossHireDashboard from "../components/admin/CrossHireDashboard.tsx";
 import AdminQRScannerModal from "../components/admin/AdminQRScannerModal.tsx";
 import SessionInviteCard from "../components/admin/SessionInviteCard.tsx";
+import HireDetailView from "../components/admin/HireDetailView.tsx";
+import { DEFAULT_CHECKLIST } from "../components/admin/HireChecklist.tsx";
 
-const ADMIN_TABS = {
-  NEW_HIRES: "newHires",
-  SESSION_SETUP: "sessionSetup",
-} as const;
-type AdminTab = (typeof ADMIN_TABS)[keyof typeof ADMIN_TABS];
+// ── View state ─────────────────────────────────────────────────────────────────
+// 'list'  = hire list root (program management strip + hire rows)
+// 'detail' = per-hire detail (map viewer, panels, checklist)
+// 'setup' = session setup (map editor, templates, resources)
+
+type AdminView = "list" | "detail" | "setup";
 
 const AdminCockpitPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -63,21 +67,30 @@ const AdminCockpitPage = () => {
   );
   const bgImageUrl = bgImageUrlOverride ?? session?.bgImageUrl ?? "";
 
-  const [activeTab, setActiveTab] = useState<AdminTab>(ADMIN_TABS.NEW_HIRES);
-  const [contextPlayerId, setContextPlayerId] = useState<string | null>(null);
-  const [pendingTabSwitch, setPendingTabSwitch] = useState<AdminTab | null>(
+  // ── Navigation state ─────────────────────────────────────────────────────────
+  const [viewMode, setViewMode] = useState<AdminView>("list");
+  const [selectedHireId, setSelectedHireId] = useState<string | null>(null);
+  const [pendingViewSwitch, setPendingViewSwitch] = useState<AdminView | null>(
     null,
   );
+
+  // Per-hire checklist: Record<playerId, items[]> — ephemeral for prototype
+  const [hireChecklists, setHireChecklists] = useState<
+    Record<string, ReadonlyArray<PreBoardingCheckItem>>
+  >({});
+
+  // Keep-mounted pattern for setup view (preserve unsaved map edits)
   const hasVisitedSetup = useRef(false);
-  // Track first visit so keep-mounted can activate; safe to set during render
-  if (activeTab === ADMIN_TABS.SESSION_SETUP) {
+  if (viewMode === "setup") {
     hasVisitedSetup.current = true;
   }
+
   const [scannerOpen, setScannerOpen] = useState(false);
 
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const mapCollapsed = useScrollCollapse(sidebarRef, activeTab);
+  const mapCollapsed = useScrollCollapse(sidebarRef, viewMode);
 
+  // ── Hooks ────────────────────────────────────────────────────────────────────
   const milestoneEditor = useAdminMilestoneEditor(milestones);
   const missionEditor = useAdminMissionEditor(missions);
 
@@ -95,12 +108,12 @@ const AdminCockpitPage = () => {
   const adminResources = useResources(sid, { role: "gamemaker" });
 
   const crossHire = useProgressCrossHire({
-    active: activeTab === ADMIN_TABS.NEW_HIRES,
+    active: viewMode === "list" || viewMode === "detail",
   });
 
   const templateLibrary = useTemplateLibrary({
     sid,
-    active: activeTab === ADMIN_TABS.SESSION_SETUP,
+    active: viewMode === "setup",
     session,
     milestones,
     missions,
@@ -108,30 +121,7 @@ const AdminCockpitPage = () => {
     gmUid: identity?.uid,
   });
 
-  const handlePlayerSelectWithBuddy = useCallback(
-    (playerId: string) => {
-      adminProgress.handlePlayerSelect(playerId);
-    },
-    [adminProgress],
-  );
-
-  const handleViewOnMap = useCallback(
-    (playerId: string) => {
-      adminProgress.handlePlayerSelect(playerId);
-      setContextPlayerId(playerId);
-      setActiveTab(ADMIN_TABS.SESSION_SETUP);
-    },
-    [adminProgress],
-  );
-
-  const handleApproveFromDashboard = useCallback(
-    (playerId: string) => {
-      adminProgress.handlePlayerSelect(playerId);
-      setActiveTab(ADMIN_TABS.SESSION_SETUP);
-    },
-    [adminProgress],
-  );
-
+  // ── Derived state ────────────────────────────────────────────────────────────
   const pendingCountByPlayer = useMemo<Record<string, number>>(
     () =>
       adminProgress.pendingEvents.reduce<Record<string, number>>((acc, e) => {
@@ -141,6 +131,165 @@ const AdminCockpitPage = () => {
     [adminProgress.pendingEvents],
   );
 
+  const pendingForSelectedHire = useMemo(
+    () =>
+      selectedHireId
+        ? adminProgress.pendingEvents.filter((e) =>
+          e.playerId === selectedHireId
+        )
+        : [],
+    [adminProgress.pendingEvents, selectedHireId],
+  );
+
+  const isDirty = useMemo(
+    () =>
+      milestoneEditor.draftMilestonesAreDirty ||
+      missionEditor.draftMissionsAreDirty ||
+      missionEditor.missionOrderChanges.size > 0,
+    [
+      milestoneEditor.draftMilestonesAreDirty,
+      missionEditor.draftMissionsAreDirty,
+      missionEditor.missionOrderChanges,
+    ],
+  );
+
+  const draftMilestonesAsMilestones: ReadonlyArray<Milestone> = useMemo(
+    () =>
+      milestoneEditor.draftMilestones.map((dm) => {
+        const real = milestones.find((m) => m.id === dm.id);
+        return {
+          id: dm.id,
+          name: dm.name,
+          xPercent: dm.xPercent,
+          yPercent: dm.yPercent,
+          order: real?.order ?? 0,
+          sessionId: real?.sessionId ?? sid,
+          xpThreshold: real?.xpThreshold ?? 100,
+          created: real?.created ?? new Date().toISOString(),
+          updated: real?.updated ?? new Date().toISOString(),
+        } satisfies Milestone;
+      }),
+    [milestoneEditor.draftMilestones, milestones, sid],
+  );
+
+  const missionCounts = useMemo<Record<string, number>>(
+    () =>
+      missions.reduce<Record<string, number>>((acc, m) => {
+        acc[m.milestoneId] = (acc[m.milestoneId] ?? 0) + 1;
+        return acc;
+      }, {}),
+    [missions],
+  );
+
+  // ── Navigation handlers ──────────────────────────────────────────────────────
+
+  const handleSelectHire = useCallback(
+    (playerId: string) => {
+      adminProgress.handlePlayerSelect(playerId);
+      setSelectedHireId(playerId);
+      // Initialise checklist with defaults on first visit for this hire
+      setHireChecklists((prev) => {
+        if (prev[playerId]) return prev;
+        return {
+          ...prev,
+          [playerId]: DEFAULT_CHECKLIST as ReadonlyArray<PreBoardingCheckItem>,
+        };
+      });
+      setViewMode("detail");
+    },
+    [adminProgress],
+  );
+
+  const handleNavigateToSetup = useCallback(() => {
+    setViewMode("setup");
+  }, []);
+
+  const handleViewChange = useCallback(
+    (target: AdminView) => {
+      if (isDirty && viewMode === "setup" && target !== "setup") {
+        setPendingViewSwitch(target);
+      } else {
+        if (target === "list") setSelectedHireId(null);
+        setViewMode(target);
+      }
+    },
+    [isDirty, viewMode],
+  );
+
+  const getChecklist = useCallback(
+    (playerId: string): ReadonlyArray<PreBoardingCheckItem> =>
+      hireChecklists[playerId] ??
+      (DEFAULT_CHECKLIST as ReadonlyArray<PreBoardingCheckItem>),
+    [hireChecklists],
+  );
+
+  const handleChecklistToggle = useCallback(
+    (playerId: string, itemId: string) => {
+      setHireChecklists((prev) => {
+        const items = prev[playerId] ??
+          (DEFAULT_CHECKLIST as ReadonlyArray<PreBoardingCheckItem>);
+        return {
+          ...prev,
+          [playerId]: items.map((item) =>
+            item.id === itemId ? { ...item, checked: !item.checked } : item
+          ),
+        };
+      });
+    },
+    [],
+  );
+
+  const handleChecklistRename = useCallback(
+    (playerId: string, itemId: string, newLabel: string) => {
+      setHireChecklists((prev) => ({
+        ...prev,
+        [playerId]: getChecklist(playerId).map((item) =>
+          item.id === itemId ? { ...item, label: newLabel } : item
+        ),
+      }));
+    },
+    [getChecklist],
+  );
+
+  const handleChecklistDelete = useCallback(
+    (playerId: string, itemId: string) => {
+      setHireChecklists((prev) => ({
+        ...prev,
+        [playerId]: getChecklist(playerId).filter((item) => item.id !== itemId),
+      }));
+    },
+    [getChecklist],
+  );
+
+  const handleChecklistAdd = useCallback(
+    (playerId: string, label: string) => {
+      const newItem: PreBoardingCheckItem = {
+        id: `chk_custom_${Date.now()}`,
+        label,
+        checked: false,
+      };
+      setHireChecklists((prev) => ({
+        ...prev,
+        [playerId]: [...getChecklist(playerId), newItem],
+      }));
+    },
+    [getChecklist],
+  );
+
+  const handleChecklistReorder = useCallback(
+    (playerId: string, fromIndex: number, toIndex: number) => {
+      setHireChecklists((prev) => {
+        const items = [...getChecklist(playerId)];
+        const [moved] = items.splice(fromIndex, 1);
+        if (moved === undefined) return prev;
+        items.splice(toIndex, 0, moved);
+        return { ...prev, [playerId]: items };
+      });
+    },
+    [getChecklist],
+  );
+
+  // ── Save / discard ───────────────────────────────────────────────────────────
   const [isSaving, setIsSaving] = useState(false);
   const [saveToast, setSaveToast] = useState<string | null>(null);
 
@@ -170,18 +319,6 @@ const AdminCockpitPage = () => {
       void updateMapNodeScale(scale);
     },
     [updateMapNodeScale],
-  );
-
-  const isDirty = useMemo(
-    () =>
-      milestoneEditor.draftMilestonesAreDirty ||
-      missionEditor.draftMissionsAreDirty ||
-      missionEditor.missionOrderChanges.size > 0,
-    [
-      milestoneEditor.draftMilestonesAreDirty,
-      missionEditor.draftMissionsAreDirty,
-      missionEditor.missionOrderChanges,
-    ],
   );
 
   const handleSave = useCallback(async () => {
@@ -214,49 +351,7 @@ const AdminCockpitPage = () => {
     missionEditor.discardMissions();
   }, [milestones, milestoneEditor, missionEditor]);
 
-  const handleTabClick = useCallback(
-    (tab: AdminTab) => {
-      if (
-        isDirty &&
-        activeTab === ADMIN_TABS.SESSION_SETUP &&
-        tab !== ADMIN_TABS.SESSION_SETUP
-      ) {
-        setPendingTabSwitch(tab);
-      } else {
-        setActiveTab(tab);
-      }
-    },
-    [isDirty, activeTab],
-  );
-
-  const draftMilestonesAsMilestones: ReadonlyArray<Milestone> = useMemo(
-    () =>
-      milestoneEditor.draftMilestones.map((dm) => {
-        const real = milestones.find((m) => m.id === dm.id);
-        return {
-          id: dm.id,
-          name: dm.name,
-          xPercent: dm.xPercent,
-          yPercent: dm.yPercent,
-          order: real?.order ?? 0,
-          sessionId: real?.sessionId ?? sid,
-          xpThreshold: real?.xpThreshold ?? 100,
-          created: real?.created ?? new Date().toISOString(),
-          updated: real?.updated ?? new Date().toISOString(),
-        } satisfies Milestone;
-      }),
-    [milestoneEditor.draftMilestones, milestones, sid],
-  );
-
-  const missionCounts = useMemo<Record<string, number>>(
-    () =>
-      missions.reduce<Record<string, number>>((acc, m) => {
-        acc[m.milestoneId] = (acc[m.milestoneId] ?? 0) + 1;
-        return acc;
-      }, {}),
-    [missions],
-  );
-
+  // ── Error redirect ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (sessionError && !sessionLoading) {
       sessionStorage.setItem("mb_landing_toast", "Session does not exist.");
@@ -266,6 +361,7 @@ const AdminCockpitPage = () => {
 
   if (sessionError && !sessionLoading) return null;
 
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div
       data-testid="admin-cockpit-page"
@@ -282,146 +378,279 @@ const AdminCockpitPage = () => {
         playerName={session?.name ?? "Game Master"}
         totalXP={0}
         role="Game Master"
+        onLogout={() => {
+          if (identity && !identity.isDemo) {
+            removeProfile(identity.uid);
+          }
+          navigate("/", { replace: true });
+        }}
       />
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-start",
-          padding: "var(--space-2) var(--space-4)",
-          background: "hsl(var(--color-card))",
-          borderBottom: "1px solid hsl(var(--color-border))",
-        }}
-      >
-        <button
-          type="button"
-          className="btn btn--ghost"
+      {/* ── HIRE LIST VIEW ─────────────────────────────────────────────────── */}
+      {viewMode === "list" && (
+        <main
           style={{
-            fontSize: "var(--text-sm)",
-            color: "hsl(var(--color-muted-fg))",
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--space-1)",
-          }}
-          onClick={() => {
-            if (identity && !identity.isDemo) {
-              removeProfile(identity.uid);
-            }
-            navigate("/", { replace: true });
+            flex: 1,
+            maxWidth: "48rem",
+            marginInline: "auto",
+            width: "100%",
           }}
         >
-          <MdArrowBack size={16} />
-          {identity?.isDemo ? "Back to Landing" : "Log Out"}
-        </button>
-      </div>
-
-      <nav
-        aria-label="Admin views"
-        className="tab-bar"
-        style={{
-          position: "sticky",
-          top: "var(--topbar-h)",
-          zIndex: 10,
-          background: "hsl(var(--color-bg))",
-          borderBottom: "1px solid hsl(var(--color-border))",
-          paddingInline: "var(--space-4)",
-        }}
-      >
-        <ul
-          style={{
-            listStyle: "none",
-            padding: 0,
-            margin: 0,
-            display: "flex",
-            gap: "var(--space-1)",
-            overflowX: "auto",
-            scrollbarWidth: "none",
-          }}
-        >
-          {(
-            [
-              { key: ADMIN_TABS.NEW_HIRES, label: "New Hires" },
-              { key: ADMIN_TABS.SESSION_SETUP, label: "Session Setup" },
-            ] as const
-          ).map((tab) => {
-            const isActive = activeTab === tab.key;
-            return (
-              <li key={tab.key}>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => handleTabClick(tab.key)}
-                  style={{
-                    padding: "var(--space-2) var(--space-4)",
-                    background: isActive
-                      ? "hsl(var(--color-card))"
-                      : "transparent",
-                    border: "none",
-                    borderBottom: isActive
-                      ? "2px solid hsl(var(--color-accent))"
-                      : "2px solid transparent",
-                    color: isActive
-                      ? "hsl(var(--color-fg))"
-                      : "hsl(var(--color-muted-fg))",
-                    fontSize: "var(--text-sm)",
-                    fontWeight: isActive
-                      ? "var(--weight-semibold)"
-                      : "var(--weight-medium)",
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                    minHeight: "var(--min-touch)",
-                    borderRadius: "var(--radius) var(--radius) 0 0",
-                    transition: "color 0.15s, border-color 0.15s",
-                  }}
-                >
-                  {tab.label}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-
-      {activeTab === ADMIN_TABS.SESSION_SETUP && contextPlayerId && (() => {
-        const ctxPlayer = adminProgress.players.find(
-          (p) => p.id === contextPlayerId,
-        );
-        return (
+          {/* Program management strip */}
           <div
-            data-testid="player-context-bar"
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "var(--space-2) var(--space-4)",
-              background: "hsl(var(--color-accent) / 0.08)",
-              borderBottom: "1px solid hsl(var(--color-accent) / 0.2)",
-              fontSize: "var(--text-sm)",
-              color: "hsl(var(--color-fg))",
-              minHeight: "var(--min-touch)",
+              padding: "var(--space-3) var(--space-4)",
+              borderBottom: "1px solid hsl(var(--color-border))",
             }}
           >
-            <span>
-              Viewing: <strong>{ctxPlayer?.name ?? contextPlayerId}</strong>
-            </span>
-            <button
-              type="button"
-              className="btn btn--ghost"
-              aria-label="Clear player context"
-              onClick={() => setContextPlayerId(null)}
+            <div
               style={{
                 fontSize: "var(--text-xs)",
-                padding: "var(--space-1) var(--space-2)",
+                fontWeight: "var(--weight-semibold)",
+                textTransform: "uppercase",
+                letterSpacing: "0.07em",
+                color: "hsl(var(--color-muted-fg))",
+                marginBottom: "var(--space-2)",
               }}
             >
-              Clear
-            </button>
+              Program management
+            </div>
+            <div style={{ display: "flex", gap: "var(--space-2)" }}>
+              <button
+                type="button"
+                data-testid="templates-btn"
+                onClick={handleNavigateToSetup}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--space-2)",
+                  padding: "var(--space-3)",
+                  background: "hsl(var(--color-card))",
+                  border: "1px solid hsl(var(--color-border))",
+                  borderRadius: "var(--radius-md)",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  minHeight: "var(--min-touch)",
+                  transition: "background 0.15s",
+                }}
+              >
+                <div
+                  style={{
+                    width: "2rem",
+                    height: "2rem",
+                    borderRadius: "var(--radius)",
+                    background: "hsl(var(--color-accent) / 0.1)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <MdLayers
+                    size={16}
+                    style={{ color: "hsl(var(--color-accent))" }}
+                    aria-hidden="true"
+                  />
+                </div>
+                <div>
+                  <div
+                    style={{
+                      fontSize: "var(--text-sm)",
+                      fontWeight: "var(--weight-semibold)",
+                      color: "hsl(var(--color-fg))",
+                    }}
+                  >
+                    Templates
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "var(--text-xs)",
+                      color: "hsl(var(--color-muted-fg))",
+                    }}
+                  >
+                    {templateLibrary.templates.length} template
+                    {templateLibrary.templates.length !== 1 ? "s" : ""}
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                data-testid="resources-btn"
+                onClick={handleNavigateToSetup}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--space-2)",
+                  padding: "var(--space-3)",
+                  background: "hsl(var(--color-card))",
+                  border: "1px solid hsl(var(--color-border))",
+                  borderRadius: "var(--radius-md)",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  minHeight: "var(--min-touch)",
+                  transition: "background 0.15s",
+                }}
+              >
+                <div
+                  style={{
+                    width: "2rem",
+                    height: "2rem",
+                    borderRadius: "var(--radius)",
+                    background: "hsl(var(--color-status-complete) / 0.12)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <MdAttachment
+                    size={16}
+                    style={{ color: "hsl(var(--color-status-complete))" }}
+                    aria-hidden="true"
+                  />
+                </div>
+                <div>
+                  <div
+                    style={{
+                      fontSize: "var(--text-sm)",
+                      fontWeight: "var(--weight-semibold)",
+                      color: "hsl(var(--color-fg))",
+                    }}
+                  >
+                    Resources
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "var(--text-xs)",
+                      color: "hsl(var(--color-muted-fg))",
+                    }}
+                  >
+                    {adminResources.resources.length} document
+                    {adminResources.resources.length !== 1 ? "s" : ""}
+                  </div>
+                </div>
+              </button>
+            </div>
           </div>
+
+          {/* Hire list */}
+          <CrossHireDashboard
+            hires={crossHire.rows}
+            pendingCountByPlayer={pendingCountByPlayer}
+            onSelectHire={handleSelectHire}
+          />
+        </main>
+      )}
+
+      {/* ── HIRE DETAIL VIEW ───────────────────────────────────────────────── */}
+      {viewMode === "detail" && selectedHireId &&
+        adminProgress.selectedPlayer && (
+        <HireDetailView
+          player={adminProgress.selectedPlayer}
+          allPlayers={adminProgress.players}
+          playerProgress={adminProgress.selectedPlayerProgress}
+          pendingEvents={pendingForSelectedHire}
+          milestones={milestones}
+          missions={missions}
+          bgImageUrl={bgImageUrl}
+          mapNodeScale={session?.mapNodeScale ?? 1}
+          buddyDraft={buddyProfile.buddyDraft}
+          checklistItems={hireChecklists[selectedHireId] ??
+            (DEFAULT_CHECKLIST as ReadonlyArray<PreBoardingCheckItem>)}
+          onBack={() => handleViewChange("list")}
+          onConfigureSession={handleNavigateToSetup}
+          onApprove={(missionId) =>
+            void adminProgress.handleApprove(selectedHireId, missionId)}
+          onReject={(missionId) =>
+            void adminProgress.handleReject(selectedHireId, missionId)}
+          onChecklistToggle={(itemId) =>
+            handleChecklistToggle(selectedHireId, itemId)}
+          onChecklistRename={(itemId, newLabel) =>
+            handleChecklistRename(selectedHireId, itemId, newLabel)}
+          onChecklistDelete={(itemId) =>
+            handleChecklistDelete(selectedHireId, itemId)}
+          onChecklistAdd={(label) => handleChecklistAdd(selectedHireId, label)}
+          onChecklistReorder={(from, to) =>
+            handleChecklistReorder(selectedHireId, from, to)}
+          onBuddyDraftChange={buddyProfile.setBuddyDraft}
+          onBuddySave={handleBuddySave}
+        />
+      )}
+
+      {/* ── SESSION SETUP VIEW ────────────────────────────────────────────── */}
+      {viewMode === "setup" && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            padding: "var(--space-2) var(--space-4)",
+            background: "hsl(var(--color-card))",
+            borderBottom: "1px solid hsl(var(--color-border))",
+          }}
+        >
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => handleViewChange("list")}
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "hsl(var(--color-muted-fg))",
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--space-1)",
+            }}
+          >
+            <MdArrowBack size={16} />
+            Hire list
+          </button>
+        </div>
+      )}
+
+      {/* Player context bar — shown in setup view when a hire is selected */}
+      {viewMode === "setup" && selectedHireId && (() => {
+        const ctxPlayer = adminProgress.players.find(
+          (p) => p.id === selectedHireId,
         );
+        return ctxPlayer
+          ? (
+            <div
+              data-testid="player-context-bar"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "var(--space-2) var(--space-4)",
+                background: "hsl(var(--color-accent) / 0.08)",
+                borderBottom: "1px solid hsl(var(--color-accent) / 0.2)",
+                fontSize: "var(--text-sm)",
+                color: "hsl(var(--color-fg))",
+                minHeight: "var(--min-touch)",
+              }}
+            >
+              <span>
+                Viewing: <strong>{ctxPlayer.name}</strong>
+              </span>
+              <button
+                type="button"
+                className="btn btn--ghost"
+                aria-label="Clear player context"
+                onClick={() => setSelectedHireId(null)}
+                style={{
+                  fontSize: "var(--text-xs)",
+                  padding: "var(--space-1) var(--space-2)",
+                }}
+              >
+                Clear
+              </button>
+            </div>
+          )
+          : null;
       })()}
 
-      {/* Keep-mounted: mounts on first visit, hidden when not active */}
+      {/* Keep-mounted setup main: mounts on first visit, hidden when inactive */}
       {hasVisitedSetup.current && (
         <main
           className="admin-layout"
@@ -429,7 +658,7 @@ const AdminCockpitPage = () => {
           data-map-collapsed={mapCollapsed ? "true" : undefined}
           style={{
             flex: 1,
-            display: activeTab === ADMIN_TABS.SESSION_SETUP ? "grid" : "none",
+            display: viewMode === "setup" ? "grid" : "none",
           }}
         >
           <div className="admin-layout__map">
@@ -460,7 +689,7 @@ const AdminCockpitPage = () => {
               <PlayerSelectorDropdown
                 players={adminProgress.players}
                 selectedId={adminProgress.selectedPlayerId}
-                onSelect={handlePlayerSelectWithBuddy}
+                onSelect={adminProgress.handlePlayerSelect}
               />
             )}
             {adminProgress.selectedPlayer &&
@@ -485,7 +714,7 @@ const AdminCockpitPage = () => {
               players={adminProgress.players}
               draft={buddyProfile.buddyDraft}
               selectedPlayerId={adminProgress.selectedPlayerId}
-              onPlayerChange={handlePlayerSelectWithBuddy}
+              onPlayerChange={adminProgress.handlePlayerSelect}
               onDraftChange={buddyProfile.setBuddyDraft}
               onSave={handleBuddySave}
             />
@@ -506,26 +735,8 @@ const AdminCockpitPage = () => {
         </main>
       )}
 
-      {activeTab === ADMIN_TABS.NEW_HIRES && (
-        <main
-          style={{
-            flex: 1,
-            maxWidth: "48rem",
-            marginInline: "auto",
-            width: "100%",
-          }}
-        >
-          <CrossHireDashboard
-            hires={crossHire.rows}
-            pendingCountByPlayer={pendingCountByPlayer}
-            onViewOnMap={handleViewOnMap}
-            onApprove={handleApproveFromDashboard}
-          />
-        </main>
-      )}
-
-      {/* Dirty navigation guard */}
-      {pendingTabSwitch !== null && (
+      {/* ── DIRTY NAVIGATION GUARD ────────────────────────────────────────── */}
+      {pendingViewSwitch !== null && (
         <div
           data-testid="dirty-nav-backdrop"
           style={{
@@ -536,17 +747,21 @@ const AdminCockpitPage = () => {
           }}
         >
           <ConfirmSheet
-            onKeepEditing={() => setPendingTabSwitch(null)}
+            onKeepEditing={() => setPendingViewSwitch(null)}
             onSaveDraft={() => {
-              const target = pendingTabSwitch;
-              setPendingTabSwitch(null);
-              void handleSave().then(() => setActiveTab(target));
+              const target = pendingViewSwitch;
+              setPendingViewSwitch(null);
+              void handleSave().then(() => {
+                if (target === "list") setSelectedHireId(null);
+                setViewMode(target);
+              });
             }}
             onDiscardAndClose={() => {
-              const target = pendingTabSwitch;
-              setPendingTabSwitch(null);
+              const target = pendingViewSwitch;
+              setPendingViewSwitch(null);
               handleDiscard();
-              setActiveTab(target);
+              if (target === "list") setSelectedHireId(null);
+              setViewMode(target);
             }}
           />
         </div>

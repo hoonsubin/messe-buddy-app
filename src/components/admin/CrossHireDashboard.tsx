@@ -1,9 +1,6 @@
 import { useMemo, useState } from "react";
 import {
-  MdCheck,
-  MdExpandLess,
-  MdExpandMore,
-  MdMap,
+  MdChevronRight,
   MdWarning,
 } from "react-icons/md";
 
@@ -16,8 +13,7 @@ type SortKey = "stalled" | "progress" | "activity" | "name";
 interface CrossHireDashboardProps {
   readonly hires: ReadonlyArray<HireProgressRow>;
   readonly pendingCountByPlayer: Record<string, number>;
-  readonly onViewOnMap: (playerId: string) => void;
-  readonly onApprove: (playerId: string) => void;
+  readonly onSelectHire: (playerId: string) => void;
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -69,12 +65,10 @@ const playerInitials = (name: string): string => {
 const CrossHireDashboard = ({
   hires,
   pendingCountByPlayer,
-  onViewOnMap,
-  onApprove,
+  onSelectHire,
 }: CrossHireDashboardProps) => {
   const [filter, setFilter] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("stalled");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const lower = filter.toLowerCase().trim();
@@ -225,7 +219,6 @@ const CrossHireDashboard = ({
         data-testid="hire-list"
       >
         {filtered.map((hire) => {
-          const isExpanded = expandedId === hire.playerId;
           const pendingCount = pendingCountByPlayer[hire.playerId] ?? 0;
 
           return (
@@ -235,12 +228,9 @@ const CrossHireDashboard = ({
               data-status={hire.isStalled ? "stalled" : "onTrack"}
               style={{ borderBottom: "1px solid hsl(var(--color-border))" }}
             >
-              {/* ── Collapsed row ─────────────────────────────────────── */}
               <button
                 type="button"
-                aria-expanded={isExpanded}
-                aria-controls={`hire-expand-${hire.playerId}`}
-                onClick={() => setExpandedId(isExpanded ? null : hire.playerId)}
+                onClick={() => onSelectHire(hire.playerId)}
                 style={{
                   width: "100%",
                   background: "none",
@@ -285,6 +275,7 @@ const CrossHireDashboard = ({
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
+                      gap: "var(--space-2)",
                       marginBottom: "var(--space-1)",
                     }}
                   >
@@ -300,20 +291,42 @@ const CrossHireDashboard = ({
                     >
                       {hire.playerName}
                     </span>
-                    {hire.isStalled
-                      ? <StalledHireAlert days={hire.daysSinceLastActivity} />
-                      : (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "var(--space-2)",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {pendingCount > 0 && (
                         <span
                           style={{
                             fontSize: "var(--text-xs)",
-                            color: `hsl(var(${statusColorVar(hire)}))`,
-                            fontWeight: "var(--weight-medium)",
-                            flexShrink: 0,
+                            padding: "1px 6px",
+                            borderRadius: "var(--radius-full)",
+                            background: "hsl(var(--color-destructive) / 0.12)",
+                            color: "hsl(var(--color-destructive))",
+                            fontWeight: "var(--weight-semibold)",
                           }}
                         >
-                          {statusLabel(hire)}
+                          {pendingCount} pending
                         </span>
                       )}
+                      {hire.isStalled
+                        ? <StalledHireAlert days={hire.daysSinceLastActivity} />
+                        : (
+                          <span
+                            style={{
+                              fontSize: "var(--text-xs)",
+                              color: `hsl(var(${statusColorVar(hire)}))`,
+                              fontWeight: "var(--weight-medium)",
+                            }}
+                          >
+                            {statusLabel(hire)}
+                          </span>
+                        )}
+                    </div>
                   </div>
                   {/* Progress bar */}
                   <div
@@ -347,111 +360,17 @@ const CrossHireDashboard = ({
                       color: "hsl(var(--color-muted-fg))",
                     }}
                   >
-                    {hire.progressPercent}% · {hire.currentMilestoneName}
+                    {hire.totalXP} XP · Milestone {hire.currentMilestoneIndex}/{hire.totalMilestones} · {hire.currentMilestoneName}
                   </span>
                 </div>
 
-                {/* Expand chevron */}
-                {isExpanded
-                  ? (
-                    <MdExpandLess
-                      size={18}
-                      aria-hidden="true"
-                      style={{
-                        color: "hsl(var(--color-muted-fg))",
-                        flexShrink: 0,
-                      }}
-                    />
-                  )
-                  : (
-                    <MdExpandMore
-                      size={18}
-                      aria-hidden="true"
-                      style={{
-                        color: "hsl(var(--color-muted-fg))",
-                        flexShrink: 0,
-                      }}
-                    />
-                  )}
+                {/* Navigate chevron */}
+                <MdChevronRight
+                  size={18}
+                  aria-hidden="true"
+                  style={{ color: "hsl(var(--color-muted-fg))", flexShrink: 0 }}
+                />
               </button>
-
-              {/* ── Expanded panel ────────────────────────────────────── */}
-              {isExpanded && (
-                <div
-                  id={`hire-expand-${hire.playerId}`}
-                  data-testid="hire-expand-panel"
-                  style={{
-                    padding: "var(--space-3) var(--space-4)",
-                    background: "hsl(var(--color-secondary))",
-                    borderTop: "1px solid hsl(var(--color-border))",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "var(--space-3)",
-                  }}
-                >
-                  {/* Metadata row */}
-                  <div
-                    style={{
-                      fontSize: "var(--text-xs)",
-                      color: "hsl(var(--color-muted-fg))",
-                      display: "flex",
-                      gap: "var(--space-3)",
-                    }}
-                  >
-                    <span>{hire.totalXP} XP</span>
-                    <span>·</span>
-                    <span>
-                      Milestone {hire.currentMilestoneIndex} /{" "}
-                      {hire.totalMilestones}
-                    </span>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div style={{ display: "flex", gap: "var(--space-2)" }}>
-                    <button
-                      type="button"
-                      className="btn btn--secondary"
-                      data-testid="view-on-map-btn"
-                      onClick={() => onViewOnMap(hire.playerId)}
-                      style={{
-                        flex: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "var(--space-1)",
-                        fontSize: "var(--text-xs)",
-                        minHeight: "var(--min-touch)",
-                      }}
-                    >
-                      <MdMap size={14} aria-hidden="true" />
-                      View on map
-                    </button>
-
-                    {pendingCount > 0 && (
-                      <button
-                        type="button"
-                        className="btn btn--secondary"
-                        data-testid="approve-btn"
-                        onClick={() => onApprove(hire.playerId)}
-                        style={{
-                          flex: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: "var(--space-1)",
-                          fontSize: "var(--text-xs)",
-                          minHeight: "var(--min-touch)",
-                          color: "hsl(var(--color-destructive))",
-                          borderColor: "hsl(var(--color-destructive) / 0.4)",
-                        }}
-                      >
-                        <MdCheck size={14} aria-hidden="true" />
-                        Approve ({pendingCount})
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
             </li>
           );
         })}
