@@ -66,7 +66,10 @@ const HireDetailView = ({
   onBuddyDraftChange,
   onBuddySave,
 }: HireDetailViewProps) => {
-  const milestoneProgress = playerProgress?.milestoneProgress ?? [];
+  const milestoneProgress = useMemo(
+    () => playerProgress?.milestoneProgress ?? [],
+    [playerProgress?.milestoneProgress],
+  );
   const totalXP = playerProgress?.totalXP ?? 0;
 
   const missionCountsByMilestone = useMemo(

@@ -76,9 +76,6 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
   useEffect(() => {
     if (!props.isOpen) return;
 
-    setValidationState("scanning");
-    setErrorMessage("");
-
     let cancelled = false;
     const frameId = requestAnimationFrame(() => {
       if (!cancelled) setCameraReady(true);

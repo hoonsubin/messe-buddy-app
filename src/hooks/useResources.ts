@@ -44,17 +44,14 @@ export function useResources(
 ): UseResourcesPlayerResult | UseResourcesAdminResult {
   const adapter = useAdapter();
   const [resources, setResources] = useState<ReadonlyArray<Resource>>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!sessionId);
   const [error, setError] = useState<Error | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   useEffect(() => {
-    if (!sessionId) {
-      setLoading(false);
-      return;
-    }
+    if (!sessionId) return;
 
     let cancelled = false;
 

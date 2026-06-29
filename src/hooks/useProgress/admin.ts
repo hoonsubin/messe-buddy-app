@@ -17,7 +17,7 @@ export const useProgressAdmin = (
   const [allProgressEvents, setAllProgressEvents] = useState<
     ReadonlyArray<ProgressEvent>
   >([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!sid);
   const [error, setError] = useState<Error | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const isInitialPlayerLoad = useRef(true);
@@ -30,10 +30,7 @@ export const useProgressAdmin = (
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   useEffect(() => {
-    if (!sid) {
-      setLoading(false);
-      return;
-    }
+    if (!sid) return;
 
     let cancelled = false;
 

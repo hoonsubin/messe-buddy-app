@@ -117,6 +117,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     const msg = sessionStorage.getItem("mb_landing_toast");
     if (!msg) return;
     sessionStorage.removeItem("mb_landing_toast");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing React with sessionStorage external store fires once on mount
     setToast(msg);
     const timer = setTimeout(() => setToast(null), 4000);
     return () => clearTimeout(timer);

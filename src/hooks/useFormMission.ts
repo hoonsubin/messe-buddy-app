@@ -41,17 +41,14 @@ export const useFormMission = (
   const mission = missions.find((m) => m.id === missionId) ?? null;
 
   const [formSchema, setFormSchema] = useState<FormSchema | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!missionId);
   const [error, setError] = useState<Error | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   useEffect(() => {
-    if (!missionId) {
-      setLoading(false);
-      return;
-    }
+    if (!missionId) return;
 
     let cancelled = false;
 

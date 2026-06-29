@@ -64,23 +64,14 @@ export function useBuddyProfile(
   const [buddyDraft, setBuddyDraft] = useState(() =>
     emptyBuddyDraft(sessionId)
   );
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!playerId);
   const [error, setError] = useState<Error | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   useEffect(() => {
-    if (!playerId) {
-      if (options.role === "gamemaker") {
-        setBuddyDraft(emptyBuddyDraft(sessionId));
-        setSavedBuddy(null);
-      } else {
-        setBuddy(null);
-      }
-      setLoading(false);
-      return;
-    }
+    if (!playerId) return;
 
     let cancelled = false;
 

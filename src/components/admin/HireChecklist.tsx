@@ -36,6 +36,7 @@ const HireChecklist = ({
   const newInputRef = useRef<HTMLInputElement>(null);
   const dragIndexRef = useRef<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
 
   const checkedCount = items.filter((i) => i.checked).length;
   const total = items.length;
@@ -224,6 +225,7 @@ const HireChecklist = ({
               draggable
               onDragStart={() => {
                 dragIndexRef.current = idx;
+                setDraggingIndex(idx);
               }}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -234,10 +236,12 @@ const HireChecklist = ({
                 if (from !== null && from !== idx) onReorder(from, idx);
                 dragIndexRef.current = null;
                 setDragOverIndex(null);
+                setDraggingIndex(null);
               }}
               onDragEnd={() => {
                 dragIndexRef.current = null;
                 setDragOverIndex(null);
+                setDraggingIndex(null);
               }}
               style={{
                 display: "flex",
@@ -248,7 +252,7 @@ const HireChecklist = ({
                   : "1px solid hsl(var(--color-border))",
                 padding: "var(--space-1) 0",
                 minHeight: "var(--min-touch)",
-                opacity: dragIndexRef.current === idx ? 0.4 : 1,
+                opacity: draggingIndex === idx ? 0.4 : 1,
                 transition: "border-color 0.1s",
               }}
             >

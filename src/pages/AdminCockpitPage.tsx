@@ -81,9 +81,9 @@ const AdminCockpitPage = () => {
   >({});
 
   // Keep-mounted pattern for setup view (preserve unsaved map edits)
-  const hasVisitedSetup = useRef(false);
-  if (viewMode === "setup") {
-    hasVisitedSetup.current = true;
+  const [hasVisitedSetup, setHasVisitedSetup] = useState(false);
+  if (viewMode === "setup" && !hasVisitedSetup) {
+    setHasVisitedSetup(true);
   }
 
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -676,7 +676,7 @@ const AdminCockpitPage = () => {
       })()}
 
       {/* Keep-mounted setup main: mounts on first visit, hidden when inactive */}
-      {hasVisitedSetup.current && (
+      {hasVisitedSetup && (
         <main
           className="admin-layout"
           data-testid="session-setup-main"
