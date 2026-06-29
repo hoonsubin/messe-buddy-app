@@ -30,72 +30,29 @@ const PreBoardingChecklist = (props: PreBoardingChecklistProps) => {
     <section
       aria-label="Pre-boarding checklist"
       data-testid="pre-boarding-checklist"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-4)",
-      }}
+      className="preboarding-checklist"
     >
-      <div
-        className="card"
-        style={{
-          padding: "var(--space-5)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-4)",
-        }}
-      >
+      <div className="card preboarding-checklist__card">
         <header>
-          <h2
-            style={{
-              margin: "0 0 var(--space-1)",
-              fontFamily: "var(--font-display)",
-              fontSize: "var(--text-lg)",
-              fontWeight: "var(--weight-semibold)",
-              color: "hsl(var(--color-fg))",
-              lineHeight: "var(--leading-tight)",
-            }}
-          >
+          <h2 className="preboarding-checklist__title">
             {playerName
               ? `Before ${playerName}'s first day`
               : "Pre-Boarding Checklist"}
           </h2>
-          <p
-            style={{
-              margin: 0,
-              fontSize: "var(--text-sm)",
-              color: "hsl(var(--color-muted-fg))",
-            }}
-          >
+          <p className="preboarding-checklist__summary">
             {completedCount} of {items.length} tasks complete
           </p>
         </header>
 
-        <ul
-          style={{
-            listStyle: "none",
-            padding: 0,
-            margin: 0,
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--space-2)",
-          }}
-        >
+        <ul className="preboarding-checklist__list">
           {items.map((item) => (
             <li key={item.id}>
               <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--space-3)",
-                  padding: "var(--space-2) var(--space-3)",
-                  borderRadius: "var(--radius-md)",
-                  background: item.checked
-                    ? "hsl(var(--color-status-complete) / 0.08)"
-                    : "hsl(var(--color-bg))",
-                  minHeight: "var(--min-touch)",
-                  cursor: "pointer",
-                }}
+                className={`preboarding-checklist__item-label${
+                  item.checked
+                    ? " preboarding-checklist__item-label--checked"
+                    : " preboarding-checklist__item-label--unchecked"
+                }`}
               >
                 <input
                   type="checkbox"
@@ -105,39 +62,25 @@ const PreBoardingChecklist = (props: PreBoardingChecklistProps) => {
                 />
                 <span
                   aria-hidden="true"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    flexShrink: 0,
-                    fontSize: "var(--text-xl)",
-                    color: item.checked
-                      ? "hsl(var(--color-status-complete))"
-                      : "hsl(var(--color-muted-fg))",
-                  }}
+                  className={`preboarding-checklist__item-icon${
+                    item.checked
+                      ? " preboarding-checklist__item-icon--checked"
+                      : " preboarding-checklist__item-icon--unchecked"
+                  }`}
                 >
                   {item.checked ? <MdCheckBox /> : <MdCheckBoxOutlineBlank />}
                 </span>
                 <span
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: item.checked
-                      ? "hsl(var(--color-status-complete))"
-                      : "hsl(var(--color-fg))",
-                    fontWeight: "var(--weight-medium)",
-                    textDecoration: item.checked ? "line-through" : "none",
-                    flex: 1,
-                  }}
+                  className={`preboarding-checklist__item-text${
+                    item.checked
+                      ? " preboarding-checklist__item-text--checked"
+                      : " preboarding-checklist__item-text--unchecked"
+                  }`}
                 >
                   {item.label}
                 </span>
                 {item.dueDate && (
-                  <span
-                    style={{
-                      fontSize: "var(--text-xs)",
-                      color: "hsl(var(--color-muted-fg))",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
+                  <span className="preboarding-checklist__item-due">
                     Due {item.dueDate}
                   </span>
                 )}
@@ -153,7 +96,7 @@ const PreBoardingChecklist = (props: PreBoardingChecklistProps) => {
               e.preventDefault();
               handleAdd();
             }}
-            style={{ display: "flex", gap: "var(--space-2)" }}
+            className="preboarding-checklist__add-form"
           >
             <input
               className="form-input"
@@ -181,22 +124,11 @@ const PreBoardingChecklist = (props: PreBoardingChecklistProps) => {
         )}
 
         {/* Action row */}
-        <div
-          style={{
-            display: "flex",
-            gap: "var(--space-3)",
-            flexWrap: "wrap",
-          }}
-        >
+        <div className="preboarding-checklist__actions">
           <button
             type="button"
-            className="btn btn--secondary"
+            className="btn btn--secondary preboarding-checklist__add-btn"
             onClick={() => setAdding(true)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--space-1)",
-            }}
           >
             <MdAdd aria-hidden="true" /> Add item
           </button>

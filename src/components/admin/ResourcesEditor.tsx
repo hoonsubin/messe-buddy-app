@@ -69,40 +69,16 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
   return (
     <div
       data-testid="resources-editor"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-4)",
-      }}
+      className="resources-editor"
     >
-      <ul
-        style={{
-          listStyle: "none",
-          padding: 0,
-          margin: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-2)",
-        }}
-      >
+      <ul className="resources-editor__list">
         {props.resources.map((r) => (
           <li
             key={r.id}
-            className="card"
-            style={{
-              padding: "var(--space-2) var(--space-3)",
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--space-2)",
-            }}
+            className="card resources-editor__item"
           >
             <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                cursor: "pointer",
-                flexShrink: 0,
-              }}
+              className="resources-editor__toggle-label"
               aria-label={`Toggle visibility for ${r.title}`}
             >
               <input
@@ -113,14 +89,11 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
                 style={{ display: "none" }}
               />
               <span
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  fontSize: "var(--text-lg)",
-                  color: r.isVisibleToPlayer
-                    ? "hsl(var(--color-status-complete))"
-                    : "hsl(var(--color-muted-fg))",
-                }}
+                className={`resources-editor__toggle-icon${
+                  r.isVisibleToPlayer
+                    ? " resources-editor__toggle-icon--visible"
+                    : " resources-editor__toggle-icon--hidden"
+                }`}
               >
                 {r.isVisibleToPlayer
                   ? <MdCheckBox />
@@ -133,39 +106,13 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
               type="button"
               onClick={() => openEdit(r)}
               data-testid="resource-edit"
-              style={{
-                flex: 1,
-                minWidth: 0,
-                display: "flex",
-                alignItems: "center",
-                gap: "var(--space-2)",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                textAlign: "left",
-                padding: 0,
-              }}
+              className="resources-editor__edit-btn"
             >
-              <span style={{ minWidth: 0, flex: 1 }}>
-                <span
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    fontWeight: "var(--weight-medium)",
-                    color: "hsl(var(--color-fg))",
-                    display: "block",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
+              <span className="resources-editor__edit-text">
+                <span className="resources-editor__edit-title">
                   {r.title}
                 </span>
-                <span
-                  style={{
-                    fontSize: "var(--text-xs)",
-                    color: "hsl(var(--color-muted-fg))",
-                  }}
-                >
+                <span className="resources-editor__edit-type">
                   {r.type}
                 </span>
               </span>
@@ -178,10 +125,9 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
 
             <button
               type="button"
-              className="btn btn--ghost"
+              className="btn btn--ghost resources-editor__delete-btn"
               onClick={() => props.onDelete(r.id)}
               aria-label={`Remove ${r.title}`}
-              style={{ flexShrink: 0 }}
             >
               <MdClose size={16} aria-hidden="true" />
             </button>
@@ -202,26 +148,10 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
           onClick={close}
         >
           <div
-            className="card"
+            className="card resources-editor__modal"
             onClick={(e) => e.stopPropagation()}
-            style={{
-              width: "100%",
-              maxWidth: "26rem",
-              padding: "var(--space-5)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--space-4)",
-            }}
           >
-            <h3
-              style={{
-                margin: 0,
-                fontFamily: "var(--font-display)",
-                fontSize: "var(--text-lg)",
-                fontWeight: "var(--weight-semibold)",
-                color: "hsl(var(--color-fg))",
-              }}
-            >
+            <h3 className="resources-editor__modal-title">
               {editing === "new" ? "Add resource" : "Edit resource"}
             </h3>
 
@@ -262,16 +192,7 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
                 placeholder="https://..."
               />
             </div>
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "var(--space-2)",
-                fontSize: "var(--text-sm)",
-                color: "hsl(var(--color-fg))",
-                cursor: "pointer",
-              }}
-            >
+            <label className="resources-editor__visibility-label">
               <input
                 type="checkbox"
                 checked={draft.isVisibleToPlayer}
@@ -281,11 +202,10 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
               Visible to the new hire
             </label>
 
-            <div style={{ display: "flex", gap: "var(--space-2)" }}>
+            <div className="resources-editor__modal-actions">
               <button
                 type="button"
                 className="btn btn--ghost"
-                style={{ flex: 1 }}
                 onClick={close}
               >
                 Cancel
@@ -293,7 +213,6 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
               <button
                 type="button"
                 className="btn btn--primary"
-                style={{ flex: 1 }}
                 disabled={!canSave}
                 onClick={submit}
               >

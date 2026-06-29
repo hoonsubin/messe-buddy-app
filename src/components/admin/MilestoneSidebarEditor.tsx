@@ -48,13 +48,7 @@ const MilestoneSidebarEditor = (props: MilestoneSidebarEditorProps) => {
   if (!props.milestone) {
     return (
       <div className="sidebar" data-testid="milestone-sidebar-editor">
-        <p
-          style={{
-            padding: "var(--space-6)",
-            color: "hsl(var(--color-muted-fg))",
-            fontSize: "var(--text-sm)",
-          }}
-        >
+        <p className="milestone-sidebar-editor__empty">
           Select a milestone to edit
         </p>
       </div>
@@ -66,41 +60,23 @@ const MilestoneSidebarEditor = (props: MilestoneSidebarEditorProps) => {
       className="sidebar sidebar--open"
       data-testid="milestone-sidebar-editor"
     >
-      <div
-        style={{
-          padding: "var(--space-4) var(--space-5)",
-          borderBottom: "1px solid hsl(var(--color-border))",
-        }}
-      >
+      <div className="milestone-sidebar-editor__header">
         {isRenaming
           ? (
             <input
-              className="form-input"
+              className="form-input milestone-sidebar-editor__rename-input"
               type="text"
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
               onBlur={handleRenameSubmit}
               onKeyDown={handleRenameKeyDown}
               autoFocus
-              style={{
-                fontSize: "var(--text-lg)",
-                fontWeight: "var(--weight-semibold)",
-                width: "100%",
-              }}
             />
           )
           : (
             <button
               type="button"
-              className="btn btn--ghost"
-              style={{
-                margin: 0,
-                padding: 0,
-                fontSize: "var(--text-lg)",
-                fontWeight: "var(--weight-semibold)",
-                textAlign: "left",
-                width: "100%",
-              }}
+              className="btn btn--ghost milestone-sidebar-editor__rename-btn"
               onClick={handleRenameStart}
               title="Click to rename"
             >
@@ -109,35 +85,15 @@ const MilestoneSidebarEditor = (props: MilestoneSidebarEditorProps) => {
           )}
       </div>
 
-      <div
-        style={{
-          padding: "var(--space-3) var(--space-4)",
-          borderBottom: "1px solid hsl(var(--color-border))",
-        }}
-      >
-        <ul
-          style={{
-            listStyle: "none",
-            padding: 0,
-            margin: 0,
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--space-1)",
-          }}
-        >
+      <div className="milestone-sidebar-editor__mission-list">
+        <ul className="milestone-sidebar-editor__missions">
           {props.missions.map((m) => (
             <li key={m.id}>
               <button
                 type="button"
-                className={`btn btn--ghost${
+                className={`btn btn--ghost milestone-sidebar-editor__mission-btn${
                   props.activeMissionId === m.id ? " btn--active" : ""
                 }`}
-                style={{
-                  width: "100%",
-                  textAlign: "left",
-                  justifyContent: "flex-start",
-                  fontSize: "var(--text-sm)",
-                }}
                 onClick={() => props.onMissionSelect(m.id)}
               >
                 {m.title}
@@ -147,8 +103,7 @@ const MilestoneSidebarEditor = (props: MilestoneSidebarEditorProps) => {
         </ul>
         <button
           type="button"
-          className="btn btn--secondary"
-          style={{ marginTop: "var(--space-3)", width: "100%" }}
+          className="btn btn--secondary milestone-sidebar-editor__add-btn"
           onClick={props.onAddMission}
         >
           + Add mission
@@ -156,13 +111,7 @@ const MilestoneSidebarEditor = (props: MilestoneSidebarEditorProps) => {
       </div>
 
       {props.draft && (
-        <div
-          style={{
-            padding: "var(--space-4) var(--space-5)",
-            flex: 1,
-            overflowY: "auto",
-          }}
-        >
+        <div className="milestone-sidebar-editor__editor-area">
           <MissionEditor
             draft={props.draft}
             xpPreview={props.xpPreview}
@@ -171,12 +120,7 @@ const MilestoneSidebarEditor = (props: MilestoneSidebarEditorProps) => {
         </div>
       )}
 
-      <div
-        style={{
-          padding: "var(--space-3) var(--space-4)",
-          borderTop: "1px solid hsl(var(--color-border))",
-        }}
-      >
+      <div className="milestone-sidebar-editor__save-area">
         <SaveActions
           isDirty={props.isDirty}
           isSaving={props.isSaving}
