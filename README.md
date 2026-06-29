@@ -33,7 +33,6 @@ MesseBuddy is a **mobile-first Progressive Web App** that turns the onboarding j
 | Backend | [PocketBase](https://pocketbase.io) (Go binary, REST + SSE + SQLite) |
 | AI Gateway | [LiteLLM Proxy](https://litellm.ai) (OpenAI-compatible `/chat/completions`) |
 | Vector DB | [PostgreSQL](https://www.postgresql.org) + [pgvector](https://github.com/pgvector/pgvector) |
-| Cache | [Redis](https://redis.io) (LiteLLM rate-limiting / state) |
 | Hosting | Docker Compose (7 services), GitHub Pages |
 
 > [!NOTE]
@@ -163,7 +162,6 @@ Copy [`.env.example`](.env.example) to `.env` and configure. Key variables:
 | `VITE_LITELLM_MODEL` | No | `policy-assistant` | Stable model alias the PWA sends |
 | `PB_AUTO_MIGRATE` | No | `true` | `"false"` after initial deploy to prevent re-migration |
 | `POSTGRES_PASSWORD` | Yes* | `changeme` | PostgreSQL password (change in production) |
-| `REDIS_PASSWORD` | Yes* | `changeme` | Redis password (change in production) |
 | `EMBEDDING_MODEL` | No | `nomic-embed-text-v2-moe` | RAG embedding model |
 | `RERANK_ENABLED` | No | `true` | `"false"` → plain vector-similarity order |
 

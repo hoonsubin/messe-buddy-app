@@ -15,12 +15,6 @@ model_list:
       api_base: https://litellm.hoonlabs.xyz/v1
       api_key: os.environ/LLM_SERVER_API_KEY
       vector_store_ids: ["messe-buddy-kb"]
-      # rpm/tpm must be explicit ints, not left unset: with REDIS_HOST/PORT
-      # set on the litellm container, the router's Redis-backed usage
-      # tracker compares accumulated per-minute counts against these limits.
-      # Left unset they default to None, and that comparison crashes with
-      # "'>' not supported between instances of 'NoneType' and 'int'" once
-      # enough requests accumulate (see BerriAI/litellm#7308).
       rpm: 500
       tpm: 1000000
     model_info:

@@ -10,7 +10,6 @@
 #   litellm-pgvector - PG Vector Store connector (:8001), doc upload + search
 #   litellm-db       - PostgreSQL for LiteLLM metadata
 #   vector-db        - PostgreSQL + pgvector for RAG embeddings
-#   redis            - LiteLLM cache / rate-limit state
 #   init-vector-store - one-shot bootstrap of the vector store (exits after completion)
 
 services:
@@ -133,9 +132,6 @@ services:
       PG_VECTOR_API_BASE: http://litellm-pgvector:8001
       PG_VECTOR_API_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
       DATABASE_URL: postgresql://${POSTGRES_USER:-litellm}:${POSTGRES_PASSWORD:-changeme}@litellm-db:5432/${POSTGRES_DB:-litellm}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
     env_file:
       - path: .env
         required: false
@@ -258,33 +254,12 @@ services:
     networks:
       - litellm-external
 
-  # -- Redis (LiteLLM cache / rate-limit state) --
-  redis:
-    image: redis:8.8-trixie
-    container_name: litellm-redis
-    restart: unless-stopped
-    command: >
-      redis-server
-      --requirepass ${REDIS_PASSWORD:-changeme}
-      --maxmemory 512mb
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-changeme}", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - litellm-internal
-
 volumes:
   pb_data:
     driver: local
   litellm_db_data:
     driver: local
   vector_db_data:
-    driver: local
-  redis_data:
     driver: local
   app_runtime:
     driver: local
