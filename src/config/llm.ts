@@ -33,12 +33,6 @@ export const LLM_MODEL: string = rt.llmModel ?? env.VITE_LITELLM_MODEL ??
 // Full chat-completions endpoint.
 export const LLM_CHAT_URL = `${LLM_BASE_URL}/v1/chat/completions`;
 
-// Mock vs. real. Runtime config decides in the container; otherwise defaults to
-// mock so the app runs with no key (dev, CI). Set VITE_USE_MOCK_CHAT="false"
-// for a keyed dev build.
-export const USE_MOCK_CHAT: boolean = rt.useMockChat ??
-  (env.VITE_USE_MOCK_CHAT !== "false");
-
 // System prompt sent as the first message of every request.
 //
 // NOTE: LiteLLM's `general_settings.default_system_prompt` in docker/litellm.yaml

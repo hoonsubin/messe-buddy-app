@@ -25,8 +25,6 @@ PY_DIRS = ["docker", "scripts"]
 # Other .py files are syntax-checked only.
 RUNTIME_FILES = {
     "docker/file-watcher/watcher.py",
-    "docker/init-vector-store/init.py",
-    "docker/init-vector-store/helpers.py",
 }
 
 

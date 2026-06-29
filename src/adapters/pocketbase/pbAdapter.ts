@@ -177,6 +177,24 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     }
   };
 
+  const getPlayerByInviteToken = async (
+    token: string,
+    sessionId: string,
+  ): Promise<Player | null> => {
+    if (!token) return null;
+    try {
+      const record = await pb.collection("players").getFirstListItem(
+        pb.filter(
+          "sessionId = {:sessionId} && inviteToken = {:token}",
+          { sessionId, token },
+        ),
+      );
+      return marshalPlayer(pb, record);
+    } catch {
+      return null;
+    }
+  };
+
   const listPlayers = async (
     sessionId: string,
   ): Promise<ReadonlyArray<Player>> => {
@@ -476,6 +494,7 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     createPlayer,
     updatePlayer,
     getPlayerByRecoveryKey,
+    getPlayerByInviteToken,
     listPlayers,
     listMilestones,
     createMilestone,

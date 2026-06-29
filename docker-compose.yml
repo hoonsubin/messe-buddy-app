@@ -10,8 +10,7 @@
 #   litellm-pgvector - PG Vector Store connector (:8001), doc upload + search
 #   litellm-db       - PostgreSQL for LiteLLM metadata
 #   vector-db        - PostgreSQL + pgvector for RAG embeddings
-#   redis            - LiteLLM cache / rate-limit state
-#   init-vector-store - one-shot bootstrap of the vector store (exits after completion)
+#   file-watcher     - bootstraps the vector store once, then watches consume-docs forever
 
 services:
 
@@ -74,11 +73,6 @@ services:
     container_name: litellm-pgvector
     ports:
       - "8001:8001"
-    volumes:
-      - ./docker/patches/litellm-pgvector/embedding_service.py:/app/embedding_service.py:ro
-      - ./docker/patches/litellm-pgvector/main.py:/app/main.py:ro
-      - ./docker/patches/litellm-pgvector/enable_vector_ext.py:/app/enable_vector_ext.py:ro
-      - ./docker/patches/litellm-pgvector/prisma/schema.prisma:/app/prisma/schema.prisma:ro
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-litellm}:${POSTGRES_PASSWORD:-changeme}@vector-db:5432/${POSTGRES_VECTOR_DB:-litellm_vector}
       SERVER_API_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
@@ -138,9 +132,6 @@ services:
       PG_VECTOR_API_BASE: http://litellm-pgvector:8001
       PG_VECTOR_API_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
       DATABASE_URL: postgresql://${POSTGRES_USER:-litellm}:${POSTGRES_PASSWORD:-changeme}@litellm-db:5432/${POSTGRES_DB:-litellm}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
     env_file:
       - path: .env
         required: false
@@ -164,13 +155,16 @@ services:
       retries: 3
       start_period: 30s
 
-  # -- Vector Store Initializer --
-  # One-shot bootstrap: creates the vector store in pgvector and registers it in LiteLLM.
-  # Required on first deploy. Workaround for: https://github.com/BerriAI/litellm/issues/25947
-  init-vector-store:
+  # -- File Watcher --
+  # Bootstraps the vector store + LiteLLM registration once (idempotent —
+  # safe to re-run on every restart), mints the PWA's virtual key, then
+  # watches consume-docs forever for changes (add / modify / delete).
+  # Absorbs what used to be the separate one-shot init-vector-store
+  # container. Workaround for: https://github.com/BerriAI/litellm/issues/25947
+  file-watcher:
     build:
-      context: ./docker/init-vector-store
-    container_name: messebuddy-init-vector-store
+      context: ./docker/file-watcher
+    container_name: messebuddy-file-watcher
     environment:
       POSTGRES_VECTOR_DB: ${POSTGRES_VECTOR_DB:-litellm_vector}
       POSTGRES_VECTOR_HOST: vector-db
@@ -181,6 +175,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
       POSTGRES_DB: ${POSTGRES_DB:-litellm}
       LITELLM_DB_HOST: litellm-db
+      # Char-based chunking (no token counting) - keep chunks comfortably
+      # under the embedding server's context window (2048 tokens, nomic
+      # v1.5 on llama.cpp) since dense text can run well above 4 chars/token.
+      CHUNK_SIZE: ${CHUNK_SIZE:-2800}
+      OVERLAP: ${OVERLAP:-280}
     volumes:
       - ./consume-docs:/consume-docs:ro
       - app_runtime:/runtime
@@ -193,30 +192,6 @@ services:
         condition: service_healthy
       litellm-db:
         condition: service_healthy
-    networks:
-      - litellm-internal
-    restart: "no"
-
-  # -- File Watcher --
-  # Long-running container that watches consume-docs for changes and
-  # updates pgvector embeddings incrementally (add / modify / delete).
-  # Runs after init-vector-store completes, in parallel with the app.
-  file-watcher:
-    build:
-      context: ./docker/file-watcher
-    container_name: messebuddy-file-watcher
-    environment:
-      POSTGRES_VECTOR_DB: ${POSTGRES_VECTOR_DB:-litellm_vector}
-      POSTGRES_VECTOR_HOST: vector-db
-      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
-      VECTOR_STORE_ID: "messe-buddy-kb"
-      POSTGRES_USER: ${POSTGRES_USER:-litellm}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-    volumes:
-      - ./consume-docs:/consume-docs:ro
-    depends_on:
-      init-vector-store:
-        condition: service_completed_successfully
     networks:
       - litellm-internal
     restart: unless-stopped
@@ -233,7 +208,6 @@ services:
         VITE_USE_MOCK_PB: ${VITE_USE_MOCK_PB:-false}
         VITE_LITELLM_URL: ${VITE_LITELLM_URL:-http://localhost:4000}
         VITE_LITELLM_MODEL: ${VITE_LITELLM_MODEL:-policy-assistant}
-        VITE_USE_MOCK_CHAT: ${VITE_USE_MOCK_CHAT:-true}
     ports:
       - "${APP_PORT:-80}:80"
       - "${APP_HTTPS_PORT:-443}:443"
@@ -251,29 +225,10 @@ services:
       PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-}
     restart: unless-stopped
     depends_on:
-      init-vector-store:
-        condition: service_completed_successfully
+      litellm:
+        condition: service_healthy
     networks:
       - litellm-external
-
-  # -- Redis (LiteLLM cache / rate-limit state) --
-  redis:
-    image: redis:8.8-trixie
-    container_name: litellm-redis
-    restart: unless-stopped
-    command: >
-      redis-server
-      --requirepass ${REDIS_PASSWORD:-changeme}
-      --maxmemory 512mb
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-changeme}", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - litellm-internal
 
 volumes:
   pb_data:
@@ -281,8 +236,6 @@ volumes:
   litellm_db_data:
     driver: local
   vector_db_data:
-    driver: local
-  redis_data:
     driver: local
   app_runtime:
     driver: local

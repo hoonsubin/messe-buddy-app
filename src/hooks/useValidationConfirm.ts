@@ -62,13 +62,7 @@ export const useValidationConfirm = (
   }, []);
 
   useEffect(() => {
-    if (!token) {
-      setErrorKind("missing_token");
-      setErrorMessage(
-        "Missing validation token. Scan a player QR code or open a full validation link.",
-      );
-      return;
-    }
+    if (!token) return;
 
     if (!sessionId || sessionLoading || sessionError || !session) return;
 

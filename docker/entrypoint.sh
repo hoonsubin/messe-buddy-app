@@ -2,9 +2,10 @@
 # App container entrypoint.
 #
 # Runs before supervisord. Reads the front-end virtual key minted at runtime by
-# init-vector-store (shared volume at /runtime/virtual_key), renders the nginx
-# config with that key injected into the /llm proxy, and writes the runtime
-# config.js the PWA reads at boot. Then hands off to supervisord.
+# file-watcher's bootstrap step (shared volume at /runtime/virtual_key),
+# renders the nginx config with that key injected into the /llm proxy, and
+# writes the runtime config.js the PWA reads at boot. Then hands off to
+# supervisord.
 set -eu
 
 KEY_FILE="/runtime/virtual_key"
@@ -40,8 +41,11 @@ else
 fi
 
 # ── Virtual key ─────────────────────────────────────────────────────────────
-# init-vector-store completes before this container starts (compose depends_on
-# service_completed_successfully), but guard against an empty/late file.
+# This container does NOT wait on file-watcher's bootstrap (only on litellm
+# being healthy) — bootstrap mints the key in the background, independent
+# of however long document ingestion takes, so the app can start serving
+# pages immediately. This poll is the real wait for that key to land, not
+# just a guard against an edge case.
 i=0
 while [ "$i" -lt 30 ]; do
   [ -s "$KEY_FILE" ] && break
@@ -62,10 +66,11 @@ envsubst '${KEY}' < "$NGINX_TEMPLATE" > "$NGINX_CONF"
 
 # Front-end runtime config: same-origin proxy for LLM and PB.
 # llmBaseUrl: same-origin /llm proxy (nginx injects Authorization server-side).
-# useMockChat: false in production (real LLM streaming).
+# Live vs. mock chat is decided at runtime by the PWA itself (it polls
+# /llm/health/readiness) - no useMockChat flag to set here.
 # pbUrl: unset (browser uses same-origin /api; the adapter defaults to /api).
 cat > "$CONFIG_JS" <<'EOF'
-window.__MB_CONFIG__ = { llmBaseUrl: "/llm", useMockChat: false, useMockPb: false };
+window.__MB_CONFIG__ = { llmBaseUrl: "/llm", useMockPb: false };
 EOF
 
 echo "entrypoint: configured /llm proxy and config.js; starting supervisord"

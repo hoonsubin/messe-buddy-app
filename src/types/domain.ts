@@ -44,6 +44,7 @@ export interface Player extends PBRecord {
   readonly pronouns?: string;
   readonly avatarUrl?: string; // PB file ref
   readonly role: string; // job title, e.g. "Senior Engineer"
+  readonly department?: string; // organisational unit, e.g. "Marketing"
   readonly team: string;
   readonly startDate: string;
   readonly location: string;
@@ -54,6 +55,7 @@ export interface Player extends PBRecord {
   readonly workStyle?: string;
   readonly energizers?: ReadonlyArray<string>;
   readonly drainers?: ReadonlyArray<string>;
+  readonly inviteToken?: string; // one-time claim token; cleared on join; admin-visible only
 }
 
 export interface BuddyProfile extends PBRecord {

@@ -15,18 +15,14 @@ export const useProgressPlayer = (
   const [progressEvents, setProgressEvents] = useState<
     ReadonlyArray<ProgressEvent>
   >([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!playerId);
   const [error, setError] = useState<Error | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   useEffect(() => {
-    if (!playerId) {
-      setProgressEvents([]);
-      setLoading(false);
-      return;
-    }
+    if (!playerId) return;
 
     let cancelled = false;
 

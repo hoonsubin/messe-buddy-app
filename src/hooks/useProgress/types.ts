@@ -13,6 +13,13 @@ export interface HireProgressRow {
   readonly progressPercent: number;
   readonly daysSinceLastActivity: number | null;
   readonly isStalled: boolean;
+  /** Sum of earnedXP across all milestones */
+  readonly totalXP: number;
+  /** Name of the active (in-progress) or next upcoming milestone */
+  readonly currentMilestoneName: string;
+  /** 1-based position of the current milestone, sorted by milestone.order */
+  readonly currentMilestoneIndex: number;
+  readonly totalMilestones: number;
 }
 
 export interface UseProgressPlayerOptions {

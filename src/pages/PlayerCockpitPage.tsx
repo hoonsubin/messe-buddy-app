@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { MdArrowBack } from "react-icons/md";
 import type { Mission } from "../types/index.ts";
 import { MISSION_TYPE, USER_ROLE } from "../types/index.ts";
 import { useActiveProfile } from "../hooks/useActiveProfile.ts";
@@ -13,6 +12,7 @@ import { useResources } from "../hooks/useResources.ts";
 import { useTutorial } from "../hooks/useTutorial.ts";
 import ConfirmDialog from "../components/shared/ConfirmDialog.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
+import ProfileEditSheet from "../components/shared/ProfileEditSheet.tsx";
 import AssistantChatCard from "../components/player/AssistantChatCard.tsx";
 import MilestoneMapViewer from "../components/player/MilestoneMapViewer.tsx";
 import MilestoneSidebarViewer from "../components/player/MilestoneSidebarViewer.tsx";
@@ -93,6 +93,11 @@ const PlayerCockpitPage = () => {
     null,
   );
   const [popupMission, setPopupMission] = useState<Mission | null>(null);
+  const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
+
+  const handleAvatarClick = useCallback(() => {
+    setIsProfileEditOpen(true);
+  }, []);
 
   const handleMissionClick = useCallback(
     (missionId: string, fromTutorial = false) => {
@@ -118,6 +123,13 @@ const PlayerCockpitPage = () => {
   );
 
   const currentMissions = missions.filter((m) => m.isInCurrentMissions);
+  const missionCountsByMilestone = missions.reduce<Record<string, number>>(
+    (acc, m) => {
+      acc[m.milestoneId] = (acc[m.milestoneId] ?? 0) + 1;
+      return acc;
+    },
+    {},
+  );
   const selectedMilestone = selectedMilestoneId !== null
     ? (milestones.find((m) => m.id === selectedMilestoneId) ?? undefined)
     : undefined;
@@ -256,40 +268,39 @@ const PlayerCockpitPage = () => {
         playerName={player?.name ?? ""}
         totalXP={progress.playerProgress?.totalXP ?? 0}
         role={player?.role ?? ""}
+        onAvatarClick={handleAvatarClick}
+        onLogout={() => {
+          sessionStorage.removeItem("mb_tutorial_step");
+          sessionStorage.removeItem("mb_tutorial_form_pending");
+          if (identity && !identity.isDemo) {
+            removeProfile(identity.uid);
+          }
+          navigate("/", { replace: true });
+        }}
       />
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-start",
-          padding: "var(--space-2) var(--space-4)",
-          background: "hsl(var(--color-card))",
-          borderBottom: "1px solid hsl(var(--color-border))",
-        }}
-      >
-        <button
-          type="button"
-          className="btn btn--ghost"
-          style={{
-            fontSize: "var(--text-sm)",
-            color: "hsl(var(--color-muted-fg))",
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--space-1)",
+      {player !== null && (
+        <ProfileEditSheet
+          isOpen={isProfileEditOpen}
+          variant="player"
+          avatarUrl={player.avatarUrl}
+          initialValues={{
+            name: player.name ?? "",
+            preferredName: player.preferredName ?? "",
+            role: player.role ?? "",
+            department: player.department ?? "",
           }}
-          onClick={() => {
-            sessionStorage.removeItem("mb_tutorial_step");
-            sessionStorage.removeItem("mb_tutorial_form_pending");
-            if (identity && !identity.isDemo) {
-              removeProfile(identity.uid);
-            }
-            navigate("/", { replace: true });
+          onSave={async (fields) => {
+            await updatePlayer({
+              name: fields.name,
+              preferredName: fields.preferredName || undefined,
+              role: fields.role,
+              department: fields.department || undefined,
+            });
           }}
-        >
-          <MdArrowBack size={16} />
-          {identity?.isDemo ? "Back to Landing" : "Log Out"}
-        </button>
-      </div>
+          onClose={() => setIsProfileEditOpen(false)}
+        />
+      )}
 
       {popupMission !== null && player !== null && (
         <MissionDetailPopup
@@ -336,6 +347,18 @@ const PlayerCockpitPage = () => {
           >
             Welcome{player?.name ? `, ${player.name.split(" ")[0]}` : ""}.
           </h1>
+          {(player?.role || player?.department) && (
+            <p
+              style={{
+                fontSize: "var(--text-sm)",
+                color: "hsl(var(--color-muted-fg))",
+                margin: "0 0 var(--space-1)",
+                lineHeight: "var(--leading-normal)",
+              }}
+            >
+              {[player.role, player.department].filter(Boolean).join(" · ")}
+            </p>
+          )}
           <p
             style={{
               fontSize: "var(--text-sm)",
@@ -365,6 +388,7 @@ const PlayerCockpitPage = () => {
                   milestoneProgress={progress.playerProgress
                     ?.milestoneProgress ??
                     []}
+                  missionCounts={missionCountsByMilestone}
                   playerXPercent={currentMilestone?.xPercent}
                   playerYPercent={currentMilestone?.yPercent}
                   onMilestoneClick={(id) => setSelectedMilestoneId(id)}

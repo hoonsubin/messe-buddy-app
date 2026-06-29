@@ -33,7 +33,6 @@ MesseBuddy is a **mobile-first Progressive Web App** that turns the onboarding j
 | Backend | [PocketBase](https://pocketbase.io) (Go binary, REST + SSE + SQLite) |
 | AI Gateway | [LiteLLM Proxy](https://litellm.ai) (OpenAI-compatible `/chat/completions`) |
 | Vector DB | [PostgreSQL](https://www.postgresql.org) + [pgvector](https://github.com/pgvector/pgvector) |
-| Cache | [Redis](https://redis.io) (LiteLLM rate-limiting / state) |
 | Hosting | Docker Compose (7 services), GitHub Pages |
 
 > [!NOTE]
@@ -67,7 +66,7 @@ deno task dev
 The app runs at `http://localhost:5173` with hot module replacement. By default the app uses the mock adapter, so no PocketBase or LiteLLM is needed.
 
 > [!TIP]
-> Set `VITE_USE_MOCK_PB=true` and `VITE_USE_MOCK_CHAT=true` in your environment to develop with fully simulated data and a stub chat.
+> Set `VITE_USE_MOCK_PB=true` in your environment to develop with fully simulated data. The AI assistant always self-detects: live when `/llm/health/readiness` is reachable, the stub chat otherwise — no flag needed.
 
 ### Full-stack with Docker
 
@@ -127,7 +126,7 @@ messe-buddy-app/
 │   ├── nginx.conf          # nginx routing template
 │   ├── litellm.yaml        # LiteLLM proxy configuration
 │   ├── supervisor.conf     # Supervisord config (nginx + PocketBase)
-│   └── init-vector-store/  # One-shot vector store bootstrapper
+│   └── file-watcher/       # Bootstraps the vector store, then watches consume-docs forever
 ├── consume-docs/           # Source documents for RAG ingestion
 ├── design/                 # Wireframes and design tokens
 ├── scripts/                # Utility scripts (package.json generator, etc.)
@@ -158,29 +157,23 @@ Copy [`.env.example`](.env.example) to `.env` and configure. Key variables:
 | `LLM_SERVER_API_KEY` | Yes | — | LLM API key for embeddings + chat + reranker |
 | `LITELLM_MASTER_KEY` | Yes | `sk-change-me-in-prod` | Proxy management + pgvector connector auth |
 | `VITE_USE_MOCK_PB` | No | `true` | `"false"` in production — real PocketBase adapter |
-| `VITE_USE_MOCK_CHAT` | No | `true` | `"false"` in docker-compose → live AI streaming via the runtime-injected virtual key |
 | `VITE_LITELLM_URL` | No | `http://localhost:4000` | Build-time: LiteLLM proxy URL |
 | `VITE_LITELLM_MODEL` | No | `policy-assistant` | Stable model alias the PWA sends |
 | `PB_AUTO_MIGRATE` | No | `true` | `"false"` after initial deploy to prevent re-migration |
 | `POSTGRES_PASSWORD` | Yes* | `changeme` | PostgreSQL password (change in production) |
-| `REDIS_PASSWORD` | Yes* | `changeme` | Redis password (change in production) |
 | `EMBEDDING_MODEL` | No | `nomic-embed-text-v2-moe` | RAG embedding model |
 | `RERANK_ENABLED` | No | `true` | `"false"` → plain vector-similarity order |
 
 > [!NOTE]
 > `VITE_*` variables are **build-time** — they are frozen into the JS bundle and require a rebuild to change. Override via Docker build args for non-localhost deployments.
 >
-> The `messebuddy-pwa` LiteLLM virtual key is never a build arg: `init-vector-store` mints it after the image is built and `entrypoint.sh` injects it into the nginx `/llm` proxy at container start, so the browser bundle never sees a key. There is no `VITE_LITELLM_KEY` to set for a `docker compose up` deployment.
+> The `messebuddy-pwa` LiteLLM virtual key is never a build arg: `file-watcher`'s bootstrap step mints it after the image is built and `entrypoint.sh` injects it into the nginx `/llm` proxy at container start, so the browser bundle never sees a key. There is no `VITE_LITELLM_KEY` to set for a `docker compose up` deployment.
 >
 > `VITE_PB_URL` is hardcoded to `/` in `docker-compose.yml` (same-origin nginx proxy) and is **not** read from `.env`. For a split-host deployment, pass it as an explicit CLI override — see [Docker Build](#docker-build) below.
 
 ### RAG Knowledge Base
 
-Documents in [`consume-docs/`](consume-docs/) are chunked, embedded, and stored in pgvector for the chatbot to retrieve. After adding or editing documents:
-
-```sh
-docker compose run --rm init-vector-store
-```
+Documents in [`consume-docs/`](consume-docs/) are chunked, embedded, and stored in pgvector for the chatbot to retrieve. The `file-watcher` service watches that directory continuously — just add, edit, or remove a file and it's picked up automatically (no manual command, no restart needed).
 
 No application code changes required — LiteLLM handles retrieval at request time using the configured embedding and reranker models.
 
