@@ -13,7 +13,7 @@ import {
   LLM_SYSTEM_PROMPT,
 } from "../config/llm.ts";
 
-// Local message shape (domain ChatMessage type deferred to Phase 8).
+// Local message shape (domain ChatMessage type not yet in domain types).
 export interface ChatMessage {
   readonly role: "user" | "assistant";
   readonly content: string;

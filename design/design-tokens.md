@@ -14,7 +14,7 @@ Mobile-first. Primary smoke viewport: **390×844** (iPhone-class). Admin desktop
 | Semantic usage | `hsl(var(--color-*))` or `hsl(var(--color-*) / 0.5)` | Always compose alpha this way |
 | Utility classes | [`src/styles/utilities.css`](../src/styles/utilities.css) | `core-{property}` prefix for single-purpose utilities |
 | UI primitive CSS | [`src/styles/components/button.css`](../src/styles/components/button.css) etc. | BEM blocks for Button, Card, Form, Avatar |
-| Pattern / domain CSS | [`src/styles/components/`](../src/styles/components/), [`src/styles/legacy.css`](../src/styles/legacy.css) | Migrating to focused files each phase |
+| Pattern / domain CSS | [`src/styles/components/`](../src/styles/components/), [`src/styles/layouts/`](../src/styles/layouts/), [`src/styles/legacy.css`](../src/styles/legacy.css) | Prefer focused files; `legacy.css` is temporary |
 | Import manifest | [`src/index.css`](../src/index.css) | Fonts + ordered `@import` only |
 | React primitives | [`src/components/ui/`](../src/components/ui/) | Typed wrappers over BEM classes |
 | Pages | `src/pages/**` | Compose primitives + patterns; < 200 lines |
@@ -404,4 +404,4 @@ After any UI change, verify on **390×844** (Playwright MCP, Firefox/iPhone 15 p
 
 ---
 
-*Last synced with codebase: 2026-06-29 (Phase 0–2: ui primitives, Modal/BottomSheet patterns, overlay migration).*
+*Last synced with codebase: 2026-06-29.*

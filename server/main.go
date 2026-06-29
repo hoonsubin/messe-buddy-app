@@ -30,7 +30,7 @@ func main() {
 
 	// qrSecret generation hook — fires after each session create.
 	// Generates a random 64-char hex string if qrSecret is empty.
-	// This is the HMAC secret for QR payload signing (C-16, Phase 6).
+	// This is the HMAC secret for QR payload signing (C-16).
 	app.OnRecordCreate("sessions").BindFunc(func(e *core.RecordEvent) error {
 		if e.Record.GetString("qrSecret") == "" {
 			b := make([]byte, 32)

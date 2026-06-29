@@ -1,4 +1,3 @@
-// Phase 1 shell - read-only preview of a template's missions. Logic wired in Phase 4.
 import type { Mission } from "../../types/index.ts";
 import XPBadge from "../shared/XPBadge.tsx";
 import TagBadge from "../shared/TagBadge.tsx";

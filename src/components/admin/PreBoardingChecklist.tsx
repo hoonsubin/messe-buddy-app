@@ -1,4 +1,3 @@
-// Phase 6 - wired pre-boarding checklist for the admin cockpit.
 // Checkbox toggle, inline add item, and mark-all-done callbacks.
 import { useState } from "react";
 import { MdAdd, MdCheckBox, MdCheckBoxOutlineBlank } from "react-icons/md";

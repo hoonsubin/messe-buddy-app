@@ -281,6 +281,8 @@ A multi-step modal for choosing what to import and where.
 
 ---
 
+> **Archived (2026):** Historical feature plan. Numbered milestones below reflect original delivery order, not current codebase status.
+
 ## 3. Implementation Phases
 
 ### Phase 0: Types & Constants

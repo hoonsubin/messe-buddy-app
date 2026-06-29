@@ -1,5 +1,4 @@
-// Renders a mission form with fields, description, and action buttons.
-// Phase 3 wiring: description, Save for Later, back navigation, isDraft.
+// Renders a mission form with fields, description, draft save, and back navigation.
 import type { FieldSchema } from "../../types/index.ts";
 import FormField from "./FormField.tsx";
 

@@ -89,7 +89,7 @@ tokens → ui primitives → patterns → domain components → pages
 | Domain | [`src/components/{admin,player,form,qr,tutorial}/`](src/components/) | Feature-specific UI |
 | Pages | [`src/pages/`](src/pages/) | Composition + data wiring only; **< 200 lines** |
 
-**CSS** lives in [`src/styles/`](src/styles/). [`src/index.css`](src/index.css) is an **import manifest only** (~25 lines). Add styles to the appropriate `src/styles/components/*.css` file — never grow `index.css` with rules. Remaining unmigrated styles are in [`src/styles/legacy.css`](src/styles/legacy.css) (shrinking each phase).
+**CSS** lives in [`src/styles/`](src/styles/). [`src/index.css`](src/index.css) is an **import manifest only** (~30 lines). Add styles to the appropriate `src/styles/components/*.css` or `src/styles/layouts/*.css` file — never grow `index.css` with rules. Unassigned styles remain in [`src/styles/legacy.css`](src/styles/legacy.css) until extracted; goal is to delete that file.
 
 ### UI Implementation Rules
 
@@ -105,7 +105,7 @@ tokens → ui primitives → patterns → domain components → pages
 ### Design Consistency
 
 - Authoritative tokens: [`design/design-tokens.md`](design/design-tokens.md)
-- Architecture & migration phases: [`design/component-architecture.md`](design/component-architecture.md)
+- Component architecture: [`design/component-architecture.md`](design/component-architecture.md)
 - Brand navy = `--color-primary`; Geist for all UI; Geist Mono for codes/keys only
 - Mobile-first at **390×844**; admin two-column at **≥ 40rem**
 
@@ -253,7 +253,7 @@ Follow up with `web_url_read` at pkg.go.dev, `raw.githubusercontent.com`, or off
 ## Reference
 
 - [`SPECS.md`](SPECS.md:1) - authoritative spec
-- [`design/component-architecture.md`](design/component-architecture.md) - UI layer model, CSS layout, migration phases
+- [`design/component-architecture.md`](design/component-architecture.md) - UI layer model, CSS layout, remaining work
 - [`design/design-tokens.md`](design/design-tokens.md) - color, type, spacing, component catalog
 - [`src/components/ui/index.ts`](src/components/ui/index.ts) - UI primitive exports
 - [`src/styles/tokens.css`](src/styles/tokens.css) - runtime design tokens

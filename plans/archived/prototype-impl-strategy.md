@@ -1,5 +1,8 @@
 # MesseBuddy - Implementation Strategy
-> **Scope:** First iteration interactable prototype for user testing, delivered at Phase 7
+
+> **Archived (2026):** Historical mock-first rollout plan. Milestone numbering below reflects original delivery order, not current codebase status. See [`SPECS.md`](../../SPECS.md) and [`design/component-architecture.md`](../../design/component-architecture.md) for active guidance.
+
+> **Scope:** First iteration interactable prototype for user testing
 > **Target repo:** `~/Projects/messe-buddy-app/`
 > **Spec authority:** `~/Projects/messe-buddy-app/SPECS.md`
 > **Wireframe authority:** `~/Projects/MesseBuddy/docs/MesseBuddy_Wireframe.html`

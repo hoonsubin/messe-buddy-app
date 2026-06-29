@@ -74,6 +74,7 @@ flowchart TB
 @import "./styles/tokens.css";
 @import "./styles/utilities.css";
 @import "./styles/layouts/page.css";
+@import "./styles/layouts/landing.css";
 @import "./styles/components/button.css";
 @import "./styles/components/card.css";
 @import "./styles/components/form.css";
@@ -83,11 +84,13 @@ flowchart TB
 @import "./styles/components/modal.css";
 @import "./styles/components/bottom-sheet.css";
 @import "./styles/components/a11y.css";
+@import "./styles/components/chat.css";
+@import "./styles/components/map.css";
 @import "./styles/components/shared.css";
 @import "./styles/components/player.css";
 @import "./styles/components/admin.css";
 @import "./styles/components/tutorial.css";
-@import "./styles/legacy.css";   /* shrinks each phase until removed */
+@import "./styles/legacy.css";   /* delete when empty — see Remaining CSS work */
 ```
 
 ### File naming
@@ -97,7 +100,7 @@ flowchart TB
 | `core-` | Utility class | `.core-flex-row` |
 | `.btn`, `.card` | Primitive BEM block | `button.css` |
 | `.topbar` | Pattern chrome | `topbar.css` |
-| `.landing__` | Page layout | `legacy.css` → `layouts/landing.css` |
+| `.landing__` | Page layout | `layouts/landing.css` |
 | `{feature}-` | Domain component | `mission-card` |
 
 ### Co-location rule
@@ -172,15 +175,15 @@ Maps to `.avatar` block. Replaces ad-hoc `topbar__avatar` inline styles.
 
 ## Patterns (Layer 2)
 
-Cross-cutting components that compose primitives. Migration target for `src/components/shared/` and overlay chrome.
+Cross-cutting components that compose primitives.
 
-| Pattern | Status | Notes |
-|---------|--------|-------|
-| `TopBar` | Phase 1 — uses `Avatar`, `IconButton` | Stays in `shared/` until `AppTopBar` rename |
-| `Toast` | Phase 1 — CSS in `shared.css` | [`patterns/Toast.tsx`](../src/components/patterns/Toast.tsx) |
-| `Modal` | Phase 2 ✅ | [`patterns/Modal.tsx`](../src/components/patterns/Modal.tsx) — centered dialogs |
-| `BottomSheet` | Phase 2 ✅ | [`patterns/BottomSheet.tsx`](../src/components/patterns/BottomSheet.tsx) — drag, backdrop |
-| `ConfirmDialog` | Phase 2 — uses `Modal` | [`shared/ConfirmDialog.tsx`](../src/components/shared/ConfirmDialog.tsx) |
+| Pattern | Location | Notes |
+|---------|----------|-------|
+| `TopBar` | [`shared/TopBar.tsx`](../src/components/shared/TopBar.tsx) | Uses `Avatar`, `IconButton`; rename to `AppTopBar` planned |
+| `Toast` | [`patterns/Toast.tsx`](../src/components/patterns/Toast.tsx) | CSS in `shared.css` |
+| `Modal` | [`patterns/Modal.tsx`](../src/components/patterns/Modal.tsx) | Centered dialogs |
+| `BottomSheet` | [`patterns/BottomSheet.tsx`](../src/components/patterns/BottomSheet.tsx) | Drag handle, backdrop |
+| `ConfirmDialog` | [`shared/ConfirmDialog.tsx`](../src/components/shared/ConfirmDialog.tsx) | Wraps `Modal` |
 
 ---
 
@@ -209,25 +212,45 @@ Apply via `data-role` or `data-mission-type` attributes in CSS.
 
 ---
 
-## Migration phases
+## CSS inventory
 
-| Phase | Scope | Status |
-|-------|-------|--------|
-| **0** | `reset.css`, import manifest, semantic tokens, extract button/card/form/topbar | ✅ Done |
-| **1** | `ui/` primitives; migrate TopBar, ConfirmSheet, Toast | ✅ Done |
-| **2** | `Modal`, `BottomSheet` patterns; merge overlay CSS; migrate 7 consumers | ✅ Done |
-| **3** | Split `LandingPage`; extract landing/chat/map CSS from `legacy.css` | Planned |
-| **4** | Split `HireDetailPage`, `PlayerCockpitPage`; delete `legacy.css` | Planned |
+`src/index.css` is an import manifest only. Styles live in focused files:
 
-### Migration status
+| File | Scope |
+|------|-------|
+| `reset.css`, `tokens.css`, `utilities.css` | Foundation |
+| `layouts/page.css`, `layouts/landing.css` | Page shells |
+| `components/button.css` … `avatar.css` | UI primitives |
+| `components/topbar.css`, `modal.css`, `bottom-sheet.css` | Patterns |
+| `components/chat.css`, `map.css` | Chat + milestone map |
+| `components/shared.css`, `player.css`, `admin.css`, `tutorial.css` | Domain |
+| `legacy.css` | **~1,240 lines** still to extract (see below) |
 
-After Phase 0–2:
+### Landing page
 
-- `index.css` is an import manifest (~27 lines)
-- `legacy.css` holds remaining styles (~2,630 lines) pending Phase 3–4 extraction
-- `src/components/ui/` provides Button, Card, Input, Textarea, IconButton, Avatar
-- `src/components/patterns/` provides Modal, BottomSheet, Toast
-- Overlay consumers migrated: ConfirmDialog, RecoveryKeyModal, NameCaptureModal, SaveTemplateModal, MissionDetailPopup, AdminQRScannerModal, ResourcesEditor, MissionBottomSheet (chrome)
+- `src/pages/landing/` — `LandingShell`, `ProfileCard`, `ProfileList`, `EmployeeForm`, `AdminForm`, `RecoverySection`
+- `LandingPage.tsx` — composition only (~75 lines)
+- Role accents via `data-role` + `--color-role-*` tokens (no inline HSL in TSX)
+
+### Patterns in use
+
+`Modal`, `BottomSheet`, and `Toast` back: `ConfirmDialog`, `RecoveryKeyModal`, `NameCaptureModal`, `SaveTemplateModal`, `MissionDetailPopup`, `AdminQRScannerModal`, `ResourcesEditor`, `MissionBottomSheet` (chrome).
+
+---
+
+## Remaining CSS work
+
+Drain `legacy.css` into focused files, then delete it. Page splits are the main driver:
+
+| Target | Action |
+|--------|--------|
+| `HireDetailPage.tsx` | Split into `src/pages/hire-detail/` views; extract hire-header, analytics, editor chrome CSS |
+| `PlayerCockpitPage.tsx` | Split into `src/pages/player-cockpit/` views; move cockpit layout + tab bar from `legacy.css` → `player.css` |
+| Sidebar + mission list | `legacy.css` → `components/sidebar.css` or extend `player.css` |
+| QR scanner, form shell, prose | `legacy.css` → `components/qr.css`, `form.css`, `shared.css` as appropriate |
+| Segment group, swipe-delete, mission list item | `legacy.css` → `admin.css` |
+
+**Exit criterion:** `legacy.css` is empty and removed from `index.css`.
 
 ---
 

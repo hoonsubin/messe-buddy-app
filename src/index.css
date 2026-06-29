@@ -5,6 +5,7 @@
 @import "./styles/tokens.css";
 @import "./styles/utilities.css";
 @import "./styles/layouts/page.css";
+@import "./styles/layouts/landing.css";
 
 /* Layer 1 — UI primitives */
 @import "./styles/components/button.css";
@@ -18,10 +19,13 @@
 @import "./styles/components/modal.css";
 @import "./styles/components/bottom-sheet.css";
 @import "./styles/components/a11y.css";
+@import "./styles/components/chat.css";
+@import "./styles/components/map.css";
+@import "./styles/components/sidebar.css";
+@import "./styles/components/qr.css";
 
-/* Domain + page styles (migrating out of legacy.css per phase) */
+/* Domain + page component styles */
 @import "./styles/components/shared.css";
 @import "./styles/components/player.css";
 @import "./styles/components/admin.css";
 @import "./styles/components/tutorial.css";
-@import "./styles/legacy.css";

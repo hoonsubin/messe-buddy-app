@@ -1,4 +1,3 @@
-// Phase 1 shell - logic wired in Phase 2+.
 interface XPBadgeProps {
   readonly value: number;
 }

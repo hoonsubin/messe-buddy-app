@@ -1,4 +1,3 @@
-// Phase 1 shell - logic wired in Phase 2+.
 import { MdDescription } from "react-icons/md";
 
 interface ResourceCardProps {

@@ -84,7 +84,7 @@ tokens.css → ui/ primitives → patterns/ → domain/ → pages/
 |------|-------|
 | Design tokens | `src/styles/tokens.css` |
 | Primitive BEM (`.btn`, `.card`, `.form-input`) | `src/styles/components/{button,card,form,...}.css` |
-| Unmigrated styles | `src/styles/legacy.css` (extract each phase; goal: delete file) |
+| Unmigrated styles | `src/styles/legacy.css` (extract to focused files; goal: delete file) |
 | Import order | `src/index.css` (manifest only — no new rules) |
 
 ### Adding new shared UI

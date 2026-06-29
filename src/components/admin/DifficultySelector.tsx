@@ -1,4 +1,3 @@
-// Phase 1 shell - logic wired in Phase 4.
 interface DifficultySelectorProps {
   readonly value: number;
   readonly xpPreview: number;

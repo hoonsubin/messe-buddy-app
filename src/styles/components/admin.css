@@ -615,3 +615,534 @@
   color: hsl(var(--color-muted-fg));
   font-size: var(--text-sm);
 }
+
+/* ── Template library (TemplateLibrary.tsx) ─────────────────────────────── */
+.template-library {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.template-library__title {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+}
+
+.template-library__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.template-library__row {
+  padding: var(--space-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.template-library__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.template-library__name {
+  font-weight: var(--weight-medium);
+  font-size: var(--text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-library__meta {
+  font-size: var(--text-xs);
+  color: hsl(var(--color-muted-fg));
+}
+
+.template-library__actions {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.template-library__empty {
+  font-size: var(--text-sm);
+  color: hsl(var(--color-muted-fg));
+  margin: 0;
+  text-align: center;
+  padding: var(--space-4) 0;
+}
+
+/* Hire-detail header: collapse labels on narrow screens */
+@media (max-width: 30rem) {
+  .hire-header__back-label,
+  .hire-header__scan-label {
+    display: none;
+  }
+}
+/* ── Admin editor specifics ──────────────────────────────────────────────── */
+
+
+.difficulty-selector {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.difficulty-selector__pip {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--color-border));
+  background-color: hsl(var(--color-card));
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  font-family: var(--font-sans);
+  transition: background-color var(--duration-fast),
+              color var(--duration-fast);
+}
+
+.difficulty-selector__pip--selected {
+  background-color: hsl(var(--color-primary));
+  color: hsl(var(--color-primary-fg));
+  border-color: hsl(var(--color-primary));
+}
+/* ── Admin cockpit layout ────────────────────────────────────────────────── */
+/*
+ * Mobile-first: single column, map on top, sidebar panels below.
+ * At ≥ sidebar-w + map-min (≈ 40rem) we switch to two-column.
+ *
+ * Order trick: map canvas gets order: -1 on mobile so it renders first
+ * even though it is the second child in DOM order.
+ */
+.admin-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr;
+  overflow: auto;
+}
+
+.admin-layout__map {
+  order: -1;            /* map first on mobile */
+  height: auto;
+  max-height: 44svh;    /* generous ceiling — 16:9 map + toolbar always fits */
+  overflow: hidden;
+  border-bottom: 1px solid hsl(var(--color-border));
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: max-height;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Collapsed state — shows only the toolbar strip */
+.admin-layout[data-map-collapsed="true"] .admin-layout__map {
+  max-height: 3.25rem;
+}
+
+/* Gradient veil that fades in when map is collapsed, signalling "minimised" */
+.admin-layout__map::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 60%;
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--color-bg) / 0) 0%,
+    hsl(var(--color-bg) / 0.7) 100%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-layout[data-map-collapsed="true"] .admin-layout__map::after {
+  opacity: 1;
+}
+
+.admin-layout__sidebar {
+  order: 1;             /* sidebar panels below on mobile */
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-5);
+}
+
+
+@media (min-width: 40rem) {
+  .admin-layout {
+    grid-template-columns: var(--sidebar-w) 1fr;
+    grid-template-rows: 1fr;
+    overflow: hidden;
+  }
+
+  .admin-layout__map {
+    order: 1;           /* map is second column (right) on desktop */
+    height: 100%;       /* fill the grid cell */
+    max-height: unset;
+    min-height: unset;
+    border-bottom: none;
+    border-left: 1px solid hsl(var(--color-border));
+    transition: none;   /* no collapse animation on desktop */
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Disable collapse on desktop */
+  .admin-layout[data-map-collapsed="true"] .admin-layout__map {
+    height: 100%;
+    max-height: unset;
+  }
+
+  /* Disable gradient veil on desktop */
+  .admin-layout__map::after {
+    display: none;
+  }
+
+  .admin-layout__sidebar {
+    order: -1;          /* sidebar is first column (left) on desktop */
+    border-right: 1px solid hsl(var(--color-border));
+  }
+}
+
+/* ── Prose (markdown-rendered mission body) ──────────────────────────────── */
+.prose {
+  font-size: var(--text-sm);
+  color: hsl(var(--color-fg));
+  line-height: var(--leading-relaxed);
+  max-width: 70ch; /* comfortable reading measure */
+  text-wrap: pretty; /* avoid orphans in long-form copy */
+}
+.prose p { margin: 0 0 var(--space-3); }
+.prose p:last-child { margin-bottom: 0; }
+.prose h1, .prose h2, .prose h3 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-semibold);
+  margin: var(--space-4) 0 var(--space-2);
+  line-height: var(--leading-tight);
+}
+.prose h1 { font-size: var(--text-xl); }
+.prose h2 { font-size: var(--text-lg); }
+.prose h3 { font-size: var(--text-base); }
+.prose ul, .prose ol {
+  padding-left: var(--space-5);
+  margin: 0 0 var(--space-3);
+}
+.prose li { margin-bottom: var(--space-1); }
+.prose a {
+  color: hsl(var(--color-primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: hsl(var(--color-muted));
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-sm);
+}
+.prose strong { font-weight: var(--weight-semibold); }
+
+/* Location / info callout - rendered from markdown blockquote */
+.prose blockquote {
+  margin: var(--space-4) 0;
+  padding: var(--space-3) var(--space-4);
+  background: hsl(var(--color-secondary));
+  border: 1px solid hsl(var(--color-primary) / 0.2);
+  border-radius: var(--radius);
+  color: hsl(var(--color-fg));
+}
+.prose blockquote p {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+.prose blockquote p + p {
+  margin-top: var(--space-1);
+  color: hsl(var(--color-muted-fg));
+}
+
+/* ── Mission method badge ─────────────────────────────────────────────────── */
+.mission-method-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.2em var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.mission-method-badge--offline {
+  background: hsl(var(--color-status-progress) / 0.12);
+  color: hsl(var(--color-status-progress));
+}
+.mission-method-badge--approval {
+  background: hsl(35 90% 50% / 0.12);
+  color: hsl(35 80% 38%);
+}
+.mission-method-badge--link {
+  background: hsl(var(--color-primary) / 0.1);
+  color: hsl(var(--color-primary));
+}
+.mission-method-badge--self {
+  background: hsl(var(--color-status-complete) / 0.12);
+  color: hsl(142 60% 32%);
+}
+
+/* ── Form field focus affordance ─────────────────────────────────────────────
+   The field's affordance is carried by the input's own focus ring
+   (.form-input:focus) plus an accent label; no side-stripe, no layout shift. */
+.form-field:focus-within .form-label {
+  color: hsl(var(--color-accent));
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+/* Textarea auto-grow - height is set inline by JS; transition makes it smooth */
+.markdown-editor__textarea {
+  transition: height 120ms ease-out;
+  resize: none;
+  overflow-y: hidden;
+}
+
+
+/* ── Segment group (SegmentGroup.tsx — ion-segment analog) ──────────────── */
+.segment-group {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+.segment-btn {
+  flex: 1;
+  min-height: 2.25rem;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid hsl(var(--color-border));
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: hsl(var(--color-muted-fg));
+  background: none;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+.segment-btn:hover {
+  background-color: hsl(var(--color-muted));
+  color: hsl(var(--color-fg));
+}
+.segment-btn--active {
+  background-color: hsl(var(--color-accent));
+  border-color: hsl(var(--color-accent));
+  color: hsl(var(--color-accent-fg));
+  font-weight: var(--weight-semibold);
+}
+
+/* ── XP selector chips (XpSelector.tsx) ─────────────────────────────────── */
+.xp-selector {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+.xp-chip {
+  min-width: 2.5rem;
+  height: 2.25rem;
+  padding: 0 var(--space-2);
+  border: 1px solid hsl(var(--color-border));
+  border-radius: var(--radius-full, 9999px);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: hsl(var(--color-muted-fg));
+  background: none;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+.xp-chip:hover {
+  background-color: hsl(var(--color-muted));
+  color: hsl(var(--color-fg));
+}
+.xp-chip--active {
+  background-color: hsl(var(--color-accent));
+  border-color: hsl(var(--color-accent));
+  color: hsl(var(--color-accent-fg));
+  font-weight: var(--weight-semibold);
+}
+
+/* ── Swipe-to-delete list item (MissionListItem.tsx) ────────────────────── */
+.swipe-item {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid hsl(var(--color-border) / 0.5);
+}
+.swipe-item__delete-zone {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 72px;
+  z-index: 0;
+  background-color: hsl(var(--color-destructive));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.swipe-item__delete-btn {
+  all: unset;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: hsl(var(--color-destructive-fg));
+}
+.swipe-item__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  min-height: var(--touch-target);
+  background-color: hsl(var(--color-card));
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+  will-change: transform;
+}
+.swipe-item__content:hover {
+  background-color: hsl(var(--color-muted));
+}
+.swipe-item__content--active {
+  background-color: hsl(var(--color-accent) / 0.08);
+}
+.swipe-item__content--active:hover {
+  background-color: hsl(var(--color-accent) / 0.12);
+}
+.swipe-item--dragging .swipe-item__content {
+  opacity: 0.45;
+  background-color: hsl(var(--color-accent) / 0.06);
+  box-shadow: 0 2px 12px hsl(var(--color-fg) / 0.12);
+}
+
+/* ── Mission list item anatomy ───────────────────────────────────────────── */
+.mi-order {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-full, 9999px);
+  background-color: hsl(var(--color-muted));
+  color: hsl(var(--color-muted-fg));
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.swipe-item__content--active .mi-order {
+  background-color: hsl(var(--color-accent) / 0.15);
+  color: hsl(var(--color-accent));
+}
+.mi-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mi-title {
+  margin: 0;
+  font-size: 0.9375rem; /* 15px */
+  font-weight: var(--weight-semibold);
+  color: hsl(var(--color-fg));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: var(--leading-tight, 1.25);
+}
+.swipe-item__content--active .mi-title {
+  color: hsl(var(--color-accent));
+}
+.mi-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+.mi-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: var(--radius-full, 9999px);
+  font-size: 0.6875rem; /* 11px */
+  font-weight: var(--weight-medium);
+  background-color: hsl(var(--color-muted));
+  color: hsl(var(--color-muted-fg));
+  white-space: nowrap;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+}
+.mi-badge--xp {
+  background-color: hsl(var(--color-accent) / 0.12);
+  color: hsl(var(--color-accent));
+}
+.mi-tags {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+.mi-drag-handle {
+  all: unset;
+  flex-shrink: 0;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: hsl(var(--color-muted-fg));
+  cursor: grab;
+  touch-action: none;
+}
+.mi-drag-handle:hover { color: hsl(var(--color-fg)); }
+.mi-drag-handle:active { cursor: grabbing; }
+
+
+/* Draft restore banner */
+.draft-banner {
+  margin: var(--space-4) var(--space-5) 0;
+  background-color: hsl(var(--color-accent) / 0.08);
+  border: 1px solid hsl(var(--color-accent) / 0.25);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.draft-banner__text {
+  font-size: var(--text-xs);
+  color: hsl(var(--color-accent));
+  font-weight: var(--weight-medium);
+}
+.draft-banner__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}

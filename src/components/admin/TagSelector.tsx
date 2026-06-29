@@ -1,4 +1,3 @@
-// Phase 1 shell - logic wired in Phase 4.
 import type { MissionTag } from "../../types/index.ts";
 import { MISSION_TAG } from "../../types/index.ts";
 import TagBadge from "../shared/TagBadge.tsx";

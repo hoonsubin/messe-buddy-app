@@ -1,4 +1,3 @@
-// Phase 1 shell - logic wired in Phase 2+.
 import type { Mission, ProgressEvent } from "../../types/index.ts";
 import TagBadge from "./TagBadge.tsx";
 import XPBadge from "./XPBadge.tsx";

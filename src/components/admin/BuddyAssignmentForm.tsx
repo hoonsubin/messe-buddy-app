@@ -1,4 +1,3 @@
-// Phase 1 shell - logic wired in Phase 4.
 import { MdPeople } from "react-icons/md";
 import type { BuddyProfile, PBRecord, Player } from "../../types/index.ts";
 

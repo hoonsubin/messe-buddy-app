@@ -1,4 +1,3 @@
-// Phase 1 shell - tutorial step overlay card. Logic wired in Phase 5.
 // Each step highlights a target region via `targetSelector` (CSS class) and
 // renders an instructional card anchored near the highlight ring.
 

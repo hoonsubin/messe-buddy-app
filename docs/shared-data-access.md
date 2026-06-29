@@ -1,4 +1,4 @@
-# Shared Data Access (Phase A + PocketBase Target)
+# Shared Data Access
 
 C-18-compliant hook layer — pages and components import hooks only; [`AppAdapter`](src/adapters/interface.ts:18) is consumed from `src/hooks/` and `src/use-cases/` exclusively.
 

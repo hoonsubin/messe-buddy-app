@@ -1,9 +1,8 @@
-// Phase 1 shell - full-screen tutorial overlay. Logic wired in Phase 5.
 // Mounts when player.tutorialComplete === false.
 // Renders a dim backdrop, a dynamic highlight ring around the target element,
 // and a TutorialStep card.
 //
-// Phase 5 additions: auto-scrolls the highlighted element into view on step
+// auto-scrolls the highlighted element into view on step
 // change so the spotlight ring is always visible.
 
 import { useCallback, useEffect, useRef, useState } from "react";
