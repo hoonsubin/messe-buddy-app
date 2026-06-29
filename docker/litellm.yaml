@@ -15,6 +15,20 @@ model_list:
       api_base: https://litellm.hoonlabs.xyz/v1
       api_key: os.environ/LLM_SERVER_API_KEY
       vector_store_ids: ["messe-buddy-kb"]
+      # rpm/tpm must be explicit ints, not left unset: with REDIS_HOST/PORT
+      # set on the litellm container, the router's Redis-backed usage
+      # tracker compares accumulated per-minute counts against these limits.
+      # Left unset they default to None, and that comparison crashes with
+      # "'>' not supported between instances of 'NoneType' and 'int'" once
+      # enough requests accumulate (see BerriAI/litellm#7308).
+      rpm: 500
+      tpm: 1000000
+    model_info:
+      mode: chat
+      max_input_tokens: 128000
+      max_output_tokens: 8192
+      input_cost_per_token: 0
+      output_cost_per_token: 0
 
   # ── Anthropic (uncomment to use instead) ────────────────────────────────────
   # - model_name: policy-assistant
@@ -32,25 +46,23 @@ model_list:
   #     api_version: "2024-02-15-preview"
   #     vector_store_ids: ["messe-buddy-kb"]
 
-  # ── HoonLabs LiteLLM Proxy ──────────────────────────────────────────────────
-  # Upstream LiteLLM proxy at https://litellm.hoonlabs.xyz.
-  # API key stored in LLM_SERVER_API_KEY environment variable.
-  # All models use openai/ provider prefix since the upstream is
-  # an OpenAI-compatible LiteLLM proxy.
-
-  # Chat: IBM Granite 4.0 H Tiny
-  - model_name: ibm-granite-tiny
-    litellm_params:
-      model: openai/ibm/granite-4.0-h-tiny
-      api_base: https://litellm.hoonlabs.xyz/v1
-      api_key: os.environ/LLM_SERVER_API_KEY
-
-  # Embedding: Nomic Embed Text v2 MoE (768 dim, Matryoshka-capable)
+  # Embedding: Nomic Embed Text v1.5 (768 dim, Matryoshka-capable)
+  # Served locally by a llama.cpp server (OpenAI-compatible /v1/embeddings),
+  # not the HoonLabs upstream — no API key needed, llama.cpp doesn't check it.
+  # v1.5 over v2-moe: llama.cpp serves it at 2048 tokens of context (vs.
+  # v2-moe's hard 512-token limit), giving ingestion much more chunking room.
   - model_name: nomic-embed-text-v2-moe
     litellm_params:
-      model: openai/nomic-ai/embed-text-v2-moe
-      api_base: https://litellm.hoonlabs.xyz/v1
-      api_key: os.environ/LLM_SERVER_API_KEY
+      model: openai/nomic-ai/nomic-embed-text-v1.5-GGUF
+      api_base: http://192.168.8.169:8090/v1
+      api_key: "sk-no-key-required"
+      rpm: 500
+      tpm: 1000000
+    model_info:
+      mode: embedding
+      max_input_tokens: 2048
+      input_cost_per_token: 0
+      output_cost_per_token: 0
 
   # Reranker: BGE Reranker v2 M3 (cross-encoder, used by the pgvector connector
   # to re-rank retrieved chunks before they're injected into the prompt).
@@ -62,6 +74,13 @@ model_list:
       model: hosted_vllm/gpustack/bge-reranker-v2-m3
       api_base: https://litellm.hoonlabs.xyz/v1
       api_key: os.environ/LLM_SERVER_API_KEY
+      rpm: 500
+      tpm: 1000000
+    model_info:
+      mode: rerank
+      max_input_tokens: 8192
+      input_cost_per_token: 0
+      output_cost_per_token: 0
 
 
 # ── Vector Store Registry ─────────────────────────────────────────────────────

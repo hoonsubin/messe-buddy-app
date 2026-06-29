@@ -12,6 +12,7 @@ import { useResources } from "../hooks/useResources.ts";
 import { useTutorial } from "../hooks/useTutorial.ts";
 import ConfirmDialog from "../components/shared/ConfirmDialog.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
+import ProfileEditSheet from "../components/shared/ProfileEditSheet.tsx";
 import AssistantChatCard from "../components/player/AssistantChatCard.tsx";
 import MilestoneMapViewer from "../components/player/MilestoneMapViewer.tsx";
 import MilestoneSidebarViewer from "../components/player/MilestoneSidebarViewer.tsx";
@@ -92,6 +93,11 @@ const PlayerCockpitPage = () => {
     null,
   );
   const [popupMission, setPopupMission] = useState<Mission | null>(null);
+  const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
+
+  const handleAvatarClick = useCallback(() => {
+    setIsProfileEditOpen(true);
+  }, []);
 
   const handleMissionClick = useCallback(
     (missionId: string, fromTutorial = false) => {
@@ -262,6 +268,7 @@ const PlayerCockpitPage = () => {
         playerName={player?.name ?? ""}
         totalXP={progress.playerProgress?.totalXP ?? 0}
         role={player?.role ?? ""}
+        onAvatarClick={handleAvatarClick}
         onLogout={() => {
           sessionStorage.removeItem("mb_tutorial_step");
           sessionStorage.removeItem("mb_tutorial_form_pending");
@@ -271,6 +278,29 @@ const PlayerCockpitPage = () => {
           navigate("/", { replace: true });
         }}
       />
+
+      {player !== null && (
+        <ProfileEditSheet
+          isOpen={isProfileEditOpen}
+          variant="player"
+          avatarUrl={player.avatarUrl}
+          initialValues={{
+            name: player.name ?? "",
+            preferredName: player.preferredName ?? "",
+            role: player.role ?? "",
+            department: player.department ?? "",
+          }}
+          onSave={async (fields) => {
+            await updatePlayer({
+              name: fields.name,
+              preferredName: fields.preferredName || undefined,
+              role: fields.role,
+              department: fields.department || undefined,
+            });
+          }}
+          onClose={() => setIsProfileEditOpen(false)}
+        />
+      )}
 
       {popupMission !== null && player !== null && (
         <MissionDetailPopup
@@ -317,6 +347,18 @@ const PlayerCockpitPage = () => {
           >
             Welcome{player?.name ? `, ${player.name.split(" ")[0]}` : ""}.
           </h1>
+          {(player?.role || player?.department) && (
+            <p
+              style={{
+                fontSize: "var(--text-sm)",
+                color: "hsl(var(--color-muted-fg))",
+                margin: "0 0 var(--space-1)",
+                lineHeight: "var(--leading-normal)",
+              }}
+            >
+              {[player.role, player.department].filter(Boolean).join(" · ")}
+            </p>
+          )}
           <p
             style={{
               fontSize: "var(--text-sm)",

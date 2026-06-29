@@ -203,8 +203,26 @@ def chunk_text(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
+class EmbeddingTooLargeError(RuntimeError):
+    """Raised when the embedding server rejects input as exceeding its
+    context window. Distinct from transient RequestExceptions: retrying
+    the same input is pointless — the caller must split it instead.
+    """
+
+
+def _is_too_large_response(status_code: int, body_text: str) -> bool:
+    if status_code < 400:
+        return False
+    lowered = body_text.lower()
+    return "too large to process" in lowered or "physical batch size" in lowered
+
+
 def generate_embedding(text: str, max_retries: int = 3) -> list[float]:
-    """Generate an embedding vector via LiteLLM proxy with exponential backoff."""
+    """Generate an embedding vector via LiteLLM proxy with exponential backoff.
+
+    Raises EmbeddingTooLargeError (not retried) if the input exceeds the
+    embedding server's context window — the caller should split the text.
+    """
     last_error: Exception | None = None
     for attempt in range(max_retries):
         try:
@@ -217,8 +235,12 @@ def generate_embedding(text: str, max_retries: int = 3) -> list[float]:
                 json={"model": EMBEDDING_MODEL, "input": [text]},
                 timeout=60,
             )
+            if _is_too_large_response(resp.status_code, resp.text):
+                raise EmbeddingTooLargeError(resp.text[:300])
             resp.raise_for_status()
             return resp.json()["data"][0]["embedding"]
+        except EmbeddingTooLargeError:
+            raise
         except requests.RequestException as exc:
             last_error = exc
             if attempt < max_retries - 1:
@@ -229,6 +251,44 @@ def generate_embedding(text: str, max_retries: int = 3) -> list[float]:
         f"Embedding generation failed after {max_retries}"
         f" attempts: {last_error}"
     )
+
+
+def _split_in_half(text: str) -> tuple[str, str]:
+    """Split text into two roughly-equal halves at the nearest word
+    boundary, so a re-split chunk doesn't sever a word mid-token."""
+    mid = len(text) // 2
+    split_at = text.rfind(" ", 0, mid)
+    if split_at <= 0:
+        split_at = mid
+    return text[:split_at].strip(), text[split_at:].strip()
+
+
+def generate_embedding_auto_split(
+    text: str, max_retries: int = 3, _max_depth: int = 6
+) -> list[tuple[str, list[float]]]:
+    """Generate an embedding for text, bisecting and retrying if the
+    embedding server rejects it as exceeding its context window.
+
+    Char-based chunking can't guarantee a token ceiling — token density
+    varies by content, so any fixed chunk size will eventually overflow on
+    sufficiently dense text. This makes ingestion self-correcting instead:
+    on overflow, split the chunk in half and recurse until every piece
+    actually fits, rather than guessing a smaller fixed size.
+
+    Returns a list of (text_piece, embedding) pairs — usually one pair,
+    more if splitting was needed.
+    """
+    try:
+        return [(text, generate_embedding(text, max_retries))]
+    except EmbeddingTooLargeError:
+        if _max_depth <= 0:
+            raise
+        left, right = _split_in_half(text)
+        if not left or not right:
+            raise
+        return generate_embedding_auto_split(
+            left, max_retries, _max_depth - 1
+        ) + generate_embedding_auto_split(right, max_retries, _max_depth - 1)
 
 
 def store_embedding(
@@ -410,21 +470,23 @@ def ingest_file(file_path: Path, docs_dir: Path) -> tuple[int, int]:
 
     for i, chunk in enumerate(chunks):
         try:
-            embedding = generate_embedding(chunk)
-            embed_id = store_embedding(
-                chunk,
-                embedding,
-                metadata={
-                    "filename": file_path.name,
-                    "relative_path": rel_path,
-                    "chunk_index": i,
-                    "total_chunks": len(chunks),
-                    "source": "consume-docs",
-                    "content_hash": content_hash,
-                },
-            )
-            stored += 1
-            log(f"      ✅ Chunk {i + 1}/{len(chunks)} → {embed_id}")
+            pieces = generate_embedding_auto_split(chunk)
+            for j, (piece_text, embedding) in enumerate(pieces):
+                embed_id = store_embedding(
+                    piece_text,
+                    embedding,
+                    metadata={
+                        "filename": file_path.name,
+                        "relative_path": rel_path,
+                        "chunk_index": i,
+                        "total_chunks": len(chunks),
+                        "source": "consume-docs",
+                        "content_hash": content_hash,
+                    },
+                )
+                stored += 1
+                suffix = f" (split {j + 1}/{len(pieces)})" if len(pieces) > 1 else ""
+                log(f"      ✅ Chunk {i + 1}/{len(chunks)}{suffix} → {embed_id}")
         except Exception as exc:
             failed += 1
             log(f"      ❌ FAIL Chunk {i + 1}/{len(chunks)}: {exc}")

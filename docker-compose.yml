@@ -181,6 +181,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
       POSTGRES_DB: ${POSTGRES_DB:-litellm}
       LITELLM_DB_HOST: litellm-db
+      # Char-based chunking (no token counting) - keep chunks comfortably
+      # under the embedding server's context window (2048 tokens, nomic
+      # v1.5 on llama.cpp) since dense text can run well above 4 chars/token.
+      CHUNK_SIZE: ${CHUNK_SIZE:-2800}
+      OVERLAP: ${OVERLAP:-280}
     volumes:
       - ./consume-docs:/consume-docs:ro
       - app_runtime:/runtime
@@ -212,6 +217,8 @@ services:
       VECTOR_STORE_ID: "messe-buddy-kb"
       POSTGRES_USER: ${POSTGRES_USER:-litellm}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      CHUNK_SIZE: ${CHUNK_SIZE:-2800}
+      OVERLAP: ${OVERLAP:-280}
     volumes:
       - ./consume-docs:/consume-docs:ro
     depends_on:

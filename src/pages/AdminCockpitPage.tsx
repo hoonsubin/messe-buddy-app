@@ -19,6 +19,7 @@ import { useResources } from "../hooks/useResources.ts";
 import { useTemplateLibrary } from "../hooks/useTemplateLibrary.ts";
 import Toast from "../components/shared/Toast.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
+import ProfileEditSheet from "../components/shared/ProfileEditSheet.tsx";
 import MilestoneMapEditor from "../components/admin/MilestoneMapEditor.tsx";
 import MissionBottomSheet from "../components/admin/MissionBottomSheet.tsx";
 import PendingApprovalsPanel from "../components/admin/PendingApprovalsPanel.tsx";
@@ -86,6 +87,16 @@ const AdminCockpitPage = () => {
   }
 
   const [scannerOpen, setScannerOpen] = useState(false);
+
+  // ── GM profile ───────────────────────────────────────────────────────────────
+  // Session-scoped override: null means "use session.name", string means GM edited
+  const [gmDisplayNameOverride, setGmDisplayNameOverride] = useState<string | null>(null);
+  const gmDisplayName = gmDisplayNameOverride ?? session?.name ?? "Game Master";
+  const [isGMProfileEditOpen, setIsGMProfileEditOpen] = useState(false);
+
+  const handleAdminAvatarClick = useCallback(() => {
+    setIsGMProfileEditOpen(true);
+  }, []);
 
   const sidebarRef = useRef<HTMLDivElement>(null);
   const mapCollapsed = useScrollCollapse(sidebarRef, viewMode);
@@ -375,15 +386,26 @@ const AdminCockpitPage = () => {
       }}
     >
       <TopBar
-        playerName={session?.name ?? "Game Master"}
+        playerName={gmDisplayName}
         totalXP={0}
         role="Game Master"
+        onAvatarClick={handleAdminAvatarClick}
         onLogout={() => {
           if (identity && !identity.isDemo) {
             removeProfile(identity.uid);
           }
           navigate("/", { replace: true });
         }}
+      />
+
+      <ProfileEditSheet
+        isOpen={isGMProfileEditOpen}
+        variant="gm"
+        initialValues={{ name: gmDisplayName }}
+        onSave={async (fields) => {
+          setGmDisplayNameOverride(fields.name);
+        }}
+        onClose={() => setIsGMProfileEditOpen(false)}
       />
 
       {/* ── HIRE LIST VIEW ─────────────────────────────────────────────────── */}
