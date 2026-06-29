@@ -1146,3 +1146,137 @@
   gap: var(--space-2);
   flex-shrink: 0;
 }
+
+/* ── Hire detail page ── */
+.hire-detail {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding-top: var(--topbar-h);
+  background: hsl(var(--color-bg));
+}
+
+.hire-detail__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: hsl(var(--color-card));
+  border-bottom: 1px solid hsl(var(--color-border));
+}
+
+.hire-detail__header-btn {
+  font-size: var(--text-sm);
+  color: hsl(var(--color-muted-fg));
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.hire-detail__header-title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  padding-inline: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: hsl(var(--color-fg));
+  line-height: var(--leading-tight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hire-detail__main {
+  flex: 1;
+  width: 100%;
+  max-width: 40rem;
+  margin-inline: auto;
+  padding: var(--space-6) var(--space-4);
+}
+
+.hire-detail__main--wide {
+  max-width: 60rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.hire-detail__journey-card {
+  padding: var(--space-4) var(--space-5);
+}
+
+.hire-detail__journey-header {
+  margin-bottom: var(--space-3);
+}
+
+.hire-detail__journey-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: hsl(var(--color-fg));
+}
+
+.hire-detail__journey-sub {
+  margin: 2px 0 0;
+  font-size: var(--text-xs);
+  color: hsl(var(--color-muted-fg));
+}
+
+.hire-detail__map-wrap {
+  width: 100%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.hire-detail__journey-empty {
+  font-size: var(--text-sm);
+  color: hsl(var(--color-muted-fg));
+  text-align: center;
+  margin: 0;
+}
+
+.hire-invite {
+  padding: 0;
+  overflow: hidden;
+}
+
+.hire-invite__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-sans);
+}
+
+.hire-invite__trigger-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.hire-invite__title {
+  display: block;
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  color: hsl(var(--color-fg));
+}
+
+.hire-invite__subtitle {
+  display: block;
+  font-size: var(--text-xs);
+  color: hsl(var(--color-muted-fg));
+}
+
+.hire-invite__body {
+  padding: 0 var(--space-4) var(--space-4);
+}

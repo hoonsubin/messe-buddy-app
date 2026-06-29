@@ -49,6 +49,6 @@ When layout looks wrong or visually inconsistent, check design-system compliance
 | Modal/sheet styling diverges | New custom overlay classes | Consolidate to `.modal-*` or `.bottom-sheet-*` |
 | Touch target too small | Missing `min-height: var(--touch-target)` | Fix in component CSS, not force-click in tests |
 | Styles not applying | Rule added to `index.css` | Move to correct `src/styles/components/*.css` file |
-| Duplicate/conflicting rules | Edited `legacy.css` when primitive exists | Prefer extracted file (`button.css`, etc.) |
+| Duplicate/conflicting rules | Edited wrong CSS file when a focused file exists | Prefer the matching extracted file (`button.css`, `player.css`, etc.) |
 
 **Reference:** [`design/design-tokens.md`](../../design/design-tokens.md), [`design/component-architecture.md`](../../design/component-architecture.md).

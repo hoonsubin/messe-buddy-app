@@ -68,7 +68,7 @@ class TagBadge {
     +label: string
     +variant: string
 }
-class XPBadge {
+class XpBadge {
     +value: number
 }
 
@@ -437,9 +437,9 @@ MilestoneMapViewer *-- ProgressLegend
 MilestoneSidebarViewer *-- MissionCard
 CurrentMissionsList *-- MissionCard
 MissionCard *-- TagBadge
-MissionCard *-- XPBadge
+MissionCard *-- XpBadge
 MissionDetailPopup *-- TagBadge
-MissionDetailPopup *-- XPBadge
+MissionDetailPopup *-- XpBadge
 
 ResourcesSection *-- SearchBar
 ResourcesSection *-- ResourceCard

@@ -91,7 +91,7 @@ src/
     pocketbase/     # Real PB adapter (Phase 7 only)
   hooks/            # React hooks: useIdentity, useSession, usePlayerProgress, etc.
   components/
-    shared/         # Cross-cutting: TopBar, BackgroundCanvas, MapViewport, MilestoneNode, MissionCard, TagBadge, XPBadge, SearchBar, RecoveryKeyModal, ResourceCard
+    shared/         # Cross-cutting: TopBar, BackgroundCanvas, MapViewport, MilestoneNode, MissionCard, TagBadge, XpBadge, SearchBar, RecoveryKeyModal, ResourceCard
     player/         # Player-only: MilestoneMapViewer, MilestoneSidebarViewer, CurrentMissionsList, DailyPlanView, BuddyCard, MissionDetailPopup, ValidationDisplay, QRDisplay, PendingApprovalDisplay, ResourcesSection, ChatPanel, YouAreHereMarker, ProgressLegend
     admin/          # Game-Master-only: MilestoneMapEditor, MilestoneSidebarEditor, GridOverlay, PlayerSelectorDropdown, PlayerProfileCard, PendingApprovalsPanel, ApprovalRequestCard, PreBoardingChecklist, PreBoardingChecklistItem, CrossHireDashboard, HireProgressRow, StalledHireAlert, BuddyAssignmentForm, ResourcesEditor, MissionEditor, FormEditor, FormFieldEditor, MarkdownEditor, MissionTypeSelector, DifficultySelector, TagSelector, ValidationMethodSelector, SaveActions, SaveTemplateModal, TemplateLibrary, TemplateCard, TemplateFields, BackgroundImageUploader, AdminQRScannerModal
     form/           # Form building: FormShell, FormField
@@ -256,7 +256,7 @@ Every component used across multiple pages must have its full visual structure d
 - `ValidationDisplay` (in `components/player/`) - full-screen overlay shell with QRDisplay placeholder and PendingApprovalDisplay placeholder
 - `TutorialOverlay` (in `components/tutorial/`) - full-screen overlay shell with step indicator, highlight ring placeholder, CTA button
 - `TagBadge` - colored chip, one of each variant visible
-- `XPBadge` - number + "XP" label, styled
+- `XpBadge` - number + "XP" label, styled
 - `RecoveryKeyModal` - modal shown after join/create session
 - `SearchBar` - search input with icon
 - `AdminQRScannerModal` (in `components/admin/`) - modal overlay with camera feed placeholder, scan status indicator, cancel button. Opened from `ApprovalRequestCard`. Visually matches `QRScannerView` but rendered as a modal, not a full-page route.

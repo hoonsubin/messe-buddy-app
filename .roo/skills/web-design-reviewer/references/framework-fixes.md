@@ -14,7 +14,7 @@ This project uses **no Tailwind and no CSS-in-JS**. Fixes must respect the desig
 src/index.css          → import manifest only (do not add rules)
 src/styles/tokens.css  → design tokens (HSL channels)
 src/styles/components/ → BEM blocks per primitive/pattern
-src/styles/legacy.css  → unmigrated styles (extract, don't grow)
+src/styles/components/*.css  → domain + pattern blocks (pick the matching file)
 src/components/ui/     → Button, Card, Input, IconButton, Avatar
 ```
 

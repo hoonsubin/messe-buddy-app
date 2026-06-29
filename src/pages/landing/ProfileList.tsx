@@ -30,7 +30,9 @@ const ProfileList = ({
     <p className="landing__section-label">Your profiles</p>
 
     {profiles.length === 0 && (
-      <p className="landing__empty-profiles">No saved profiles. Add one below.</p>
+      <p className="landing__empty-profiles">
+        No saved profiles. Add one below.
+      </p>
     )}
 
     {profiles.map((identity) => (

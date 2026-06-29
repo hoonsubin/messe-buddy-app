@@ -5,7 +5,7 @@
 import { useState } from "react";
 import type { Mission } from "../../types/index.ts";
 import TagBadge from "../shared/TagBadge.tsx";
-import XPBadge from "../shared/XPBadge.tsx";
+import XpBadge from "../shared/XpBadge.tsx";
 
 interface DailyPlanViewProps {
   readonly missions: ReadonlyArray<Mission>;
@@ -83,7 +83,7 @@ const DailyPlanView = (props: DailyPlanViewProps) => {
                       {m.tags.map((tag) => (
                         <TagBadge key={tag} label={tag} variant={tag} />
                       ))}
-                      <XPBadge value={m.xpValue} />
+                      <XpBadge value={m.xpValue} />
                     </span>
                   </li>
                 ))}

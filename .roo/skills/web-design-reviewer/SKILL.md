@@ -40,7 +40,7 @@ When reviewing this repository, use these project-specific rules **instead of** 
 |------|-------|
 | Styling | Token-based CSS + BEM; **no Tailwind** |
 | Token source | [`src/styles/tokens.css`](../../../src/styles/tokens.css) |
-| Style files | [`src/styles/components/*.css`](../../../src/styles/components/), [`src/styles/legacy.css`](../../../src/styles/legacy.css) |
+| Style files | [`src/styles/components/*.css`](../../../src/styles/components/), [`src/styles/layouts/*.css`](../../../src/styles/layouts/) |
 | Import manifest | [`src/index.css`](../../../src/index.css) — do not add rules here |
 | React primitives | [`src/components/ui/`](../../../src/components/ui/) |
 | Design docs | [`design/design-tokens.md`](../../../design/design-tokens.md), [`design/component-architecture.md`](../../../design/component-architecture.md) |
@@ -52,7 +52,7 @@ When reviewing this repository, use these project-specific rules **instead of** 
 1. **Token drift** — replace hardcoded colors in TSX/CSS with `var(--color-*)` from `tokens.css`
 2. **Primitive first** — migrate raw `.btn` / inline button styles to `<Button>` from `ui/`
 3. **No design inline styles** — move layout/spacing to BEM or `core-*` utilities
-4. **CSS file placement** — add rules to the correct `src/styles/components/*.css` file, not `legacy.css` if an extracted file exists
+4. **CSS file placement** — add rules to the correct `src/styles/components/*.css` or `src/styles/layouts/*.css` file
 5. **Icons** — `react-icons` only
 
 ---

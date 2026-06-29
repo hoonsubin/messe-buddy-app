@@ -1,0 +1,205 @@
+/* MesseBuddy — Milestone sidebar (player viewer) */
+
+/* ── Sidebar (slides in from LEFT) ──────────────────────────────────────── */
+.sidebar {
+  position: fixed;
+  inset-block: var(--topbar-h) 0;
+  inset-inline-start: 0;
+  inset-inline-end: auto;
+  width: min(var(--sidebar-w), 100vw);
+  background-color: hsl(var(--color-card));
+  border-inline-end: 1px solid hsl(var(--color-border));
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 50;
+  translate: -100%;
+  transition: translate var(--duration-normal) var(--ease-out);
+}
+
+.sidebar--open {
+  translate: 0;
+}
+
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  border-block-end: 1px solid hsl(var(--color-border));
+  flex-shrink: 0;
+}
+
+.sidebar__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.sidebar__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sidebar__close {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: hsl(var(--color-muted-fg));
+  font-size: var(--text-lg);
+}
+
+/* ── Section label ───────────────────────────────────────────────────────── */
+.section-label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: hsl(var(--color-muted-fg));
+  margin: 0 0 var(--space-3);
+}
+
+/* ── Mission item (vertical list) ────────────────────────────────────────── */
+.mission-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: hsl(var(--color-card));
+  border: 1px solid hsl(var(--color-border));
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.mission-item:hover,
+.mission-item:focus-visible {
+  box-shadow: var(--shadow-md);
+  border-color: hsl(var(--color-primary) / 0.4);
+}
+
+.mission-item--completed .mission-item__title {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.mission-item__check {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: var(--radius-sm);
+  border: 2px solid hsl(var(--color-border));
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast), border-color var(--duration-fast);
+}
+
+.mission-item__check--done {
+  background: hsl(var(--color-status-complete));
+  border-color: hsl(var(--color-status-complete));
+  color: hsl(var(--color-primary-fg));
+  font-size: var(--text-xs);
+}
+
+.mission-item__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mission-item__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.mission-item__title {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: hsl(var(--color-fg));
+  line-height: var(--leading-tight);
+}
+
+.mission-item__desc {
+  font-size: var(--text-sm);
+  color: hsl(var(--color-muted-fg));
+  margin-top: var(--space-1);
+  line-height: var(--leading-normal);
+
+  /* clamp to 2 lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mission-item__due {
+  font-size: var(--text-xs);
+  color: hsl(var(--color-muted-fg));
+  margin-top: var(--space-2);
+}
+
+.mission-item__right {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.mission-item__xp {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: hsl(var(--color-primary));
+}
+
+/* ── Sidebar tabs ────────────────────────────────────────────────────────── */
+.sidebar-tabs {
+  display: flex;
+  flex-shrink: 0;
+  border-block-end: 1px solid hsl(var(--color-border));
+}
+
+.sidebar-tab {
+  flex: 1;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: hsl(var(--color-muted-fg));
+  background: none;
+  border: none;
+  border-block-end: 2px solid transparent;
+  cursor: pointer;
+  transition: color var(--duration-fast), border-color var(--duration-fast);
+}
+
+.sidebar-tab--active {
+  color: hsl(var(--color-primary));
+  border-block-end-color: hsl(var(--color-primary));
+}
+
+/* ── Sidebar mission row (compact - inside sidebar tabs) ─────────────────── */
+.sidebar-mission-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-block-end: 1px solid hsl(var(--color-border));
+}
+
+.sidebar-mission-row:last-child {
+  border-block-end: none;
+}

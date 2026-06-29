@@ -14,7 +14,7 @@ Mobile-first. Primary smoke viewport: **390×844** (iPhone-class). Admin desktop
 | Semantic usage | `hsl(var(--color-*))` or `hsl(var(--color-*) / 0.5)` | Always compose alpha this way |
 | Utility classes | [`src/styles/utilities.css`](../src/styles/utilities.css) | `core-{property}` prefix for single-purpose utilities |
 | UI primitive CSS | [`src/styles/components/button.css`](../src/styles/components/button.css) etc. | BEM blocks for Button, Card, Form, Avatar |
-| Pattern / domain CSS | [`src/styles/components/`](../src/styles/components/), [`src/styles/layouts/`](../src/styles/layouts/), [`src/styles/legacy.css`](../src/styles/legacy.css) | Prefer focused files; `legacy.css` is temporary |
+| Pattern / domain CSS | [`src/styles/components/`](../src/styles/components/), [`src/styles/layouts/`](../src/styles/layouts/) | One focused file per domain or pattern |
 | Import manifest | [`src/index.css`](../src/index.css) | Fonts + ordered `@import` only |
 | React primitives | [`src/components/ui/`](../src/components/ui/) | Typed wrappers over BEM classes |
 | Pages | `src/pages/**` | Compose primitives + patterns; < 200 lines |
@@ -35,11 +35,14 @@ Mobile-first. Primary smoke viewport: **390×844** (iPhone-class). Admin desktop
 @import "./styles/components/modal.css";
 @import "./styles/components/bottom-sheet.css";
 @import "./styles/components/a11y.css";
+@import "./styles/components/chat.css";
+@import "./styles/components/map.css";
+@import "./styles/components/sidebar.css";
+@import "./styles/components/qr.css";
 @import "./styles/components/shared.css";
 @import "./styles/components/player.css";
 @import "./styles/components/admin.css";
 @import "./styles/components/tutorial.css";
-@import "./styles/legacy.css";
 ```
 
 ### CSS class naming conventions
@@ -292,7 +295,7 @@ Reuse these before creating new components. Paths relative to `src/components/`.
 | Component | Classes |
 |-----------|---------|
 | [`TagBadge`](../src/components/shared/TagBadge.tsx) | `.tag-badge`, `--mandatory`, `--urgent` |
-| [`XPBadge`](../src/components/shared/XPBadge.tsx) | `.xp-badge` |
+| [`XpBadge`](../src/components/shared/XpBadge.tsx) | `.xp-badge` |
 | [`SegmentGroup`](../src/components/shared/SegmentGroup.tsx) | `.segment-group`, `.segment-btn--active` |
 | [`TemplateLibrary`](../src/components/shared/TemplateLibrary.tsx) | `.template-library__*` |
 | [`SearchBar`](../src/components/shared/SearchBar.tsx) | Used inside template library |

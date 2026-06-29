@@ -84,7 +84,7 @@ tokens.css → ui/ primitives → patterns/ → domain/ → pages/
 |------|-------|
 | Design tokens | `src/styles/tokens.css` |
 | Primitive BEM (`.btn`, `.card`, `.form-input`) | `src/styles/components/{button,card,form,...}.css` |
-| Unmigrated styles | `src/styles/legacy.css` (extract to focused files; goal: delete file) |
+| Page composers | `src/pages/*Page.tsx` — wire hooks; extract views to `pages/<route>/` when > ~200 lines |
 | Import order | `src/index.css` (manifest only — no new rules) |
 
 ### Adding new shared UI

@@ -64,7 +64,8 @@ const AdminForm = ({
       variant="primary"
       fullWidth
       className="landing__btn-full"
-      disabled={status === "loading" || !sessionName.trim() || !adminName.trim()}
+      disabled={status === "loading" || !sessionName.trim() ||
+        !adminName.trim()}
       onClick={onCreate}
     >
       {status === "loading" ? "Creating…" : "Create & save profile"}

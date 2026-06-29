@@ -1,5 +1,5 @@
 import type { Mission } from "../../types/index.ts";
-import XPBadge from "../shared/XPBadge.tsx";
+import XpBadge from "../shared/XpBadge.tsx";
 import TagBadge from "../shared/TagBadge.tsx";
 
 interface TemplateFieldsProps {
@@ -14,7 +14,7 @@ const TemplateFields = (props: TemplateFieldsProps) => (
         className="card template-fields__item"
       >
         <span className="core-flex-1 core-text-sm">{m.title}</span>
-        <XPBadge value={m.xpValue} />
+        <XpBadge value={m.xpValue} />
         {m.tags.map((t) => <TagBadge key={t} label={t} variant={t} />)}
       </li>
     ))}

@@ -89,7 +89,7 @@ tokens → ui primitives → patterns → domain components → pages
 | Domain | [`src/components/{admin,player,form,qr,tutorial}/`](src/components/) | Feature-specific UI |
 | Pages | [`src/pages/`](src/pages/) | Composition + data wiring only; **< 200 lines** |
 
-**CSS** lives in [`src/styles/`](src/styles/). [`src/index.css`](src/index.css) is an **import manifest only** (~30 lines). Add styles to the appropriate `src/styles/components/*.css` or `src/styles/layouts/*.css` file — never grow `index.css` with rules. Unassigned styles remain in [`src/styles/legacy.css`](src/styles/legacy.css) until extracted; goal is to delete that file.
+**CSS** lives in [`src/styles/`](src/styles/). [`src/index.css`](src/index.css) is an **import manifest only** (~30 lines). Add styles to the appropriate `src/styles/components/*.css` or `src/styles/layouts/*.css` file — never grow `index.css` with rules.
 
 ### UI Implementation Rules
 
@@ -253,7 +253,7 @@ Follow up with `web_url_read` at pkg.go.dev, `raw.githubusercontent.com`, or off
 ## Reference
 
 - [`SPECS.md`](SPECS.md:1) - authoritative spec
-- [`design/component-architecture.md`](design/component-architecture.md) - UI layer model, CSS layout, remaining work
+- [`design/component-architecture.md`](design/component-architecture.md) - UI layer model, CSS layout
 - [`design/design-tokens.md`](design/design-tokens.md) - color, type, spacing, component catalog
 - [`src/components/ui/index.ts`](src/components/ui/index.ts) - UI primitive exports
 - [`src/styles/tokens.css`](src/styles/tokens.css) - runtime design tokens

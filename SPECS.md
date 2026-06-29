@@ -552,7 +552,7 @@ behavior.
 | `MissionCard`      | Both cockpits + sidebars    | `editable: boolean`   | Same trade-off as above.                                                              |
 | `BackgroundCanvas` | Both map views              | `imageUrl: string`    | Pure rendering; no role-specific logic.                                               |
 | `TagBadge`         | Mission cards, detail popup | `variant: MissionTag` | -                                                                                     |
-| `XPBadge`          | Mission cards               | `value: number`       | -                                                                                     |
+| `XpBadge`          | Mission cards               | `value: number`       | -                                                                                     |
 
 ### Player Cockpit Component Tree
 

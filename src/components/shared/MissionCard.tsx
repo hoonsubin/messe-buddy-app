@@ -1,6 +1,6 @@
 import type { Mission, ProgressEvent } from "../../types/index.ts";
 import TagBadge from "./TagBadge.tsx";
-import XPBadge from "./XPBadge.tsx";
+import XpBadge from "./XpBadge.tsx";
 
 interface MissionCardProps {
   readonly mission: Mission;
@@ -32,7 +32,7 @@ const MissionCard = (props: MissionCardProps) => {
         <p className="mission-card__title">{props.mission.title}</p>
       </button>
       <div className="mission-card__meta">
-        <XPBadge value={props.mission.xpValue} />
+        <XpBadge value={props.mission.xpValue} />
         {props.mission.tags.map((tag) => (
           <TagBadge key={tag} label={tag} variant={tag} />
         ))}

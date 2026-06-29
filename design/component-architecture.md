@@ -86,11 +86,12 @@ flowchart TB
 @import "./styles/components/a11y.css";
 @import "./styles/components/chat.css";
 @import "./styles/components/map.css";
+@import "./styles/components/sidebar.css";
+@import "./styles/components/qr.css";
 @import "./styles/components/shared.css";
 @import "./styles/components/player.css";
 @import "./styles/components/admin.css";
 @import "./styles/components/tutorial.css";
-@import "./styles/legacy.css";   /* delete when empty — see Remaining CSS work */
 ```
 
 ### File naming
@@ -222,35 +223,22 @@ Apply via `data-role` or `data-mission-type` attributes in CSS.
 | `layouts/page.css`, `layouts/landing.css` | Page shells |
 | `components/button.css` … `avatar.css` | UI primitives |
 | `components/topbar.css`, `modal.css`, `bottom-sheet.css` | Patterns |
-| `components/chat.css`, `map.css` | Chat + milestone map |
+| `components/chat.css`, `map.css`, `sidebar.css`, `qr.css` | Chat, map, sidebar, scanner |
 | `components/shared.css`, `player.css`, `admin.css`, `tutorial.css` | Domain |
-| `legacy.css` | **~1,240 lines** still to extract (see below) |
 
-### Landing page
+### Page modules
 
-- `src/pages/landing/` — `LandingShell`, `ProfileCard`, `ProfileList`, `EmployeeForm`, `AdminForm`, `RecoverySection`
-- `LandingPage.tsx` — composition only (~75 lines)
-- Role accents via `data-role` + `--color-role-*` tokens (no inline HSL in TSX)
+| Route | Composer | Hook / views |
+|-------|----------|--------------|
+| Landing | `LandingPage.tsx` (~75 lines) | `src/pages/landing/*` |
+| Player cockpit | `PlayerCockpitPage.tsx` (~160 lines) | `usePlayerCockpitPage.ts` + `src/pages/player-cockpit/*` |
+| Hire detail | `HireDetailPage.tsx` (~110 lines) | `useHireDetailPage.ts`, `HireDetailOverlays.tsx` + `src/pages/hire-detail/*` |
+
+Landing uses `data-role` + `--color-role-*` tokens (no inline HSL in TSX).
 
 ### Patterns in use
 
-`Modal`, `BottomSheet`, and `Toast` back: `ConfirmDialog`, `RecoveryKeyModal`, `NameCaptureModal`, `SaveTemplateModal`, `MissionDetailPopup`, `AdminQRScannerModal`, `ResourcesEditor`, `MissionBottomSheet` (chrome).
-
----
-
-## Remaining CSS work
-
-Drain `legacy.css` into focused files, then delete it. Page splits are the main driver:
-
-| Target | Action |
-|--------|--------|
-| `HireDetailPage.tsx` | Split into `src/pages/hire-detail/` views; extract hire-header, analytics, editor chrome CSS |
-| `PlayerCockpitPage.tsx` | Split into `src/pages/player-cockpit/` views; move cockpit layout + tab bar from `legacy.css` → `player.css` |
-| Sidebar + mission list | `legacy.css` → `components/sidebar.css` or extend `player.css` |
-| QR scanner, form shell, prose | `legacy.css` → `components/qr.css`, `form.css`, `shared.css` as appropriate |
-| Segment group, swipe-delete, mission list item | `legacy.css` → `admin.css` |
-
-**Exit criterion:** `legacy.css` is empty and removed from `index.css`.
+`Modal`, `BottomSheet`, and `Toast` back: `ConfirmDialog`, `RecoveryKeyModal`, `NameCaptureModal`, `SaveTemplateModal`, `MissionDetailPopup`, `AdminQRScannerModal`, `ResourcesEditor`, `MissionBottomSheet` (chrome). Shared `RouteTabBar` uses `.tab-bar__*` classes on player and hire-detail routes.
 
 ---
 

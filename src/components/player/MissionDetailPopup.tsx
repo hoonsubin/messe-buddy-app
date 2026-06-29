@@ -22,7 +22,7 @@ import {
 } from "../patterns/Modal.tsx";
 import { MODAL_VARIANT } from "../patterns/types.ts";
 import TagBadge from "../shared/TagBadge.tsx";
-import XPBadge from "../shared/XPBadge.tsx";
+import XpBadge from "../shared/XpBadge.tsx";
 import ValidationDisplay from "./ValidationDisplay.tsx";
 
 /** Derive visual badge config from mission type + validation method. */
@@ -161,7 +161,7 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
         </ModalTitle>
 
         <div className="mission-popup__meta core-flex-row core-flex-wrap core-gap-2 core-mb-4">
-          <XPBadge value={mission.xpValue} />
+          <XpBadge value={mission.xpValue} />
           {mission.tags.map((t) => <TagBadge key={t} label={t} variant={t} />)}
         </div>
 

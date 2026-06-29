@@ -73,3 +73,13 @@
   font-size: var(--text-xs);
   color: hsl(var(--color-muted-fg));
 }
+/* ── Tutorial overlay ────────────────────────────────────────────────────── */
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background-color: hsl(var(--color-bg));
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
