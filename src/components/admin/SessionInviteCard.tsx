@@ -189,7 +189,7 @@ const SessionInviteCard = (
         <MdPersonAdd
           size={18}
           aria-hidden="true"
-          style={{ color: "hsl(var(--color-accent))", flexShrink: 0 }}
+          className="core-icon-accent"
         />
         <h3
           style={{

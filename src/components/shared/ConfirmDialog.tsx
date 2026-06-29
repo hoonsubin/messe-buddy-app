@@ -54,33 +54,18 @@ const ConfirmDialog = ({
       >
         <h3
           id="confirm-dialog-title"
-          style={{
-            margin: 0,
-            fontSize: "var(--text-lg)",
-            fontWeight: "var(--weight-semibold)",
-          }}
+          className="core-m-0 core-text-lg core-weight-semibold"
         >
           {title}
         </h3>
         {body && (
           <p
-            style={{
-              margin: 0,
-              fontSize: "var(--text-sm)",
-              color: "hsl(var(--color-muted-fg))",
-              lineHeight: "var(--leading-relaxed)",
-            }}
+            className="core-m-0 core-text-sm core-text-muted core-leading-relaxed"
           >
             {body}
           </p>
         )}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "var(--space-3)",
-          }}
-        >
+        <div className="core-flex-row core-justify-between core-gap-3" style={{ justifyContent: "flex-end" }}>
           <button
             type="button"
             className="btn btn--ghost"

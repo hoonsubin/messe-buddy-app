@@ -40,15 +40,7 @@ const MilestoneGrid = (props: MilestoneGridProps) => {
 
   if (boxes.length === 0) {
     return (
-      <p
-        style={{
-          fontSize: "var(--text-sm)",
-          color: "hsl(var(--color-muted-fg))",
-          textAlign: "center",
-          padding: "var(--space-6) 0",
-          margin: 0,
-        }}
-      >
+      <p className="core-text-sm core-text-muted core-text-center core-m-0" style={{ padding: "var(--space-6) 0" }}>
         Choose a template above to add milestones.
       </p>
     );
@@ -111,7 +103,7 @@ const MilestoneGrid = (props: MilestoneGridProps) => {
             <MdChevronRight
               size={20}
               aria-hidden="true"
-              style={{ color: "hsl(var(--color-muted-fg))", flexShrink: 0 }}
+              className="core-icon-muted"
             />
           </span>
           <span

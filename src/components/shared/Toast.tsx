@@ -25,26 +25,9 @@ const Toast = ({ message, isError = false }: ToastProps) => {
 
   return (
     <div
+      className={`toast${isError ? " toast--error" : ""}`}
       role="status"
       aria-live="polite"
-      style={{
-        position: "fixed",
-        bottom: "var(--space-6)",
-        left: "50%",
-        transform: "translateX(-50%)",
-        zIndex: 2000,
-        padding: "var(--space-3) var(--space-5)",
-        borderRadius: "var(--radius-md)",
-        background: "hsl(var(--color-card))",
-        boxShadow: "var(--shadow-lg)",
-        fontSize: "var(--text-sm)",
-        fontWeight: "var(--weight-medium)",
-        color: isError
-          ? "hsl(var(--color-destructive))"
-          : "hsl(var(--color-status-complete))",
-        whiteSpace: "nowrap",
-        pointerEvents: "none",
-      }}
     >
       {message}
     </div>

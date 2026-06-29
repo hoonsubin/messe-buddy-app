@@ -29,13 +29,7 @@ const DifficultySelector = (props: DifficultySelectorProps) => (
         </button>
       ))}
     </div>
-    <p
-      style={{
-        fontSize: "var(--text-xs)",
-        color: "hsl(var(--color-muted-fg))",
-        marginTop: "var(--space-1)",
-      }}
-    >
+    <p className="core-text-xs core-text-muted" style={{ marginTop: "var(--space-1)" }}>
       ≈ {props.xpPreview} XP
     </p>
   </div>

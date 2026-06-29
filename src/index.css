@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap");
 @import "./styles/tokens.css";
+@import "./styles/utilities.css";
 
 /* ── Reset ───────────────────────────────────────────────────────────────── */
 *,
@@ -3234,4 +3235,80 @@ textarea.form-input {
   border-radius: var(--radius-full);
   background: hsl(var(--color-status-progress));
   transition: width var(--duration-slow) var(--ease-out);
+}
+
+/* ── Toast ───────────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: var(--space-6);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  background: hsl(var(--color-card));
+  box-shadow: var(--shadow-lg);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: hsl(var(--color-status-complete));
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.toast--error {
+  color: hsl(var(--color-destructive));
+}
+
+/* ── Not found page ───────────────────────────────────────────────────── */
+.not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: var(--space-6);
+  gap: var(--space-4);
+  text-align: center;
+  background: hsl(var(--color-bg));
+  color: hsl(var(--color-fg));
+}
+
+.not-found__title {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+}
+
+.not-found__desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: hsl(var(--color-muted-fg));
+  max-width: 24rem;
+}
+
+/* ── Fetch error panel ──────────────────────────────────────────────────── */
+.fetch-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  color: hsl(var(--color-muted-fg));
+  background: hsl(var(--color-bg));
+  gap: var(--space-4);
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.fetch-error__message {
+  margin: 0;
+  color: hsl(var(--color-destructive));
+  max-width: 24rem;
+}
+
+.fetch-error__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
 }

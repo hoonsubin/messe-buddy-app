@@ -10,30 +10,18 @@ interface ApprovalRequestCardProps {
 const ApprovalRequestCard = (props: ApprovalRequestCardProps) => (
   <div className="approval-card" data-testid="approval-request-card">
     <div>
-      <p
-        style={{
-          fontSize: "var(--text-sm)",
-          fontWeight: "var(--weight-semibold)",
-        }}
-      >
+      <p className="core-text-sm core-weight-semibold">
         {props.playerName}
       </p>
-      <p
-        style={{
-          fontSize: "var(--text-sm)",
-          color: "hsl(var(--color-muted-fg))",
-        }}
-      >
+      <p className="core-text-sm core-text-muted">
         {props.missionTitle}
       </p>
-      <p style={{ fontSize: "var(--text-xs)", marginTop: "var(--space-1)" }}>
+      <p className="core-text-xs" style={{ marginTop: "var(--space-1)" }}>
         +{props.xpValue} XP
       </p>
     </div>
-    <div
-      className="approval-card__actions"
-      style={{ display: "flex", gap: "var(--space-2)" }}
-    >
+    {/* approval-card__actions already provides display:flex + gap */}
+    <div className="approval-card__actions">
       <button
         type="button"
         className="btn btn--primary"

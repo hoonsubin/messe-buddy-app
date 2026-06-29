@@ -321,7 +321,7 @@ const HireDetailPage = () => {
         <MdPersonAdd
           size={22}
           aria-hidden="true"
-          style={{ color: "hsl(var(--color-accent))", flexShrink: 0 }}
+          className="core-icon-accent"
         />
         <span style={{ flex: 1, minWidth: 0 }}>
           <span
@@ -350,14 +350,14 @@ const HireDetailPage = () => {
             <MdExpandLess
               size={20}
               aria-hidden="true"
-              style={{ flexShrink: 0, color: "hsl(var(--color-muted-fg))" }}
+              className="core-icon-muted"
             />
           )
           : (
             <MdExpandMore
               size={20}
               aria-hidden="true"
-              style={{ flexShrink: 0, color: "hsl(var(--color-muted-fg))" }}
+              className="core-icon-muted"
             />
           )}
       </button>

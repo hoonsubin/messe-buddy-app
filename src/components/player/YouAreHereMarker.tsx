@@ -10,6 +10,7 @@ const YouAreHereMarker = (props: YouAreHereMarkerProps) => (
   <div
     className="you-are-here"
     data-testid="you-are-here-marker"
+    // Dynamic: position derived from milestone xPercent/yPercent props
     style={{ left: `${props.xPercent}%`, top: `${props.yPercent}%` }}
     aria-label="Your current location"
     role="img"

@@ -8,20 +8,10 @@ interface PendingApprovalDisplayProps {
 const PendingApprovalDisplay = (props: PendingApprovalDisplayProps) => (
   <div className="pending-approval" data-testid="pending-approval">
     <p style={{ fontSize: "var(--text-2xl)" }} aria-hidden="true">⏳</p>
-    <p
-      style={{
-        fontSize: "var(--text-base)",
-        fontWeight: "var(--weight-semibold)",
-      }}
-    >
+    <p className="core-text-base core-weight-semibold">
       Waiting for approval
     </p>
-    <p
-      style={{
-        fontSize: "var(--text-sm)",
-        color: "hsl(var(--color-muted-fg))",
-      }}
-    >
+    <p className="core-text-sm core-text-muted">
       {props.missionTitle}
     </p>
   </div>
