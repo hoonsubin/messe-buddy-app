@@ -52,12 +52,13 @@ const FormPage = () => {
 
   useEffect(() => {
     if (!formMission.formSchema) return;
-    const defaults: Record<string, string> = {};
+    // Merge admin-seeded initialValues (PLR-1); fall back to "" for unknown fields.
+    const defaults: Record<string, string> = { ...formMission.initialValues };
     for (const field of formMission.formSchema.fields) {
-      defaults[field.id] = "";
+      if (!(field.id in defaults)) defaults[field.id] = "";
     }
     setValues(defaults);
-  }, [formMission.formSchema]);
+  }, [formMission.formSchema, formMission.initialValues]);
 
   const handleFieldChange = useCallback(
     (fieldId: string, value: string) => {

@@ -180,6 +180,8 @@ const updateSession = async (
 
 const getPlayer = async (uid: string): Promise<Player | null> => {
   await Promise.resolve();
+  // Empty string would accidentally match pending slots (uid === ""); treat as not found.
+  if (!uid) return null;
   for (const p of players.values()) {
     if (p.uid === uid) return p;
   }
@@ -189,6 +191,19 @@ const getPlayer = async (uid: string): Promise<Player | null> => {
 const getPlayerById = async (playerId: string): Promise<Player | null> => {
   await Promise.resolve();
   return players.get(playerId) ?? null;
+};
+
+const getPlayerByInviteToken = async (
+  token: string,
+  sessionId: string,
+): Promise<Player | null> => {
+  await Promise.resolve();
+  // Guard: empty token must never match anything.
+  if (!token) return null;
+  for (const p of players.values()) {
+    if (p.sessionId === sessionId && p.inviteToken === token) return p;
+  }
+  return null;
 };
 
 const createPlayer = async (
@@ -468,9 +483,10 @@ export const mockAdapter: AppAdapter = {
   updateSession,
   getPlayer,
   getPlayerById,
+  getPlayerByRecoveryKey,
+  getPlayerByInviteToken,
   createPlayer,
   updatePlayer,
-  getPlayerByRecoveryKey,
   listPlayers,
   listMilestones,
   createMilestone,

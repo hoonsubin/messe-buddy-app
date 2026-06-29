@@ -70,10 +70,14 @@ const HireDetailView = ({
   const totalXP = playerProgress?.totalXP ?? 0;
 
   const missionCountsByMilestone = useMemo(
-    () => missions.reduce<Record<string, number>>(
-      (acc, m) => { acc[m.milestoneId] = (acc[m.milestoneId] ?? 0) + 1; return acc; },
-      {},
-    ),
+    () =>
+      missions.reduce<Record<string, number>>(
+        (acc, m) => {
+          acc[m.milestoneId] = (acc[m.milestoneId] ?? 0) + 1;
+          return acc;
+        },
+        {},
+      ),
     [missions],
   );
 
@@ -92,7 +96,7 @@ const HireDetailView = ({
   const overallProgress = milestoneProgress.length > 0
     ? Math.round(
       milestoneProgress.reduce((sum, mp) => sum + mp.percentComplete, 0) /
-      milestoneProgress.length,
+        milestoneProgress.length,
     )
     : 0;
 
@@ -217,7 +221,8 @@ const HireDetailView = ({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 14rem), 1fr))",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(min(100%, 14rem), 1fr))",
           gap: "var(--space-3)",
           padding: "var(--space-3) var(--space-4)",
           borderBottom: "1px solid hsl(var(--color-border))",

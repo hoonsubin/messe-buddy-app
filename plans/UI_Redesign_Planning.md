@@ -341,15 +341,231 @@ T3.16 Setup view shows "← Hire list" back navigation
 T3.17 Dirty nav guard fires when leaving setup view with isDirty === true
 ```
 
+### Test results — PS-3 (desktop 1440px + mobile 390×844, 2026-06-26)
+
+```
+T3.1  ✅  Opens in list view, no tab bar
+T3.2  ✅  "Templates" and "Resources" strip visible between stats and hire list
+T3.3  ✅  Hire row tap navigates to hire detail
+T3.4  ✅  "← Hire list" back button in detail sub-header
+T3.5  ✅  Name + role shown in sub-header; truncated correctly on narrow viewport
+T3.6  ✅  MilestoneMapViewer rendered (read-only); node tap does nothing (no handler)
+T3.7  ✅  Progress panel: XP total, milestone N / total, progress bar
+T3.8  ✅  Pending Approvals panel; approve/reject buttons per event
+T3.9  ✅  Buddy assignment panel with save
+T3.10 ✅  Checklist shows "admin only" badge and "0 / 8" progress pill
+T3.11 ✅  8 default items, all unchecked on first hire visit
+T3.12 ✅  Toggling an item updates the checklist for that hire
+T3.13 ✅  Hire A checklist state independent of Hire B (separate ephemeral records)
+T3.14 ✅  Back button returns to list view
+T3.15 ✅  "Configure" in detail sub-header → setup view; "Templates"/"Resources" in strip → setup view
+T3.16 ✅  Setup view back arrow returns to list view
+T3.17 ✅  Dirty nav guard fires; Save / Discard / Cancel all work as specified
+
+Notes:
+- Milestone map showed "0 missions" on all nodes in player view and hire detail map.
+  Root cause: MilestoneMapViewer did not accept a missionCounts prop (unlike
+  MilestoneMapEditor which did). Fixed by adding missionCounts?: Record<string,number>
+  to MilestoneMapViewer, computing counts at call sites (PlayerCockpitPage,
+  HireDetailView), and threading through. Zero-mission display is now correct.
+- TopBar logout icon added for both admin and player roles, replacing the standalone
+  "Back to Landing" bar. Hire detail sub-header top offset corrected from
+  calc(topbar-h + 2.5rem) to topbar-h after the bar was removed.
+```
+
+> **PLR-1 / PS-12 Addendum (2026-06-26):** Once PLR-1 is implemented, `CrossHireDashboard` must handle *pending* hires (`uid === ""`): rows without XP, milestone position, or progress data, rendered with a "pending" visual indicator. This is a minor revision to the already-implemented PS-3 hire list. The pending row variant and "Add hire" button placement are specified in PS-12.
+
 ---
 
-## PS-4 · Pre-Boarding Checklist — Per-Player Linking
+## PS-4 · Checklist CRUD — Inline Edit Mode
 
-**Status: Merged into PS-3 (2026-06-26).** The per-hire onboarding checklist is implemented in the hire detail view as part of PS-3. See PS-3 for implementation details. This chunk is resolved.
+**Problem:** The onboarding checklist added in PS-3 had a broken "Edit" button: `_editMode` state was toggled but intentionally unused (underscore prefix). No edit UI was rendered. Admins could check items off but could not customize the checklist for a specific hire's context — they couldn't add items, remove irrelevant ones, rename, or reorder.
+
+**Goal:** A lightweight inline edit mode (no modal) that allows full CRUD on the per-hire checklist while keeping state in `AdminCockpitPage` where it already lives.
+
+**Affected files:**
+- `src/components/admin/HireChecklist.tsx` — full CRUD implementation
+- `src/components/admin/HireDetailView.tsx` — four new prop wires (`onRename`, `onDelete`, `onAdd`, `onReorder`)
+- `src/pages/AdminCockpitPage.tsx` — four new handlers + `getChecklist` helper
+
+**In scope:** Edit mode toggle, inline rename, delete, add, drag-to-reorder. All state remains ephemeral.  
+**Out of scope:** Persistence, template presets, per-hire due dates (field exists on type, not surfaced in this PS).
+
+**Wireframe status:** `[x] Agreed` *(2026-06-26)*
+
+### Agreed design decisions
+
+**Edit/Done toggle:**
+- Header shows "Edit" (underlined text button) in read mode and "Done" (accent pill button) in edit mode.
+- "Editing checklist" replaces the section title in edit mode; progress pill and "admin only" badge are hidden.
+
+**Edit mode row layout (per item):**
+```
+┌──────────────────────────────────────────────┐
+│ ⠿  Contract signed                        ×  │
+│ ⠿  Tax forms submitted                    ×  │
+│ ⠿  ID documents verified                  ×  │
+│     ...                                      │
+├──────────────────────────────────────────────┤
+│ [ Add a checklist item…           ] [ Add ]  │
+└──────────────────────────────────────────────┘
+```
+- `⠿` = `MdDragIndicator` (six-dot vertical grip). Single column, naturally wide touch target.
+- Label field = inline `<input>` with no border (border-bottom highlights on focus). Commits on blur/Enter; Escape restores original value.
+- `×` = delete button (1.5rem × 1.5rem with 1px border).
+
+**Why drag handle instead of ↑↓ arrows:**
+The initial implementation used two stacked small arrow buttons per row. These were rejected as not mobile-appropriate and diverging from the wireframe. Replaced with `MdDragIndicator` + HTML5 drag API:
+- `draggable={true}` on each row
+- `onDragStart` stores `fromIndex` in a `useRef` (not state — avoids re-render)
+- `onDragOver` (with `preventDefault`) sets `dragOverIndex` state → highlighted bottom border (2px accent)
+- `onDrop` calls `onReorder(from, to)`; `onDragEnd` clears both refs
+- Dragging row goes to `opacity: 0.4` via `dragIndexRef.current === idx` check (ref, not state)
+
+**Add row:**
+- Always visible at the bottom of the edit list (not a button that reveals an input)
+- Input state (`newLabel`) is component-local
+- Enter key submits; focus returns to input after add
+- "Add" button disabled (+ greyed) when input is empty
+
+**State ownership (unchanged from PS-3):**
+```ts
+// AdminCockpitPage
+hireChecklists: Record<string, ReadonlyArray<PreBoardingCheckItem>>
+
+// Four new handlers
+handleChecklistRename(playerId, itemId, newLabel)
+handleChecklistDelete(playerId, itemId)
+handleChecklistAdd(playerId, label)     // generates id: `chk_custom_${Date.now()}`
+handleChecklistReorder(playerId, fromIndex, toIndex)
+
+// Helper (used by all four to avoid code duplication)
+getChecklist(playerId): ReadonlyArray<PreBoardingCheckItem>
+  → hireChecklists[playerId] ?? DEFAULT_CHECKLIST
+```
+
+### Regression tests — PS-4
+
+```
+T4.1  Edit button visible in checklist header in read mode
+T4.2  Tapping Edit shows "EDITING CHECKLIST" title + Done button; hides progress pill
+T4.3  Tapping Done returns to read mode with progress pill and admin-only badge
+T4.4  Each edit-mode row shows: drag handle icon, editable label input, delete ×
+T4.5  Clicking into a label input highlights its bottom border (accent color)
+T4.6  Editing a label and pressing Tab/blur commits the rename
+T4.7  Pressing Escape in a label input restores the original value
+T4.8  Clicking × removes the item from the list immediately
+T4.9  "Add a checklist item…" input visible at bottom of edit list
+T4.10 Typing in add input and clicking "Add" appends the item to the list
+T4.11 Add input is cleared and focused after a successful add
+T4.12 "Add" button is disabled/greyed when add input is empty
+T4.13 Enter key in add input submits (same as clicking Add)
+T4.14 Dragging an item to a new position reorders the list
+T4.15 Drop target row shows 2px accent bottom border during drag-over
+T4.16 After drop, list order reflects the reorder operation
+T4.17 All CRUD operations are isolated per-hire (Hire A edits don't affect Hire B)
+```
+
+### Test results — PS-4 (desktop 1440px, 2026-06-26)
+
+```
+T4.1  ✅  Edit button present in read mode header
+T4.2  ✅  Edit mode shows "EDITING CHECKLIST" + Done pill; progress pill absent
+T4.3  ✅  Done → read mode with progress pill and "admin only" badge restored
+T4.4  ✅  Drag handle + editable input + × delete on every row
+T4.5  ✅  Focus turns on accent border-bottom
+T4.6  ✅  Tab blur commits rename
+T4.7  ✅  Escape restores original value
+T4.8  ✅  Delete removes item
+T4.9  ✅  Add row visible at bottom
+T4.10 ✅  Add appends new item
+T4.11 ✅  Add input clears after submit
+T4.12 ✅  Add button greyed when input empty
+T4.13 ✅  Enter submits add
+T4.14 ⚠️  Drag-to-reorder: HTML5 drag API fires correctly (dragStart/dragOver/drop
+          events verified in console). Visual drop feedback (accent border) renders.
+          Playwright cannot simulate a full HTML5 drag sequence in headless mode;
+          manual verification confirms reorder works on desktop Chrome.
+T4.15 ✅  Drop target border accent appears on dragOver (verified visually)
+T4.16 ✅  List reflects reorder after drop (verified manually)
+T4.17 ✅  Hire isolation confirmed (separate hireChecklists[playerId] records)
+
+Notes:
+- T4.14/T4.16: Playwright browser_drag uses pointer events, not the HTML5 drag API.
+  Reorder cannot be automated via Playwright. Acceptable trade-off for prototype;
+  if drag becomes critical path, switch to @dnd-kit/core (pointer-event-based) in a
+  later phase — no change to state ownership or handler signatures required.
+```
+
+---
+
+## PLR-1 · Player Slot & Invite System — Page Logic Refactoring
+
+> **Type:** Logic/data layer refactor — no significant UI changes. A prerequisite for PS-12, PS-5, and the PS-3 pending-hire addendum. No wireframe needed; design agreed 2026-06-26.
+
+**Problem:** The current join flow is player-initiated. Players create themselves by typing the session code and entering their name. `joinSession` creates a minimal Player record with a device-generated UID — the admin has no way to pre-seed a slot. There is no invite mechanism. There is no concept of a "pending" hire (admin-created but not yet joined). The `department` form field is silently dropped on submit and not persisted to the Player record.
+
+**Goal:** Establish the data model and use-case layer so that:
+1. The admin can pre-create a Player slot with name, role, and department before the player joins
+2. Each slot has a one-time `inviteToken` → invite URL → invite QR
+3. A player claims the slot via the token; the token is cleared on claim
+4. The admin can re-issue a token (rotating it, invalidating current player access, preserving all progress)
+5. The profile form (`mission_m1_profile`) pre-populates from the player record's admin-seeded fields
+6. `department` is correctly persisted to the Player record on form submit
+
+**Affected files:**
+- `src/types/domain.ts` — add `department?: string` and `inviteToken?: string` to `Player`
+- `src/adapters/interface.ts` — add `getPlayerByInviteToken(token: string, sessionId: string): Promise<Player | null>`
+- `src/adapters/mock/mockAdapter.ts` — implement new method; filter `uid === ""` entries from player-facing queries; add `getPlayerByInviteToken`
+- `src/adapters/mock/mockData.ts` — add one pending player slot (uid = "", inviteToken set) to `MOCK_PLAYERS`
+- `src/use-cases/joinSession.ts` — add `claimPlayerSlot(token, sessionId, adapter)` alongside existing `joinSession`
+- New `src/utils/inviteUrl.ts` — `generateInviteToken(): string`, `buildInviteUrl(sessionId: string, token: string): string`
+- `src/hooks/useLandingFlow.ts` — detect `?token` query param on mount; if present, call `getPlayerByInviteToken` → auto-claim → skip manual join steps; also pre-fill session code from `:sessionId` route param (currently ignored)
+- `src/hooks/useFormMission.ts` — pre-populate profile form initial values from player record fields when `missionId === PROFILE_MISSION_ID`; fix `department` not being written to Player on submit
+
+**In scope:** Player type extension, adapter contract + mock implementation, claim use case, invite URL utility, landing flow branching, profile form pre-population, `department` field fix.  
+**Out of scope:** Admin UI for hire creation (PS-12), pending hire rendering in hire list (PS-12), invite QR component (PS-12).
+
+**Blocks:** PS-12 (depends entirely on this), PS-5 (needs `department` on Player type), PS-7 (pending state variant for wireframe).
+
+**Design decisions (agreed 2026-06-26):**
+
+| Decision | Resolution |
+|----------|-----------|
+| How is "pending" encoded? | `uid === ""` sentinel — no separate status field. `getPlayer(uid)` returns null for old uid after re-invite. |
+| Does `listPlayers` return pending slots? | Yes — admin needs to see them. Player-facing queries must filter `uid === ""` entries out. |
+| Token format | Short random alphanumeric string (12 chars). No HMAC — the DB lookup IS the validation. |
+| Re-invite mechanism | `updatePlayer(id, { uid: "", inviteToken: generateToken() })`. Progress events keyed by `player.id` (PB record ID) are unaffected. |
+| Token in URL | Query param: `/join/:sessionId?token=<token>`. Existing route structure unchanged. |
+| Form pre-population | `useFormMission` reads player record fields as initial values when opening `PROFILE_MISSION_ID`. Player can edit all fields; submit overwrites. |
+| `department` fix | Add to the patch in `useFormMission.submitForm`; add field to Player type in this refactor. |
+
+**Regression tests — PLR-1**
+
+```
+T-PLR1.1  Player type accepts `department` and `inviteToken` fields without TS errors
+T-PLR1.2  `getPlayerByInviteToken` returns the pending slot for a valid token
+T-PLR1.3  `getPlayerByInviteToken` returns null for an unknown or used token
+T-PLR1.4  `claimPlayerSlot` sets uid + recoveryKey and clears inviteToken on the Player record
+T-PLR1.5  After claim, the old token no longer resolves via `getPlayerByInviteToken`
+T-PLR1.6  Navigating to `/join/:sessionId?token=<valid>` bypasses the manual join steps
+T-PLR1.7  Navigating to `/join/:sessionId?token=<used>` shows an error state
+T-PLR1.8  Profile form opens pre-populated with admin-seeded name, role, department
+T-PLR1.9  Submitting the profile form writes `department` to the Player record
+T-PLR1.10 `listPlayers` returns pending slots (uid = "") alongside active players
+T-PLR1.11 `getPlayer(uid)` returns null after re-invite clears uid
+T-PLR1.12 Re-invite preserves all progress events for the Player record
+T-PLR1.13 `buildInviteUrl` returns a valid URL containing sessionId and token
+T-PLR1.14 `/join/:sessionId` pre-fills the session code input from the route param
+```
+
+**Implementation status:** ⬜ Not started
 
 ---
 
 ## PS-5 · Profile Edit Views (Player + Game Maker)
+
+> **Blocked by PLR-1.** The `department` field is added to the `Player` type in PLR-1. Profile form pre-population (admin-seeded data flowing into form defaults) is also established in PLR-1. Implement PS-5 after PLR-1 is complete. The `src/types/domain.ts` audit below is handled by PLR-1 — do not duplicate.
 
 **Problem:** Neither role has a profile editing view. Players cannot update their preferred name, role/department, or avatar. Game Makers cannot update their display info. The player profile card in the admin view does not show department info.
 
@@ -364,15 +580,168 @@ T3.17 Dirty nav guard fires when leaving setup view with isDirty === true
 - `src/components/shared/TopBar.tsx` — add `onAvatarClick` prop, remove `aria-hidden`, make div a `<button>`
 - `src/pages/PlayerCockpitPage.tsx` — handle `onAvatarClick` to open sheet
 - `src/pages/AdminCockpitPage.tsx` — handle `onAvatarClick` to open GM profile sheet
-- `src/components/player/` — new `ProfileEditSheet.tsx`
-- `src/components/admin/PlayerProfileCard.tsx` — add department field rendering
+- New `src/components/shared/ProfileEditSheet.tsx` — shared sheet component, parameterised by fields
 - `src/types/index.ts` — confirm `department` field exists on Player type
-- `src/hooks/useResolvedPlayer.ts` — expose update fields
+- `src/hooks/useResolvedPlayer.ts` — expose `updatePlayer` with partial update signature
 
 **In scope:** Profile edit UI, department display, avatar click trigger.  
-**Out of scope:** Avatar upload infrastructure (can stub), authentication changes.
+**Out of scope:** Avatar upload infrastructure (stub only), authentication changes.
 
-**Wireframe status:** `[ ] Not started`
+**Wireframe status:** `[x] Agreed` *(2026-06-26)*
+
+---
+
+### Wireframe — Player Profile Sheet
+
+The sheet slides up from the bottom of the screen, covering approximately 55–65% of viewport height. A scrim covers the rest; tapping it closes without saving. A drag handle at the top communicates dismissibility.
+
+```
+╔══════════════════════════════════════════╗
+║         ╌╌╌╌╌╌  (drag handle)           ║
+║                                          ║
+║   ◉ AJ   Edit profile                   ║
+║   [tap to upload photo — coming soon]    ║
+║                                          ║
+║  Display name                            ║
+║  ┌──────────────────────────────────┐   ║
+║  │ Alex Johnson                     │   ║
+║  └──────────────────────────────────┘   ║
+║                                          ║
+║  Preferred name (shown in greetings)     ║
+║  ┌──────────────────────────────────┐   ║
+║  │ Alex                             │   ║
+║  └──────────────────────────────────┘   ║
+║                                          ║
+║  Role / title                            ║
+║  ┌──────────────────────────────────┐   ║
+║  │ Digital Content Manager          │   ║
+║  └──────────────────────────────────┘   ║
+║                                          ║
+║  Department                              ║
+║  ┌──────────────────────────────────┐   ║
+║  │ Marketing                        │   ║
+║  └──────────────────────────────────┘   ║
+║                                          ║
+║  ┌──────────────────────────────────┐   ║
+║  │         Save changes             │   ║  ← primary button (full width)
+║  └──────────────────────────────────┘   ║
+║               Cancel                    ║  ← ghost text button
+╚══════════════════════════════════════════╝
+```
+
+Avatar circle in the sheet header:
+- Shows current initials (same logic as TopBar)
+- "Tap to upload" label underneath — shows a `"Coming soon"` toast on tap; no upload implemented
+
+Department field renders under the welcome header on the player cockpit:
+```
+Welcome, Alex.
+Digital Content Manager · Marketing       ← new line, muted text, font-size: var(--text-sm)
+Your onboarding journey starts here.
+```
+
+---
+
+### Wireframe — GM Profile Sheet
+
+Simpler — only display name, since GM auth state is thinner than a full Player record.
+
+```
+╔══════════════════════════════════════════╗
+║         ╌╌╌╌╌╌  (drag handle)           ║
+║                                          ║
+║   ◉ M2   Edit your display name         ║
+║                                          ║
+║  Display name                            ║
+║  ┌──────────────────────────────────┐   ║
+║  │ Game Master                      │   ║
+║  └──────────────────────────────────┘   ║
+║                                          ║
+║  ┌──────────────────────────────────┐   ║
+║  │         Save changes             │   ║
+║  └──────────────────────────────────┘   ║
+║               Cancel                    ║
+╚══════════════════════════════════════════╝
+```
+
+GM name change updates the `TopBar` display only (session-scoped string state in `AdminCockpitPage`; no backend write needed in prototype).
+
+---
+
+### User interaction flow
+
+**Player — open and edit:**
+1. Player taps the avatar initials circle in TopBar (top-left)
+2. `onAvatarClick` fires → `PlayerCockpitPage` sets `isProfileEditOpen = true`
+3. `ProfileEditSheet` renders with `open={true}` → sheet animates up from bottom
+4. Fields pre-filled from `player` record (`name`, `preferredName`, `role`, `department`)
+5. Player edits any combination of fields (local draft state inside `ProfileEditSheet`)
+6. Player taps **Save changes**:
+   a. `updatePlayer({ name, preferredName, role, department })` called (mock adapter: immediate)
+   b. Sheet closes (`isProfileEditOpen = false`)
+   c. TopBar re-renders with new initials/name (via the same `player` record)
+   d. Welcome header re-renders with updated name + department
+7. Player taps **Cancel** or the scrim → sheet closes; draft state discarded; no update call
+
+**Player — unsaved changes guard:**
+- If player edited at least one field and taps Cancel or the scrim → confirm discard:
+  ```
+  "Discard changes?" [ Keep editing ]  [ Discard ]
+  ```
+  This is a lightweight `window.confirm` or inline pill — not a full ConfirmDialog — to keep the interaction fast.
+
+**GM — open and edit:**
+1. GM taps avatar in TopBar (same `onAvatarClick` prop)
+2. `AdminCockpitPage` sets `isGMProfileEditOpen = true`
+3. Simpler sheet renders with only display name field
+4. Save → updates session-scoped GM name string in local state → TopBar re-renders
+5. Cancel → closes, no change
+
+---
+
+### Pre-implementation decisions to confirm
+
+| Decision | Options | Resolution |
+|----------|---------|-----------|
+| Is `name` editable? | Yes (editable) / No (read-only, set at join) | **Editable** — players often join with a full name and want to use a shorter display name |
+| `department` field on `Player` type | Added in PLR-1 | ✅ Resolved by PLR-1 — do not add again |
+| `preferredName` field on `Player` type | Already present in `domain.ts` | ✅ Confirmed present |
+| Where does `department` appear in player cockpit? | Under welcome header / on buddy card / TopBar subtitle | **Under welcome header** — buddy card is about the buddy, not the player |
+| Avatar upload | Implement / Stub with "coming soon" | **Stub** — keep scope tight; infrastructure cost is non-trivial |
+| Unsaved changes guard | `window.confirm` / inline pill / full `ConfirmDialog` | **Inline pill** — matches the lightness of the sheet interaction |
+| GM profile persistence | Session-scoped state / Player record update | **Session-scoped** for prototype |
+
+---
+
+### Affected files
+
+- `src/components/shared/TopBar.tsx` — add `onAvatarClick?: () => void`; convert `.topbar__avatar` div → `<button>`; remove `aria-hidden`; add `cursor: pointer` and `minWidth/minHeight: var(--min-touch)`
+- `src/pages/PlayerCockpitPage.tsx` — `isProfileEditOpen` state; `handleAvatarClick`; render `<ProfileEditSheet>`
+- `src/pages/AdminCockpitPage.tsx` — `isGMProfileEditOpen` state; `handleAvatarClick`; render `<GMProfileSheet>` (or reuse `ProfileEditSheet` with `variant="gm"`)
+- New `src/components/shared/ProfileEditSheet.tsx` — controlled sheet component; internal draft state; `onSave(fields)` / `onClose()` props
+- `src/pages/PlayerCockpitPage.tsx` — add department line under welcome header
+- `src/types/domain.ts` — audit `Player` type for `preferredName`, `department` fields
+- `src/hooks/useResolvedPlayer.ts` — confirm `updatePlayer` accepts partial `Player` fields
+
+### Regression tests — PS-5
+
+```
+T5.1  TopBar avatar is a focusable button element (not aria-hidden)
+T5.2  Tapping avatar in player cockpit opens the profile edit sheet
+T5.3  Sheet pre-fills all fields from the current player record
+T5.4  Editing a field and saving updates the player cockpit welcome header
+T5.5  Saving updates the TopBar initials/name if name was changed
+T5.6  Cancel closes the sheet with no changes to the player record
+T5.7  Tapping the scrim closes the sheet (same as Cancel)
+T5.8  Editing a field then tapping Cancel shows the discard prompt
+T5.9  Department is shown under the welcome header in player cockpit
+T5.10 Tapping avatar in admin cockpit opens the GM profile sheet (not player sheet)
+T5.11 GM sheet contains only the display name field
+T5.12 Saving GM sheet updates the TopBar display name in admin cockpit
+T5.13 Avatar "upload" tap shows "Coming soon" toast; no upload dialog opens
+T5.14 Sheet is accessible: all inputs are labelled; focus is trapped inside sheet
+T5.15 Sheet closes correctly on mobile when the OS keyboard appears and dismisses
+```
 
 ---
 
@@ -400,6 +769,8 @@ T3.17 Dirty nav guard fires when leaving setup view with isDirty === true
 ---
 
 ## PS-7 · Hire List + Map Sizing
+
+> **Partially blocked by PLR-1 / PS-12.** The hire list row wireframe must incorporate the "pending" hire state introduced by PLR-1/PS-12 (no XP, no progress, pending indicator). Finalize the PS-7 wireframe after PS-12 design is locked.
 
 **Problem:** Two specific sizing issues:
 1. `CrossHireDashboard` rows are sized such that the list is hard to scan and navigate on mobile.
@@ -646,73 +1017,187 @@ Recommendation: **Option A (tabs)** for mobile — matches how the map already o
 
 ---
 
+## PS-12 · Admin Hire Creation + Invite Flow
+
+> **Depends on PLR-1.** Do not implement until PLR-1 is complete.
+
+**Problem:** The admin has no way to create a hire slot from the dashboard. The only way a player enters the system is by typing the session code themselves on the landing page — the admin cannot pre-seed name, role, or department, and there is no invite mechanism to direct a specific person to a specific slot.
+
+**Goal:** Add an "Add hire" action to the admin hire list view. The created slot appears immediately in the hire list with a "pending" status (invite not yet accepted). The hire detail view shows an invite block (URL + QR) for unclaimed slots, and a low-prominence "Re-invite player" button for active players that rotates the token and reverts the hire to pending.
+
+This is the sole new admin UI chunk enabled by PLR-1.
+
+**Affected files:**
+- `src/pages/AdminCockpitPage.tsx` — "Add hire" handler; `createPlayerSlot` use-case call; re-invite handler
+- `src/components/admin/CrossHireDashboard.tsx` — "pending" state row variant for `uid === ""` hires; "Add hire" button in toolbar
+- `src/components/admin/HireDetailView.tsx` — invite block for pending hires; re-invite button for active hires; re-invite confirmation dialog
+- New `src/components/admin/HireCreateForm.tsx` — inline/sheet form: name (required), role (required), department (required), buddy (optional)
+- New `src/components/admin/InviteBlock.tsx` — invite URL text + QR code + copy-link button + status message
+
+**In scope:** Hire creation form, invite block UI, pending row variant in hire list, re-invite button + confirmation, invite QR display.  
+**Out of scope:** Invite delivery by email, per-hire milestone setup (deferred — see PS-3 note), QR scanning infrastructure (already exists separately for mission validation).
+
+**Depends on:** PLR-1 (types, adapter, `claimPlayerSlot` use case, `inviteUrl.ts` utility).
+
+**Wireframe status:** `[x] Agreed` *(2026-06-26)*
+
+---
+
+### Wireframe — Hire List with Pending State
+
+```
+┌──────────────────────────────────────────────┐
+│  New Hires  · 3 active  · 1 pending          │
+│                                              │
+│  [ + Add new hire ]   [ Templates ] [ Resources ] │
+│                                              │
+│  ┌────────────────────────────────────────┐  │
+│  │ 🟡  Sarah K.   · HR & Organisation    │ >│  ← pending (uid = "")
+│  │     Invite not yet accepted            │  │
+│  └────────────────────────────────────────┘  │
+│  ┌────────────────────────────────────────┐  │
+│  │ 🟢  Alex Johnson  · Marketing          │ >│  ← active
+│  │     Milestone 2 / 4  ·  40 XP         │  │
+│  └────────────────────────────────────────┘  │
+└──────────────────────────────────────────────┘
+```
+
+### Wireframe — Invite Block (Pending Hire Detail)
+
+```
+╔══════════════════════════════════════════╗
+║  ← Hire list    Sarah K.  · HR & Org    ║  ← sub-header (unchanged)
+╠══════════════════════════════════════════╣
+║                                          ║
+║  ┌──────────────────────────────────┐   ║
+║  │  Waiting for player to join      │   ║
+║  │                                  │   ║
+║  │       [████ QR CODE ████]        │   ║
+║  │                                  │   ║
+║  │  https://…/join/sess_…?          │   ║
+║  │  token=XXXXXXXXXXXX              │   ║
+║  │  [ Copy link ]                   │   ║
+║  │                                  │   ║
+║  │  This player has not joined yet. │   ║
+║  │  Share this link with them.      │   ║
+║  └──────────────────────────────────┘   ║
+║                                          ║
+║  (milestone map, checklist below)        ║
+╚══════════════════════════════════════════╝
+```
+
+### Wireframe — Re-invite (Active Hire Detail Footer)
+
+```
+╔══════════════════════════════════════════╗
+║  (hire detail content above)             ║
+╠══════════════════════════════════════════╣
+║                                          ║
+║  ┌──────────────────────────────────┐   ║
+║  │  [ Re-invite player ]            │   ║  ← small, muted, destructive styling
+║  └──────────────────────────────────┘   ║
+╚══════════════════════════════════════════╝
+
+Confirmation dialog:
+"This will invalidate Alex's current access. They will need to rejoin
+using a new link. Their progress will be preserved."
+                              [ Cancel ]  [ Re-invite ]
+```
+
+### Regression tests — PS-12
+
+```
+T12.1  "Add new hire" button is visible in the hire list toolbar
+T12.2  Clicking "Add new hire" opens the hire creation form
+T12.3  Hire creation form requires: name, role, department
+T12.4  Submitting the form creates a Player record with uid="" and an inviteToken
+T12.5  New hire appears immediately in the hire list with a pending indicator
+T12.6  Pending hire row shows "Invite not yet accepted" (no XP, no milestone)
+T12.7  Clicking a pending hire's row opens hire detail with the invite block
+T12.8  Invite block shows a QR code and a copyable URL
+T12.9  Invite block message: "This player has not joined yet. Share this link with them."
+T12.10 "Copy link" copies the full invite URL to clipboard
+T12.11 An active hire (uid ≠ "") does NOT render the invite block
+T12.12 An active hire renders a "Re-invite player" button in the detail view
+T12.13 Tapping "Re-invite player" shows the destructive confirmation dialog
+T12.14 Confirmation dialog warns that current access will be invalidated
+T12.15 Confirming re-invite calls updatePlayer({ uid: "", inviteToken: newToken })
+T12.16 After re-invite, hire switches to pending in the list
+T12.17 After re-invite, existing player's CachedIdentity no longer resolves (getPlayer → null)
+T12.18 After re-invite, player progress events are unchanged
+T12.19 Player joining via new invite link successfully claims the same Player record
+```
+
+---
+
 ## Implementation Order (Dependency Graph)
 
 ```
-PS-1 (primary restructure)
-  └── PS-2 (lazy map tab)         ← depends on PS-1 tab structure
-  └── PS-4 (checklist per-player) ← depends on PS-1 hire list being primary
-  └── PS-7 hire list sizing       ← depends on PS-1 promoting hire list
+PLR-1 (page logic: types, adapter, use cases, landing flow, form pre-fill)
+  └── PS-12 (admin hire creation + invite UI)    ← blocked by PLR-1
+  └── PS-5  (profile edit views)                 ← blocked by PLR-1 (department field)
+  └── PS-7  (hire list + map sizing)             ← partially blocked (pending row variant)
+  └── PS-3 addendum (pending hire in list)       ← minor revision, depends on PLR-1
 
-PS-3 (sidebar reorder)            ← can be done in parallel with PS-1,
-                                     or may become moot if PS-1 moves sidebar
+PS-8 (milestone node visuals)  ← independent; CSS-only
+  └── PS-11A (remove YouAreHereMarker)           ← depends on PS-8 being done
 
-PS-5 (profile edit)               ← independent; TopBar change touches both roles
-PS-6 (AI chat size)               ← independent, player cockpit only
-PS-7 map sizing                   ← independent of PS-1, can run in parallel
-PS-8 (milestone node visuals)     ← independent; CSS-only, no data changes
-PS-9 (XP toast)                   ← depends on useProgress hook; player cockpit only
-PS-10 (quiz mission type)         ← independent feature track; touches types, adapter,
-                                     admin editor, and player cockpit/pages
-PS-11A (remove YouAreHereMarker)  ← depends on PS-8 being agreed (PS-8 makes the
-                                     marker redundant; implement together or after)
-PS-11B (active mission view)      ← player cockpit only; audit sidebar overlap with
-                                     MilestoneSidebarViewer at wireframe stage
+PS-6  (AI chat expanded)       ← independent, player cockpit only
+PS-9  (XP gain toasts)         ← depends on useProgress hook; player cockpit only
+PS-10 (quiz mission type)      ← independent feature track; own data + UI track
+PS-11B (active mission view)   ← player cockpit only; audit sidebar at wireframe stage
 ```
 
 **Recommended sequence:**
-1. Agree wireframes for **PS-1** and **PS-2** together (they define the admin skeleton)
-2. Agree wireframes for **PS-4** and **PS-5** (player-facing, includes topbar avatar trigger)
-3. Agree wireframes for **PS-6**, **PS-8**, and **PS-9** (player cockpit polish)
-4. Agree wireframes for **PS-3** and **PS-7** (sizing and reorder)
-5. Agree notation format and wireframes for **PS-10** (quiz type — own track)
-6. Agree wireframes for **PS-11B** (active mission view — decide tab vs. accordion vs. priority-split pattern)
-7. Implement in order: PS-1 → PS-2 → PS-3 → PS-4 → PS-5 → PS-8 → PS-11A → PS-11B → PS-9 → PS-6 → PS-7 → PS-10
+1. **PLR-1** — logic prerequisite for the invite flow; no UI changes
+2. **PS-12** — admin hire creation + invite UI (depends on PLR-1)
+3. **PS-5** — profile edit views (unblocked after PLR-1 adds `department`)
+4. **PS-8** — milestone node visuals (independent; CSS-only)
+5. **PS-11A** — remove YouAreHereMarker (after PS-8)
+6. **PS-11B** — active mission view (wireframe pattern decision first)
+7. **PS-9** — XP gain toasts (after mission view is stable)
+8. **PS-6** — AI chat expanded (independent)
+9. **PS-7** — hire list + map sizing (wireframe after PS-12 design is locked)
+10. **PS-10** — quiz mission type (own track; can start any time)
 
 ---
 
 ## Implementation Status
 
-| PS | Wireframe | Implementation |
-|----|-----------|----------------|
-| PS-1 · Admin Cockpit Primary View | ✅ Agreed 2026-06-25 | ✅ Implemented 2026-06-25 |
-| PS-2 · Map + Mission Lazy Render | ✅ Agreed 2026-06-25 | ✅ Implemented 2026-06-25 |
-| PS-3 · Admin Hire-First Architecture | ✅ Agreed 2026-06-26 | 🔄 In progress |
-| PS-4 · Checklist Per-Player | ✅ Merged into PS-3 | ✅ Resolved |
-| PS-5 · Profile Edit Views | ⬜ Not started | — |
-| PS-6 · AI Chat Expanded | ⬜ Not started | — |
-| PS-7 · Hire List + Map Sizing | ⬜ Not started | — |
-| PS-8 · Milestone Node Visuals | ⬜ Not started | — |
-| PS-9 · XP Toast Notifications | ⬜ Not started | — |
-| PS-10 · Quiz Mission Type | ⬜ Not started | — |
-| PS-11A · Remove YouAreHereMarker | ✅ Agreed | ⬜ Not started |
-| PS-11B · Active Mission View | ⬜ Not started | — |
+| Chunk | Type | Wireframe / Design | Implementation |
+|-------|------|--------------------|----------------|
+| PS-1 · Admin Cockpit Primary View | UI | ✅ Agreed 2026-06-25 | ✅ Implemented 2026-06-25 |
+| PS-2 · Map + Mission Lazy Render | UI | ✅ Agreed 2026-06-25 | ✅ Implemented 2026-06-25 |
+| PS-3 · Admin Hire-First Architecture | UI | ✅ Agreed 2026-06-26 | ✅ Implemented 2026-06-26 |
+| PS-4 · Checklist CRUD — Inline Edit Mode | UI | ✅ Agreed 2026-06-26 | ✅ Implemented 2026-06-26 |
+| PLR-1 · Player Slot & Invite System | Logic | ✅ Design agreed 2026-06-26 | ⬜ Not started |
+| PS-12 · Admin Hire Creation + Invite UI | UI | ✅ Agreed 2026-06-26 | ⬜ Blocked by PLR-1 |
+| PS-5 · Profile Edit Views | UI | ✅ Agreed 2026-06-26 | ⬜ Blocked by PLR-1 |
+| PS-6 · AI Chat Expanded | UI | ⬜ Not started | — |
+| PS-7 · Hire List + Map Sizing | UI | ⬜ Blocked by PS-12 | — |
+| PS-8 · Milestone Node Visuals | UI | ⬜ Not started | — |
+| PS-9 · XP Toast Notifications | UI | ⬜ Not started | — |
+| PS-10 · Quiz Mission Type | Feature | ⬜ Not started | — |
+| PS-11A · Remove YouAreHereMarker | UI | ✅ Agreed | ⬜ After PS-8 |
+| PS-11B · Active Mission View | UI | ⬜ Not started | — |
 
-**Implementation entry point for a coding agent:** PS-1 and PS-2 are fully specified. Primary file is `src/pages/AdminCockpitPage.tsx`. Read the implementation steps under PS-1 and PS-2 above before touching any file. Do not start PS-3 or later without a wireframe agreement.
+**Implementation entry point for a coding agent:** PS-1 through PS-4 are fully implemented. Next up is PLR-1 (no UI, pure logic/data layer) — read the PLR-1 section above in full before touching any file. PS-12 and PS-5 cannot begin until PLR-1 is complete.
 
 ---
 
 ## Session Backlog
 
-- [x] **PS-1 · Admin restructure** — agreed 2026-06-25; see implementation steps above
-- [x] **PS-2 · Lazy map tab** — agreed 2026-06-25; see implementation steps above
-- [x] **PS-3 · Admin hire-first architecture** — agreed 2026-06-26; see implementation steps above; PS-4 merged in
-- [x] **PS-4 · Checklist per player** — merged into PS-3; resolved
-- [ ] **PS-5 · Profile edit views** — wireframe: player profile sheet triggered by topbar avatar tap; GM variant; department display location
-- [ ] **PS-6 · AI chat expanded** — decision: pattern A/B/C; wireframe accordingly
-- [ ] **PS-7 · Sizing adjustments** — wireframe: hire list row layout; map container proportions
-- [ ] **PS-8 · Milestone node visuals** — agree color tier palette + text contrast fix; confirm design token mapping
-- [ ] **PS-9 · XP gain toasts** — agree position (top vs. bottom), style (generic Toast vs. XP variant), animation
-- [ ] **PS-10 · Quiz mission type** — agree notation format (MCQ + fill-in-the-blank syntax); wireframe GM authoring view (QuizEditor preview panel) and player quiz flow (question sequencing, score screen, retry)
-- [x] **PS-11A · Remove YouAreHereMarker** — agreed; implement after PS-8 (node fill colors make marker redundant)
-- [ ] **PS-11B · Active mission view** — decide pattern: tabs (A) vs. accordion (B) vs. priority split (C); wireframe milestone grouping, GM priority badge, sidebar overlap audit
+- [x] **PS-1 · Admin restructure** — agreed 2026-06-25; implemented 2026-06-25
+- [x] **PS-2 · Lazy map tab** — agreed 2026-06-25; implemented 2026-06-25
+- [x] **PS-3 · Admin hire-first architecture** — agreed + implemented 2026-06-26; see PLR-1/PS-12 addendum for pending hire revision
+- [x] **PS-4 · Checklist CRUD** — agreed + implemented 2026-06-26; drag handle replaces ↑↓ arrows
+- [ ] **PLR-1 · Player slot & invite system** — design agreed 2026-06-26; implement types → adapter → use cases → landing flow → form pre-fill; no UI changes
+- [ ] **PS-12 · Admin hire creation + invite UI** — wireframe agreed 2026-06-26; blocked by PLR-1; hire creation form, invite block, pending state, re-invite
+- [ ] **PS-5 · Profile edit views** — wireframe agreed 2026-06-26; blocked by PLR-1 (`department` field); player + GM sheets, department under welcome header
+- [ ] **PS-6 · AI chat expanded** — wireframe decision needed: pattern A (overlay), B (draggable sheet), or C (dedicated tab)
+- [ ] **PS-7 · Sizing adjustments** — wireframe after PS-12 locked; hire list row layout (inc. pending variant) + map container proportions
+- [ ] **PS-8 · Milestone node visuals** — agree color tier palette + text contrast fix; CSS-only
+- [ ] **PS-9 · XP gain toasts** — agree position (top vs. bottom), style (Toast variant), animation; implement after mission view stable
+- [ ] **PS-10 · Quiz mission type** — agree notation format (MCQ + fill-in-the-blank syntax); own track; GM authoring view + player quiz flow
+- [x] **PS-11A · Remove YouAreHereMarker** — agreed; implement after PS-8
+- [ ] **PS-11B · Active mission view** — decide pattern: tabs (A) vs. accordion (B) vs. priority split (C); wireframe milestone grouping + GM priority badge

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormSchema, PBRecord, Player } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 
@@ -21,6 +21,9 @@ export interface UseFormMissionResult {
   readonly formSchema: FormSchema | null;
   readonly missionTitle: string;
   readonly missionBody: string | undefined;
+  /** Pre-populated initial values for the profile form.
+   *  Empty object for all other missions. */
+  readonly initialValues: Record<string, string>;
   readonly loading: boolean;
   readonly error: Error | null;
   readonly refresh: () => void;
@@ -73,6 +76,28 @@ export const useFormMission = (
     };
   }, [adapter, missionId, refreshKey]);
 
+  // ── Profile form pre-population (PLR-1) ────────────────────────────────────
+  // When the player opens the profile mission, pre-fill from their Player record.
+  // Admin-seeded fields (name, role, department) surface here so the player just
+  // confirms and augments rather than typing everything from scratch.
+  const initialValues = useMemo<Record<string, string>>(() => {
+    if (missionId !== PROFILE_MISSION_ID || !player) return {};
+    return {
+      name: player.name ?? "",
+      preferredName: player.preferredName ?? "",
+      pronouns: player.pronouns ?? "",
+      role: player.role ?? "",
+      department: player.department ?? "",
+      team: player.team ?? "",
+      location: player.location ?? "",
+      timezone: player.timezone ?? "",
+      workArrangement: player.workStyle ?? "",
+      languages: (player.languages ?? []).join(", "),
+      skillsConfident: (player.skillsConfident ?? []).join(", "),
+      catchUpAreas: (player.skillsDevelop ?? []).join(", "),
+    };
+  }, [missionId, player]);
+
   const submitForm = useCallback(
     async (values: Record<string, string>) => {
       if (!player || !missionId) {
@@ -95,6 +120,10 @@ export const useFormMission = (
           patch["pronouns"] = values.pronouns || undefined;
         }
         if (values.role) patch["role"] = values.role;
+        // department fix (PLR-1): was silently dropped before
+        if (values.department !== undefined) {
+          patch["department"] = values.department || undefined;
+        }
         if (values.team) patch["team"] = values.team;
         if (values.location) patch["location"] = values.location;
         if (values.timezone) patch["timezone"] = values.timezone;
@@ -132,6 +161,7 @@ export const useFormMission = (
     formSchema,
     missionTitle: mission?.title ?? "Form Mission",
     missionBody: mission?.body,
+    initialValues,
     loading,
     error,
     refresh,

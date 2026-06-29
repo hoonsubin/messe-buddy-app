@@ -804,6 +804,29 @@ export const MOCK_PLAYERS: ReadonlyArray<Player> = [
     languages: [],
     workStyle: undefined,
   },
+  // Pending slot — admin-created, invite not yet accepted (PLR-1)
+  {
+    ...pb("player_sarah_k"),
+    uid: "", // sentinel: not yet claimed
+    recoveryKey: "SARAHR01",
+    sessionId: "sess_mmt2026",
+    tutorialComplete: false,
+    profileComplete: false,
+    name: "Sarah K.",
+    preferredName: undefined,
+    pronouns: undefined,
+    role: "HR Specialist",
+    department: "HR & Organisation",
+    team: "HR & Organisation",
+    startDate: "2026-07-01",
+    location: "Munich",
+    timezone: "Europe/Berlin",
+    skillsConfident: [],
+    skillsDevelop: [],
+    languages: [],
+    workStyle: undefined,
+    inviteToken: "INVITE000001", // fixed token for dev; real tokens generated via generateInviteToken()
+  },
 ];
 
 // ── Buddy Profiles ────────────────────────────────────────────────────────────

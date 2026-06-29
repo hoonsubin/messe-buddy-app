@@ -1,8 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  MdChevronRight,
-  MdWarning,
-} from "react-icons/md";
+import { MdChevronRight, MdWarning } from "react-icons/md";
 
 import type { HireProgressRow } from "../../hooks/useProgress/types.ts";
 
@@ -360,7 +357,9 @@ const CrossHireDashboard = ({
                       color: "hsl(var(--color-muted-fg))",
                     }}
                   >
-                    {hire.totalXP} XP · Milestone {hire.currentMilestoneIndex}/{hire.totalMilestones} · {hire.currentMilestoneName}
+                    {hire.totalXP} XP · Milestone{" "}
+                    {hire.currentMilestoneIndex}/{hire.totalMilestones} ·{" "}
+                    {hire.currentMilestoneName}
                   </span>
                 </div>
 

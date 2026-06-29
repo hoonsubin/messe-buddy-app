@@ -222,8 +222,13 @@ const HireChecklist = ({
               key={item.id}
               data-testid={`checklist-edit-row-${item.id}`}
               draggable
-              onDragStart={() => { dragIndexRef.current = idx; }}
-              onDragOver={(e) => { e.preventDefault(); setDragOverIndex(idx); }}
+              onDragStart={() => {
+                dragIndexRef.current = idx;
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOverIndex(idx);
+              }}
               onDrop={() => {
                 const from = dragIndexRef.current;
                 if (from !== null && from !== idx) onReorder(from, idx);
@@ -277,7 +282,9 @@ const HireChecklist = ({
                   }
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") e.currentTarget.blur();
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur();
+                  }
                   if (e.key === "Escape") {
                     e.currentTarget.value = item.label;
                     e.currentTarget.blur();
@@ -308,7 +315,8 @@ const HireChecklist = ({
                 type="button"
                 data-testid={`checklist-delete-btn-${item.id}`}
                 aria-label={`Delete "${item.label}"`}
-                onClick={() => onDelete(item.id)}
+                onClick={() =>
+                  onDelete(item.id)}
                 style={{
                   display: "flex",
                   alignItems: "center",

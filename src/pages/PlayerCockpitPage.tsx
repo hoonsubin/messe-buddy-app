@@ -118,7 +118,10 @@ const PlayerCockpitPage = () => {
 
   const currentMissions = missions.filter((m) => m.isInCurrentMissions);
   const missionCountsByMilestone = missions.reduce<Record<string, number>>(
-    (acc, m) => { acc[m.milestoneId] = (acc[m.milestoneId] ?? 0) + 1; return acc; },
+    (acc, m) => {
+      acc[m.milestoneId] = (acc[m.milestoneId] ?? 0) + 1;
+      return acc;
+    },
     {},
   );
   const selectedMilestone = selectedMilestoneId !== null

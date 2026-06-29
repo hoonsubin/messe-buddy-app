@@ -219,7 +219,7 @@ const AdminCockpitPage = () => {
   const getChecklist = useCallback(
     (playerId: string): ReadonlyArray<PreBoardingCheckItem> =>
       hireChecklists[playerId] ??
-      (DEFAULT_CHECKLIST as ReadonlyArray<PreBoardingCheckItem>),
+        (DEFAULT_CHECKLIST as ReadonlyArray<PreBoardingCheckItem>),
     [hireChecklists],
   );
 

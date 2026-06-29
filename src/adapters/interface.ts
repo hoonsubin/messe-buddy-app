@@ -30,12 +30,17 @@ export interface AppAdapter {
   // Players
   getPlayer(uid: string): Promise<Player | null>;
   getPlayerById(playerId: string): Promise<Player | null>;
+  getPlayerByRecoveryKey(recoveryKey: string): Promise<Player | null>;
+  /** Returns the pending slot whose inviteToken matches, or null if used/unknown. */
+  getPlayerByInviteToken(
+    token: string,
+    sessionId: string,
+  ): Promise<Player | null>;
   createPlayer(data: Omit<Player, keyof PBRecord>): Promise<Player>;
   updatePlayer(
     playerId: string,
     patch: Partial<Omit<Player, keyof PBRecord>>,
   ): Promise<Player>;
-  getPlayerByRecoveryKey(recoveryKey: string): Promise<Player | null>;
   listPlayers(sessionId: string): Promise<ReadonlyArray<Player>>;
 
   // Milestones
