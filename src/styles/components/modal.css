@@ -1,0 +1,182 @@
+/* MesseBuddy — Modal pattern (Phase 2) */
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: hsl(var(--color-fg) / 0.4);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+}
+
+.modal {
+  width: min(28rem, 100%);
+  max-height: 90dvh;
+  background-color: hsl(var(--color-card));
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-6);
+  gap: var(--space-5);
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-6);
+  border-block-end: 1px solid hsl(var(--color-border));
+  flex-shrink: 0;
+}
+
+.modal__title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  margin: 0;
+}
+
+.modal--narrow .modal__title {
+  font-size: var(--text-lg);
+  margin: 0 0 var(--space-2);
+}
+
+.modal__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-5) var(--space-6);
+}
+
+.modal__footer {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  padding: var(--space-4) var(--space-6);
+  border-block-start: 1px solid hsl(var(--color-border));
+  flex-shrink: 0;
+}
+
+.modal--narrow {
+  width: 100%;
+  max-width: 22rem;
+}
+
+.modal--structured {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.modal-backdrop--blur {
+  backdrop-filter: blur(4px);
+}
+
+/* Recovery / name-capture content blocks (unified under modal__) */
+.modal__description {
+  font-size: var(--text-sm);
+  color: hsl(var(--color-muted-fg));
+  margin: 0 0 var(--space-5);
+}
+
+.modal__key {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: hsl(var(--color-secondary));
+  border: 1px solid hsl(var(--color-border));
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.modal__key-text {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  letter-spacing: 0.15em;
+  color: hsl(var(--color-fg));
+  user-select: all;
+}
+
+.modal__actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+.modal__actions--stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Legacy aliases — remove after all call sites migrated */
+/* ── Recovery key modal ──────────────────────────────────────────────────── */
+.recovery-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: hsl(var(--color-fg) / 0.5);
+}
+
+.recovery-modal__container {
+  width: 100%;
+  max-width: 22rem;
+  padding: var(--space-6);
+  background-color: hsl(var(--color-card));
+  border-radius: var(--radius-lg);
+  border: 1px solid hsl(var(--color-border));
+  box-shadow: var(--shadow-lg);
+}
+
+.recovery-modal__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: hsl(var(--color-fg));
+  margin: 0 0 var(--space-2);
+}
+
+.recovery-modal__description {
+  font-size: var(--text-sm);
+  color: hsl(var(--color-muted-fg));
+  margin: 0 0 var(--space-5);
+}
+
+.recovery-modal__key {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: hsl(var(--color-secondary));
+  border: 1px solid hsl(var(--color-border));
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.recovery-modal__key-text {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  letter-spacing: 0.15em;
+  color: hsl(var(--color-fg));
+  user-select: all;
+}
+
+.recovery-modal__key-btn {
+  flex-shrink: 0;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.recovery-modal__dismiss-btn {
+  width: 100%;
+  justify-content: center;
+}
+

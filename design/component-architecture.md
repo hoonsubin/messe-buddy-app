@@ -2,8 +2,6 @@
 
 Design-centric modularization plan for the React + CSS codebase. Complements [`design-tokens.md`](design-tokens.md) (token values) and [`SPECS.md`](../SPECS.md) (domain constraints).
 
-**Status:** Phase 0–1 implemented (2026-06-29). See [Migration status](#migration-status) below.
-
 ---
 
 ## Goals
@@ -82,6 +80,8 @@ flowchart TB
 @import "./styles/components/icon-button.css";
 @import "./styles/components/avatar.css";
 @import "./styles/components/topbar.css";
+@import "./styles/components/modal.css";
+@import "./styles/components/bottom-sheet.css";
 @import "./styles/components/a11y.css";
 @import "./styles/components/shared.css";
 @import "./styles/components/player.css";
@@ -177,10 +177,10 @@ Cross-cutting components that compose primitives. Migration target for `src/comp
 | Pattern | Status | Notes |
 |---------|--------|-------|
 | `TopBar` | Phase 1 — uses `Avatar`, `IconButton` | Stays in `shared/` until `AppTopBar` rename |
-| `Toast` | Phase 1 — CSS in `shared.css` | Moves to `patterns/` in Phase 2 |
-| `ConfirmDialog` | Existing | Uses `Modal` CSS |
-| `Modal` | Phase 2 | Unify `recovery-modal` + `modal` |
-| `BottomSheet` | Phase 2 | Extract from `MissionBottomSheet` chrome |
+| `Toast` | Phase 1 — CSS in `shared.css` | [`patterns/Toast.tsx`](../src/components/patterns/Toast.tsx) |
+| `Modal` | Phase 2 ✅ | [`patterns/Modal.tsx`](../src/components/patterns/Modal.tsx) — centered dialogs |
+| `BottomSheet` | Phase 2 ✅ | [`patterns/BottomSheet.tsx`](../src/components/patterns/BottomSheet.tsx) — drag, backdrop |
+| `ConfirmDialog` | Phase 2 — uses `Modal` | [`shared/ConfirmDialog.tsx`](../src/components/shared/ConfirmDialog.tsx) |
 
 ---
 
@@ -215,18 +215,19 @@ Apply via `data-role` or `data-mission-type` attributes in CSS.
 |-------|-------|--------|
 | **0** | `reset.css`, import manifest, semantic tokens, extract button/card/form/topbar | ✅ Done |
 | **1** | `ui/` primitives; migrate TopBar, ConfirmSheet, Toast | ✅ Done |
-| **2** | `Modal`, `BottomSheet` patterns; merge overlay CSS | Planned |
+| **2** | `Modal`, `BottomSheet` patterns; merge overlay CSS; migrate 7 consumers | ✅ Done |
 | **3** | Split `LandingPage`; extract landing/chat/map CSS from `legacy.css` | Planned |
 | **4** | Split `HireDetailPage`, `PlayerCockpitPage`; delete `legacy.css` | Planned |
 
 ### Migration status
 
-After Phase 0–1:
+After Phase 0–2:
 
-- `index.css` is an import manifest (~25 lines)
-- `legacy.css` holds remaining styles (~2,960 lines) pending Phase 2–4 extraction
+- `index.css` is an import manifest (~27 lines)
+- `legacy.css` holds remaining styles (~2,630 lines) pending Phase 3–4 extraction
 - `src/components/ui/` provides Button, Card, Input, Textarea, IconButton, Avatar
-- TopBar and ConfirmSheet use primitives
+- `src/components/patterns/` provides Modal, BottomSheet, Toast
+- Overlay consumers migrated: ConfirmDialog, RecoveryKeyModal, NameCaptureModal, SaveTemplateModal, MissionDetailPopup, AdminQRScannerModal, ResourcesEditor, MissionBottomSheet (chrome)
 
 ---
 

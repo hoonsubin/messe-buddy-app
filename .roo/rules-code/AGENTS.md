@@ -75,7 +75,7 @@ Complements the design system in [`design/component-architecture.md`](../../desi
 
 - Hardcoded `hsl(...)`, `#hex`, or `rgb(...)` in TSX — add token to [`tokens.css`](../../src/styles/tokens.css)
 - `style={{}}` for colors, spacing, typography, borders, shadows
-- New BEM overlay blocks — use `.modal-*` or `.bottom-sheet-*` until `Modal`/`BottomSheet` patterns land (Phase 2)
+- New BEM overlay blocks — use `.modal-*` or `.bottom-sheet-*` until `Modal`/`BottomSheet` patterns land
 - ASCII symbols or emojis as UI icons — use `react-icons`
 
 ### Allowed `style={{}}` exceptions

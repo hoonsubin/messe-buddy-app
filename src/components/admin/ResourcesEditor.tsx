@@ -8,6 +8,7 @@ import {
 import type { PBRecord, Resource } from "../../types/index.ts";
 import type { ResourceType } from "../../types/index.ts";
 import { RESOURCE_TYPE } from "../../types/index.ts";
+import { Modal } from "../patterns/Modal.tsx";
 
 interface ResourcesEditorProps {
   readonly resources: ReadonlyArray<Resource>;
@@ -140,20 +141,19 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
       </button>
 
       {editing !== null && (
-        <div
-          className="modal-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-label={editing === "new" ? "Add resource" : "Edit resource"}
-          onClick={close}
+        <Modal
+          open
+          onBackdropClick={close}
+          aria-labelledby="resources-editor-modal-title"
+          testId="resources-editor-modal"
+          panelClassName="card resources-editor__modal"
         >
-          <div
-            className="card resources-editor__modal"
-            onClick={(e) => e.stopPropagation()}
+          <h3
+            id="resources-editor-modal-title"
+            className="resources-editor__modal-title"
           >
-            <h3 className="resources-editor__modal-title">
-              {editing === "new" ? "Add resource" : "Edit resource"}
-            </h3>
+            {editing === "new" ? "Add resource" : "Edit resource"}
+          </h3>
 
             <div className="form-field">
               <label className="form-label" htmlFor="res-title">Title</label>
@@ -219,8 +219,7 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
                 {editing === "new" ? "Add" : "Save"}
               </button>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

@@ -32,6 +32,8 @@ Mobile-first. Primary smoke viewport: **390×844** (iPhone-class). Admin desktop
 @import "./styles/components/icon-button.css";
 @import "./styles/components/avatar.css";
 @import "./styles/components/topbar.css";
+@import "./styles/components/modal.css";
+@import "./styles/components/bottom-sheet.css";
 @import "./styles/components/a11y.css";
 @import "./styles/components/shared.css";
 @import "./styles/components/player.css";
@@ -277,9 +279,9 @@ Reuse these before creating new components. Paths relative to `src/components/`.
 
 | Pattern | Classes | Components |
 |---------|---------|------------|
-| Center modal | `.recovery-modal`, `.recovery-modal__*` | [`RecoveryKeyModal`](../src/components/shared/RecoveryKeyModal.tsx), [`NameCaptureModal`](../src/components/shared/NameCaptureModal.tsx) |
-| Generic modal | `.modal-backdrop`, `.modal`, `.modal__*` | Save template, confirm dialogs |
-| Bottom sheet | `.bottom-sheet-backdrop`, `.bottom-sheet`, `.sheet-*` | [`MissionBottomSheet`](../src/components/admin/MissionBottomSheet.tsx) |
+| Center modal | `.modal-backdrop`, `.modal`, `.modal__*` | [`Modal`](../src/components/patterns/Modal.tsx) — prefer component |
+| Bottom sheet | `.bottom-sheet-*`, `.sheet-*` | [`BottomSheet`](../src/components/patterns/BottomSheet.tsx) |
+| Recovery key (legacy CSS aliases) | `.recovery-modal__*` | Use `Modal variant="narrow"` |
 | Confirm sheet | `.sheet-confirm` | [`ConfirmSheet`](../src/components/admin/ConfirmSheet.tsx) |
 | Full-screen | `.tutorial-overlay`, `.qr-scanner` | Tutorial, QR scanner |
 | Toast | inline styles only | [`Toast.tsx`](../src/components/shared/Toast.tsx) |
@@ -402,4 +404,4 @@ After any UI change, verify on **390×844** (Playwright MCP, Firefox/iPhone 15 p
 
 ---
 
-*Last synced with codebase: 2026-06-29 (Phase 0–1: CSS manifest, ui primitives, component-architecture.md).*
+*Last synced with codebase: 2026-06-29 (Phase 0–2: ui primitives, Modal/BottomSheet patterns, overlay migration).*

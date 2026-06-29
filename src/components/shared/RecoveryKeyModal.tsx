@@ -1,12 +1,19 @@
 import { useState } from "react";
+import Button from "../ui/Button.tsx";
+import { BUTTON_VARIANT } from "../ui/types.ts";
+import {
+  Modal,
+  ModalDescription,
+  ModalKeyBlock,
+  ModalTitle,
+} from "../patterns/Modal.tsx";
+import { MODAL_VARIANT } from "../patterns/types.ts";
 
 interface RecoveryKeyModalProps {
   readonly recoveryKey: string;
   readonly onDismiss: () => void;
 }
 
-// Shown once after joinSession or createGameMakerSession.
-// Forces an explicit acknowledgement before routing to the cockpit.
 const RecoveryKeyModal = (props: RecoveryKeyModalProps) => {
   const [copied, setCopied] = useState(false);
 
@@ -18,45 +25,38 @@ const RecoveryKeyModal = (props: RecoveryKeyModalProps) => {
   };
 
   return (
-    <div
-      className="recovery-modal"
+    <Modal
+      open
+      variant={MODAL_VARIANT.NARROW}
       role="dialog"
-      aria-modal="true"
       aria-labelledby="recovery-modal-title"
     >
-      <div className="recovery-modal__container">
-        <h2 id="recovery-modal-title" className="recovery-modal__title">
-          Save your recovery key
-        </h2>
-        <p className="recovery-modal__description">
-          This key restores your progress if you lose access. It won't be shown
-          again.
-        </p>
+      <ModalTitle id="recovery-modal-title">Save your recovery key</ModalTitle>
+      <ModalDescription>
+        This key restores your progress if you lose access. It won't be shown
+        again.
+      </ModalDescription>
 
-        {/* Key display */}
-        <div className="recovery-modal__key">
-          <code className="recovery-modal__key-text">
-            {props.recoveryKey}
-          </code>
-          <button
-            type="button"
-            className="btn btn--ghost recovery-modal__key-btn"
-            onClick={handleCopy}
-            aria-label="Copy recovery key to clipboard"
-          >
-            {copied ? "Copied!" : "Copy"}
-          </button>
-        </div>
-
-        <button
-          type="button"
-          className="btn btn--primary recovery-modal__dismiss-btn"
-          onClick={props.onDismiss}
+      <ModalKeyBlock>
+        <code className="modal__key-text">{props.recoveryKey}</code>
+        <Button
+          variant={BUTTON_VARIANT.GHOST}
+          className="recovery-modal__key-btn"
+          onClick={handleCopy}
+          aria-label="Copy recovery key to clipboard"
         >
-          I've saved my recovery key
-        </button>
-      </div>
-    </div>
+          {copied ? "Copied!" : "Copy"}
+        </Button>
+      </ModalKeyBlock>
+
+      <Button
+        variant={BUTTON_VARIANT.PRIMARY}
+        fullWidth
+        onClick={props.onDismiss}
+      >
+        I've saved my recovery key
+      </Button>
+    </Modal>
   );
 };
 

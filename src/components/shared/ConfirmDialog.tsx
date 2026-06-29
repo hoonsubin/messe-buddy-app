@@ -1,19 +1,11 @@
-/**
- * ConfirmDialog - centered modal dialog for irreversible or interruptive actions.
- *
- * Uses the existing .modal-backdrop / .modal CSS classes so it inherits the
- * same centering, backdrop blur, and border-radius treatment as SaveTemplateModal.
- *
- * Usage:
- *   <ConfirmDialog
- *     isOpen={showSkipConfirm}
- *     title="Skip tutorial?"
- *     body="You can always complete the tutorial later from settings."
- *     confirmLabel="Skip tutorial"
- *     onConfirm={handleSkipConfirm}
- *     onCancel={handleSkipCancel}
- *   />
- */
+import Button from "../ui/Button.tsx";
+import { BUTTON_VARIANT } from "../ui/types.ts";
+import {
+  Modal,
+  ModalActions,
+  ModalDescription,
+  ModalTitle,
+} from "../patterns/Modal.tsx";
 
 interface ConfirmDialogProps {
   readonly isOpen: boolean;
@@ -36,54 +28,30 @@ const ConfirmDialog = ({
   isDestructive = false,
   onConfirm,
   onCancel,
-}: ConfirmDialogProps) => {
-  if (!isOpen) return null;
-
-  return (
-    <div
-      className="modal-backdrop"
-      onClick={onCancel}
-      data-testid="confirm-dialog"
-    >
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="confirm-dialog-title"
-        className="modal"
-        onClick={(e) => e.stopPropagation()}
+}: ConfirmDialogProps) => (
+  <Modal
+    open={isOpen}
+    onBackdropClick={onCancel}
+    role="alertdialog"
+    aria-labelledby="confirm-dialog-title"
+    testId="confirm-dialog"
+  >
+    <ModalTitle id="confirm-dialog-title">{title}</ModalTitle>
+    {body && <ModalDescription>{body}</ModalDescription>}
+    <ModalActions>
+      <Button variant={BUTTON_VARIANT.GHOST} onClick={onCancel}>
+        {cancelLabel}
+      </Button>
+      <Button
+        variant={isDestructive
+          ? BUTTON_VARIANT.DESTRUCTIVE
+          : BUTTON_VARIANT.PRIMARY}
+        onClick={onConfirm}
       >
-        <h3
-          id="confirm-dialog-title"
-          className="core-m-0 core-text-lg core-weight-semibold"
-        >
-          {title}
-        </h3>
-        {body && (
-          <p className="core-m-0 core-text-sm core-text-muted core-leading-relaxed">
-            {body}
-          </p>
-        )}
-        <div className="core-flex-row core-justify-end core-gap-3">
-          <button
-            type="button"
-            className="btn btn--ghost"
-            onClick={onCancel}
-          >
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            className={`btn ${
-              isDestructive ? "btn--destructive" : "btn--primary"
-            }`}
-            onClick={onConfirm}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+        {confirmLabel}
+      </Button>
+    </ModalActions>
+  </Modal>
+);
 
 export default ConfirmDialog;

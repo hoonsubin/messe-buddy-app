@@ -1,41 +1,34 @@
 /**
  * PocketBase E2E smoke — Firefox + iPhone 15 against Docker app.
- * Run: SMOKE_BASE_URL=https://localhost deno run -A --node-modules-dir=auto scripts/smoke-e2e.ts
+ *
+ * GM creates a session via inline Admin form → player joins via Employee form.
+ *
+ * Run:
+ *   SMOKE_BASE_URL=https://localhost deno task smoke-e2e
  *
  * Prerequisites: docker compose up --build (app service healthy on :443)
  */
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { devices, firefox } from "npm:playwright@^1.61.0";
+import {
+  attachConsoleCollector,
+  createRecorder,
+  dismissRecoveryIfPresent,
+  dismissTutorialIfPresent,
+  isBenignConsoleError,
+  SMOKE_OUT_DIR,
+  summarizeAndExit,
+  type SmokeResult,
+} from "./smoke-utils.ts";
 
 const BASE = Deno.env.get("SMOKE_BASE_URL") ?? "https://localhost";
-const OUT = ".playwright-mcp";
 
-interface Result {
-  name: string;
-  pass: boolean;
-  detail?: string;
-}
-
-const results: Result[] = [];
-
-const record = (name: string, pass: boolean, detail = "") => {
-  results.push({ name, pass, detail });
-  const icon = pass ? "PASS" : "FAIL";
-  console.log(`[${icon}] ${name}${detail ? `: ${detail}` : ""}`);
-};
-
-const dismissRecoveryIfPresent = async (page: import("npm:playwright@^1.61.0").Page) => {
-  const dismiss = page.getByRole("button", {
-    name: "I've saved my recovery key",
-  });
-  if (await dismiss.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await dismiss.click();
-  }
-};
+const results: SmokeResult[] = [];
+const record = createRecorder(results);
 
 const main = async () => {
-  await mkdir(OUT, { recursive: true });
+  await mkdir(SMOKE_OUT_DIR, { recursive: true });
 
   const browser = await firefox.launch({ headless: true });
   const device = devices["iPhone 15"];
@@ -53,12 +46,8 @@ const main = async () => {
   const playerPage = await playerContext.newPage();
 
   const consoleErrors: string[] = [];
-  for (const page of [gmPage, playerPage]) {
-    page.on("console", (msg) => {
-      if (msg.type() === "error") consoleErrors.push(msg.text());
-    });
-    page.on("pageerror", (err) => consoleErrors.push(String(err)));
-  }
+  attachConsoleCollector(gmPage, consoleErrors);
+  attachConsoleCollector(playerPage, consoleErrors);
 
   try {
     // ── SMOKE-01: GM creates session ───────────────────────────────────────
@@ -66,6 +55,7 @@ const main = async () => {
     await gmPage.waitForSelector('[data-testid="landing-page"]');
 
     await gmPage.getByRole("button", { name: "Admin", exact: true }).click();
+    await gmPage.waitForSelector("#lp-session-name", { timeout: 5000 });
     await gmPage.locator("#lp-session-name").fill("E2E Smoke Test");
     await gmPage.locator("#lp-admin-name").fill("Smoke GM");
     await gmPage.getByRole("button", { name: "Create & save profile" }).click();
@@ -73,21 +63,22 @@ const main = async () => {
     try {
       await gmPage.waitForURL(/\/admin\//, { timeout: 20000 });
     } catch {
-      const errText = await gmPage.locator(".form-error, .landing__error")
-        .textContent()
-        .catch(() => "");
+      const errText = await gmPage.locator(".form-error").textContent().catch(
+        () => "",
+      );
       await gmPage.screenshot({
-        path: join(OUT, "e2e-fail-gm-create.png"),
+        path: join(SMOKE_OUT_DIR, "e2e-fail-gm-create.png"),
         fullPage: true,
       });
       record(
         "SMOKE-01 GM session create",
         false,
-        `no navigation; error=${errText ?? "none"}; url=${gmPage.url()}`,
+        `no navigation; error=${errText || "none"}; url=${gmPage.url()}`,
       );
       throw new Error("GM session create failed");
     }
-    await gmPage.waitForSelector('[data-testid="admin-cockpit-page"]', {
+
+    await gmPage.waitForSelector('[data-testid="admin-home-page"]', {
       timeout: 15000,
     });
 
@@ -98,26 +89,30 @@ const main = async () => {
       `sessionId=${sessionId}`,
     );
     await gmPage.screenshot({
-      path: join(OUT, "e2e-01-gm-cockpit.png"),
+      path: join(SMOKE_OUT_DIR, "e2e-01-admin-home.png"),
       fullPage: true,
     });
 
-    // ── SMOKE-01: Player joins ───────────────────────────────────────────
+    // ── SMOKE-01: Player joins (2-step employee form) ──────────────────────
     await playerPage.goto(`${BASE}/`, { waitUntil: "networkidle" });
     await playerPage.getByRole("button", { name: "Employee", exact: true })
       .click();
+    await playerPage.waitForSelector("#lp-session-code", { timeout: 5000 });
     await playerPage.locator("#lp-session-code").fill(sessionId);
     await playerPage.getByRole("button", { name: "Verify session" }).click();
-    await playerPage.locator("#lp-player-name").fill("Smoke Player", {
-      timeout: 10000,
-    });
+    await playerPage.waitForSelector("#lp-player-name", { timeout: 10000 });
+    await playerPage.locator("#lp-player-name").fill("Smoke Player");
     await playerPage.getByRole("button", { name: "Join & save profile" })
       .click();
     await dismissRecoveryIfPresent(playerPage);
     await playerPage.waitForURL(/\/session\//, { timeout: 15000 });
+    await playerPage.waitForSelector('[data-testid="player-cockpit-page"]', {
+      timeout: 15000,
+    });
     await playerPage.waitForSelector('[data-testid="topbar"]', {
       timeout: 15000,
     });
+    await dismissTutorialIfPresent(playerPage);
 
     record(
       "SMOKE-01 Player join",
@@ -125,13 +120,13 @@ const main = async () => {
       playerPage.url(),
     );
     await playerPage.screenshot({
-      path: join(OUT, "e2e-02-player-cockpit.png"),
+      path: join(SMOKE_OUT_DIR, "e2e-02-player-cockpit.png"),
       fullPage: true,
     });
 
     // ── Persistence: reload both contexts ──────────────────────────────────
     await gmPage.reload({ waitUntil: "networkidle" });
-    await gmPage.waitForSelector('[data-testid="admin-cockpit-page"]', {
+    await gmPage.waitForSelector('[data-testid="admin-home-page"]', {
       timeout: 15000,
     });
     record(
@@ -148,32 +143,24 @@ const main = async () => {
       playerPage.url().includes(`/session/${sessionId}`),
     );
 
-    // ── SMOKE-02 lite: API health via session fetch (page loaded = PB ok) ─
     record(
-      "SMOKE-02 Session data reachable",
-      await gmPage.locator('[data-testid="admin-cockpit-page"]').isVisible(),
+      "SMOKE-02 Admin home reachable after create",
+      await gmPage.locator('[data-testid="admin-home-page"]').isVisible(),
     );
 
-    const benign = consoleErrors.filter(
-      (e) =>
-        !e.includes("favicon") &&
-        !e.includes("404") &&
-        !e.includes("service worker"),
+    const bad = consoleErrors.filter((e) => !isBenignConsoleError(e));
+    record(
+      "No unexpected console errors",
+      bad.length === 0,
+      bad.join("; ") || "clean",
     );
-    record("No console errors", benign.length === 0, benign.join("; ") || "clean");
   } finally {
     await gmContext.close();
     await playerContext.close();
     await browser.close();
   }
 
-  const failed = results.filter((r) => !r.pass);
-  console.log("\n--- E2E Summary ---");
-  console.log(`Passed: ${results.length - failed.length}/${results.length}`);
-  if (failed.length > 0) {
-    console.error("Failed:", failed.map((f) => f.name).join(", "));
-    Deno.exit(1);
-  }
+  summarizeAndExit(results, "E2E smoke");
 };
 
 await main();

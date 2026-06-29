@@ -85,7 +85,7 @@ tokens → ui primitives → patterns → domain components → pages
 | Tokens | [`src/styles/tokens.css`](src/styles/tokens.css) | HSL channels, spacing, typography — no hex/rgb in TSX |
 | Utilities | [`src/styles/utilities.css`](src/styles/utilities.css) | `core-*` layout helpers only |
 | UI primitives | [`src/components/ui/`](src/components/ui/) | `Button`, `Card`, `Input`, `IconButton`, `Avatar` — import via barrel |
-| Patterns | [`src/components/patterns/`](src/components/patterns/) | Cross-route UX: `Toast`, future `Modal`/`BottomSheet` |
+| Patterns | [`src/components/patterns/`](src/components/patterns/) | Cross-route UX: `Modal`, `BottomSheet`, `Toast` |
 | Domain | [`src/components/{admin,player,form,qr,tutorial}/`](src/components/) | Feature-specific UI |
 | Pages | [`src/pages/`](src/pages/) | Composition + data wiring only; **< 200 lines** |
 
@@ -96,7 +96,7 @@ tokens → ui primitives → patterns → domain components → pages
 1. **Use primitives first** — `Button` not raw `.btn`; `Input` not raw `.form-input`; `IconButton` not inline button-reset styles
 2. **No design `style={{}}`** — allowed only for dynamic geometry (map `%` positions, chart bars, camera viewport)
 3. **No hardcoded colors in TSX** — extend `tokens.css` and use `hsl(var(--token))` or `data-*` attribute selectors in CSS
-4. **No new overlay BEM blocks** — use existing `.modal-*` / `.bottom-sheet-*` (Phase 2: `Modal`/`BottomSheet` patterns)
+4. **No new overlay BEM blocks** — use `Modal` or `BottomSheet` from [`src/components/patterns/`](src/components/patterns/)
 5. **Icons** — `react-icons` only; never ASCII symbols or emojis in UI
 6. **Touch targets** — min `var(--touch-target)` (44px) on all interactive controls
 7. **Class helper** — use [`cn()`](src/utils/cn.ts) for conditional BEM modifiers
@@ -231,7 +231,6 @@ See [`.env.example`](.env.example:1). `VITE_PB_URL` and `VITE_LITELLM_URL` are *
 - **Form missions** always `autoApproved` regardless of `validationMethod` (C-06). `ValidationDisplay` never mounts for `type: "form"`.
 - **SSE subscription** via `useWatchMission` → `subscribeProgressEvent`: [`QRDisplay`](src/components/player/QRDisplay.tsx) for `qr`, [`ValidationDisplay`](src/components/player/ValidationDisplay.tsx) for `gmApprove` only (C-07, C-20). Everything else fetched once on mount.
 - **Template export** embeds `_milestoneOrder`/`_missionOrder` ([`exportTemplate.ts`](src/use-cases/exportTemplate.ts:27)) - FK remapping keys for import ([`importTemplate.ts`](src/use-cases/importTemplate.ts:13)).
-- **`useChatStream`** is a Phase 1 stub ([`useChatStream.ts`](src/hooks/useChatStream.ts:20)) - returns empty state.
 - **`consume-docs/`** feeds the RAG pipeline - documents chunked, embedded, stored in pgvector.
 
 ---

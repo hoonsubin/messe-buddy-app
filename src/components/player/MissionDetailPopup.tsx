@@ -10,6 +10,17 @@ import {
 import { marked } from "marked";
 import type { Mission, ProgressEvent } from "../../types/index.ts";
 import { MISSION_TYPE } from "../../types/index.ts";
+import Button from "../ui/Button.tsx";
+import { BUTTON_VARIANT } from "../ui/types.ts";
+import IconButton from "../ui/IconButton.tsx";
+import {
+  Modal,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+} from "../patterns/Modal.tsx";
+import { MODAL_VARIANT } from "../patterns/types.ts";
 import TagBadge from "../shared/TagBadge.tsx";
 import XPBadge from "../shared/XPBadge.tsx";
 import ValidationDisplay from "./ValidationDisplay.tsx";
@@ -121,171 +132,103 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
     : "Mark Complete";
 
   return (
-    <div
-      className="modal-backdrop"
-      data-testid="mission-detail-popup"
-      // Spec: does NOT dismiss on backdrop click - only close button + swipe-down
+    <Modal
+      open
+      variant={MODAL_VARIANT.STRUCTURED}
+      testId="mission-detail-popup"
+      aria-labelledby="mission-popup-title"
+      panelProps={{
+        onTouchStart: handleTouchStart,
+        onTouchEnd: handleTouchEnd,
+      }}
     >
-      <div
-        className="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="mission-popup-title"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        {/* Fixed header: method badge + close button */}
-        <div className="modal__header">
-          <span
-            className={`mission-method-badge ${methodBadge.className}`}
-            aria-label={methodBadge.label}
-          >
-            <methodBadge.Icon size={11} aria-hidden="true" />
-            {methodBadge.label}
-          </span>
-          <button
-            type="button"
-            className="icon-btn"
-            onClick={props.onClose}
-            aria-label="Close"
-          >
-            <MdClose size={20} aria-hidden="true" />
-          </button>
+      <ModalHeader>
+        <span
+          className={`mission-method-badge ${methodBadge.className}`}
+          aria-label={methodBadge.label}
+        >
+          <methodBadge.Icon size={11} aria-hidden="true" />
+          {methodBadge.label}
+        </span>
+        <IconButton onClick={props.onClose} aria-label="Close">
+          <MdClose size={20} aria-hidden="true" />
+        </IconButton>
+      </ModalHeader>
+
+      <ModalBody>
+        <ModalTitle id="mission-popup-title" className="mission-popup__title">
+          {mission.title}
+        </ModalTitle>
+
+        <div className="mission-popup__meta core-flex-row core-flex-wrap core-gap-2 core-mb-4">
+          <XPBadge value={mission.xpValue} />
+          {mission.tags.map((t) => (
+            <TagBadge key={t} label={t} variant={t} />
+          ))}
         </div>
 
-        {/* Scrollable body */}
-        <div className="modal__body">
-          {/* Title */}
-          <h2
-            id="mission-popup-title"
-            style={{
-              margin: "0 0 var(--space-3)",
-              fontSize: "var(--text-xl)",
-              fontWeight: "var(--weight-semibold)",
-              lineHeight: "var(--leading-tight)",
-            }}
-          >
-            {mission.title}
-          </h2>
-
-          {/* Meta row: XP + tags */}
-          <div
-            style={{
-              display: "flex",
-              gap: "var(--space-2)",
-              flexWrap: "wrap",
-              marginBottom: "var(--space-4)",
-            }}
-          >
-            <XPBadge value={mission.xpValue} />
-            {mission.tags.map((t) => (
-              <TagBadge
-                key={t}
-                label={t}
-                variant={t}
-              />
-            ))}
-          </div>
-
-          {/* QR context hint - shown before the user triggers validation */}
-          {mission.validationMethod === "qr" && !showValidation &&
-            !isCompleted && (
-            <div
-              style={{
-                marginBottom: "var(--space-4)",
-                padding: "var(--space-3)",
-                background: "hsl(var(--color-status-progress) / 0.08)",
-                borderRadius: "var(--radius-md)",
-                display: "flex",
-                alignItems: "center",
-                gap: "var(--space-2)",
-                fontSize: "var(--text-xs)",
-                color: "hsl(var(--color-status-progress))",
-                fontWeight: "var(--weight-medium)",
-              }}
-            >
-              <MdQrCode2 size={16} aria-hidden="true" />
-              Your buddy or Game Master will scan a QR code to confirm this.
-            </div>
-          )}
-
-          {/* Body - rendered as Markdown for text missions */}
-          {bodyHtml && !isLink && (
-            <div
-              className="prose"
-              dangerouslySetInnerHTML={{ __html: bodyHtml }}
-            />
-          )}
-
-          {/* Link missions - show external URL + open button */}
-          {isLink && mission.externalUrl && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "var(--space-3)",
-              }}
-            >
-              {bodyHtml && (
-                <div
-                  className="prose"
-                  dangerouslySetInnerHTML={{ __html: bodyHtml }}
-                />
-              )}
-              <a
-                href={mission.externalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn--secondary"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "var(--space-2)",
-                  alignSelf: "flex-start",
-                }}
-              >
-                <MdOpenInNew size={16} aria-hidden="true" />
-                Open Link
-              </a>
-            </div>
-          )}
-
-          {/* Validation display (gmApprove / qr) mounts here once triggered */}
-          {showValidation && (
-            <div style={{ marginTop: "var(--space-4)" }}>
-              <ValidationDisplay
-                playerId={props.playerId}
-                missionId={mission.id}
-                sessionId={props.sessionId}
-                mission={mission}
-                onValidated={props.onValidated}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Fixed footer: action buttons */}
-        {!showValidation && (
-          <div className="modal__footer">
-            <button
-              type="button"
-              className="btn btn--ghost"
-              onClick={props.onClose}
-            >
-              Close
-            </button>
-            <button
-              type="button"
-              className="btn btn--primary"
-              onClick={() => void handleAction()}
-              disabled={isCompleted || isSubmitting}
-            >
-              {isSubmitting ? "Saving…" : actionLabel}
-            </button>
+        {mission.validationMethod === "qr" && !showValidation && !isCompleted && (
+          <div className="mission-popup__qr-hint">
+            <MdQrCode2 size={16} aria-hidden="true" />
+            Your buddy or Game Master will scan a QR code to confirm this.
           </div>
         )}
-      </div>
-    </div>
+
+        {bodyHtml && !isLink && (
+          <div
+            className="prose"
+            dangerouslySetInnerHTML={{ __html: bodyHtml }}
+          />
+        )}
+
+        {isLink && mission.externalUrl && (
+          <div className="mission-popup__link-block core-flex-col core-gap-3">
+            {bodyHtml && (
+              <div
+                className="prose"
+                dangerouslySetInnerHTML={{ __html: bodyHtml }}
+              />
+            )}
+            <a
+              href={mission.externalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn--secondary mission-popup__link-btn"
+            >
+              <MdOpenInNew size={16} aria-hidden="true" />
+              Open Link
+            </a>
+          </div>
+        )}
+
+        {showValidation && (
+          <div className="core-mt-4">
+            <ValidationDisplay
+              playerId={props.playerId}
+              missionId={mission.id}
+              sessionId={props.sessionId}
+              mission={mission}
+              onValidated={props.onValidated}
+            />
+          </div>
+        )}
+      </ModalBody>
+
+      {!showValidation && (
+        <ModalFooter>
+          <Button variant={BUTTON_VARIANT.GHOST} onClick={props.onClose}>
+            Close
+          </Button>
+          <Button
+            variant={BUTTON_VARIANT.PRIMARY}
+            onClick={() => void handleAction()}
+            disabled={isCompleted || isSubmitting}
+          >
+            {isSubmitting ? "Saving…" : actionLabel}
+          </Button>
+        </ModalFooter>
+      )}
+    </Modal>
   );
 };
 

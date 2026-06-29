@@ -15,6 +15,8 @@
 
 /* Layer 2 — patterns (chrome) */
 @import "./styles/components/topbar.css";
+@import "./styles/components/modal.css";
+@import "./styles/components/bottom-sheet.css";
 @import "./styles/components/a11y.css";
 
 /* Domain + page styles (migrating out of legacy.css per phase) */
