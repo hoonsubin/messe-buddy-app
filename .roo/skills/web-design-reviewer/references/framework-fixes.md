@@ -4,6 +4,64 @@ This document explains specific fix techniques for each framework and styling me
 
 ---
 
+## MesseBuddy (token-based CSS + React primitives)
+
+This project uses **no Tailwind and no CSS-in-JS**. Fixes must respect the design system.
+
+### Styling method detection
+
+```
+src/index.css          → import manifest only (do not add rules)
+src/styles/tokens.css  → design tokens (HSL channels)
+src/styles/components/ → BEM blocks per primitive/pattern
+src/styles/legacy.css  → unmigrated styles (shrink, don't grow)
+src/components/ui/     → Button, Card, Input, IconButton, Avatar
+```
+
+### Common fixes
+
+**Replace inline button styles with primitive:**
+
+```tsx
+// Before
+<button style={{ background: "none", border: "none", minHeight: "var(--min-touch)" }}>
+
+// After
+import { IconButton } from "../components/ui/index.ts";
+<IconButton aria-label="…">…</IconButton>
+```
+
+**Replace hardcoded color with token:**
+
+```css
+/* Before */
+color: hsl(212 72% 37%);
+
+/* After — add to tokens.css if missing, then: */
+color: hsl(var(--color-role-player));
+```
+
+**Add spacing without inline styles:**
+
+```tsx
+// Before: style={{ gap: "var(--space-3)" }}
+// After:
+<div className="core-flex-row core-gap-3">
+```
+
+**Fix touch target:**
+
+```css
+.interactive-control {
+  min-height: var(--touch-target);
+  min-width: var(--touch-target);
+}
+```
+
+**Docs:** [`design/component-architecture.md`](../../../../design/component-architecture.md), [`design/design-tokens.md`](../../../../design/design-tokens.md)
+
+---
+
 ## Pure CSS / SCSS
 
 ### Fixing Layout Overflow

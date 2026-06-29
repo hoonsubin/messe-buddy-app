@@ -1,0 +1,32 @@
+/* MesseBuddy — extracted from index.css (Phase 0) */
+
+/* ── TopBar ──────────────────────────────────────────────────────────────── */
+.topbar {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: var(--topbar-h);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-inline: var(--space-4);
+  background-color: hsl(var(--color-primary));
+  color: hsl(var(--color-primary-fg));
+  box-shadow: var(--shadow-sm);
+}
+
+.topbar__name {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar__xp {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  flex-shrink: 0;
+}

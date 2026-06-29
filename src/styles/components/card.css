@@ -1,0 +1,15 @@
+/* MesseBuddy — extracted from index.css (Phase 0) */
+
+/* ── Card surface ────────────────────────────────────────────────────────── */
+.card {
+  background-color: hsl(var(--color-card));
+  border-radius: var(--radius-lg);
+  border: 1px solid hsl(var(--color-border));
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4);
+}
+
+.card--flush {
+  padding: 0;
+}
+

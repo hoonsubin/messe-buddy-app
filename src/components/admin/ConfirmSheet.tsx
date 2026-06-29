@@ -1,3 +1,6 @@
+import Button from "../ui/Button.tsx";
+import { BUTTON_VARIANT } from "../ui/types.ts";
+
 interface ConfirmSheetProps {
   readonly onKeepEditing: () => void;
   readonly onSaveDraft: () => void;
@@ -10,27 +13,27 @@ const ConfirmSheet = (props: ConfirmSheetProps) => (
     <p className="sheet-confirm__desc">
       What would you like to do with your edits?
     </p>
-    <button
-      type="button"
-      className="btn btn--primary sheet-confirm__btn"
+    <Button
+      variant={BUTTON_VARIANT.PRIMARY}
+      className="sheet-confirm__btn"
       onClick={props.onKeepEditing}
     >
       Keep editing
-    </button>
-    <button
-      type="button"
-      className="btn btn--secondary sheet-confirm__btn"
+    </Button>
+    <Button
+      variant={BUTTON_VARIANT.SECONDARY}
+      className="sheet-confirm__btn"
       onClick={props.onSaveDraft}
     >
       Save as draft
-    </button>
-    <button
-      type="button"
-      className="btn btn--ghost sheet-confirm__btn sheet-confirm__btn--destructive"
+    </Button>
+    <Button
+      variant={BUTTON_VARIANT.GHOST}
+      className="sheet-confirm__btn sheet-confirm__btn--destructive"
       onClick={props.onDiscardAndClose}
     >
       Discard changes
-    </button>
+    </Button>
   </div>
 );
 

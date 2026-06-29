@@ -21,6 +21,15 @@ Use this skill when you need to:
 - Validate form submissions and user flows
 - Check responsive design across viewports
 
+## MesseBuddy Project Defaults
+
+Mandatory after UI changes in this repository (see [`AGENTS.md`](../../../AGENTS.md)):
+
+- **Viewport:** 390×844 mobile-first
+- **Screenshots:** save to `.playwright-mcp/`
+- **Design compliance:** follow [`design/component-architecture.md`](../../../design/component-architecture.md) — obscured/off-screen CTAs are bugs, not test artifacts (never force-click)
+- **Smoke routes:** `/`, player cockpit demo, `/admin/:id`, form page
+
 ## Prerequisites
 
 - Node.js installed on the system

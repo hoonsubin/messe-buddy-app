@@ -1,10 +1,24 @@
 ---
 name: frontend-design
-description: Guidance for distinctive, intentional visual design when building new UI or reshaping an existing one. Helps with aesthetic direction, typography, and making choices that don't read as templated defaults.
+description: 'Guidance for distinctive, intentional visual design when building new UI or reshaping an existing one. In this repository, defer to design/component-architecture.md and design/design-tokens.md — the MesseBuddy design system is already defined.'
 license: Complete terms in LICENSE.txt
 ---
 
 # Frontend Design
+
+## MesseBuddy repository override
+
+**When working in this codebase, the design language is already locked.** Before applying the generic guidance below:
+
+1. Read [`design/component-architecture.md`](../../../design/component-architecture.md) and [`design/design-tokens.md`](../../../design/design-tokens.md)
+2. Use existing primitives from [`src/components/ui/`](../../../src/components/ui/) — do not invent new button/card/input styles
+3. Extend [`src/styles/tokens.css`](../../../src/styles/tokens.css) for new colors; never hardcode HSL in TSX
+4. Brand: navy `--color-primary`, Geist typography, white cards on cool gray canvas, 4px spacing grid
+5. New screens must match wireframes in `./design/` when present
+
+The sections below apply to **greenfield designs outside this system** or when the user explicitly requests a new visual direction that requires a Decision Log entry.
+
+---
 
 Approach this as the design lead at a small studio known for giving every client a visual identity that could not be mistaken for anyone else's. This client has already rejected proposals that felt templated, and is paying for a distinctive point of view: make deliberate, opinionated choices about palette, typography, and layout that are specific to this brief, and take one real aesthetic risk you can justify.
 

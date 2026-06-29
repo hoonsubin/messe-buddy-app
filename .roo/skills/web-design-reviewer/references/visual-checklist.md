@@ -234,3 +234,37 @@ This document is a comprehensive checklist of items to verify during web design 
 
 - Playwright (screenshot comparison)
 - Percy / Chromatic (Visual Regression Testing)
+
+---
+
+## 9. MesseBuddy Design System (this repository)
+
+Verify against [`design/design-tokens.md`](../../../../design/design-tokens.md) and [`design/component-architecture.md`](../../../../design/component-architecture.md).
+
+### Tokens & typography
+
+- [ ] Colors use `hsl(var(--color-*))` from `tokens.css` — no hardcoded HSL/hex in TSX
+- [ ] Body text uses Geist (`--font-sans`); mono only for codes/keys (`--font-mono`)
+- [ ] Spacing uses `--space-*` tokens (4px grid) — no arbitrary pixel gaps in inline styles
+- [ ] Primary brand is navy (`--color-primary`), not black
+
+### Component layers
+
+- [ ] Buttons use `<Button>` from `src/components/ui/` or documented BEM modifiers
+- [ ] Inputs use `<Input>` / `<Textarea>` with `hasError` when validating
+- [ ] Icon actions use `<IconButton>` — no inline button-reset styles
+- [ ] Cards use `<Card>` or documented `.card` / domain BEM blocks
+- [ ] New shared UI on ≥ 2 pages lives in `ui/` or `patterns/`, not page-local
+
+### CSS hygiene
+
+- [ ] No new rules added to `src/index.css` (import manifest only)
+- [ ] Styles added to correct `src/styles/components/*.css` file
+- [ ] No design values in `style={{}}` except dynamic geometry (maps, charts, camera)
+- [ ] Touch targets ≥ `var(--touch-target)` (44px)
+
+### Viewport
+
+- [ ] Primary smoke test at **390×844**
+- [ ] Admin two-column layout at **≥ 40rem**
+- [ ] Bottom sheets at **94dvh** with scroll inside body

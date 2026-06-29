@@ -1,0 +1,60 @@
+/* MesseBuddy — extracted from index.css (Phase 0) */
+
+/* ── Reset ───────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 100%; /* respect user preference */
+  height: 100%;
+  /* Always reserve the scrollbar gutter so centred content (e.g. the hire
+     header + tabs) doesn't shift between short and tall tab views. */
+  scrollbar-gutter: stable;
+}
+
+body {
+  height: 100%;
+  background-color: hsl(var(--color-bg));
+  color: hsl(var(--color-fg));
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────────
+   Non-optional accessibility baseline: anyone who asks the OS to reduce motion
+   gets near-instant transitions instead of movement. Kept as a near-zero
+   duration (not 0) so transitionend / animationend handlers still fire. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Headings ────────────────────────────────────────────────────────────────
+   Balance wrapping on headings so multi-line titles break into even lines
+   instead of a long line + an orphan. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}

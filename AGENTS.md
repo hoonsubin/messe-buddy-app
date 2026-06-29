@@ -66,26 +66,60 @@ All 17 in [`SPECS.md`](SPECS.md:946). Critical subset:
 
 Before writing ANY implementation code for a new screen, page, or feature:
 
-1. Use `superdesign` tools to iterate on visual design if needed
-2. Only proceed to implementation after the user confirms the wireframe
-3. Store approved wireframe artifacts in `./design/` folder
-4. Reference the wireframe during implementation for layout/component decisions
+1. Read [`design/component-architecture.md`](design/component-architecture.md) and [`design/design-tokens.md`](design/design-tokens.md)
+2. Check `./design/` for approved wireframes before adjacent screens
+3. Use `superdesign` tools to iterate on visual design when no wireframe exists
+4. Only proceed to implementation after the user confirms the wireframe (when applicable)
+5. Store approved wireframe artifacts in `./design/`
+
+### Design System & Component Layers
+
+UI follows a strict composition hierarchy. **Never skip layers.**
+
+```
+tokens → ui primitives → patterns → domain components → pages
+```
+
+| Layer | Location | Rule |
+|-------|----------|------|
+| Tokens | [`src/styles/tokens.css`](src/styles/tokens.css) | HSL channels, spacing, typography — no hex/rgb in TSX |
+| Utilities | [`src/styles/utilities.css`](src/styles/utilities.css) | `core-*` layout helpers only |
+| UI primitives | [`src/components/ui/`](src/components/ui/) | `Button`, `Card`, `Input`, `IconButton`, `Avatar` — import via barrel |
+| Patterns | [`src/components/patterns/`](src/components/patterns/) | Cross-route UX: `Toast`, future `Modal`/`BottomSheet` |
+| Domain | [`src/components/{admin,player,form,qr,tutorial}/`](src/components/) | Feature-specific UI |
+| Pages | [`src/pages/`](src/pages/) | Composition + data wiring only; **< 200 lines** |
+
+**CSS** lives in [`src/styles/`](src/styles/). [`src/index.css`](src/index.css) is an **import manifest only** (~25 lines). Add styles to the appropriate `src/styles/components/*.css` file — never grow `index.css` with rules. Remaining unmigrated styles are in [`src/styles/legacy.css`](src/styles/legacy.css) (shrinking each phase).
+
+### UI Implementation Rules
+
+1. **Use primitives first** — `Button` not raw `.btn`; `Input` not raw `.form-input`; `IconButton` not inline button-reset styles
+2. **No design `style={{}}`** — allowed only for dynamic geometry (map `%` positions, chart bars, camera viewport)
+3. **No hardcoded colors in TSX** — extend `tokens.css` and use `hsl(var(--token))` or `data-*` attribute selectors in CSS
+4. **No new overlay BEM blocks** — use existing `.modal-*` / `.bottom-sheet-*` (Phase 2: `Modal`/`BottomSheet` patterns)
+5. **Icons** — `react-icons` only; never ASCII symbols or emojis in UI
+6. **Touch targets** — min `var(--touch-target)` (44px) on all interactive controls
+7. **Class helper** — use [`cn()`](src/utils/cn.ts) for conditional BEM modifiers
+8. **Variant constants** — live in [`src/components/ui/types.ts`](src/components/ui/types.ts) (C-12: no `enum`)
 
 ### Design Consistency
-- Always check `./design/` for prior wireframes before starting adjacent screens
-- Maintain a design token vocabulary defined in [`design/design-tokens.md`](design/design-tokens.md)
+
+- Authoritative tokens: [`design/design-tokens.md`](design/design-tokens.md)
+- Architecture & migration phases: [`design/component-architecture.md`](design/component-architecture.md)
+- Brand navy = `--color-primary`; Geist for all UI; Geist Mono for codes/keys only
+- Mobile-first at **390×844**; admin two-column at **≥ 40rem**
 
 ### Routes
 
 | Path | Component | Role |
 |------|-----------|------|
-| `/` | [`LandingPage`](src/pages/LandingPage.tsx:1) | Public |
-| `/join/:sessionId` | [`LandingPage`](src/pages/LandingPage.tsx:1) | Public (invite prefill) |
-| `/session/:sessionId` | [`PlayerCockpitPage`](src/pages/PlayerCockpitPage.tsx:1) | Player |
-| `/admin/:sessionId` | [`AdminCockpitPage`](src/pages/AdminCockpitPage.tsx:1) | GameMaker |
-| `/admin/:sessionId/scan` | [`QRScannerView`](src/pages/QRScannerView.tsx:1) | GameMaker |
-| `/validate/:sessionId` | [`ValidationPage`](src/pages/ValidationPage.tsx:1) | GameMaker |
-| `/form/:missionId` | [`FormPage`](src/pages/FormPage.tsx:1) | Player |
+| `/`, `/join/:sessionId` | [`LandingPage`](src/pages/LandingPage.tsx) | Public |
+| `/session/:sessionId` | [`PlayerCockpitPage`](src/pages/PlayerCockpitPage.tsx) | Player |
+| `/admin/:sessionId` | [`AdminHomePage`](src/pages/AdminHomePage.tsx) | GameMaker |
+| `/admin/:sessionId/hire/:hireId` | [`HireDetailPage`](src/pages/HireDetailPage.tsx) | GameMaker |
+| `/admin/:sessionId/scan` | [`QRScannerView`](src/pages/QRScannerView.tsx) | GameMaker |
+| `/validate/:sessionId` | [`ValidationPage`](src/pages/ValidationPage.tsx) | GameMaker |
+| `/form/:missionId` | [`FormPage`](src/pages/FormPage.tsx) | Player |
 
 ---
 
@@ -94,12 +128,14 @@ Before writing ANY implementation code for a new screen, page, or feature:
 - **`verbatimModuleSyntax`** - use `import type` for type-only imports. Never mix runtime + type in one statement.
 - **No `enum`** - pattern: `export const FOO = { A: "a" } as const; export type Foo = (typeof FOO)[keyof typeof FOO];` ([`src/types/unions.ts`](src/types/unions.ts:4))
 - **Icons only** - When using an icon for the UI component, ALWAYS use `react-icons` and NEVER use ASCII symbols or emojis.
+- **UI primitives** - Use [`src/components/ui/`](src/components/ui/) (`Button`, `Card`, `Input`, `IconButton`, `Avatar`) before raw BEM classes or inline styles. See [`design/component-architecture.md`](design/component-architecture.md).
+- **No design inline styles** - `style={{}}` only for dynamic geometry (maps, charts, camera). Colors, spacing, typography belong in CSS tokens + component stylesheets.
 - **Interface fields** are `readonly`; arrays `ReadonlyArray<T>`. Mutations via adapter only.
 - **`interface`** for object contracts; **`type`** for unions, intersections, aliases.
 - **Imports** from Deno import map ([`deno.json`](deno.json:25)), never `package.json`. Internal imports use **`.ts`/`.tsx` extensions**.
 - **Barrel exports** in [`src/types/index.ts`](src/types/index.ts:1) - re-exports types + const objects.
 - **Formatter:** `deno fmt` (2-space indent, 80-char width, semicolons, double quotes). Only `src/` formatted.
-- **Components:** keep <200 lines; extract reusable pieces to `src/components/` or `src/utils/`. One responsibility per file. See [`ConfirmSheet`](src/components/admin/ConfirmSheet.tsx), [`DraftRestoreBanner`](src/components/admin/DraftRestoreBanner.tsx), [`MissionListView`](src/components/admin/MissionListView.tsx) as reference.
+- **Components:** keep <200 lines; extract reusable pieces to `src/components/` or `src/utils/`. One responsibility per file. See [`ConfirmSheet`](src/components/admin/ConfirmSheet.tsx) (uses `Button` primitive), [`DraftRestoreBanner`](src/components/admin/DraftRestoreBanner.tsx), [`MissionListView`](src/components/admin/MissionListView.tsx) as reference.
 - **Visualize** - When possible, use Mermaid diagram or HTML wireframe to express visualized aspects of the content. NEVER use ASCII diagrams.
 
 ### React Hooks & Lifecycle (All Modes)
@@ -218,6 +254,10 @@ Follow up with `web_url_read` at pkg.go.dev, `raw.githubusercontent.com`, or off
 ## Reference
 
 - [`SPECS.md`](SPECS.md:1) - authoritative spec
+- [`design/component-architecture.md`](design/component-architecture.md) - UI layer model, CSS layout, migration phases
+- [`design/design-tokens.md`](design/design-tokens.md) - color, type, spacing, component catalog
+- [`src/components/ui/index.ts`](src/components/ui/index.ts) - UI primitive exports
+- [`src/styles/tokens.css`](src/styles/tokens.css) - runtime design tokens
 - [`src/adapters/interface.ts`](src/adapters/interface.ts:17) - adapter contract
 - [`src/types/unions.ts`](src/types/unions.ts:4) - union types (no enums)
 - [`src/types/domain.ts`](src/types/domain.ts:1) - domain types
@@ -226,3 +266,4 @@ Follow up with `web_url_read` at pkg.go.dev, `raw.githubusercontent.com`, or off
 - [`docker-compose.yml`](docker-compose.yml:1) - Docker Compose
 - [`docs/pb-schema.md`](docs/pb-schema.md:1) - PocketBase schema
 - [`.roo/skills/`](.roo/skills) - Agent Skill files
+- [`design/component-architecture.md`](design/component-architecture.md) - UI layers, CSS layout, governance
