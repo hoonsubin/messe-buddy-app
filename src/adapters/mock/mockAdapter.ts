@@ -124,7 +124,7 @@ const notify = (key: string, event: ProgressEvent): void => {
 // Store the current GM UID so simulateGmApproval uses the active admin.
 let currentAdminUid = "uid_gamemaker_peter";
 
-/** Set the admin UID used for simulated approvals. Call from AdminCockpitPage. */
+/** Set the admin UID used for simulated approvals. Call from AdminHomePage. */
 export const setMockAdminUid = (uid: string): void => {
   currentAdminUid = uid;
 };

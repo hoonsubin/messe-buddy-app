@@ -15,8 +15,8 @@ Mobile-first. Primary smoke viewport: **390×844** (iPhone-class). Admin desktop
 | Components | `src/index.css` | BEM: `.block`, `.block__element`, `.block--modifier` |
 | Pages | `src/pages/**` | Compose shared classes; page-scoped blocks under `pages/<page>/` |
 
-**Fonts loaded in** [`src/index.css`](../src/index.css): DM Sans (UI), Playfair Display (display headings), DM Mono (codes/keys).  
-Note: [`index.html`](../index.html) preloads Inter but the app uses DM Sans from CSS imports — do not switch body font to Inter without updating tokens.
+**Fonts loaded in** [`src/index.css`](../src/index.css): Geist (UI + display headings), Geist Mono (codes/keys).
+Note: PR #17 unified the project to Geist font family; DM Sans, Playfair Display, and Inter are no longer loaded.
 
 ---
 
@@ -66,9 +66,9 @@ All values are HSL channels. Usage: `hsl(var(--token))`.
 
 | Token | Value | Use |
 |-------|-------|-----|
-| `--font-sans` | `"DM Sans", system-ui, sans-serif` | Body, buttons, forms, UI |
-| `--font-display` | `"Playfair Display", Georgia, serif` | Landing title, form mission titles |
-| `--font-mono` | `"DM Mono", monospace` | Recovery keys, session codes |
+| `--font-sans` | `"Geist", system-ui, sans-serif` | Body, buttons, forms, all UI |
+| `--font-display` | `"Geist", system-ui, sans-serif` | All headings (unified to Geist; no serif display font) |
+| `--font-mono` | `"Geist Mono", ui-monospace, monospace` | Recovery keys, session codes, invite URLs |
 
 ### Scale
 
@@ -219,9 +219,8 @@ Reuse these before creating new components. Paths relative to `src/components/`.
 
 | Component | Classes | Pages |
 |-----------|---------|-------|
-| [`TopBar.tsx`](../src/components/shared/TopBar.tsx) | `.topbar`, `.topbar__*` | Player cockpit, Form |
+| [`TopBar.tsx`](../src/components/shared/TopBar.tsx) | `.topbar`, `.topbar__*` | Player cockpit, Admin pages, Form |
 | [`LandingShell.tsx`](../src/pages/landing/LandingShell.tsx) | `.landing`, `.landing__*` | Landing |
-| `.tab-bar`, `.tab-bar__tab--active` | Admin cockpit tabs | |
 | `.page`, `.page--has-topbar` | Page wrapper with top bar offset | |
 
 ### 7.5 Overlays
@@ -253,6 +252,7 @@ Reuse these before creating new components. Paths relative to `src/components/`.
 |-----------|---------|
 | [`MapViewport`](../src/components/shared/MapViewport.tsx) | `.map-viewport`, `.map-canvas`, `.map-zoom-*` |
 | [`MilestoneNode`](../src/components/shared/MilestoneNode.tsx) | `.milestone-node`, liquid `.milestone-node__fill` |
+| [`IsometricMilestoneMap`](../src/components/player/IsometricMilestoneMap.tsx) | Isometric 3D player map (PR #17); used by `MilestoneMapViewer` for player-facing map |
 | Admin editor | `.milestone-map-editor`, `.map-editor-toolbar__*` | |
 
 Milestone positions use **percentage** coordinates (`xPercent` / `yPercent` 0–100) — never pixel positions in domain data.
@@ -261,15 +261,16 @@ Milestone positions use **percentage** coordinates (`xPercent` / `yPercent` 0–
 
 ## 8. Page composition map
 
-How routes assemble components (for regression scope).
+How routes assemble components (for regression scope). PR #17 replaced the admin tab-based `AdminCockpitPage` with separate route-based pages.
 
 | Route | Page | Layout | Key components |
 |-------|------|--------|----------------|
 | `/`, `/join/:sessionId` | [`LandingPage`](../src/pages/LandingPage.tsx) | `LandingShell` + view switch | `RoleSelectView`, `JoinSessionView`, `CreateSessionView`, `TemplatesView`, `RecoverView`, modals |
-| `/session/:id` | [`PlayerCockpitPage`](../src/pages/PlayerCockpitPage.tsx) | `TopBar` + scroll column | `MilestoneMapViewer`, `MilestoneSidebarViewer`, `CurrentMissionsList`, `BuddyCard`, `ResourcesSection`, `AssistantChatCard`, `TutorialOverlay` |
-| `/admin/:id` | [`AdminCockpitPage`](../src/pages/AdminCockpitPage.tsx) | `TopBar` + `.admin-layout` | `MilestoneMapEditor`, `MissionBottomSheet`, `PendingApprovalsPanel`, `TemplateLibrary`, `SessionInviteCard`, tab panels |
-| `/form/:missionId` | [`FormPage`](../src/pages/FormPage.tsx) | `TopBar` + `FormShell` | `FormField` per schema |
-| `/qr/:missionId` | [`QRScannerView`](../src/pages/QRScannerView.tsx) | Full-screen `.qr-scanner` | `CameraFeed`, `ValidationResult` |
+| `/session/:id` | [`PlayerCockpitPage`](../src/pages/PlayerCockpitPage.tsx) | `TopBar` + tab bar (Dashboard / AI Assistant) | `MilestoneMapViewer` (→ `IsometricMilestoneMap`), `MilestoneSidebarViewer`, `CurrentMissionsList`, `BuddyCard`, `ResourcesSection`, `ChatPanel`, `TutorialOverlay` |
+| `/admin/:id` | [`AdminHomePage`](../src/pages/AdminHomePage.tsx) | `TopBar` + hire list | `GmHireRow` cards, status indicators, "Add hire" placeholder |
+| `/admin/:id/hire/:hireId` | [`HireDetailPage`](../src/pages/HireDetailPage.tsx) | `TopBar` + detail columns | `IsometricMilestoneMap` (read-only), `MilestoneMapEditor` (editable), `MissionBottomSheet`, `HireAnalytics`, `MissionTimelineChart`, `SessionInviteCard`, `ResourcesEditor`, `TemplateSelect`, `SaveActions`, `BuddyAssignmentForm` |
+| `/form/:sessionId/:missionId` | [`FormPage`](../src/pages/FormPage.tsx) | `TopBar` + `FormShell` | `FormField` per schema |
+| `/admin/:sessionId/scan` | [`QRScannerView`](../src/pages/QRScannerView.tsx) | Full-screen `.qr-scanner` | `CameraFeed`, `ValidationResult` |
 
 ### Landing view states
 
@@ -351,4 +352,4 @@ After any UI change, verify on **390×844** (Playwright MCP, Firefox/iPhone 15 p
 
 ---
 
-*Last synced with codebase: June 2026 (post landing refactor phases 1–5).*
+*Last synced with codebase: 2026-06-29 (post PR #17 merge — Geist typography, AdminHomePage + HireDetailPage routes, IsometricMilestoneMap, ChatPanel tabs).*
