@@ -1,9 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type {
-  Milestone,
-  Mission,
-  ProgressEvent,
-} from "../../types/index.ts";
+import type { Milestone, Mission, ProgressEvent } from "../../types/index.ts";
 import {
   EXPECTED_SCHEDULE,
   expectedProgressPct,
@@ -23,7 +19,10 @@ const eventTime = (e: ProgressEvent): number =>
 const now = (): number => Date.now();
 
 const fmtDate = (ts: number): string =>
-  new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  new Date(ts).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
 
 const H = 250;
 const PAD_L = 38;
@@ -102,8 +101,10 @@ const MissionTimelineChart = (props: MissionTimelineChartProps) => {
 
   const yTicks = [0, 25, 50, 75, 100];
   const xTickCount = 5;
-  const xTicks = Array.from({ length: xTickCount }, (_, i) =>
-    model.tMin + ((model.tMax - model.tMin) * i) / (xTickCount - 1));
+  const xTicks = Array.from(
+    { length: xTickCount },
+    (_, i) => model.tMin + ((model.tMax - model.tMin) * i) / (xTickCount - 1),
+  );
 
   const actualLine = toLine(model.actual);
   const areaPath = `M ${x0},${yBot} L ${actualLine} L ${
@@ -123,8 +124,17 @@ const MissionTimelineChart = (props: MissionTimelineChartProps) => {
           flexWrap: "wrap",
         }}
       >
-        <div style={{ display: "flex", gap: "var(--space-4)", alignItems: "center" }}>
-          <LegendDot color="hsl(var(--color-status-progress))" label="Completed" />
+        <div
+          style={{
+            display: "flex",
+            gap: "var(--space-4)",
+            alignItems: "center",
+          }}
+        >
+          <LegendDot
+            color="hsl(var(--color-status-progress))"
+            label="Completed"
+          />
           <LegendDot color="hsl(var(--color-muted-fg))" label="Target" dashed />
         </div>
         <select
@@ -147,7 +157,12 @@ const MissionTimelineChart = (props: MissionTimelineChartProps) => {
       </div>
 
       <div ref={wrapRef} style={{ width: "100%" }}>
-        <svg width={w} height={H} role="img" aria-label="Missions completed over time">
+        <svg
+          width={w}
+          height={H}
+          role="img"
+          aria-label="Missions completed over time"
+        >
           {/* Y gridlines + labels */}
           {yTicks.map((p) => (
             <g key={p}>
@@ -177,7 +192,11 @@ const MissionTimelineChart = (props: MissionTimelineChartProps) => {
               key={i}
               x={sx(t)}
               y={H - 10}
-              textAnchor={i === 0 ? "start" : i === xTicks.length - 1 ? "end" : "middle"}
+              textAnchor={i === 0
+                ? "start"
+                : i === xTicks.length - 1
+                ? "end"
+                : "middle"}
               fontSize={10}
               fill="hsl(var(--color-muted-fg))"
             >

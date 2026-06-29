@@ -69,7 +69,11 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
   return (
     <div
       data-testid="resources-editor"
-      style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-4)",
+      }}
     >
       <ul
         style={{
@@ -93,13 +97,19 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
             }}
           >
             <label
-              style={{ display: "flex", alignItems: "center", cursor: "pointer", flexShrink: 0 }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
               aria-label={`Toggle visibility for ${r.title}`}
             >
               <input
                 type="checkbox"
                 checked={r.isVisibleToPlayer}
-                onChange={(e) => props.onToggleVisibility(r.id, e.target.checked)}
+                onChange={(e) =>
+                  props.onToggleVisibility(r.id, e.target.checked)}
                 style={{ display: "none" }}
               />
               <span
@@ -112,7 +122,9 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
                     : "hsl(var(--color-muted-fg))",
                 }}
               >
-                {r.isVisibleToPlayer ? <MdCheckBox /> : <MdCheckBoxOutlineBlank />}
+                {r.isVisibleToPlayer
+                  ? <MdCheckBox />
+                  : <MdCheckBoxOutlineBlank />}
               </span>
             </label>
 

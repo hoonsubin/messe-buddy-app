@@ -1,10 +1,6 @@
 import { useMemo } from "react";
 import { MdFlag, MdTrendingUp, MdWbSunny } from "react-icons/md";
-import type {
-  Milestone,
-  Mission,
-  ProgressEvent,
-} from "../../types/index.ts";
+import type { Milestone, Mission, ProgressEvent } from "../../types/index.ts";
 import { expectedProgressPct } from "../../utils/expectedProgress.ts";
 import MissionTimelineChart from "./MissionTimelineChart.tsx";
 
@@ -50,7 +46,9 @@ const StatCard = (
         gap: "var(--space-2)",
       }}
     >
-      <span style={{ display: "inline-flex", color: "hsl(var(--color-primary))" }}>
+      <span
+        style={{ display: "inline-flex", color: "hsl(var(--color-primary))" }}
+      >
         {icon}
       </span>
       <span
@@ -109,7 +107,13 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
   }, [orderedMilestones, props.missions, completedSet]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-4)",
+      }}
+    >
       <div
         style={{
           display: "grid",
@@ -122,7 +126,13 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
           icon={<MdWbSunny size={18} aria-hidden="true" />}
           label="Onboarding age"
         >
-          <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-2)" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: "var(--space-2)",
+            }}
+          >
             <span
               style={{
                 fontFamily: "var(--font-display)",
@@ -144,7 +154,13 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
               {days === 1 ? "day" : "days"}
             </span>
           </div>
-          <p style={{ margin: 0, fontSize: "var(--text-sm)", color: "hsl(var(--color-muted-fg))" }}>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--text-sm)",
+              color: "hsl(var(--color-muted-fg))",
+            }}
+          >
             since onboarding started
           </p>
         </StatCard>
@@ -183,10 +199,20 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
               of tasks completed
             </span>
           </div>
-          <p style={{ margin: 0, fontSize: "var(--text-sm)", color: "hsl(var(--color-muted-fg))" }}>
-            Should be ~<strong style={{ color: "hsl(var(--color-fg))" }}>{expectedPct}%</strong>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--text-sm)",
+              color: "hsl(var(--color-muted-fg))",
+            }}
+          >
+            Should be ~<strong style={{ color: "hsl(var(--color-fg))" }}>
+              {expectedPct}%
+            </strong>
             {"  |  "}
-            <strong style={{ color: `hsl(var(${planColorVar}))` }}>{planLabel}</strong>
+            <strong style={{ color: `hsl(var(${planColorVar}))` }}>
+              {planLabel}
+            </strong>
           </p>
         </StatCard>
 
@@ -209,7 +235,13 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
                 >
                   {nextTask.title}
                 </div>
-                <p style={{ margin: 0, fontSize: "var(--text-sm)", color: "hsl(var(--color-muted-fg))" }}>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "var(--text-sm)",
+                    color: "hsl(var(--color-muted-fg))",
+                  }}
+                >
                   in {nextTask.milestone}
                 </p>
               </>
@@ -229,7 +261,10 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
       </div>
 
       {/* Missions completed over time */}
-      <div className="card" style={{ padding: "var(--space-4) var(--space-5)" }}>
+      <div
+        className="card"
+        style={{ padding: "var(--space-4) var(--space-5)" }}
+      >
         <h3
           style={{
             margin: "0 0 var(--space-3)",
@@ -242,7 +277,8 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
           Missions completed over time
         </h3>
         <MissionTimelineChart
-          {...(props.startDateISO !== undefined && { startDateISO: props.startDateISO })}
+          {...(props.startDateISO !== undefined &&
+            { startDateISO: props.startDateISO })}
           milestones={props.milestones}
           missions={props.missions}
           events={props.events}

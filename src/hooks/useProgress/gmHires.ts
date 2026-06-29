@@ -63,59 +63,64 @@ export const useGmHires = (
         const sessions = await adapter.listSessions();
         const owned = sessions.filter((s) => s.gameMakerId === gmUid);
 
-        const rows = await Promise.all(owned.map(async (s): Promise<GmHireRow> => {
-          const [players, milestones, missions] = await Promise.all([
-            adapter.listPlayers(s.id),
-            adapter.listMilestones(s.id),
-            adapter.listMissions(s.id),
-          ]);
-          const player = players[0] ?? null;
+        const rows = await Promise.all(
+          owned.map(async (s): Promise<GmHireRow> => {
+            const [players, milestones, missions] = await Promise.all([
+              adapter.listPlayers(s.id),
+              adapter.listMilestones(s.id),
+              adapter.listMissions(s.id),
+            ]);
+            const player = players[0] ?? null;
 
-          if (!player) {
+            if (!player) {
+              return {
+                sessionId: s.id,
+                sessionName: s.name,
+                playerId: null,
+                name: s.name,
+                joined: false,
+                progressPercent: 0,
+                daysSinceLastActivity: null,
+                isStalled: false,
+              };
+            }
+
+            const events = await adapter.listProgressEvents(player.id);
+            const progress = computeProgress(
+              player.id,
+              missions,
+              milestones,
+              events,
+            );
+            const { milestoneProgress } = progress;
+            const progressPercent = milestoneProgress.length === 0
+              ? 0
+              : Math.round(
+                (milestoneProgress.reduce(
+                  (sum, mp) => sum + mp.percentComplete,
+                  0,
+                ) /
+                  milestoneProgress.length) * 100,
+              );
+            const lastMs = events.length > 0
+              ? Math.max(...events.map((e) => new Date(e.updated).getTime()))
+              : null;
+            const days = lastMs !== null
+              ? Math.floor((Date.now() - lastMs) / (1000 * 60 * 60 * 24))
+              : null;
+
             return {
               sessionId: s.id,
               sessionName: s.name,
-              playerId: null,
-              name: s.name,
-              joined: false,
-              progressPercent: 0,
-              daysSinceLastActivity: null,
-              isStalled: false,
+              playerId: player.id,
+              name: player.name || s.name,
+              joined: true,
+              progressPercent,
+              daysSinceLastActivity: days,
+              isStalled: days !== null && days > STALL_DAYS,
             };
-          }
-
-          const events = await adapter.listProgressEvents(player.id);
-          const progress = computeProgress(
-            player.id,
-            missions,
-            milestones,
-            events,
-          );
-          const { milestoneProgress } = progress;
-          const progressPercent = milestoneProgress.length === 0
-            ? 0
-            : Math.round(
-              (milestoneProgress.reduce((sum, mp) => sum + mp.percentComplete, 0)
-                / milestoneProgress.length) * 100,
-            );
-          const lastMs = events.length > 0
-            ? Math.max(...events.map((e) => new Date(e.updated).getTime()))
-            : null;
-          const days = lastMs !== null
-            ? Math.floor((Date.now() - lastMs) / (1000 * 60 * 60 * 24))
-            : null;
-
-          return {
-            sessionId: s.id,
-            sessionName: s.name,
-            playerId: player.id,
-            name: player.name || s.name,
-            joined: true,
-            progressPercent,
-            daysSinceLastActivity: days,
-            isStalled: days !== null && days > STALL_DAYS,
-          };
-        }));
+          }),
+        );
 
         if (!cancelled) setHires(rows);
       } catch (e) {

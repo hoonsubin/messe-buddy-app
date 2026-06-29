@@ -392,108 +392,111 @@ const PlayerCockpitPage = () => {
           className="cockpit-main"
           style={{ flex: 1, paddingBlockStart: "var(--space-6)" }}
         >
-        <header>
-          <h1
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "var(--text-2xl)",
-              fontWeight: "var(--weight-semibold)",
-              color: "hsl(var(--color-fg))",
-              margin: "0 0 var(--space-1)",
-              lineHeight: "var(--leading-tight)",
-            }}
-          >
-            Welcome{player?.name ? `, ${player.name.split(" ")[0]}` : ""}.
-          </h1>
-          <p
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "hsl(var(--color-muted-fg))",
-              margin: 0,
-            }}
-          >
-            Your onboarding journey starts here.
-          </p>
-        </header>
+          <header>
+            <h1
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--text-2xl)",
+                fontWeight: "var(--weight-semibold)",
+                color: "hsl(var(--color-fg))",
+                margin: "0 0 var(--space-1)",
+                lineHeight: "var(--leading-tight)",
+              }}
+            >
+              Welcome{player?.name ? `, ${player.name.split(" ")[0]}` : ""}.
+            </h1>
+            <p
+              style={{
+                fontSize: "var(--text-sm)",
+                color: "hsl(var(--color-muted-fg))",
+                margin: 0,
+              }}
+            >
+              Your onboarding journey starts here.
+            </p>
+          </header>
 
-        <div className="cockpit-grid">
-          <div className="cockpit-col">
-            <section aria-label="Milestones">
-              <h2 className="section-label">Milestones</h2>
-              <div
-                style={{
-                  borderRadius: "var(--radius-lg)",
-                  overflow: "hidden",
-                  boxShadow: "var(--shadow-md)",
-                }}
-              >
-                <MilestoneMapViewer
-                  milestones={milestones}
-                  bgImageUrl={session?.bgImageUrl ?? ""}
-                  mapNodeScale={session?.mapNodeScale ?? 1}
-                  milestoneProgress={progress.playerProgress
-                    ?.milestoneProgress ??
-                    []}
-                  playerXPercent={currentMilestone?.xPercent}
-                  playerYPercent={currentMilestone?.yPercent}
-                  onMilestoneClick={(id) => setSelectedMilestoneId(id)}
-                />
-              </div>
-            </section>
-
-            <CurrentMissionsList
-              missions={currentMissions}
-              progressEvents={progress.progressEvents}
-              onMissionClick={handleMissionClick}
-              onMarkComplete={() => undefined}
-            />
-          </div>
-
-          <div className="cockpit-col">
-            <section aria-label="Your buddy">
-              <h2 className="section-label">Your buddy</h2>
-              {buddy
-                ? (
-                  <BuddyCard
-                    name={buddy.name}
-                    role={buddy.role}
-                    {...(buddy.tenure !== undefined &&
-                      { tenure: buddy.tenure })}
-                    {...(buddy.avatarUrl !== undefined && {
-                      avatarUrl: buddy.avatarUrl,
-                    })}
-                    {...(buddy.contactUrl !== undefined && {
-                      contactUrl: buddy.contactUrl,
-                    })}
-                    {...(buddy.quote !== undefined && { quote: buddy.quote })}
-                    {...(buddy.email !== undefined && { email: buddy.email })}
-                    {...(buddy.phone !== undefined && { phone: buddy.phone })}
+          <div className="cockpit-grid">
+            <div className="cockpit-col">
+              <section aria-label="Milestones">
+                <h2 className="section-label">Milestones</h2>
+                <div
+                  style={{
+                    borderRadius: "var(--radius-lg)",
+                    overflow: "hidden",
+                    boxShadow: "var(--shadow-md)",
+                  }}
+                >
+                  <MilestoneMapViewer
+                    milestones={milestones}
+                    bgImageUrl={session?.bgImageUrl ?? ""}
+                    mapNodeScale={session?.mapNodeScale ?? 1}
+                    milestoneProgress={progress.playerProgress
+                      ?.milestoneProgress ??
+                      []}
+                    playerXPercent={currentMilestone?.xPercent}
+                    playerYPercent={currentMilestone?.yPercent}
+                    onMilestoneClick={(id) => setSelectedMilestoneId(id)}
                   />
-                )
-                : (
-                  !isLoading && (
-                    <div className="card" style={{ padding: "var(--space-6)" }}>
-                      <p
-                        style={{
-                          fontSize: "var(--text-sm)",
-                          color: "hsl(var(--color-muted-fg))",
-                          textAlign: "center",
-                          margin: 0,
-                        }}
-                      >
-                        You'll be assigned a buddy soon.
-                      </p>
-                    </div>
-                  )
-                )}
-            </section>
+                </div>
+              </section>
 
-            <ResourcesSection
-              resources={resources}
-              onSearch={() => undefined}
-            />
+              <CurrentMissionsList
+                missions={currentMissions}
+                progressEvents={progress.progressEvents}
+                onMissionClick={handleMissionClick}
+                onMarkComplete={() => undefined}
+              />
+            </div>
+
+            <div className="cockpit-col">
+              <section aria-label="Your buddy">
+                <h2 className="section-label">Your buddy</h2>
+                {buddy
+                  ? (
+                    <BuddyCard
+                      name={buddy.name}
+                      role={buddy.role}
+                      {...(buddy.tenure !== undefined &&
+                        { tenure: buddy.tenure })}
+                      {...(buddy.avatarUrl !== undefined && {
+                        avatarUrl: buddy.avatarUrl,
+                      })}
+                      {...(buddy.contactUrl !== undefined && {
+                        contactUrl: buddy.contactUrl,
+                      })}
+                      {...(buddy.quote !== undefined && { quote: buddy.quote })}
+                      {...(buddy.email !== undefined && { email: buddy.email })}
+                      {...(buddy.phone !== undefined && { phone: buddy.phone })}
+                    />
+                  )
+                  : (
+                    !isLoading && (
+                      <div
+                        className="card"
+                        style={{ padding: "var(--space-6)" }}
+                      >
+                        <p
+                          style={{
+                            fontSize: "var(--text-sm)",
+                            color: "hsl(var(--color-muted-fg))",
+                            textAlign: "center",
+                            margin: 0,
+                          }}
+                        >
+                          You'll be assigned a buddy soon.
+                        </p>
+                      </div>
+                    )
+                  )}
+              </section>
+
+              <ResourcesSection
+                resources={resources}
+                onSearch={() => undefined}
+              />
+            </div>
           </div>
-        </div>
         </main>
       )}
 

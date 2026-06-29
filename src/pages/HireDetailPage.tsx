@@ -113,8 +113,12 @@ const HireDetailPage = () => {
   });
   const adminResources = useResources(sid, { role: "gamemaker" });
   const preBoardingChecklist = usePreBoardingChecklist(sid, session);
-  const { templates, applying: applyingTemplate, applyTemplate, saveAsTemplate } =
-    useHireTemplates(sid);
+  const {
+    templates,
+    applying: applyingTemplate,
+    applyTemplate,
+    saveAsTemplate,
+  } = useHireTemplates(sid);
 
   const [appliedTemplate, setAppliedTemplate] = useState<string | null>(() =>
     readAppliedTemplate(sid)
@@ -164,7 +168,15 @@ const HireDetailPage = () => {
         .catch(() => showToast("Could not create template"))
         .finally(() => setCreatingTemplate(false));
     },
-    [session, milestones, missions, adminResources.resources, saveAsTemplate, sid, showToast],
+    [
+      session,
+      milestones,
+      missions,
+      adminResources.resources,
+      saveAsTemplate,
+      sid,
+      showToast,
+    ],
   );
 
   const handleBuddySave = useCallback(() => {
@@ -290,7 +302,10 @@ const HireDetailPage = () => {
         type="button"
         data-testid="invite-toggle"
         aria-expanded={inviteOpen}
-        onClick={() => setInviteOpen((o) => !o)}
+        onClick={() =>
+          setInviteOpen((o) =>
+            !o
+          )}
         style={{
           width: "100%",
           display: "flex",
@@ -326,13 +341,25 @@ const HireDetailPage = () => {
               color: "hsl(var(--color-muted-fg))",
             }}
           >
-            {hireFirstName} can start their onboarding straight away by using
-            this link.
+            {hireFirstName}{" "}
+            can start their onboarding straight away by using this link.
           </span>
         </span>
         {inviteOpen
-          ? <MdExpandLess size={20} aria-hidden="true" style={{ flexShrink: 0, color: "hsl(var(--color-muted-fg))" }} />
-          : <MdExpandMore size={20} aria-hidden="true" style={{ flexShrink: 0, color: "hsl(var(--color-muted-fg))" }} />}
+          ? (
+            <MdExpandLess
+              size={20}
+              aria-hidden="true"
+              style={{ flexShrink: 0, color: "hsl(var(--color-muted-fg))" }}
+            />
+          )
+          : (
+            <MdExpandMore
+              size={20}
+              aria-hidden="true"
+              style={{ flexShrink: 0, color: "hsl(var(--color-muted-fg))" }}
+            />
+          )}
       </button>
       {inviteOpen && (
         <div style={{ padding: "0 var(--space-4) var(--space-4)" }}>
@@ -516,7 +543,10 @@ const HireDetailPage = () => {
             </Section>
           )}
 
-          <div className="card" style={{ padding: "var(--space-4) var(--space-5)" }}>
+          <div
+            className="card"
+            style={{ padding: "var(--space-4) var(--space-5)" }}
+          >
             <header style={{ marginBottom: "var(--space-3)" }}>
               <h3
                 style={{
@@ -565,8 +595,8 @@ const HireDetailPage = () => {
                     margin: 0,
                   }}
                 >
-                  No milestones yet — set up this hire's journey in the Customize
-                  tab.
+                  No milestones yet — set up this hire's journey in the
+                  Customize tab.
                 </p>
               )}
           </div>
@@ -674,7 +704,9 @@ const HireDetailPage = () => {
         milestone={milestoneEditor.selectedMilestone}
         missions={milestoneEditor.selectedMilestone
           ? missions
-            .filter((m) => m.milestoneId === milestoneEditor.selectedMilestone!.id)
+            .filter((m) =>
+              m.milestoneId === milestoneEditor.selectedMilestone!.id
+            )
             .filter((m) => !missionEditor.deletedMissionIds.has(m.id))
           : []}
         activeMissionId={missionEditor.selectedMissionId}
@@ -696,7 +728,9 @@ const HireDetailPage = () => {
         onDiscard={handleDiscard}
         onAddMission={() =>
           milestoneEditor.selectedMilestone
-            ? missionEditor.handleAddMission(milestoneEditor.selectedMilestone.id)
+            ? missionEditor.handleAddMission(
+              milestoneEditor.selectedMilestone.id,
+            )
             : undefined}
         onDeleteMission={missionEditor.handleDeleteMission}
         onReorderMission={missionEditor.handleMissionReorder}

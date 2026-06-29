@@ -27,7 +27,13 @@ const MilestoneGrid = (props: MilestoneGridProps) => {
         .map((ms, i) => {
           const inMs = props.missions.filter((m) => m.milestoneId === ms.id);
           const done = inMs.filter((m) => completedSet.has(m.id)).length;
-          return { id: ms.id, name: ms.name, index: i + 1, total: inMs.length, done };
+          return {
+            id: ms.id,
+            name: ms.name,
+            index: i + 1,
+            total: inMs.length,
+            done,
+          };
         }),
     [props.milestones, props.missions, completedSet],
   );

@@ -124,7 +124,14 @@ const IsometricMilestoneMap = (props: IsometricMilestoneMapProps) => {
   const [hovered, setHovered] = useState<string | null>(null);
   const [view, setView] = useState<View>({ scale: 1, x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
-  const drag = useRef({ active: false, sx: 0, sy: 0, ox: 0, oy: 0, moved: false });
+  const drag = useRef({
+    active: false,
+    sx: 0,
+    sy: 0,
+    ox: 0,
+    oy: 0,
+    moved: false,
+  });
 
   const progressById = useMemo(
     () => new Map(props.milestoneProgress.map((mp) => [mp.milestoneId, mp])),
@@ -209,13 +216,17 @@ const IsometricMilestoneMap = (props: IsometricMilestoneMapProps) => {
       d.moved = true;
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     }
-    if (d.moved) setView((v) => clampView({ ...v, x: d.ox + dx, y: d.oy + dy }));
+    if (d.moved) {
+      setView((v) => clampView({ ...v, x: d.ox + dx, y: d.oy + dy }));
+    }
   };
 
   const endDrag = (e: React.PointerEvent) => {
     drag.current.active = false;
     const el = e.currentTarget as HTMLElement;
-    if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    if (el.hasPointerCapture(e.pointerId)) {
+      el.releasePointerCapture(e.pointerId);
+    }
   };
 
   const handleBuildingClick = (id: string) => {
@@ -256,7 +267,11 @@ const IsometricMilestoneMap = (props: IsometricMilestoneMapProps) => {
               `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
           }}
         >
-          <img className="iso-map__bg" src={mapBg} alt="Messe München site plan" />
+          <img
+            className="iso-map__bg"
+            src={mapBg}
+            alt="Messe München site plan"
+          />
 
           <svg
             className="iso-map__svg"
@@ -265,7 +280,13 @@ const IsometricMilestoneMap = (props: IsometricMilestoneMapProps) => {
             role="presentation"
           >
             <defs>
-              <filter id="iso-shadow" x="-30%" y="-30%" width="160%" height="190%">
+              <filter
+                id="iso-shadow"
+                x="-30%"
+                y="-30%"
+                width="160%"
+                height="190%"
+              >
                 <feDropShadow
                   dx="0"
                   dy="9"
@@ -327,11 +348,15 @@ const IsometricMilestoneMap = (props: IsometricMilestoneMapProps) => {
             {buildings.map((b) => (
               <span
                 key={`name-${b.id}`}
-                className={`iso-name ${hovered === b.id ? "iso-name--show" : ""}`}
+                className={`iso-name ${
+                  hovered === b.id ? "iso-name--show" : ""
+                }`}
                 style={toPct(b.front)}
               >
                 {b.name}
-                <span className="iso-name__pct">{Math.round(b.frac * 100)}%</span>
+                <span className="iso-name__pct">
+                  {Math.round(b.frac * 100)}%
+                </span>
               </span>
             ))}
           </div>

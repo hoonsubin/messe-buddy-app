@@ -92,7 +92,14 @@ const subscriptions = new Map<string, Set<ProgressCallback>>();
     const schemas = MOCK_FORM_SCHEMAS.filter((s) => ids.has(s.missionId));
     templates.set(
       name,
-      exportTemplate(name, MOCK_SESSION, allMs, chosen, schemas, MOCK_RESOURCES),
+      exportTemplate(
+        name,
+        MOCK_SESSION,
+        allMs,
+        chosen,
+        schemas,
+        MOCK_RESOURCES,
+      ),
     );
   };
   seedTpl("Engineering Onboarding", (i) => i % 3 !== 2);

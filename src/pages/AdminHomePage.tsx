@@ -10,10 +10,16 @@ import TopBar from "../components/shared/TopBar.tsx";
 import NameCaptureModal from "../components/shared/NameCaptureModal.tsx";
 
 const statusOf = (h: GmHireRow): { label: string; colorVar: string } => {
-  if (!h.joined) return { label: "Not joined yet", colorVar: "--color-muted-fg" };
+  if (!h.joined) {
+    return { label: "Not joined yet", colorVar: "--color-muted-fg" };
+  }
   if (h.isStalled) return { label: "Stalled", colorVar: "--color-destructive" };
-  if (h.progressPercent < 20) return { label: "Just started", colorVar: "--color-muted-fg" };
-  if (h.progressPercent >= 100) return { label: "Complete", colorVar: "--color-status-complete" };
+  if (h.progressPercent < 20) {
+    return { label: "Just started", colorVar: "--color-muted-fg" };
+  }
+  if (h.progressPercent >= 100) {
+    return { label: "Complete", colorVar: "--color-status-complete" };
+  }
   return { label: "On track", colorVar: "--color-status-complete" };
 };
 
@@ -77,7 +83,11 @@ const HireCard = (
         </div>
 
         <div
-          style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--space-2)",
+          }}
         >
           <div
             role="progressbar"
@@ -286,7 +296,12 @@ const AdminHomePage = () => {
                 color: "hsl(var(--color-muted-fg))",
               }}
             >
-              <p style={{ margin: "0 0 var(--space-4)", fontSize: "var(--text-sm)" }}>
+              <p
+                style={{
+                  margin: "0 0 var(--space-4)",
+                  fontSize: "var(--text-sm)",
+                }}
+              >
                 No new hires yet. Add your first one to start their onboarding.
               </p>
               <button
@@ -315,7 +330,8 @@ const AdminHomePage = () => {
                 <HireCard
                   key={hire.sessionId}
                   hire={hire}
-                  onOpen={() => navigate(`/admin/${sid}/hire/${hire.sessionId}`)}
+                  onOpen={() =>
+                    navigate(`/admin/${sid}/hire/${hire.sessionId}`)}
                 />
               ))}
             </ul>
