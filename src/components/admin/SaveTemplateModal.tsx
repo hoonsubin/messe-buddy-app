@@ -46,7 +46,10 @@ const SaveTemplateModal = (props: SaveTemplateModalProps) => {
       aria-labelledby="save-template-title"
       testId="save-template-modal"
     >
-      <ModalTitle id="save-template-title" className="save-template-modal__header">
+      <ModalTitle
+        id="save-template-title"
+        className="save-template-modal__header"
+      >
         Save as template
       </ModalTitle>
 

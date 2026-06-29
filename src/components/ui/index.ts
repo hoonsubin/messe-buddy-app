@@ -5,7 +5,7 @@ export { default as IconButton } from "./IconButton.tsx";
 export { default as Avatar } from "./Avatar.tsx";
 export {
   BUTTON_VARIANT,
-  ICON_BUTTON_VARIANT,
   type ButtonVariant,
+  ICON_BUTTON_VARIANT,
   type IconButtonVariant,
 } from "./types.ts";

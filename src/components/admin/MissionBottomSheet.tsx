@@ -231,9 +231,7 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
         onClick={() => {
           if (view === "list") setIsRenaming(true);
         }}
-        aria-label={view === "list"
-          ? "Rename milestone"
-          : "Edit mission title"}
+        aria-label={view === "list" ? "Rename milestone" : "Edit mission title"}
       >
         <MdEditNote size={22} aria-hidden="true" />
       </button>

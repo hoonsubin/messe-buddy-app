@@ -1,7 +1,8 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cn } from "../../utils/cn.ts";
 
-interface AvatarProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
+interface AvatarProps
+  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
   readonly src?: string;
   readonly initials?: string;
   readonly fallback?: ReactNode;

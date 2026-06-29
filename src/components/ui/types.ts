@@ -6,7 +6,8 @@ export const BUTTON_VARIANT = {
   GHOST: "ghost",
   DESTRUCTIVE: "destructive",
 } as const;
-export type ButtonVariant = (typeof BUTTON_VARIANT)[keyof typeof BUTTON_VARIANT];
+export type ButtonVariant =
+  (typeof BUTTON_VARIANT)[keyof typeof BUTTON_VARIANT];
 
 export const ICON_BUTTON_VARIANT = {
   DEFAULT: "default",

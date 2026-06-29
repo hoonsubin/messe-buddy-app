@@ -11,11 +11,7 @@ import {
 import Button from "../ui/Button.tsx";
 import { BUTTON_VARIANT } from "../ui/types.ts";
 import IconButton from "../ui/IconButton.tsx";
-import {
-  Modal,
-  ModalDescription,
-  ModalTitle,
-} from "../patterns/Modal.tsx";
+import { Modal, ModalDescription, ModalTitle } from "../patterns/Modal.tsx";
 import { MODAL_VARIANT } from "../patterns/types.ts";
 
 type ScanState = "idle" | "scanning" | "success" | "invalid" | "error";

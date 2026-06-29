@@ -155,70 +155,70 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
             {editing === "new" ? "Add resource" : "Edit resource"}
           </h3>
 
-            <div className="form-field">
-              <label className="form-label" htmlFor="res-title">Title</label>
-              <input
-                id="res-title"
-                className="form-input"
-                type="text"
-                value={draft.title}
-                autoFocus
-                onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-                placeholder="Resource name"
-              />
-            </div>
-            <div className="form-field">
-              <label className="form-label" htmlFor="res-type">Type</label>
-              <select
-                id="res-type"
-                className="form-input"
-                value={draft.type}
-                onChange={(e) =>
-                  setDraft({ ...draft, type: e.target.value as ResourceType })}
-              >
-                {(Object.values(RESOURCE_TYPE) as ResourceType[]).map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-field">
-              <label className="form-label" htmlFor="res-url">URL</label>
-              <input
-                id="res-url"
-                className="form-input"
-                type="url"
-                value={draft.url}
-                onChange={(e) => setDraft({ ...draft, url: e.target.value })}
-                placeholder="https://..."
-              />
-            </div>
-            <label className="resources-editor__visibility-label">
-              <input
-                type="checkbox"
-                checked={draft.isVisibleToPlayer}
-                onChange={(e) =>
-                  setDraft({ ...draft, isVisibleToPlayer: e.target.checked })}
-              />
-              Visible to the new hire
-            </label>
+          <div className="form-field">
+            <label className="form-label" htmlFor="res-title">Title</label>
+            <input
+              id="res-title"
+              className="form-input"
+              type="text"
+              value={draft.title}
+              autoFocus
+              onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+              placeholder="Resource name"
+            />
+          </div>
+          <div className="form-field">
+            <label className="form-label" htmlFor="res-type">Type</label>
+            <select
+              id="res-type"
+              className="form-input"
+              value={draft.type}
+              onChange={(e) =>
+                setDraft({ ...draft, type: e.target.value as ResourceType })}
+            >
+              {(Object.values(RESOURCE_TYPE) as ResourceType[]).map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-field">
+            <label className="form-label" htmlFor="res-url">URL</label>
+            <input
+              id="res-url"
+              className="form-input"
+              type="url"
+              value={draft.url}
+              onChange={(e) => setDraft({ ...draft, url: e.target.value })}
+              placeholder="https://..."
+            />
+          </div>
+          <label className="resources-editor__visibility-label">
+            <input
+              type="checkbox"
+              checked={draft.isVisibleToPlayer}
+              onChange={(e) =>
+                setDraft({ ...draft, isVisibleToPlayer: e.target.checked })}
+            />
+            Visible to the new hire
+          </label>
 
-            <div className="resources-editor__modal-actions">
-              <button
-                type="button"
-                className="btn btn--ghost"
-                onClick={close}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn btn--primary"
-                disabled={!canSave}
-                onClick={submit}
-              >
-                {editing === "new" ? "Add" : "Save"}
-              </button>
-            </div>
+          <div className="resources-editor__modal-actions">
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={close}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn--primary"
+              disabled={!canSave}
+              onClick={submit}
+            >
+              {editing === "new" ? "Add" : "Save"}
+            </button>
+          </div>
         </Modal>
       )}
     </div>

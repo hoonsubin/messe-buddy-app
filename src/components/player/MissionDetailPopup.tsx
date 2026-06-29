@@ -162,17 +162,16 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
 
         <div className="mission-popup__meta core-flex-row core-flex-wrap core-gap-2 core-mb-4">
           <XPBadge value={mission.xpValue} />
-          {mission.tags.map((t) => (
-            <TagBadge key={t} label={t} variant={t} />
-          ))}
+          {mission.tags.map((t) => <TagBadge key={t} label={t} variant={t} />)}
         </div>
 
-        {mission.validationMethod === "qr" && !showValidation && !isCompleted && (
-          <div className="mission-popup__qr-hint">
-            <MdQrCode2 size={16} aria-hidden="true" />
-            Your buddy or Game Master will scan a QR code to confirm this.
-          </div>
-        )}
+        {mission.validationMethod === "qr" && !showValidation && !isCompleted &&
+          (
+            <div className="mission-popup__qr-hint">
+              <MdQrCode2 size={16} aria-hidden="true" />
+              Your buddy or Game Master will scan a QR code to confirm this.
+            </div>
+          )}
 
         {bodyHtml && !isLink && (
           <div
