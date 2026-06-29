@@ -1,0 +1,124 @@
+/*
+ * MesseBuddy — Shared Component Styles
+ *
+ * Non-page-specific component classes extracted from inline style refactoring.
+ * Imported from src/index.css via @import.
+ */
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: var(--space-6);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  background: hsl(var(--color-card));
+  box-shadow: var(--shadow-lg);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: hsl(var(--color-status-complete));
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.toast--error {
+  color: hsl(var(--color-destructive));
+}
+
+/* ── FetchErrorPanel ── */
+.fetch-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  color: hsl(var(--color-muted-fg));
+  background: hsl(var(--color-bg));
+  gap: var(--space-4);
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.fetch-error__message {
+  margin: 0;
+  color: hsl(var(--color-destructive));
+  max-width: 24rem;
+}
+
+.fetch-error__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
+}
+
+/* ── NotFoundPage ── */
+.not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: var(--space-6);
+  gap: var(--space-4);
+  text-align: center;
+  background: hsl(var(--color-bg));
+  color: hsl(var(--color-fg));
+}
+
+.not-found__title {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+}
+
+.not-found__desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: hsl(var(--color-muted-fg));
+  max-width: 24rem;
+}
+
+/* ── ConfirmDialog (lightweight additions on top of existing .confirm-* classes) ── */
+.confirm__title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.confirm__body {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: hsl(var(--color-muted-fg));
+  line-height: var(--leading-relaxed);
+}
+
+.confirm__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* ── ConfirmSheet ── */
+.sheet-confirm__btn--destructive {
+  color: hsl(var(--color-destructive));
+}
+
+/* ── MissionCard ── */
+.mission-card__title-btn-reset {
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+}
+
+/* ── NameCaptureModal ── */
+.name-capture__header {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  color: hsl(var(--color-fg));
+}

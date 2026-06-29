@@ -40,7 +40,10 @@ const MilestoneGrid = (props: MilestoneGridProps) => {
 
   if (boxes.length === 0) {
     return (
-      <p className="core-text-sm core-text-muted core-text-center core-m-0" style={{ padding: "var(--space-6) 0" }}>
+      <p
+        className="core-text-sm core-text-muted core-text-center core-m-0"
+        style={{ padding: "var(--space-6) 0" }}
+      >
         Choose a template above to add milestones.
       </p>
     );

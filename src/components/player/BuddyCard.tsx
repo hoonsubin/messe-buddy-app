@@ -33,7 +33,7 @@ const BuddyCard = (props: BuddyCardProps) => (
               alt=""
               width="48"
               height="48"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              className="buddy-card__avatar-img"
             />
           )
           : initials(props.name)}
@@ -73,11 +73,10 @@ const BuddyCard = (props: BuddyCardProps) => (
         )}
         {props.contactUrl !== undefined && (
           <a
-            className="btn btn--secondary"
             href={props.contactUrl}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ marginTop: "var(--space-1)", justifyContent: "center" }}
+            className="btn btn--secondary btn--book-meeting"
           >
             Book a meeting
           </a>

@@ -67,6 +67,10 @@
   font-size: var(--text-lg);
 }
 
+.core-text-xl {
+  font-size: var(--text-xl);
+}
+
 .core-text-muted {
   color: hsl(var(--color-muted-fg));
 }
@@ -118,6 +122,54 @@
 .core-icon-primary {
   color: hsl(var(--color-primary));
   flex-shrink: 0;
+}
+
+/* ── Additional layout ────────────────────────────────────────────────────── */
+
+.core-flex-wrap {
+  flex-wrap: wrap;
+}
+
+.core-justify-end {
+  justify-content: flex-end;
+}
+
+.core-min-w-0 {
+  min-width: 0;
+}
+
+/* ── Additional typography ────────────────────────────────────────────────── */
+
+.core-text-destructive {
+  color: hsl(var(--color-destructive));
+}
+
+/* ── Spacing ──────────────────────────────────────────────────────────────── */
+
+.core-mb-2 { margin-bottom: var(--space-2); }
+.core-mb-3 { margin-bottom: var(--space-3); }
+.core-mb-4 { margin-bottom: var(--space-4); }
+.core-mt-1 { margin-top: var(--space-1); }
+.core-mt-2 { margin-top: var(--space-2); }
+.core-mt-3 { margin-top: var(--space-3); }
+.core-mt-4 { margin-top: var(--space-4); }
+
+/* ── Sizing ───────────────────────────────────────────────────────────────── */
+
+.core-w-full { width: 100%; }
+.core-max-w-sm { max-width: 24rem; }
+.core-max-w-md { max-width: 28rem; }
+.core-max-w-lg { max-width: 36rem; }
+
+/* ── Overflow ─────────────────────────────────────────────────────────────── */
+
+.core-overflow-hidden { overflow: hidden; }
+
+/* ── Layout additions ─────────────────────────────────────────────────────── */
+
+.core-flex-start {
+  display: flex;
+  align-items: flex-start;
 }
 
 /* ── Button reset ────────────────────────────────────────────────────────── */

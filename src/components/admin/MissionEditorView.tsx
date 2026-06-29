@@ -13,7 +13,7 @@ interface MissionEditorViewProps {
 }
 
 const MissionEditorView = (props: MissionEditorViewProps) => (
-  <div className="core-flex-col" style={{ minHeight: "100%" }}>
+  <div className="core-flex-col mission-editor-view">
     {/* Draft restore banner */}
     {props.storedDraft && (
       <DraftRestoreBanner
@@ -25,12 +25,7 @@ const MissionEditorView = (props: MissionEditorViewProps) => (
 
     {props.draft
       ? (
-        <div
-          style={{
-            padding: "var(--space-4) var(--space-5) var(--space-6)",
-            flex: 1,
-          }}
-        >
+        <div className="mission-editor-view__editor">
           <MissionEditor
             draft={props.draft}
             xpPreview={props.xpPreview}
@@ -39,7 +34,7 @@ const MissionEditorView = (props: MissionEditorViewProps) => (
         </div>
       )
       : (
-        <p className="core-text-sm core-text-muted" style={{ padding: "var(--space-6) var(--space-5)" }}>
+        <p className="core-text-sm core-text-muted mission-editor-view__empty">
           Select a mission to edit
         </p>
       )}

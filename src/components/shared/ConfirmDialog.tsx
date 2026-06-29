@@ -59,13 +59,11 @@ const ConfirmDialog = ({
           {title}
         </h3>
         {body && (
-          <p
-            className="core-m-0 core-text-sm core-text-muted core-leading-relaxed"
-          >
+          <p className="core-m-0 core-text-sm core-text-muted core-leading-relaxed">
             {body}
           </p>
         )}
-        <div className="core-flex-row core-justify-between core-gap-3" style={{ justifyContent: "flex-end" }}>
+        <div className="core-flex-row core-justify-end core-gap-3">
           <button
             type="button"
             className="btn btn--ghost"

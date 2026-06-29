@@ -10,10 +10,35 @@ Mobile-first. Primary smoke viewport: **390×844** (iPhone-class). Admin desktop
 
 | Layer | Location | Rule |
 |-------|----------|------|
-| Primitive tokens | `src/styles/tokens.css` `:root` | HSL channels without `hsl()` wrapper |
+| Primitive tokens | [`src/styles/tokens.css`](../src/styles/tokens.css) `:root` | HSL channels without `hsl()` wrapper |
 | Semantic usage | `hsl(var(--color-*))` or `hsl(var(--color-*) / 0.5)` | Always compose alpha this way |
-| Components | `src/index.css` | BEM: `.block`, `.block__element`, `.block--modifier` |
+| Utility classes | [`src/styles/utilities.css`](../src/styles/utilities.css) | `core-{property}` prefix for single-purpose utilities |
+| Component CSS | [`src/styles/components/*.css`](../src/styles/components/) | BEM: `.block`, `.block__element`, `.block--modifier` |
+| Core styles | [`src/index.css`](../src/index.css) | Reset, tokens, animations, page-scoped layouts, `@import` all above |
 | Pages | `src/pages/**` | Compose shared classes; page-scoped blocks under `pages/<page>/` |
+
+### CSS file import order (in [`src/index.css`](../src/index.css))
+
+```css
+@import "./styles/tokens.css";
+@import "./styles/utilities.css";
+@import "./styles/components/shared.css";
+@import "./styles/components/player.css";
+@import "./styles/components/admin.css";
+@import "./styles/components/tutorial.css";
+```
+
+This ensures tokens are available to all subsequent files, utilities compose with component styles, and core styles override as needed.
+
+### CSS class naming conventions
+
+| Prefix | Scope | Example |
+|--------|-------|---------|
+| `core-` | Utility (layout, typography, icons, spacing) | `.core-flex-row`, `.core-text-sm`, `.core-mb-4` |
+| `{component}-` | Component block (BEM: `block__element--modifier`) | `.daily-plan__header`, `.hire-analytics__stat-row--wrap` |
+| `{page}-` | Page-scoped layout | `.cockpit-col`, `.landing__card` |
+| `.btn` / `.btn--` | Shared button system | `.btn--primary`, `.btn--ghost` |
+| `.card` | Shared card surface | `.card` (padding, border-radius, shadow) |
 
 **Fonts loaded in** [`src/index.css`](../src/index.css): Geist (UI + display headings), Geist Mono (codes/keys).
 Note: PR #17 unified the project to Geist font family; DM Sans, Playfair Display, and Inter are no longer loaded.
@@ -344,12 +369,12 @@ After any UI change, verify on **390×844** (Playwright MCP, Firefox/iPhone 15 p
 
 ## 11. Adding new tokens
 
-1. Add primitive to `src/styles/tokens.css`.
-2. Reference via `var(--token)` in `src/index.css` component block.
+1. Add primitive to [`src/styles/tokens.css`](../src/styles/tokens.css).
+2. Reference via `var(--token)` in the appropriate component CSS file under [`src/styles/components/`](../src/styles/components/).
 3. Document semantic purpose in this file (section 2–6).
 4. If a new component is shared across ≥2 pages, place under `src/components/shared/`.
 5. Page-only UI stays under `src/pages/<page>/`.
 
 ---
 
-*Last synced with codebase: 2026-06-29 (post PR #17 merge — Geist typography, AdminHomePage + HireDetailPage routes, IsometricMilestoneMap, ChatPanel tabs).*
+*Last synced with codebase: 2026-06-29 (CSS restructure to component library, utility classes v3, inline style refactoring Phase 1–4 complete, YouAreHereMarker removed).*

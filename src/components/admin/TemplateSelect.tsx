@@ -14,11 +14,9 @@ interface TemplateSelectProps {
  * the hire) plus a button to save a new template.
  */
 const TemplateSelect = (props: TemplateSelectProps) => (
-  <div
-    style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}
-  >
+  <div className="core-flex-row core-gap-2">
     <select
-      className="form-input"
+      className="form-input core-flex-1 core-min-w-0"
       data-testid="template-select"
       aria-label="Onboarding template"
       value={props.appliedName ?? ""}
@@ -26,7 +24,6 @@ const TemplateSelect = (props: TemplateSelectProps) => (
       onChange={(e) => {
         if (e.target.value) props.onSelect(e.target.value);
       }}
-      style={{ flex: 1, minWidth: 0 }}
     >
       <option value="" disabled>
         {props.applying ? "Applying…" : "Choose a template…"}
@@ -41,10 +38,10 @@ const TemplateSelect = (props: TemplateSelectProps) => (
 
     <button
       type="button"
-      className="btn btn--secondary"
+      className="btn btn--secondary core-shrink-0 core-gap-1"
       data-testid="add-template"
       onClick={props.onAddNew}
-      style={{ flexShrink: 0, gap: "var(--space-1)", whiteSpace: "nowrap" }}
+      style={{ whiteSpace: "nowrap" }}
     >
       <MdAdd size={16} aria-hidden="true" />
       New template

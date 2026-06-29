@@ -14,22 +14,14 @@ const DraftRestoreBanner = (props: DraftRestoreBannerProps) => (
     <div className="draft-banner__actions">
       <button
         type="button"
-        className="btn btn--ghost"
-        style={{
-          fontSize: "var(--text-xs)",
-          padding: "var(--space-1) var(--space-2)",
-        }}
+        className="btn btn--ghost draft-banner__action"
         onClick={props.onDismiss}
       >
         Dismiss
       </button>
       <button
         type="button"
-        className="btn btn--secondary"
-        style={{
-          fontSize: "var(--text-xs)",
-          padding: "var(--space-1) var(--space-2)",
-        }}
+        className="btn btn--secondary draft-banner__action"
         onClick={props.onLoad}
       >
         Load draft

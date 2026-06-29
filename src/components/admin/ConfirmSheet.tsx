@@ -26,8 +26,7 @@ const ConfirmSheet = (props: ConfirmSheetProps) => (
     </button>
     <button
       type="button"
-      className="btn btn--ghost sheet-confirm__btn"
-      style={{ color: "hsl(var(--color-destructive))" }}
+      className="btn btn--ghost sheet-confirm__btn sheet-confirm__btn--destructive"
       onClick={props.onDiscardAndClose}
     >
       Discard changes

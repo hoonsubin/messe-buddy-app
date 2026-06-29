@@ -8,40 +8,19 @@ interface TemplateFieldsProps {
 }
 
 const TemplateFields = (props: TemplateFieldsProps) => (
-  <ul
-    data-testid="template-fields"
-    style={{
-      listStyle: "none",
-      padding: 0,
-      margin: 0,
-      display: "flex",
-      flexDirection: "column",
-      gap: "var(--space-2)",
-    }}
-  >
+  <ul data-testid="template-fields" className="template-fields__list">
     {props.missions.map((m) => (
       <li
         key={m.id}
-        className="card"
-        style={{
-          padding: "var(--space-3)",
-          display: "flex",
-          alignItems: "center",
-          gap: "var(--space-3)",
-        }}
+        className="card template-fields__item"
       >
-        <span style={{ flex: 1, fontSize: "var(--text-sm)" }}>{m.title}</span>
+        <span className="core-flex-1 core-text-sm">{m.title}</span>
         <XPBadge value={m.xpValue} />
         {m.tags.map((t) => <TagBadge key={t} label={t} variant={t} />)}
       </li>
     ))}
     {props.missions.length === 0 && (
-      <li
-        style={{
-          color: "hsl(var(--color-muted-fg))",
-          fontSize: "var(--text-sm)",
-        }}
-      >
+      <li className="template-fields__empty">
         No missions
       </li>
     )}

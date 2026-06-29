@@ -49,11 +49,7 @@ const SaveTemplateModal = (props: SaveTemplateModalProps) => {
       >
         <h2
           id="save-template-title"
-          style={{
-            margin: 0,
-            fontSize: "var(--text-lg)",
-            fontWeight: "var(--weight-semibold)",
-          }}
+          className="save-template-modal__header core-m-0"
         >
           Save as template
         </h2>
@@ -63,37 +59,18 @@ const SaveTemplateModal = (props: SaveTemplateModalProps) => {
           <div
             role="group"
             aria-label="Save mode"
-            style={{
-              display: "flex",
-              gap: "var(--space-2)",
-              background: "hsl(var(--color-muted))",
-              borderRadius: "var(--radius-md)",
-              padding: "var(--space-1)",
-            }}
+            className="save-template-modal__toggle-group"
           >
             {(["new", "replace"] as const).map((mode) => (
               <button
                 key={mode}
                 type="button"
                 onClick={() => setSaveMode(mode)}
-                style={{
-                  flex: 1,
-                  minHeight: "var(--touch-target)",
-                  borderRadius: "calc(var(--radius-md) - 2px)",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: "var(--text-sm)",
-                  fontWeight: "var(--weight-medium)",
-                  transition:
-                    "background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out)",
-                  background: saveMode === mode
-                    ? "hsl(var(--color-card))"
-                    : "transparent",
-                  color: saveMode === mode
-                    ? "hsl(var(--color-fg))"
-                    : "hsl(var(--color-muted-fg))",
-                  boxShadow: saveMode === mode ? "var(--shadow-sm)" : "none",
-                }}
+                className={`save-template-modal__toggle-btn${
+                  saveMode === mode
+                    ? " save-template-modal__toggle-btn--active"
+                    : " save-template-modal__toggle-btn--inactive"
+                }`}
               >
                 {mode === "new" ? "Save as new" : "Replace existing"}
               </button>
@@ -128,7 +105,6 @@ const SaveTemplateModal = (props: SaveTemplateModalProps) => {
                 className="form-input"
                 value={replaceTarget}
                 onChange={(e) => setReplaceTarget(e.target.value)}
-                style={{ minHeight: "var(--touch-target)" }}
                 autoFocus
               >
                 <option value="">- Select a template -</option>
@@ -139,27 +115,14 @@ const SaveTemplateModal = (props: SaveTemplateModalProps) => {
                 ))}
               </select>
               {replaceTarget && (
-                <p
-                  role="alert"
-                  style={{
-                    marginTop: "var(--space-2)",
-                    fontSize: "var(--text-xs)",
-                    color: "hsl(var(--color-destructive))",
-                  }}
-                >
+                <p role="alert" className="save-template-modal__warn">
                   This will overwrite "{replaceTarget}". This cannot be undone.
                 </p>
               )}
             </div>
           )}
 
-        <div
-          style={{
-            display: "flex",
-            gap: "var(--space-3)",
-            justifyContent: "flex-end",
-          }}
-        >
+        <div className="save-template-modal__actions">
           <button
             type="button"
             className="btn btn--ghost"

@@ -27,15 +27,8 @@ const MissionCard = (props: MissionCardProps) => {
     >
       <button
         type="button"
-        className="mission-card__title-btn"
+        className="mission-card__title-btn core-btn-reset"
         onClick={props.onClick}
-        style={{
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          textAlign: "left",
-          padding: 0,
-        }}
       >
         <p className="mission-card__title">{props.mission.title}</p>
       </button>

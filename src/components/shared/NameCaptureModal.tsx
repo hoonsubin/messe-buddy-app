@@ -37,7 +37,7 @@ const NameCaptureModal = (props: NameCaptureModalProps) => {
 
         <input
           type="text"
-          className="form-input"
+          className="form-input core-w-full core-mb-4"
           placeholder={props.placeholder ?? "e.g. Sofia Chen"}
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -48,7 +48,6 @@ const NameCaptureModal = (props: NameCaptureModalProps) => {
             if (e.key === "Enter" && canSubmit) props.onSubmit(trimmed);
             if (e.key === "Escape" && props.onCancel) props.onCancel();
           }}
-          style={{ width: "100%", marginBottom: "var(--space-4)" }}
         />
 
         <button
@@ -63,8 +62,7 @@ const NameCaptureModal = (props: NameCaptureModalProps) => {
         {props.onCancel && (
           <button
             type="button"
-            className="btn btn--ghost"
-            style={{ width: "100%", marginTop: "var(--space-2)" }}
+            className="btn btn--ghost core-w-full core-mt-2"
             onClick={props.onCancel}
             disabled={props.loading}
           >
