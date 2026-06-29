@@ -74,11 +74,6 @@ services:
     container_name: litellm-pgvector
     ports:
       - "8001:8001"
-    volumes:
-      - ./docker/patches/litellm-pgvector/embedding_service.py:/app/embedding_service.py:ro
-      - ./docker/patches/litellm-pgvector/main.py:/app/main.py:ro
-      - ./docker/patches/litellm-pgvector/enable_vector_ext.py:/app/enable_vector_ext.py:ro
-      - ./docker/patches/litellm-pgvector/prisma/schema.prisma:/app/prisma/schema.prisma:ro
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-litellm}:${POSTGRES_PASSWORD:-changeme}@vector-db:5432/${POSTGRES_VECTOR_DB:-litellm_vector}
       SERVER_API_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
