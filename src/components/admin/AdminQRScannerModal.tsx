@@ -102,7 +102,7 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 1000,
+        zIndex: 200, /* modal tier (design-tokens.md §6) */
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -114,7 +114,7 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
         style={{
           position: "absolute",
           inset: 0,
-          background: "hsl(0 0% 0% / 0.7)",
+          background: "hsl(var(--color-fg) / 0.6)",
           backdropFilter: "blur(4px)",
         }}
         onClick={handleCancel}

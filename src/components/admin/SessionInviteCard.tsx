@@ -3,11 +3,18 @@ import { MdCheck, MdContentCopy, MdPersonAdd } from "react-icons/md";
 
 interface SessionInviteCardProps {
   readonly sessionId: string;
+  /** Smaller QR + tighter padding for use at the bottom of a tab. */
+  readonly compact?: boolean;
+  /** Render QR + link only (no card wrapper / header) for embedding. */
+  readonly bare?: boolean;
 }
 
 // Load qrcode.js from CDN and generate a QR code into a canvas element.
-// Returns a cleanup function that removes the canvas content.
-function renderQRCode(canvas: HTMLCanvasElement, url: string): void {
+function renderQRCode(
+  canvas: HTMLCanvasElement,
+  url: string,
+  size: number,
+): void {
   // Use the global QRCode constructor if the script has already loaded.
   if (
     typeof (globalThis as Record<string, unknown>)["QRCode"] !== "undefined"
@@ -18,8 +25,8 @@ function renderQRCode(canvas: HTMLCanvasElement, url: string): void {
     ) => unknown;
     new QRCode(canvas, {
       text: url,
-      width: 160,
-      height: 160,
+      width: size,
+      height: size,
       colorDark: "#1a2744",
       colorLight: "#ffffff",
       correctLevel: 1, // L
@@ -36,18 +43,21 @@ function renderQRCode(canvas: HTMLCanvasElement, url: string): void {
         "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js",
     });
 
-  script.addEventListener("load", () => renderQRCode(canvas, url), {
+  script.addEventListener("load", () => renderQRCode(canvas, url, size), {
     once: true,
   });
 
   if (!existing) document.head.appendChild(script);
 }
 
-const SessionInviteCard = ({ sessionId }: SessionInviteCardProps) => {
+const SessionInviteCard = (
+  { sessionId, compact, bare }: SessionInviteCardProps,
+) => {
   const [copied, setCopied] = useState(false);
   const qrContainerRef = useRef<HTMLDivElement>(null);
 
   const joinUrl = `${globalThis.location.origin}/join/${sessionId}`;
+  const qrSize = compact ? 104 : 160;
 
   // Render QR code into the container div
   useEffect(() => {
@@ -55,8 +65,8 @@ const SessionInviteCard = ({ sessionId }: SessionInviteCardProps) => {
     if (!container || !sessionId) return;
     // Clear any previous QR code
     container.innerHTML = "";
-    renderQRCode(container as unknown as HTMLCanvasElement, joinUrl);
-  }, [joinUrl, sessionId]);
+    renderQRCode(container as unknown as HTMLCanvasElement, joinUrl, qrSize);
+  }, [joinUrl, sessionId, qrSize]);
 
   const handleCopyUrl = async () => {
     try {
@@ -75,38 +85,8 @@ const SessionInviteCard = ({ sessionId }: SessionInviteCardProps) => {
     }
   };
 
-  return (
-    <section
-      aria-label="Invite new hire"
-      className="card"
-      style={{
-        padding: "var(--space-4)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-3)",
-      }}
-    >
-      <header
-        style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}
-      >
-        <MdPersonAdd
-          size={18}
-          aria-hidden="true"
-          style={{ color: "hsl(var(--color-accent))", flexShrink: 0 }}
-        />
-        <h3
-          style={{
-            margin: 0,
-            fontFamily: "var(--font-display)",
-            fontSize: "var(--text-base)",
-            fontWeight: "var(--weight-semibold)",
-            color: "hsl(var(--color-fg))",
-          }}
-        >
-          Invite New Hire
-        </h3>
-      </header>
-
+  const content = (
+    <>
       {/* QR code */}
       <div
         style={{ display: "flex", justifyContent: "center" }}
@@ -115,12 +95,12 @@ const SessionInviteCard = ({ sessionId }: SessionInviteCardProps) => {
         <div
           ref={qrContainerRef}
           style={{
-            width: "10rem",
-            height: "10rem",
+            width: `${qrSize}px`,
+            height: `${qrSize}px`,
             borderRadius: "var(--radius)",
             overflow: "hidden",
             border: "1px solid hsl(var(--color-border))",
-            background: "#fff",
+            background: "hsl(var(--color-card))",
           }}
         />
       </div>
@@ -174,6 +154,56 @@ const SessionInviteCard = ({ sessionId }: SessionInviteCardProps) => {
           </span>
         </button>
       </div>
+    </>
+  );
+
+  if (bare) {
+    return (
+      <div
+        aria-label="Invite new hire"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--space-3)",
+        }}
+      >
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <section
+      aria-label="Invite new hire"
+      className="card"
+      style={{
+        padding: "var(--space-4)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-3)",
+      }}
+    >
+      <header
+        style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}
+      >
+        <MdPersonAdd
+          size={18}
+          aria-hidden="true"
+          style={{ color: "hsl(var(--color-accent))", flexShrink: 0 }}
+        />
+        <h3
+          style={{
+            margin: 0,
+            fontFamily: "var(--font-display)",
+            fontSize: "var(--text-base)",
+            fontWeight: "var(--weight-semibold)",
+            color: "hsl(var(--color-fg))",
+          }}
+        >
+          Invite New Hire
+        </h3>
+      </header>
+      {content}
     </section>
   );
 };

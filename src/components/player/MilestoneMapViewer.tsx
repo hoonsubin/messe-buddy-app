@@ -1,59 +1,24 @@
-import type { Milestone } from "../../types/index.ts";
-import type { MilestoneProgress } from "../../types/index.ts";
-import MapViewport from "../shared/MapViewport.tsx";
-import MilestoneNode from "../shared/MilestoneNode.tsx";
-import YouAreHereMarker from "./YouAreHereMarker.tsx";
+import type { Milestone, MilestoneProgress } from "../../types/index.ts";
+import IsometricMilestoneMap from "./IsometricMilestoneMap.tsx";
 
 interface MilestoneMapViewerProps {
   readonly milestones: ReadonlyArray<Milestone>;
   readonly milestoneProgress: ReadonlyArray<MilestoneProgress>;
-  readonly bgImageUrl: string;
-  /** From Session.mapNodeScale — shared source of truth with the admin editor. */
-  readonly mapNodeScale: number;
+  /** Retained for API compatibility with the admin/session source of truth;
+   *  the isometric player map derives its own layout from milestone order. */
+  readonly bgImageUrl?: string;
+  readonly mapNodeScale?: number;
   readonly playerXPercent?: number;
   readonly playerYPercent?: number;
   readonly onMilestoneClick: (id: string) => void;
 }
 
-const MilestoneMapViewer = (props: MilestoneMapViewerProps) => {
-  const progressById = new Map(
-    props.milestoneProgress.map((mp) => [mp.milestoneId, mp]),
-  );
-
-  return (
-    <MapViewport
-      bgImageUrl={props.bgImageUrl}
-      nodeScale={props.mapNodeScale}
-      testId="milestone-map-viewer"
-      panFromNodes
-    >
-      {/* Milestone nodes */}
-      {props.milestones.map((ms) => {
-        const mp = progressById.get(ms.id);
-        return (
-          <MilestoneNode
-            key={ms.id}
-            id={ms.id}
-            label={ms.name}
-            xPercent={ms.xPercent}
-            yPercent={ms.yPercent}
-            progressPercent={mp?.percentComplete ?? 0}
-            status={mp?.status ?? "upcoming"}
-            onClick={() => props.onMilestoneClick(ms.id)}
-          />
-        );
-      })}
-
-      {/* Player location marker */}
-      {props.playerXPercent !== undefined &&
-        props.playerYPercent !== undefined && (
-        <YouAreHereMarker
-          xPercent={props.playerXPercent}
-          yPercent={props.playerYPercent}
-        />
-      )}
-    </MapViewport>
-  );
-};
+const MilestoneMapViewer = (props: MilestoneMapViewerProps) => (
+  <IsometricMilestoneMap
+    milestones={props.milestones}
+    milestoneProgress={props.milestoneProgress}
+    onMilestoneClick={props.onMilestoneClick}
+  />
+);
 
 export default MilestoneMapViewer;
