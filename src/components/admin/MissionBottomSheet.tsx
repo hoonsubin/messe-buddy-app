@@ -31,7 +31,6 @@ interface MissionBottomSheetProps {
   readonly onDraftChange: (draft: DraftMission) => void;
   readonly onRename: (newName: string) => void;
   readonly onSave: () => void;
-  readonly onSaveAsTemplate: () => void;
   readonly onDiscard: () => void;
   readonly onAddMission: () => void;
   readonly onDeleteMission: (missionId: string) => void;
@@ -58,7 +57,6 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
     onDraftChange,
     onRename,
     onSave,
-    onSaveAsTemplate,
     onDiscard,
     onAddMission,
     onDeleteMission,
@@ -406,7 +404,6 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
               isDirty={isDirty}
               isSaving={isSaving}
               onSave={onSave}
-              onSaveAsTemplate={onSaveAsTemplate}
               onDiscard={onDiscard}
             />
           </div>

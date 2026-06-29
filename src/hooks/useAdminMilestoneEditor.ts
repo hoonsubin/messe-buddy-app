@@ -59,12 +59,20 @@ export const useAdminMilestoneEditor = (
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(
     null,
   );
-  const seeded = useRef(false);
+  const seededSig = useRef<string>("");
 
-  // Seed once from real milestones
+  // Seed from real milestones, and re-seed whenever the underlying milestone
+  // id-set changes (e.g. applying a different template replaces them). Edits
+  // are saved via handleSave (ids preserved), so a save+refresh keeps the same
+  // signature and won't clobber in-progress work.
   useEffect(() => {
-    if (seeded.current || milestones.length === 0) return;
-    seeded.current = true;
+    if (milestones.length === 0) {
+      seededSig.current = "";
+      return;
+    }
+    const sig = milestones.map((m) => m.id).join("|");
+    if (sig === seededSig.current) return;
+    seededSig.current = sig;
     setDraftMilestones(
       milestones.map((ms) =>
         defaultDraftMilestone(ms.id, ms.name, ms.xPercent, ms.yPercent)

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap");
 @import "./styles/tokens.css";
 
 /* ── Reset ───────────────────────────────────────────────────────────────── */
@@ -13,6 +13,9 @@
 html {
   font-size: 100%; /* respect user preference */
   height: 100%;
+  /* Always reserve the scrollbar gutter so centred content (e.g. the hire
+     header + tabs) doesn't shift between short and tall tab views. */
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -31,6 +34,30 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────────
+   Non-optional accessibility baseline: anyone who asks the OS to reduce motion
+   gets near-instant transitions instead of movement. Kept as a near-zero
+   duration (not 0) so transitionend / animationend handlers still fire. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Headings ────────────────────────────────────────────────────────────────
+   Balance wrapping on headings so multi-line titles break into even lines
+   instead of a long line + an orphan. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
 }
 
 /* ── Page wrapper ────────────────────────────────────────────────────────── */
@@ -418,10 +445,8 @@ body {
 
 /* ── Section label ───────────────────────────────────────────────────────── */
 .section-label {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: hsl(var(--color-muted-fg));
   margin: 0 0 var(--space-3);
 }
@@ -895,8 +920,9 @@ textarea.form-input {
   font-style: italic;
   color: hsl(var(--color-muted-fg));
   line-height: var(--leading-normal);
-  border-inline-start: 3px solid hsl(var(--color-border));
-  padding-inline-start: var(--space-3);
+  background: hsl(var(--color-muted));
+  border-radius: var(--radius);
+  padding: var(--space-3);
   margin: 0;
 }
 
@@ -1255,8 +1281,9 @@ textarea.form-input {
 
 .chat-markdown blockquote {
   margin: 0 0 var(--space-2);
-  padding-inline-start: var(--space-3);
-  border-inline-start: 2px solid hsl(var(--color-border));
+  padding: var(--space-2) var(--space-3);
+  background: hsl(var(--color-muted));
+  border-radius: var(--radius);
   color: hsl(var(--color-muted-fg));
 }
 
@@ -1495,6 +1522,19 @@ textarea.form-input {
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
+}
+
+/* Full-screen AI Assistant tab — same responsive width as .cockpit-main, but
+   fills the viewport height below the tabs so the chat is full-screen. */
+.assistant-fullscreen {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 48rem;
+  margin-inline: auto;
+  padding: var(--space-4) var(--space-4) var(--space-6);
+  display: flex;
+  flex-direction: column;
 }
 
 /* Mobile: a single stacked column (primary items, then aside items). */
@@ -2415,6 +2455,8 @@ textarea.form-input {
   font-size: var(--text-sm);
   color: hsl(var(--color-fg));
   line-height: var(--leading-relaxed);
+  max-width: 70ch; /* comfortable reading measure */
+  text-wrap: pretty; /* avoid orphans in long-form copy */
 }
 .prose p { margin: 0 0 var(--space-3); }
 .prose p:last-child { margin-bottom: 0; }
@@ -2440,7 +2482,7 @@ textarea.form-input {
 .prose code {
   font-family: var(--font-mono);
   font-size: 0.875em;
-  background: hsl(var(--color-surface-2));
+  background: hsl(var(--color-muted));
   padding: 0.1em 0.35em;
   border-radius: var(--radius-sm);
 }
@@ -2451,8 +2493,8 @@ textarea.form-input {
   margin: var(--space-4) 0;
   padding: var(--space-3) var(--space-4);
   background: hsl(var(--color-secondary));
-  border-left: 3px solid hsl(var(--color-primary));
-  border-radius: 0 var(--radius) var(--radius) 0;
+  border: 1px solid hsl(var(--color-primary) / 0.2);
+  border-radius: var(--radius);
   color: hsl(var(--color-fg));
 }
 .prose blockquote p {
@@ -2493,20 +2535,12 @@ textarea.form-input {
   color: hsl(142 60% 32%);
 }
 
-/* ── Form field focus animations ─────────────────────────────────────────── */
-.form-field {
-  padding-left: var(--space-1);
-  border-left: 2px solid transparent;
-  transition:
-    border-color var(--duration-fast) var(--ease-out),
-    padding-left var(--duration-fast) var(--ease-out);
-}
-.form-field:focus-within {
-  border-left-color: hsl(var(--color-accent));
-  padding-left: var(--space-3);
-}
+/* ── Form field focus affordance ─────────────────────────────────────────────
+   The field's affordance is carried by the input's own focus ring
+   (.form-input:focus) plus an accent label; no side-stripe, no layout shift. */
 .form-field:focus-within .form-label {
   color: hsl(var(--color-accent));
+  transition: color var(--duration-fast) var(--ease-out);
 }
 
 /* Textarea auto-grow - height is set inline by JS; transition makes it smooth */
@@ -2959,4 +2993,245 @@ textarea.form-input {
   display: flex;
   gap: var(--space-2);
   flex-shrink: 0;
+}
+
+/* ── Milestone map (Messe München plan + isometric buildings) ──────────────────
+   The map image is the base; the six milestones are extruded buildings on the
+   open centre, linked by a street grid. Each fills blue from the bottom up with
+   progress. Names show on hover; buildings pulse to read as clickable. */
+.iso-map {
+  position: relative;
+  width: 100%;
+  container-type: inline-size;
+  overflow: hidden;
+  background: hsl(var(--color-card));
+}
+.iso-map--pannable {
+  cursor: grab;
+}
+.iso-map--pannable:active {
+  cursor: grabbing;
+}
+.iso-map__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.iso-map__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Pan/zoom stage — holds the map + buildings, transformed together */
+.iso-map__stage {
+  position: absolute;
+  inset: 0;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* Zoom controls (fixed corner, above the panned stage) */
+.iso-map__zoom {
+  position: absolute;
+  top: 2.5cqw;
+  right: 2.5cqw;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+.iso-zoom-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: none;
+  background: hsl(var(--color-card));
+  color: hsl(var(--color-fg));
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+.iso-zoom-btn:first-child {
+  border-bottom: 1px solid hsl(var(--color-border));
+}
+.iso-zoom-btn:hover {
+  background: hsl(var(--color-muted));
+}
+.iso-zoom-btn:active {
+  background: hsl(var(--color-secondary));
+}
+
+/* Street grid linking the buildings */
+.iso-street {
+  fill: none;
+  stroke: hsl(var(--color-muted-fg) / 0.3);
+  stroke-width: 34;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.iso-street__line {
+  fill: none;
+  stroke: hsl(var(--color-card));
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 11 15;
+}
+
+/* ── Milestone buildings ────────────────────────────────────────────────────── */
+.iso-bldg {
+  cursor: pointer;
+  outline: none;
+}
+.iso-bldg__solid {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition: transform var(--duration-fast) var(--ease-out);
+  animation:
+    iso-fade var(--duration-slow) var(--ease-out) both,
+    iso-pulse 2.6s ease-in-out infinite;
+}
+.iso-bldg:hover .iso-bldg__solid,
+.iso-bldg:focus-visible .iso-bldg__solid {
+  transform: translateY(-9px) scale(1.015);
+  animation-play-state: paused;
+}
+.iso-bldg polygon {
+  stroke: hsl(var(--color-card) / 0.5);
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+.iso-bldg:focus-visible .iso-face__top--grey,
+.iso-bldg:focus-visible .iso-face__top--blue {
+  stroke: hsl(var(--color-ring));
+  stroke-width: 4;
+}
+
+/* Empty (grey) faces — top brightest, sides progressively darker */
+.iso-face__top--grey {
+  fill: hsl(var(--color-status-upcoming));
+}
+.iso-face__right--grey {
+  fill: color-mix(in oklab, hsl(var(--color-status-upcoming)) 86%, #000);
+}
+.iso-face__left--grey {
+  fill: color-mix(in oklab, hsl(var(--color-status-upcoming)) 72%, #000);
+}
+/* Filled (blue) faces */
+.iso-face__top--blue {
+  fill: hsl(var(--color-status-progress));
+}
+.iso-face__right--blue {
+  fill: color-mix(in oklab, hsl(var(--color-status-progress)) 84%, #000);
+}
+.iso-face__left--blue {
+  fill: color-mix(in oklab, hsl(var(--color-status-progress)) 64%, #000);
+}
+
+@keyframes iso-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes iso-pulse {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.022);
+  }
+}
+
+/* ── Overlay: hover names ───────────────────────────────────────────────────── */
+.iso-map__overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.iso-name {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  padding: 0.35em 0.7em;
+  border-radius: var(--radius-full);
+  background: hsl(var(--color-fg));
+  color: hsl(var(--color-card));
+  font-size: clamp(0.62rem, 1.6cqw, 0.9rem);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  scale: 0.92;
+  transition: opacity var(--duration-fast) var(--ease-out),
+    scale var(--duration-fast) var(--ease-out);
+}
+.iso-name--show {
+  opacity: 1;
+  scale: 1;
+}
+.iso-name__pct {
+  font-size: 0.85em;
+  color: hsl(var(--color-status-progress));
+  background: hsl(var(--color-card) / 0.15);
+  padding: 0.05em 0.4em;
+  border-radius: var(--radius-full);
+}
+
+/* Hire-detail header: collapse the back / scan text to icons on narrow screens
+   so the centred hire title keeps room. */
+@media (max-width: 30rem) {
+  .hire-header__back-label,
+  .hire-header__scan-label {
+    display: none;
+  }
+}
+
+/* ── XP progress bar (below the map) ─────────────────────────────────────────── */
+.iso-xp {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  background: hsl(var(--color-card));
+}
+.iso-xp__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+.iso-xp__label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: hsl(var(--color-fg));
+}
+.iso-xp__value {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: hsl(var(--color-muted-fg));
+  font-variant-numeric: tabular-nums;
+}
+.iso-xp__track {
+  height: 0.5rem;
+  border-radius: var(--radius-full);
+  background: hsl(var(--color-xp-ring-track));
+  overflow: hidden;
+}
+.iso-xp__fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: hsl(var(--color-status-progress));
+  transition: width var(--duration-slow) var(--ease-out);
 }

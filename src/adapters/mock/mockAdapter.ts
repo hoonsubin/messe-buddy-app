@@ -12,6 +12,7 @@ import type {
   TemplateExport,
 } from "../../types/index.ts";
 import type { FieldSchema } from "../../types/index.ts";
+import { exportTemplate } from "../../use-cases/exportTemplate.ts";
 import {
   MOCK_BUDDY_PROFILES,
   MOCK_FORM_SCHEMAS,
@@ -65,6 +66,38 @@ const subscriptions = new Map<string, Set<ProgressCallback>>();
     progressEvents.set(`${e.playerId}::${e.missionId}`, e);
   }
   for (const r of MOCK_RESOURCES) resources.set(r.id, r);
+
+  // Seed reusable onboarding templates (demo only). All three share the same
+  // milestones but each ships a different (deterministic-"random") subset of the
+  // missions — editable once applied to a hire.
+  const allMs = [...MOCK_MILESTONES].sort((a, b) => a.order - b.order);
+  const missionsByMs = new Map<string, Mission[]>();
+  for (const m of MOCK_MISSIONS) {
+    const list = missionsByMs.get(m.milestoneId) ?? [];
+    list.push(m);
+    missionsByMs.set(m.milestoneId, list);
+  }
+  for (const list of missionsByMs.values()) {
+    list.sort((a, b) => a.order - b.order);
+  }
+  const seedTpl = (name: string, keep: (idx: number) => boolean) => {
+    const chosen: Mission[] = [];
+    for (const ms of allMs) {
+      const list = missionsByMs.get(ms.id) ?? [];
+      list.forEach((mi, idx) => {
+        if (idx === 0 || keep(idx)) chosen.push(mi); // always keep the first
+      });
+    }
+    const ids = new Set(chosen.map((m) => m.id));
+    const schemas = MOCK_FORM_SCHEMAS.filter((s) => ids.has(s.missionId));
+    templates.set(
+      name,
+      exportTemplate(name, MOCK_SESSION, allMs, chosen, schemas, MOCK_RESOURCES),
+    );
+  };
+  seedTpl("Engineering Onboarding", (i) => i % 3 !== 2);
+  seedTpl("Sales Bootcamp", (i) => i % 2 === 0);
+  seedTpl("Executive Welcome", (i) => i % 3 !== 1);
 })();
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

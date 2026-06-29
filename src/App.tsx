@@ -3,7 +3,8 @@ import { AdapterContextProvider } from "./adapters/AdapterContext.tsx";
 import { DemoAwareAdapterProvider } from "./adapters/DemoAwareAdapterProvider.tsx";
 import LandingPage from "./pages/LandingPage.tsx";
 import PlayerCockpitPage from "./pages/PlayerCockpitPage.tsx";
-import AdminCockpitPage from "./pages/AdminCockpitPage.tsx";
+import AdminHomePage from "./pages/AdminHomePage.tsx";
+import HireDetailPage from "./pages/HireDetailPage.tsx";
 import FormPage from "./pages/FormPage.tsx";
 import QRScannerView from "./pages/QRScannerView.tsx";
 import ValidationPage from "./pages/ValidationPage.tsx";
@@ -28,7 +29,17 @@ const router = createBrowserRouter([
     element: (
       <RequireRole role={USER_ROLE.GAMEMAKER}>
         <DemoAwareAdapterProvider>
-          <AdminCockpitPage />
+          <AdminHomePage />
+        </DemoAwareAdapterProvider>
+      </RequireRole>
+    ),
+  },
+  {
+    path: "/admin/:sessionId/hire/:hireId",
+    element: (
+      <RequireRole role={USER_ROLE.GAMEMAKER}>
+        <DemoAwareAdapterProvider>
+          <HireDetailPage />
         </DemoAwareAdapterProvider>
       </RequireRole>
     ),
