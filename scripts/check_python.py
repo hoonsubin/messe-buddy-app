@@ -99,7 +99,7 @@ def main() -> int:
 
     failures = 0
 
-    # -- Phase 1: Syntax check every file ---------------------------------
+    # -- Step 1: Syntax check every file ---------------------------------
     print("─ Syntax check (py_compile) ─")
     for f in files:
         rel = str(f.relative_to(ROOT))
@@ -108,7 +108,7 @@ def main() -> int:
             failures += 1
     print()
 
-    # -- Phase 2: AST parse every file ------------------------------------
+    # -- Step 2: AST parse every file ------------------------------------
     print("─ AST parse check ─")
     for f in files:
         rel = str(f.relative_to(ROOT))
@@ -117,7 +117,7 @@ def main() -> int:
             failures += 1
     print()
 
-    # -- Phase 3: Runtime compile for files with external deps ------------
+    # -- Step 3: Runtime compile for files with external deps ------------
     print("─ Runtime compile check (external-deps files) ─")
     for f in files:
         rel = str(f.relative_to(ROOT))

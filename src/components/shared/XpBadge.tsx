@@ -1,9 +1,8 @@
-// Phase 1 shell - logic wired in Phase 2+.
-interface XPBadgeProps {
+interface XpBadgeProps {
   readonly value: number;
 }
 
-const XPBadge = (props: XPBadgeProps) => (
+const XpBadge = (props: XpBadgeProps) => (
   <span
     className="xp-badge"
     data-testid="xp-badge"
@@ -14,4 +13,4 @@ const XPBadge = (props: XPBadgeProps) => (
   </span>
 );
 
-export default XPBadge;
+export default XpBadge;

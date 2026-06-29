@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { MdArrowBack, MdClose, MdEditNote } from "react-icons/md";
 import type { DraftMission, Milestone, Mission } from "../../types/index.ts";
 import type { StoredDraft } from "../../utils/draftStorage.ts";
@@ -8,6 +8,7 @@ import {
   saveStoredDraft,
 } from "../../utils/draftStorage.ts";
 import ConfirmSheet from "./ConfirmSheet.tsx";
+import { BottomSheet } from "../patterns/BottomSheet.tsx";
 import MissionEditorView from "./MissionEditorView.tsx";
 import MissionListView from "./MissionListView.tsx";
 import SaveActions from "./SaveActions.tsx";
@@ -39,8 +40,6 @@ interface MissionBottomSheetProps {
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
-
-const DISMISS_THRESHOLD_PX = 120;
 
 const MissionBottomSheet = (props: MissionBottomSheetProps) => {
   const {
@@ -100,12 +99,6 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
     }
   }, [isOpen]);
 
-  // ── Drag-to-dismiss ─────────────────────────────────────────────────────────
-  const [dragY, setDragY] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartY = useRef(0);
-  const draggingRef = useRef(false);
-
   const [confirmState, setConfirmState] = useState<ConfirmState>("idle");
 
   const attemptClose = useCallback(() => {
@@ -115,54 +108,6 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
       onClose();
     }
   }, [isDirty, onClose]);
-
-  // When the sheet opens, the same pointer-event sequence that triggered the
-  // open (pointerup → react re-render → backdrop becomes pointer-events:auto)
-  // fires a synthetic `click` that lands on the backdrop instead of the node
-  // underneath it. Suppress backdrop clicks for one rAF after open so the
-  // event loop drains before we accept user intent to close.
-  const suppressBackdropRef = useRef(false);
-  useEffect(() => {
-    if (!isOpen) return;
-    suppressBackdropRef.current = true;
-    const id = requestAnimationFrame(() => {
-      suppressBackdropRef.current = false;
-    });
-    return () => cancelAnimationFrame(id);
-  }, [isOpen]);
-
-  const handleBackdropClick = useCallback(() => {
-    if (!suppressBackdropRef.current) attemptClose();
-  }, [attemptClose]);
-
-  const handleDragStart = useCallback((e: React.PointerEvent) => {
-    // Only respond to the primary touch/mouse button
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    dragStartY.current = e.clientY;
-    draggingRef.current = true;
-    setIsDragging(true);
-  }, []);
-
-  const handleDragMove = useCallback((e: React.PointerEvent) => {
-    if (!draggingRef.current) return;
-    const delta = Math.max(0, e.clientY - dragStartY.current);
-    setDragY(delta);
-  }, []);
-
-  const handleDragEnd = useCallback(
-    (e: React.PointerEvent) => {
-      if (!draggingRef.current) return;
-      const delta = Math.max(0, e.clientY - dragStartY.current);
-      draggingRef.current = false;
-      setIsDragging(false);
-      setDragY(0);
-      if (delta > DISMISS_THRESHOLD_PX) {
-        attemptClose();
-      }
-    },
-    [attemptClose],
-  );
 
   // ── Draft persistence ───────────────────────────────────────────────────────
   const [
@@ -196,7 +141,6 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
 
   // ── Confirm action handlers ─────────────────────────────────────────────────
   const handleKeepEditing = useCallback(() => {
-    setDragY(0);
     setConfirmState("idle");
   }, []);
 
@@ -233,192 +177,144 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
     navigateTo("editor", "forward");
   }, [onAddMission, navigateTo]);
 
-  // ── Computed values ─────────────────────────────────────────────────────────
-  const sheetTransform = isDragging
-    ? `translateY(${dragY}px)`
-    : isOpen
-    ? "translateY(0)"
-    : "translateY(100%)";
-
-  const backdropOpacity = isDragging
-    ? Math.max(0, 0.4 * (1 - dragY / 300))
-    : undefined;
-
   const activeMission = missions.find((m) => m.id === activeMissionId) ?? null;
 
-  // ── Render ──────────────────────────────────────────────────────────────────
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        className={`bottom-sheet-backdrop${
-          isOpen ? " bottom-sheet-backdrop--visible" : ""
-        }`}
-        style={backdropOpacity !== undefined
-          ? { opacity: backdropOpacity }
-          : undefined}
-        onClick={handleBackdropClick}
-        aria-hidden="true"
-      />
-
-      {/* Sheet */}
-      <div
-        className={`bottom-sheet${isOpen ? " bottom-sheet--open" : ""}${
-          isDragging ? " bottom-sheet--dragging" : ""
-        }`}
-        style={{ transform: sheetTransform }}
-        role="dialog"
-        aria-label={milestone?.name ?? "Mission editor"}
-        data-testid="mission-bottom-sheet"
-      >
-        {/* ── Drag handle ── */}
-        <div
-          className="sheet-drag-zone"
-          onPointerDown={handleDragStart}
-          onPointerMove={handleDragMove}
-          onPointerUp={handleDragEnd}
-          onPointerCancel={handleDragEnd}
-          aria-hidden="true"
+  const sheetHeader = (
+    <div className="sheet-header">
+      {view === "editor" && (
+        <button
+          type="button"
+          className="btn btn--ghost sheet-icon-btn"
+          onClick={() => navigateTo("list", "back")}
+          aria-label="Back to mission list"
         >
-          <div className="sheet-drag-bar" />
-        </div>
+          <MdArrowBack size={20} aria-hidden="true" />
+        </button>
+      )}
 
-        {/* ── Header ── */}
-        <div className="sheet-header">
-          {view === "editor" && (
-            <button
-              type="button"
-              className="btn btn--ghost sheet-icon-btn"
-              onClick={() => navigateTo("list", "back")}
-              aria-label="Back to mission list"
-            >
-              <MdArrowBack size={20} aria-hidden="true" />
-            </button>
-          )}
-
-          {/* Title — static in both views; pencil button triggers rename/focus */}
-          {view === "list"
-            ? isRenaming
-              ? (
-                <input
-                  key={milestone?.id ?? "rename"}
-                  className="form-input sheet-header__title"
-                  type="text"
-                  defaultValue={milestone?.name ?? ""}
-                  onBlur={(e) => handleRenameSubmit(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleRenameSubmit(e.currentTarget.value);
-                    }
-                    if (e.key === "Escape") setIsRenaming(false);
-                  }}
-                  autoFocus
-                  style={{
-                    fontSize: "var(--text-lg)",
-                    fontWeight: "var(--weight-semibold)",
-                  }}
-                />
-              )
-              : (
-                <span className="sheet-header__title">
-                  {milestone?.name ?? "Milestone"}
-                </span>
-              )
-            : (
-              <span className="sheet-header__title">
-                {activeMission?.title || draft?.title || "New mission"}
-              </span>
-            )}
-
-          {/* Pencil button — rename milestone (list) or focus title field (editor) */}
-          <button
-            type="button"
-            className="btn btn--ghost sheet-icon-btn"
-            onClick={() => {
-              if (view === "list") setIsRenaming(true);
-            }}
-            aria-label={view === "list"
-              ? "Rename milestone"
-              : "Edit mission title"}
-          >
-            <MdEditNote size={22} aria-hidden="true" />
-          </button>
-
-          {/* Close button */}
-          <button
-            type="button"
-            className="btn btn--ghost sheet-icon-btn"
-            onClick={attemptClose}
-            aria-label="Close panel"
-          >
-            <MdClose size={22} aria-hidden="true" />
-          </button>
-        </div>
-
-        {/* ── Body ── */}
-        <div className="sheet-body">
-          <div
-            className={`sheet-view${
-              viewAnim ? ` sheet-view--${viewAnim}` : ""
-            }`}
-          >
-            {view === "list"
-              ? (
-                <MissionListView
-                  missions={missions}
-                  activeMissionId={activeMissionId}
-                  onMissionSelect={handleMissionSelectAndNavigate}
-                  onAddMission={handleAddMissionAndNavigate}
-                  onDeleteMission={onDeleteMission}
-                  onReorderMission={onReorderMission}
-                />
-              )
-              : (
-                <MissionEditorView
-                  draft={draft}
-                  xpPreview={xpPreview}
-                  storedDraft={storedDraft}
-                  onDraftChange={onDraftChange}
-                  onDismissStoredDraft={() => {
-                    if (activeMissionId) {
-                      setDismissedStoredDraftForMissionId(activeMissionId);
-                    }
-                  }}
-                  onLoadStoredDraft={() => {
-                    if (storedDraft) {
-                      onDraftChange(storedDraft.draft);
-                      if (activeMissionId) {
-                        setDismissedStoredDraftForMissionId(activeMissionId);
-                      }
-                    }
-                  }}
-                />
-              )}
-          </div>
-        </div>
-
-        {/* ── Footer (editor view only) ── */}
-        {view === "editor" && (
-          <div className="sheet-footer">
-            <SaveActions
-              isDirty={isDirty}
-              isSaving={isSaving}
-              onSave={onSave}
-              onDiscard={onDiscard}
+      {view === "list"
+        ? isRenaming
+          ? (
+            <input
+              key={milestone?.id ?? "rename"}
+              className="form-input sheet-header__title"
+              type="text"
+              defaultValue={milestone?.name ?? ""}
+              onBlur={(e) => handleRenameSubmit(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleRenameSubmit(e.currentTarget.value);
+                }
+                if (e.key === "Escape") setIsRenaming(false);
+              }}
+              autoFocus
+              style={{
+                fontSize: "var(--text-lg)",
+                fontWeight: "var(--weight-semibold)",
+              }}
             />
-          </div>
+          )
+          : (
+            <span className="sheet-header__title">
+              {milestone?.name ?? "Milestone"}
+            </span>
+          )
+        : (
+          <span className="sheet-header__title">
+            {activeMission?.title || draft?.title || "New mission"}
+          </span>
         )}
 
-        {/* ── Dismiss confirmation overlay ── */}
-        {confirmState === "pending-close" && (
+      <button
+        type="button"
+        className="btn btn--ghost sheet-icon-btn"
+        onClick={() => {
+          if (view === "list") setIsRenaming(true);
+        }}
+        aria-label={view === "list" ? "Rename milestone" : "Edit mission title"}
+      >
+        <MdEditNote size={22} aria-hidden="true" />
+      </button>
+
+      <button
+        type="button"
+        className="btn btn--ghost sheet-icon-btn"
+        onClick={attemptClose}
+        aria-label="Close panel"
+      >
+        <MdClose size={22} aria-hidden="true" />
+      </button>
+    </div>
+  );
+
+  const sheetFooter = view === "editor"
+    ? (
+      <div className="sheet-footer">
+        <SaveActions
+          isDirty={isDirty}
+          isSaving={isSaving}
+          onSave={onSave}
+          onDiscard={onDiscard}
+        />
+      </div>
+    )
+    : undefined;
+
+  return (
+    <BottomSheet
+      open={isOpen}
+      onClose={attemptClose}
+      ariaLabel={milestone?.name ?? "Mission editor"}
+      testId="mission-bottom-sheet"
+      header={sheetHeader}
+      footer={sheetFooter}
+      overlay={confirmState === "pending-close"
+        ? (
           <ConfirmSheet
             onKeepEditing={handleKeepEditing}
             onSaveDraft={handleSaveDraft}
             onDiscardAndClose={handleDiscardAndClose}
           />
-        )}
+        )
+        : undefined}
+    >
+      <div
+        className={`sheet-view${viewAnim ? ` sheet-view--${viewAnim}` : ""}`}
+      >
+        {view === "list"
+          ? (
+            <MissionListView
+              missions={missions}
+              activeMissionId={activeMissionId}
+              onMissionSelect={handleMissionSelectAndNavigate}
+              onAddMission={handleAddMissionAndNavigate}
+              onDeleteMission={onDeleteMission}
+              onReorderMission={onReorderMission}
+            />
+          )
+          : (
+            <MissionEditorView
+              draft={draft}
+              xpPreview={xpPreview}
+              storedDraft={storedDraft}
+              onDraftChange={onDraftChange}
+              onDismissStoredDraft={() => {
+                if (activeMissionId) {
+                  setDismissedStoredDraftForMissionId(activeMissionId);
+                }
+              }}
+              onLoadStoredDraft={() => {
+                if (storedDraft) {
+                  onDraftChange(storedDraft.draft);
+                  if (activeMissionId) {
+                    setDismissedStoredDraftForMissionId(activeMissionId);
+                  }
+                }
+              }}
+            />
+          )}
       </div>
-    </>
+    </BottomSheet>
   );
 };
 

@@ -24,37 +24,12 @@ const FetchErrorPanel = ({
   <div
     {...(testId !== undefined && { "data-testid": testId })}
     {...(page !== undefined && { "data-page": page })}
-    style={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: "100dvh",
-      color: "hsl(var(--color-muted-fg))",
-      background: "hsl(var(--color-bg))",
-      gap: "var(--space-4)",
-      padding: "var(--space-6)",
-      textAlign: "center",
-    }}
+    className="fetch-error"
   >
-    <p
-      role="alert"
-      style={{
-        margin: 0,
-        color: "hsl(var(--color-destructive))",
-        maxWidth: "24rem",
-      }}
-    >
+    <p role="alert" className="fetch-error__message">
       {message}
     </p>
-    <div
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "var(--space-3)",
-        justifyContent: "center",
-      }}
-    >
+    <div className="fetch-error__actions">
       <button
         type="button"
         className="btn btn--primary"

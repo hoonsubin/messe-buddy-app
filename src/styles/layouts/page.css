@@ -1,0 +1,12 @@
+/* MesseBuddy — App page shell layout */
+
+/* ── Page wrapper ────────────────────────────────────────────────────────── */
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.page--has-topbar {
+  padding-top: var(--topbar-h);
+}

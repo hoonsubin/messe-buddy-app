@@ -4,7 +4,7 @@ import { MILESTONE_STATUS } from "../types/index.ts";
 
 // Derives the player's "missions for today": all missions belonging to
 // milestones that are currently `inProgress`, excluding already-completed ones.
-// Pure function - no side effects, no adapter calls. (Phase 0c)
+// Pure function - no side effects, no adapter calls.
 //
 // The result is sorted by mission.order so it can be rendered directly in
 // DailyPlanView as the primary orientation surface for new hires.

@@ -173,7 +173,7 @@ graph TB
 | [`MissionEditorView`](src/components/admin/MissionEditorView.tsx:1) | `admin/MissionEditorView.tsx` | Combined mission editor view |
 | [`AdminMissionsList`](src/components/admin/AdminMissionsList.tsx:1) | `admin/AdminMissionsList.tsx` | Mission list with reorder support |
 | [`ConfirmSheet`](src/components/admin/ConfirmSheet.tsx:1) | `admin/ConfirmSheet.tsx` | Confirmation bottom sheet for destructive actions |
-| [`TemplateFields`](src/components/admin/TemplateFields.tsx:10) | `admin/TemplateFields.tsx` | Read-only preview of template missions (Phase 1) |
+| [`TemplateFields`](src/components/admin/TemplateFields.tsx:10) | `admin/TemplateFields.tsx` | Read-only preview of template missions |
 
 ---
 

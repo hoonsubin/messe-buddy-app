@@ -1,0 +1,31 @@
+/* MesseBuddy — Icon button primitive */
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius);
+  color: hsl(var(--color-muted-fg));
+  font-family: var(--font-sans);
+}
+
+.icon-btn:hover {
+  background-color: hsl(var(--color-muted));
+  color: hsl(var(--color-fg));
+}
+
+.icon-btn--on-primary {
+  color: hsl(var(--color-primary-fg) / 0.7);
+  border-radius: var(--radius);
+  padding: var(--space-1);
+}
+
+.icon-btn--on-primary:hover {
+  background-color: hsl(var(--color-primary-fg) / 0.1);
+  color: hsl(var(--color-primary-fg));
+}

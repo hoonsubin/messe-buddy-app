@@ -1,542 +1,157 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { MdArrowBack, MdAutoAwesome } from "react-icons/md";
-import type { Mission } from "../types/index.ts";
-import { MISSION_TYPE, USER_ROLE } from "../types/index.ts";
-import { useActiveProfile } from "../hooks/useActiveProfile.ts";
-import { useIdentity } from "../hooks/useIdentity.ts";
-import { useResolvedPlayer } from "../hooks/useResolvedPlayer.ts";
-import { useSession } from "../hooks/useSession.ts";
-import { useProgressPlayer } from "../hooks/useProgress/index.ts";
-import { useBuddyProfile } from "../hooks/useBuddyProfile.ts";
-import { useResources } from "../hooks/useResources.ts";
-import { useTutorial } from "../hooks/useTutorial.ts";
-import { useChat } from "../hooks/useChat.ts";
+import { usePlayerCockpitPage } from "./player-cockpit/usePlayerCockpitPage.ts";
 import ConfirmDialog from "../components/shared/ConfirmDialog.tsx";
+import RouteTabBar from "../components/shared/RouteTabBar.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
-import ChatPanel from "../components/player/ChatPanel.tsx";
-import MilestoneMapViewer from "../components/player/MilestoneMapViewer.tsx";
 import MilestoneSidebarViewer from "../components/player/MilestoneSidebarViewer.tsx";
 import MissionDetailPopup from "../components/player/MissionDetailPopup.tsx";
-import CurrentMissionsList from "../components/player/CurrentMissionsList.tsx";
-import ResourcesSection from "../components/player/ResourcesSection.tsx";
-import BuddyCard from "../components/player/BuddyCard.tsx";
 import {
   PLACEHOLDER_STEPS,
   TutorialOverlayWithStep,
 } from "../components/tutorial/TutorialOverlay.tsx";
-
-// sessionStorage key for tutorial form round-trips - also read inside useTutorial.
-const TUTORIAL_FORM_KEY = "mb_tutorial_form_pending";
-
-const TABS = [
-  { key: "dashboard", label: "Dashboard" },
-  { key: "assistant", label: "AI Assistant" },
-] as const;
-type TabKey = (typeof TABS)[number]["key"];
-
-// ── Page ───────────────────────────────────────────────────────────────────────
+import { PLAYER_TABS, type PlayerTabKey } from "./player-cockpit/constants.ts";
+import PlayerCockpitToolbar from "./player-cockpit/PlayerCockpitToolbar.tsx";
+import PlayerDashboardView, {
+  PlayerAssistantView,
+} from "./player-cockpit/PlayerDashboardView.tsx";
 
 const PlayerCockpitPage = () => {
-  const { sessionId } = useParams<{ sessionId: string }>();
-  const navigate = useNavigate();
-  const { removeProfile } = useIdentity();
-  const identity = useActiveProfile(sessionId, USER_ROLE.PLAYER);
+  const result = usePlayerCockpitPage();
 
-  const {
-    player,
-    loading: playerLoading,
-    error: playerError,
-    updatePlayer,
-  } = useResolvedPlayer(identity?.uid);
-
-  const playerId = player?.id ?? "";
-
-  const {
-    session,
-    milestones,
-    missions,
-    loading: sessionLoading,
-    error: sessionError,
-  } = useSession(sessionId ?? "");
-
-  const progress = useProgressPlayer({
-    playerId,
-    milestones,
-    missions,
-  });
-
-  const { buddy } = useBuddyProfile(sessionId ?? "", playerId, {
-    role: "player",
-  });
-  const { resources } = useResources(sessionId ?? "", { role: "player" });
-
-  const tutorialPlayer = useMemo(() => {
-    if (!player) return null;
-    if (identity?.isDemo && player.tutorialComplete) {
-      return { ...player, tutorialComplete: false };
-    }
-    return player;
-  }, [player, identity?.isDemo]);
-
-  const {
-    tutorialStep,
-    showTutorial,
-    showSkipConfirm,
-    handleTutorialNext,
-    handleTutorialSkip,
-    handleSkipConfirm,
-    handleSkipCancel,
-  } = useTutorial(tutorialPlayer, updatePlayer, sessionId ?? "");
-
-  useEffect(() => {
-    if (sessionError && !sessionLoading) {
-      sessionStorage.setItem("mb_landing_toast", "Session does not exist.");
-      navigate("/", { replace: true });
-    }
-  }, [sessionError, sessionLoading, navigate]);
-
-  const [tab, setTab] = useState<TabKey>("dashboard");
-  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(
-    null,
-  );
-  const [popupMission, setPopupMission] = useState<Mission | null>(null);
-
-  const handleMissionClick = useCallback(
-    (missionId: string, fromTutorial = false) => {
-      const mission = missions.find((m) => m.id === missionId);
-      if (!mission) return;
-
-      const event = progress.progressEvents.find((e) =>
-        e.missionId === missionId
-      );
-      const isCompleted = event?.status === "autoApproved" ||
-        event?.status === "completed";
-
-      if (mission.type === MISSION_TYPE.FORM && !isCompleted) {
-        if (fromTutorial && showTutorial) {
-          sessionStorage.setItem(TUTORIAL_FORM_KEY, "1");
-        }
-        navigate(`/form/${sessionId}/${missionId}`);
-      } else {
-        setPopupMission(mission);
-      }
-    },
-    [missions, progress.progressEvents, navigate, showTutorial, sessionId],
-  );
-
-  const currentMissions = missions.filter((m) => m.isInCurrentMissions);
-  const selectedMilestone = selectedMilestoneId !== null
-    ? (milestones.find((m) => m.id === selectedMilestoneId) ?? undefined)
-    : undefined;
-  const sidebarMissions = selectedMilestoneId !== null
-    ? missions.filter((m) => m.milestoneId === selectedMilestoneId)
-    : [];
-  const msProgress = selectedMilestoneId !== null &&
-      progress.playerProgress !== null
-    ? progress.playerProgress.milestoneProgress.find(
-      (mp) => mp.milestoneId === selectedMilestoneId,
-    )
-    : undefined;
-
-  const currentMilestone = (() => {
-    if (!progress.playerProgress || milestones.length === 0) return null;
-    const mpMap = new Map(
-      progress.playerProgress.milestoneProgress.map((mp) => [
-        mp.milestoneId,
-        mp,
-      ]),
-    );
-    for (const ms of milestones) {
-      const mp = mpMap.get(ms.id);
-      if (mp?.status === "inProgress") return ms;
-    }
-    return milestones[0] ?? null;
-  })();
-
-  const isLoading = sessionLoading || playerLoading;
-
-  const aiAppContext = (() => {
-    const lines: string[] = [];
-    const userName = player?.preferredName?.trim() || player?.name?.trim();
-    if (userName) lines.push(`User's name: ${userName}.`);
-    if (buddy) {
-      let line = `Assigned buddy: ${buddy.name}`;
-      if (buddy.role) line += `, ${buddy.role}`;
-      if (buddy.tenure) line += ` (${buddy.tenure})`;
-      const contact = buddy.email ?? buddy.phone ?? buddy.contactUrl;
-      if (contact) line += `. Contact: ${contact}`;
-      lines.push(`${line}.`);
-    }
-    if (lines.length === 0) return undefined;
-    return (
-      "<APPLICATION_CONTEXT>\n" +
-      "Trusted facts about the current user (not a policy document):\n" +
-      lines.join("\n") +
-      "\n</APPLICATION_CONTEXT>"
-    );
-  })();
-
-  // Chat state lives at the page level so the conversation persists across tab
-  // switches (the AI Assistant tab and Dashboard share one mounted hook).
-  const chat = useChat(aiAppContext);
-
-  if (!identity) {
+  if (result.status === "no-identity") {
     return (
       <div
+        className="page-state-center"
         data-testid="player-cockpit-page"
         data-page="player-cockpit"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "100dvh",
-          color: "hsl(var(--color-muted-fg))",
-        }}
       >
         <p>No identity found. Please return to the landing page.</p>
       </div>
     );
   }
 
-  if (playerError) {
+  if (result.status === "player-error") {
     return (
       <div
+        className="page-state-center"
         data-testid="player-cockpit-page"
         data-page="player-cockpit"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "100dvh",
-          color: "hsl(var(--color-muted-fg))",
-        }}
       >
         <p>Could not load player data. Please try again.</p>
       </div>
     );
   }
 
-  if (sessionError && !sessionLoading) return null;
+  if (result.status === "session-redirect") return null;
+
+  const m = result.model;
 
   return (
     <div
+      className="player-cockpit"
       data-testid="player-cockpit-page"
       data-page="player-cockpit"
-      style={{
-        minHeight: "100dvh",
-        paddingTop: "var(--topbar-h)",
-        display: "flex",
-        flexDirection: "column",
-      }}
     >
-      {isLoading && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 300, /* full-screen takeover tier (design-tokens.md §6) */
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "hsl(var(--color-bg))",
-            color: "hsl(var(--color-muted-fg))",
-            fontSize: "var(--text-sm)",
-          }}
-        >
+      {m.isLoading && (
+        <div className="player-cockpit__loading-overlay">
           Loading your journey…
         </div>
       )}
 
       <TutorialOverlayWithStep
-        isVisible={showTutorial}
-        currentStepIndex={tutorialStep}
+        isVisible={m.showTutorial}
+        currentStepIndex={m.tutorialStep}
         steps={PLACEHOLDER_STEPS}
-        playerName={player?.name}
-        onNext={handleTutorialNext}
-        onSkip={handleTutorialSkip}
+        playerName={m.player.name}
+        onNext={m.handleTutorialNext}
+        onSkip={m.handleTutorialSkip}
       />
 
       <ConfirmDialog
-        isOpen={showSkipConfirm}
+        isOpen={m.showSkipConfirm}
         title="Skip tutorial?"
         body="You can always complete the tutorial later from settings."
         confirmLabel="Skip tutorial"
-        onConfirm={handleSkipConfirm}
-        onCancel={handleSkipCancel}
+        onConfirm={m.handleSkipConfirm}
+        onCancel={m.handleSkipCancel}
       />
 
       <TopBar
-        playerName={player?.name ?? ""}
-        totalXP={progress.playerProgress?.totalXP ?? 0}
-        role={player?.role ?? ""}
+        playerName={m.player.name ?? ""}
+        totalXP={m.progress.playerProgress?.totalXP ?? 0}
+        role={m.player.role ?? ""}
       />
 
-      <div
-        style={{
-          display: "flex",
-          flexShrink: 0,
-          justifyContent: "flex-start",
-          padding: "var(--space-2) var(--space-4)",
-          background: "hsl(var(--color-card))",
-          borderBottom: "1px solid hsl(var(--color-border))",
-        }}
-      >
-        <button
-          type="button"
-          className="btn btn--ghost"
-          style={{
-            fontSize: "var(--text-sm)",
-            color: "hsl(var(--color-muted-fg))",
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--space-1)",
-          }}
-          onClick={() => {
-            sessionStorage.removeItem("mb_tutorial_step");
-            sessionStorage.removeItem("mb_tutorial_form_pending");
-            if (identity && !identity.isDemo) {
-              removeProfile(identity.uid);
-            }
-            navigate("/", { replace: true });
-          }}
-        >
-          <MdArrowBack size={16} />
-          {identity?.isDemo ? "Back to Landing" : "Log Out"}
-        </button>
-      </div>
+      <PlayerCockpitToolbar
+        isDemo={m.identity.isDemo ?? false}
+        onLeave={m.handleLeave}
+      />
 
-      {/* Tabs */}
-      <nav
-        aria-label="New hire views"
-        style={{
-          display: "flex",
-          flexShrink: 0,
-          justifyContent: "center",
-          overflowX: "auto",
-          scrollbarWidth: "none",
-          background: "hsl(var(--color-card))",
-          borderBottom: "1px solid hsl(var(--color-border))",
-          paddingInline: "var(--space-2)",
-        }}
-      >
-        {TABS.map((t) => {
-          const active = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => setTab(t.key)}
-              style={{
-                flexShrink: 0,
-                padding: "var(--space-3) var(--space-4)",
-                background: "transparent",
-                border: "none",
-                borderBottom: active
-                  ? "2px solid hsl(var(--color-primary))"
-                  : "2px solid transparent",
-                color: active
-                  ? "hsl(var(--color-primary))"
-                  : "hsl(var(--color-muted-fg))",
-                fontSize: "var(--text-sm)",
-                fontWeight: active
-                  ? "var(--weight-semibold)"
-                  : "var(--weight-medium)",
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                minHeight: "var(--min-touch)",
-                fontFamily: "var(--font-sans)",
-              }}
-            >
-              {t.label}
-            </button>
-          );
-        })}
-      </nav>
+      <RouteTabBar
+        tabs={PLAYER_TABS}
+        activeKey={m.tab}
+        onChange={(key) => m.setTab(key as PlayerTabKey)}
+        ariaLabel="New hire views"
+      />
 
-      {popupMission !== null && player !== null && (
+      {m.popupMission !== null && (
         <MissionDetailPopup
-          mission={popupMission}
-          playerId={player.id}
-          sessionId={sessionId ?? ""}
-          progressEvent={progress.progressEvents.find((e) =>
-            e.missionId === popupMission.id
+          mission={m.popupMission}
+          playerId={m.player.id}
+          sessionId={m.sessionId}
+          progressEvent={m.progress.progressEvents.find((e) =>
+            e.missionId === m.popupMission!.id
           ) ?? null}
-          markSelfComplete={() => progress.markSelfComplete(popupMission.id)}
-          markPending={() => progress.markPending(popupMission.id)}
-          onClose={() => setPopupMission(null)}
+          markSelfComplete={() =>
+            m.progress.markSelfComplete(m.popupMission!.id)}
+          markPending={() => m.progress.markPending(m.popupMission!.id)}
+          onClose={() => m.setPopupMission(null)}
           onValidated={() => {
-            setPopupMission(null);
-            progress.refresh();
+            m.setPopupMission(null);
+            m.progress.refresh();
           }}
         />
       )}
 
-      {selectedMilestoneId !== null && selectedMilestone !== undefined && (
+      {m.selectedMilestoneId !== null && m.selectedMilestone !== undefined && (
         <MilestoneSidebarViewer
-          milestoneId={selectedMilestone.id}
-          milestoneName={selectedMilestone.name}
-          missions={sidebarMissions}
-          progressEvents={progress.progressEvents}
-          currentXP={msProgress?.earnedXP ?? 0}
-          xpThreshold={selectedMilestone.xpThreshold}
-          onClose={() => setSelectedMilestoneId(null)}
-          onMissionClick={(id) => handleMissionClick(id)}
+          milestoneId={m.selectedMilestone.id}
+          milestoneName={m.selectedMilestone.name}
+          missions={m.sidebarMissions}
+          progressEvents={m.progress.progressEvents}
+          currentXP={m.msProgressEarnedXP}
+          xpThreshold={m.selectedMilestone.xpThreshold}
+          onClose={() => m.setSelectedMilestoneId(null)}
+          onMissionClick={(id) => m.handleMissionClick(id)}
         />
       )}
 
-      {tab === "dashboard" && (
-        <main
-          className="cockpit-main"
-          style={{ flex: 1, paddingBlockStart: "var(--space-6)" }}
-        >
-          <header>
-            <h1
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "var(--text-2xl)",
-                fontWeight: "var(--weight-semibold)",
-                color: "hsl(var(--color-fg))",
-                margin: "0 0 var(--space-1)",
-                lineHeight: "var(--leading-tight)",
-              }}
-            >
-              Welcome{player?.name ? `, ${player.name.split(" ")[0]}` : ""}.
-            </h1>
-            <p
-              style={{
-                fontSize: "var(--text-sm)",
-                color: "hsl(var(--color-muted-fg))",
-                margin: 0,
-              }}
-            >
-              Your onboarding journey starts here.
-            </p>
-          </header>
-
-          <div className="cockpit-grid">
-            <div className="cockpit-col">
-              <section aria-label="Milestones">
-                <h2 className="section-label">Milestones</h2>
-                <div
-                  style={{
-                    borderRadius: "var(--radius-lg)",
-                    overflow: "hidden",
-                    boxShadow: "var(--shadow-md)",
-                  }}
-                >
-                  <MilestoneMapViewer
-                    milestones={milestones}
-                    bgImageUrl={session?.bgImageUrl ?? ""}
-                    mapNodeScale={session?.mapNodeScale ?? 1}
-                    milestoneProgress={progress.playerProgress
-                      ?.milestoneProgress ??
-                      []}
-                    playerXPercent={currentMilestone?.xPercent}
-                    playerYPercent={currentMilestone?.yPercent}
-                    onMilestoneClick={(id) => setSelectedMilestoneId(id)}
-                  />
-                </div>
-              </section>
-
-              <CurrentMissionsList
-                missions={currentMissions}
-                progressEvents={progress.progressEvents}
-                onMissionClick={handleMissionClick}
-                onMarkComplete={() => undefined}
-              />
-            </div>
-
-            <div className="cockpit-col">
-              <section aria-label="Your buddy">
-                <h2 className="section-label">Your buddy</h2>
-                {buddy
-                  ? (
-                    <BuddyCard
-                      name={buddy.name}
-                      role={buddy.role}
-                      {...(buddy.tenure !== undefined &&
-                        { tenure: buddy.tenure })}
-                      {...(buddy.avatarUrl !== undefined && {
-                        avatarUrl: buddy.avatarUrl,
-                      })}
-                      {...(buddy.contactUrl !== undefined && {
-                        contactUrl: buddy.contactUrl,
-                      })}
-                      {...(buddy.quote !== undefined && { quote: buddy.quote })}
-                      {...(buddy.email !== undefined && { email: buddy.email })}
-                      {...(buddy.phone !== undefined && { phone: buddy.phone })}
-                    />
-                  )
-                  : (
-                    !isLoading && (
-                      <div
-                        className="card"
-                        style={{ padding: "var(--space-6)" }}
-                      >
-                        <p
-                          style={{
-                            fontSize: "var(--text-sm)",
-                            color: "hsl(var(--color-muted-fg))",
-                            textAlign: "center",
-                            margin: 0,
-                          }}
-                        >
-                          You'll be assigned a buddy soon.
-                        </p>
-                      </div>
-                    )
-                  )}
-              </section>
-
-              <ResourcesSection
-                resources={resources}
-                onSearch={() => undefined}
-              />
-            </div>
-          </div>
-        </main>
+      {m.tab === "dashboard" && (
+        <PlayerDashboardView
+          playerName={m.player.name}
+          isLoading={m.isLoading}
+          milestones={m.milestones}
+          bgImageUrl={m.session?.bgImageUrl ?? ""}
+          mapNodeScale={m.session?.mapNodeScale ?? 1}
+          milestoneProgress={m.progress.playerProgress?.milestoneProgress ?? []}
+          playerXPercent={m.currentMilestone?.xPercent}
+          playerYPercent={m.currentMilestone?.yPercent}
+          currentMissions={m.currentMissions}
+          progressEvents={m.progress.progressEvents}
+          buddy={m.buddy}
+          resources={m.resources}
+          onMilestoneClick={m.setSelectedMilestoneId}
+          onMissionClick={m.handleMissionClick}
+        />
       )}
 
-      {tab === "assistant" && (
-        <main className="assistant-fullscreen">
-          <section
-            className="assistant-chat-card"
-            style={{
-              flex: 1,
-              minHeight: 0,
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <div className="assistant-chat-card__header">
-              <div className="assistant-chat-card__avatar" aria-hidden="true">
-                <MdAutoAwesome size={18} />
-              </div>
-              <p className="assistant-chat-card__title">
-                Ask AI about company policies
-              </p>
-            </div>
-            <div
-              style={{
-                flex: 1,
-                minHeight: 0,
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <ChatPanel
-                messages={chat.messages}
-                isStreaming={chat.isStreaming}
-                onSend={chat.send}
-                onStop={chat.stop}
-                {...(buddy?.name !== undefined && { buddyName: buddy.name })}
-              />
-            </div>
-          </section>
-        </main>
+      {m.tab === "assistant" && (
+        <PlayerAssistantView
+          messages={m.chat.messages}
+          isStreaming={m.chat.isStreaming}
+          onSend={m.chat.send}
+          onStop={m.chat.stop}
+          {...(m.buddy?.name !== undefined && { buddyName: m.buddy.name })}
+        />
       )}
     </div>
   );

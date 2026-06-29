@@ -28,14 +28,8 @@ const FormFieldEditor = (props: FormFieldEditorProps) => {
 
   return (
     <div
-      className="card"
+      className="card form-field-editor"
       data-testid="form-field-editor"
-      style={{
-        padding: "var(--space-4)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-3)",
-      }}
     >
       <div className="form-field">
         <label className="form-label" htmlFor={`field-label-${props.field.id}`}>
@@ -81,30 +75,10 @@ const FormFieldEditor = (props: FormFieldEditorProps) => {
         <div className="form-field">
           <label className="form-label">Options</label>
           {(props.field.options ?? []).length > 0 && (
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                margin: "0 0 var(--space-2)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "var(--space-1)",
-              }}
-            >
+            <ul className="form-field-editor__options">
               {(props.field.options ?? []).map((opt, i) => (
-                <li
-                  key={i}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "var(--space-2)",
-                    padding: "var(--space-1) var(--space-2)",
-                    background: "hsl(var(--color-muted))",
-                    borderRadius: "var(--radius)",
-                    fontSize: "var(--text-sm)",
-                  }}
-                >
-                  <span style={{ flex: 1 }}>{opt}</span>
+                <li key={i} className="form-field-editor__option">
+                  <span className="core-flex-1">{opt}</span>
                   <button
                     type="button"
                     className="btn btn--ghost"
@@ -114,7 +88,8 @@ const FormFieldEditor = (props: FormFieldEditorProps) => {
                       props.onChange({
                         ...props.field,
                         options: (props.field.options ?? []).filter(
-                          (_, j) => j !== i,
+                          (_, j) =>
+                            j !== i,
                         ),
                       })}
                   >
@@ -124,13 +99,12 @@ const FormFieldEditor = (props: FormFieldEditorProps) => {
               ))}
             </ul>
           )}
-          <div style={{ display: "flex", gap: "var(--space-2)" }}>
+          <div className="core-flex-row core-gap-2">
             <input
-              className="form-input"
+              className="form-input core-flex-1"
               type="text"
               value={newOption}
               placeholder="Add option…"
-              style={{ flex: 1 }}
               onChange={(e) => setNewOption(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -151,9 +125,7 @@ const FormFieldEditor = (props: FormFieldEditorProps) => {
         </div>
       )}
 
-      <div
-        style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}
-      >
+      <div className="core-flex-row core-gap-2">
         <input
           id={`field-required-${props.field.id}`}
           type="checkbox"

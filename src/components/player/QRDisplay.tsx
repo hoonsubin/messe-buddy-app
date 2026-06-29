@@ -76,23 +76,12 @@ const QRDisplay = (props: QRDisplayProps) => {
 
   return (
     <div
-      className="validation-display"
+      className="validation-display qr-display"
       data-testid="qr-display"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: "var(--space-4)",
-      }}
     >
       {encodeError
         ? (
-          <p
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "hsl(var(--color-destructive))",
-            }}
-          >
+          <p className="qr-encode-error">
             {encodeError}
           </p>
         )
@@ -100,20 +89,10 @@ const QRDisplay = (props: QRDisplayProps) => {
           <canvas
             ref={canvasRef}
             aria-label={`QR code for mission ${props.missionId}`}
-            style={{
-              borderRadius: "var(--radius-md)",
-              display: "block",
-            }}
+            className="qr-canvas"
           />
         )}
-      <p
-        style={{
-          fontSize: "var(--text-sm)",
-          color: "hsl(var(--color-muted-fg))",
-          textAlign: "center",
-          margin: 0,
-        }}
-      >
+      <p className="qr-hint-text">
         Ask your Game Master to scan this code
       </p>
     </div>

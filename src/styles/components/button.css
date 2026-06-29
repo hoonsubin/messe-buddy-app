@@ -1,0 +1,60 @@
+/* MesseBuddy — Button primitive */
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  padding-inline: var(--space-4);
+  border-radius: var(--radius);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out),
+              opacity var(--duration-fast) var(--ease-out);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background-color: hsl(var(--color-primary));
+  color: hsl(var(--color-primary-fg));
+}
+
+.btn--primary:hover:not(:disabled) {
+  background-color: hsl(var(--color-primary) / 0.9);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn--secondary {
+  background-color: hsl(var(--color-secondary));
+  color: hsl(var(--color-secondary-fg));
+  border-color: hsl(var(--color-border));
+}
+
+.btn--ghost {
+  background-color: transparent;
+  color: hsl(var(--color-muted-fg));
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background-color: hsl(var(--color-muted));
+  color: hsl(var(--color-fg));
+}
+
+.btn--destructive {
+  background-color: hsl(var(--color-destructive));
+  color: hsl(var(--color-destructive-fg));
+}
+
+.btn--full {
+  width: 100%;
+}

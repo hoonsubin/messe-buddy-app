@@ -1,0 +1,141 @@
+/* MesseBuddy — Form input primitives */
+
+/* ── Form elements ───────────────────────────────────────────────────────── */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.form-label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: hsl(var(--color-fg));
+}
+
+.form-label--required::after {
+  content: " *";
+  color: hsl(var(--color-destructive));
+}
+
+.form-error {
+  font-size: var(--text-sm);
+  color: hsl(var(--color-destructive));
+  margin: 0 0 var(--space-3);
+}
+
+.form-input {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--color-input));
+  background-color: hsl(var(--color-card));
+  color: hsl(var(--color-fg));
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  outline: none;
+  transition: border-color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.form-input:focus {
+  border-color: hsl(var(--color-ring));
+  box-shadow: 0 0 0 3px hsl(var(--color-ring) / 0.2);
+}
+
+.form-input--error {
+  border-color: hsl(var(--color-destructive));
+}
+
+.form-error {
+  font-size: var(--text-xs);
+  color: hsl(var(--color-destructive));
+}
+
+textarea.form-input {
+  min-height: 6rem;
+  resize: vertical;
+}
+/* ── Form shell ──────────────────────────────────────────────────────────── */
+.form-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  max-width: 40rem;
+  margin-inline: auto;
+  width: 100%;
+}
+
+.form-shell__title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  color: hsl(var(--color-fg));
+}
+
+.form-shell__desc {
+  font-size: var(--text-sm);
+  color: hsl(var(--color-muted-fg));
+}
+
+.form-shell__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.form-shell__actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  padding-block-start: var(--space-4);
+  border-block-start: 1px solid hsl(var(--color-border));
+}
+
+/* ── Markdown editor ─────────────────────────────────────────────────────── */
+.markdown-editor {
+  border: 1px solid hsl(var(--color-input));
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.markdown-editor__textarea {
+  width: 100%;
+  min-height: 10rem;
+  padding: var(--space-3);
+  border: none;
+  outline: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  resize: vertical;
+  background: hsl(var(--color-card));
+  color: hsl(var(--color-fg));
+}
+
+/* ── Save actions bar ────────────────────────────────────────────────────── */
+.save-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background-color: hsl(var(--color-card));
+  border-block-start: 1px solid hsl(var(--color-border));
+}
+
+/* ── Approval card ───────────────────────────────────────────────────────── */
+.approval-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--color-border));
+  background-color: hsl(var(--color-card));
+}
+
+.approval-card__actions {
+  display: flex;
+  gap: var(--space-2);
+}

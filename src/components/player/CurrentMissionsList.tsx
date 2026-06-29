@@ -40,17 +40,8 @@ const CurrentMissionsList = (props: CurrentMissionsListProps) => {
         aria-label="Current missions"
       >
         <h2 className="section-label">Current Missions</h2>
-        <div
-          className="card"
-          style={{ padding: "var(--space-6)", textAlign: "center" }}
-        >
-          <p
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "hsl(var(--color-muted-fg))",
-              margin: 0,
-            }}
-          >
+        <div className="card current-missions__empty-card">
+          <p className="current-missions__empty-text">
             You're all caught up! No missions right now.
           </p>
         </div>
@@ -61,13 +52,7 @@ const CurrentMissionsList = (props: CurrentMissionsListProps) => {
   return (
     <section data-testid="current-missions-list" aria-label="Current missions">
       <h2 className="section-label">Current Missions</h2>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-3)",
-        }}
-      >
+      <div className="current-missions__list">
         {props.missions.map((mission) => {
           const event = eventByMission.get(mission.id);
           const isCompleted = event?.status === "completed" ||
@@ -111,10 +96,7 @@ const CurrentMissionsList = (props: CurrentMissionsListProps) => {
                     <MdCalendarToday
                       size={12}
                       aria-hidden="true"
-                      style={{
-                        verticalAlign: "middle",
-                        marginRight: "0.25rem",
-                      }}
+                      className="current-missions__due-icon"
                     />
                     {mission.suggestedDueDate}
                   </p>
@@ -127,14 +109,14 @@ const CurrentMissionsList = (props: CurrentMissionsListProps) => {
                   <MdBolt
                     size={14}
                     aria-hidden="true"
-                    style={{ verticalAlign: "middle" }}
+                    className="current-missions__icon-middle"
                   />
                   {mission.xpValue} XP
                 </span>
                 <MdChevronRight
                   size={18}
                   aria-hidden="true"
-                  style={{ color: "hsl(var(--color-muted-fg))" }}
+                  className="core-icon-muted"
                 />
               </div>
             </button>

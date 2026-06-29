@@ -22,12 +22,12 @@ This prompt is designed for AI-to-AI communication and automated processing. All
 
 ## Plan Structure Requirements
 
-Plans must consist of discrete, atomic phases containing executable tasks. Each phase must be independently processable by AI agents or humans without cross-phase dependencies unless explicitly declared.
+Plans must consist of discrete, atomic milestones containing executable tasks. Each milestone must be independently processable by AI agents or humans without cross-milestone dependencies unless explicitly declared.
 
-## Phase Architecture
+## Milestone structure
 
-- Each phase must have measurable completion criteria
-- Tasks within phases must be executable in parallel unless dependencies are specified
+- Each milestone must have measurable completion criteria
+- Tasks within milestones must be executable in parallel unless dependencies are specified
 - All task descriptions must include specific file paths, function names, and exact implementation details
 - No task should require human interpretation or decision-making
 
@@ -95,9 +95,9 @@ tags: [Optional: List of relevant tags or categories, e.g., `feature`, `upgrade`
 
 ## 2. Implementation Steps
 
-### Implementation Phase 1
+### Milestone 1
 
-- GOAL-001: [Describe the goal of this phase, e.g., "Implement feature X", "Refactor module Y", etc.]
+- GOAL-001: [Describe the goal of this milestone, e.g., "Implement feature X", "Refactor module Y", etc.]
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
@@ -105,9 +105,9 @@ tags: [Optional: List of relevant tags or categories, e.g., `feature`, `upgrade`
 | TASK-002 | Description of task 2 | |  |
 | TASK-003 | Description of task 3 | |  |
 
-### Implementation Phase 2
+### Milestone 2
 
-- GOAL-002: [Describe the goal of this phase, e.g., "Implement feature X", "Refactor module Y", etc.]
+- GOAL-002: [Describe the goal of this milestone, e.g., "Implement feature X", "Refactor module Y", etc.]
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|

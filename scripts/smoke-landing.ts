@@ -1,124 +1,158 @@
 /**
  * Landing smoke test — Firefox + iPhone 15 (matches Playwright MCP config).
- * Run: deno run -A --node-modules-dir=auto scripts/smoke-landing.ts
+ *
+ * Covers the profile-list landing (inline Employee/Admin forms, demo profiles).
+ * Uses the mock adapter — no Docker required.
+ *
+ * Run:
+ *   deno task smoke-landing
+ *   SMOKE_BASE_URL=http://localhost:5173 deno task smoke-landing
  */
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { devices, firefox } from "npm:playwright@^1.61.0";
+import {
+  attachConsoleCollector,
+  createRecorder,
+  dismissTutorialIfPresent,
+  isBenignConsoleError,
+  SMOKE_OUT_DIR,
+  summarizeAndExit,
+  type SmokeResult,
+} from "./smoke-utils.ts";
 
 const BASE = Deno.env.get("SMOKE_BASE_URL") ?? "http://localhost:5173";
-const OUT = ".playwright-mcp";
 
-interface Result {
-  name: string;
-  pass: boolean;
-  detail?: string;
-}
-
-const results: Result[] = [];
-
-const record = (name: string, pass: boolean, detail = "") => {
-  results.push({ name, pass, detail });
-  const icon = pass ? "PASS" : "FAIL";
-  console.log(`[${icon}] ${name}${detail ? `: ${detail}` : ""}`);
-};
+const results: SmokeResult[] = [];
+const record = createRecorder(results);
 
 const main = async () => {
-  await mkdir(OUT, { recursive: true });
+  await mkdir(SMOKE_OUT_DIR, { recursive: true });
 
   const browser = await firefox.launch({ headless: true });
   const context = await browser.newContext({ ...devices["iPhone 15"] });
   const page = await context.newPage();
 
   const consoleErrors: string[] = [];
-  page.on("console", (msg) => {
-    if (msg.type() === "error") consoleErrors.push(msg.text());
-  });
-  page.on("pageerror", (err) => consoleErrors.push(String(err)));
+  attachConsoleCollector(page, consoleErrors);
 
   try {
+    // ── Landing shell ─────────────────────────────────────────────────────
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="landing-page"]');
-    const title = await page.locator(".landing__title").textContent();
-    record("Landing loads", Boolean(title?.includes("Employee Onboarding")));
+    const brand = await page.locator(".landing__brand-name").textContent();
+    record(
+      "Landing loads",
+      brand?.includes("MesseBuddy") ?? false,
+      brand ?? "",
+    );
     await page.screenshot({
-      path: join(OUT, "01-landing-role-select.png"),
+      path: join(SMOKE_OUT_DIR, "01-landing-profiles.png"),
       fullPage: true,
     });
 
-    await page.getByRole("button", { name: "New Employee" }).click();
-    await page.waitForSelector("#session-code");
     record(
-      "Join view opens",
-      Boolean((await page.locator(".landing__subtitle").textContent())?.includes(
-        "session code",
-      )),
+      "Demo profiles seeded",
+      await page.getByRole("button", { name: /Resume as Sofia Chen/i })
+        .isVisible(),
+    );
+
+    // ── Inline Employee form ──────────────────────────────────────────────
+    await page.getByRole("button", { name: "Employee", exact: true }).click();
+    await page.waitForSelector("#lp-session-code", { timeout: 5000 });
+    record(
+      "Employee form opens",
+      await page.locator("#lp-session-code").isVisible(),
     );
     await page.screenshot({
-      path: join(OUT, "02-landing-join.png"),
+      path: join(SMOKE_OUT_DIR, "02-landing-employee-form.png"),
       fullPage: true,
     });
 
-    await page.getByRole("button", { name: "Back" }).click();
+    await page.getByRole("button", { name: "Close", exact: true }).click();
     record(
-      "Back to role-select",
-      await page.getByRole("button", { name: "Admin", exact: true }).isVisible(),
+      "Employee form closes",
+      !(await page.locator("#lp-session-code").isVisible()),
     );
 
+    // ── Inline Admin form ─────────────────────────────────────────────────
     await page.getByRole("button", { name: "Admin", exact: true }).click();
-    await page.waitForSelector("#session-name");
+    await page.waitForSelector("#lp-session-name", { timeout: 5000 });
     record(
-      "Create view opens",
-      Boolean((await page.locator(".landing__subtitle").textContent())?.includes(
-        "Create a new",
-      )),
+      "Admin form opens",
+      await page.locator("#lp-session-name").isVisible(),
     );
     await page.screenshot({
-      path: join(OUT, "03-landing-create.png"),
+      path: join(SMOKE_OUT_DIR, "03-landing-admin-form.png"),
       fullPage: true,
     });
 
-    await page.goto(`${BASE}/join/sess_mmt2026`, { waitUntil: "networkidle" });
-    const prefilled = await page.inputValue("#session-code");
+    // ── Invite URL prefill (/join/:sessionId) ───────────────────────────
+    await page.goto(`${BASE}/join/sess_mmt2026`, {
+      waitUntil: "networkidle",
+    });
+    await page.waitForSelector('[data-testid="landing-page"]');
+    await page.getByRole("button", { name: "Employee", exact: true }).click();
+    await page.waitForSelector("#lp-session-code", { timeout: 5000 });
+    const prefilled = await page.inputValue("#lp-session-code");
     record(
       "Invite link prefills session code",
       prefilled === "sess_mmt2026",
       `value="${prefilled}"`,
     );
     await page.screenshot({
-      path: join(OUT, "04-landing-join-prefill.png"),
+      path: join(SMOKE_OUT_DIR, "04-landing-join-prefill.png"),
       fullPage: true,
     });
 
+    // ── Demo player cockpit ───────────────────────────────────────────────
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: "As Employee", exact: true }).click();
-    await page.waitForURL(/\/session\//, { timeout: 8000 });
+    await page.getByRole("button", { name: /Resume as Sofia Chen/i }).click();
+    await page.waitForURL(/\/session\//, { timeout: 10000 });
+    await page.waitForSelector('[data-testid="player-cockpit-page"]', {
+      timeout: 10000,
+    });
+    await page.waitForSelector('[data-testid="topbar"]', { timeout: 8000 });
+    await dismissTutorialIfPresent(page);
     record(
-      "Demo employee navigates to cockpit",
+      "Demo player navigates to cockpit",
       page.url().includes("/session/"),
       page.url(),
     );
-    await page.waitForSelector('[data-testid="topbar"]', { timeout: 8000 });
     await page.screenshot({
-      path: join(OUT, "05-player-cockpit.png"),
+      path: join(SMOKE_OUT_DIR, "05-player-cockpit.png"),
       fullPage: true,
     });
 
-    const benign = consoleErrors.filter(
-      (e) => !e.includes("favicon") && !e.includes("404"),
+    // ── Demo admin home ───────────────────────────────────────────────────
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: /Resume as Peter Tubak/i }).click();
+    await page.waitForURL(/\/admin\//, { timeout: 10000 });
+    await page.waitForSelector('[data-testid="admin-home-page"]', {
+      timeout: 10000,
+    });
+    record(
+      "Demo admin navigates to hire list",
+      page.url().includes("/admin/"),
+      page.url(),
     );
-    record("No console errors", benign.length === 0, benign.join("; ") || "clean");
+    await page.screenshot({
+      path: join(SMOKE_OUT_DIR, "06-admin-home.png"),
+      fullPage: true,
+    });
+
+    const bad = consoleErrors.filter((e) => !isBenignConsoleError(e));
+    record(
+      "No unexpected console errors",
+      bad.length === 0,
+      bad.join("; ") || "clean",
+    );
   } finally {
+    await context.close();
     await browser.close();
   }
 
-  const failed = results.filter((r) => !r.pass);
-  console.log("\n--- Summary ---");
-  console.log(`Passed: ${results.length - failed.length}/${results.length}`);
-  if (failed.length > 0) {
-    console.error("Failed:", failed.map((f) => f.name).join(", "));
-    Deno.exit(1);
-  }
+  summarizeAndExit(results, "Landing smoke");
 };
 
 await main();

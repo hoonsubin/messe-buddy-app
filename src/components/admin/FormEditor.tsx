@@ -1,4 +1,3 @@
-// Phase 1 shell - logic wired in Phase 4.
 import type { FieldSchema } from "../../types/index.ts";
 import FormFieldEditor from "./FormFieldEditor.tsx";
 
@@ -10,13 +9,7 @@ interface FormEditorProps {
 
 const FormEditor = (props: FormEditorProps) => (
   <div data-testid="form-editor" data-mission-id={props.missionId}>
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-3)",
-      }}
-    >
+    <div className="core-flex-col core-gap-3">
       {props.fields.map((field, i) => (
         <FormFieldEditor
           key={field.id}

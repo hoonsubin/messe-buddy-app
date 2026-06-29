@@ -66,6 +66,7 @@ AGENTS.md is a Markdown file that serves as a "README for agents" - a dedicated,
 - File organization patterns
 - Naming conventions
 - Import/export patterns
+- **Design system** (if `design/component-architecture.md` exists): UI layer model, primitives location, CSS token rules, no inline design styles
 
 #### Build and Deployment
 

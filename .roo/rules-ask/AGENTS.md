@@ -55,3 +55,13 @@ When reviewing a new hook:
 3. Are long-running loops cancel-safe? → Cancellation must be checked between each iteration, not just before/after.
 4. Is the fetch handler wrapped in try/catch? → Uncaught promise rejections crash the application.
 5. Does it read `localStorage`/`sessionStorage` during render? → Must read in an effect or ref to stay pure.
+
+## UI Design System Reference
+
+When answering questions about styling, components, or visual consistency in this project:
+
+1. **Authoritative docs:** [`design/component-architecture.md`](../../design/component-architecture.md), [`design/design-tokens.md`](../../design/design-tokens.md)
+2. **Layer order:** `tokens → ui/ primitives → patterns/ → domain/ → pages/`
+3. **No design inline styles** — only dynamic geometry exceptions (maps, charts, camera)
+4. **Primitives:** [`src/components/ui/`](../../src/components/ui/) — prefer over raw BEM in new code
+5. **CSS location:** `src/styles/components/*.css`; `index.css` is imports only

@@ -1,4 +1,3 @@
-// Phase 1 shell - logic wired in Phase 4.
 import type { Player } from "../../types/index.ts";
 
 interface PlayerSelectorDropdownProps {

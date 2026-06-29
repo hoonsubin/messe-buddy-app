@@ -1,4 +1,3 @@
-// Phase 1 shell - logic wired in Phase 4.
 import type { MissionTag } from "../../types/index.ts";
 import { MISSION_TAG } from "../../types/index.ts";
 import TagBadge from "../shared/TagBadge.tsx";
@@ -12,9 +11,8 @@ const ALL_TAGS = Object.values(MISSION_TAG) as MissionTag[];
 
 const TagSelector = (props: TagSelectorProps) => (
   <div
-    className="tag-selector"
+    className="tag-selector core-flex-row core-gap-2 core-flex-wrap"
     data-testid="tag-selector"
-    style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}
   >
     {ALL_TAGS.map((tag) => {
       const isSelected = props.selected.includes(tag);
@@ -22,6 +20,7 @@ const TagSelector = (props: TagSelectorProps) => (
         <button
           key={tag}
           type="button"
+          className="core-btn-reset"
           onClick={() =>
             props.onChange(
               isSelected
@@ -29,12 +28,6 @@ const TagSelector = (props: TagSelectorProps) => (
                 : [...props.selected, tag],
             )}
           aria-pressed={isSelected}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 0,
-          }}
         >
           <TagBadge label={tag} variant={isSelected ? tag : undefined} />
         </button>

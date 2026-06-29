@@ -41,13 +41,8 @@ const MilestoneGrid = (props: MilestoneGridProps) => {
   if (boxes.length === 0) {
     return (
       <p
-        style={{
-          fontSize: "var(--text-sm)",
-          color: "hsl(var(--color-muted-fg))",
-          textAlign: "center",
-          padding: "var(--space-6) 0",
-          margin: 0,
-        }}
+        className="core-text-sm core-text-muted core-text-center core-m-0"
+        style={{ padding: "var(--space-6) 0" }}
       >
         Choose a template above to add milestones.
       </p>
@@ -57,81 +52,33 @@ const MilestoneGrid = (props: MilestoneGridProps) => {
   return (
     <div
       data-testid="milestone-grid"
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(16rem, 1fr))",
-        gap: "var(--space-3)",
-      }}
+      className="milestone-grid"
     >
       {boxes.map((b) => (
         <button
           key={b.id}
           type="button"
-          className="card"
+          className="card milestone-grid__box"
           data-testid="milestone-box"
           onClick={() => props.onSelect(b.id)}
-          style={{
-            padding: "var(--space-5)",
-            minHeight: "8rem",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "stretch",
-            gap: "var(--space-3)",
-            cursor: "pointer",
-            textAlign: "left",
-            border: "1px solid hsl(var(--color-border))",
-            background: "hsl(var(--color-card))",
-          }}
         >
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
+          <span className="milestone-grid__header">
             <span
               aria-hidden="true"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "2rem",
-                height: "2rem",
-                flexShrink: 0,
-                borderRadius: "var(--radius-full)",
-                background: "hsl(var(--color-primary) / 0.1)",
-                color: "hsl(var(--color-primary))",
-                fontWeight: "var(--weight-semibold)",
-                fontSize: "var(--text-sm)",
-              }}
+              className="milestone-grid__index"
             >
               {b.index}
             </span>
             <MdChevronRight
               size={20}
               aria-hidden="true"
-              style={{ color: "hsl(var(--color-muted-fg))", flexShrink: 0 }}
+              className="core-icon-muted"
             />
           </span>
-          <span
-            style={{
-              flex: 1,
-              fontWeight: "var(--weight-semibold)",
-              fontSize: "var(--text-base)",
-              color: "hsl(var(--color-fg))",
-              lineHeight: "var(--leading-tight)",
-              textWrap: "balance",
-            }}
-          >
+          <span className="milestone-grid__name">
             {b.name}
           </span>
-          <span
-            style={{
-              fontSize: "var(--text-xs)",
-              color: "hsl(var(--color-muted-fg))",
-            }}
-          >
+          <span className="milestone-grid__meta">
             {b.total} {b.total === 1 ? "mission" : "missions"}
             {b.total > 0 ? ` · ${b.done} done` : ""}
           </span>

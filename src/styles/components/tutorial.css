@@ -1,0 +1,85 @@
+/*
+ * MesseBuddy — Tutorial Component Styles
+ *
+ * Component-specific CSS for the tutorial overlay system.
+ * Imported from src/index.css via @import.
+ */
+
+/* ── TutorialStep ── */
+.tutorial-step {
+  position: fixed;
+  bottom: clamp(var(--space-4), 5svh, var(--space-10));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(90%, 24rem);
+  background: hsl(var(--color-card));
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-5);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.tutorial-step__counter {
+  font-size: var(--text-xs);
+  color: hsl(var(--color-muted-fg));
+  margin: 0;
+  font-weight: var(--weight-medium);
+}
+
+.tutorial-step__dots {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.tutorial-step__dot {
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+}
+
+/* Dynamic: dot's background is determined by step progress at runtime */
+.tutorial-step__dot--active {
+  background: hsl(var(--color-primary));
+}
+
+.tutorial-step__dot--inactive {
+  background: hsl(var(--color-border));
+}
+
+.tutorial-step__title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.tutorial-step__body {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: hsl(var(--color-muted-fg));
+  line-height: var(--leading-relaxed);
+}
+
+.tutorial-step__actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-2);
+}
+
+.tutorial-step__skip {
+  font-size: var(--text-xs);
+  color: hsl(var(--color-muted-fg));
+}
+/* ── Tutorial overlay ────────────────────────────────────────────────────── */
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background-color: hsl(var(--color-bg));
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}

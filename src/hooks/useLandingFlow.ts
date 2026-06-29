@@ -167,12 +167,13 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     setActiveFormState(form);
     setEmployeeStep("code");
     setVerifiedSessionId("");
-    setSessionCode("");
+    // Keep /join/:sessionId prefill when opening the employee form
+    setSessionCode(form === "employee" && routeSessionId ? routeSessionId : "");
     setPlayerName("");
     setSessionName("");
     setAdminName("");
     resetError();
-  }, [resetError]);
+  }, [resetError, routeSessionId]);
 
   // ── Employee join: step 1 — verify session exists ─────────────────────────
   const handleVerifySession = useCallback(async () => {

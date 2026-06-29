@@ -1,0 +1,182 @@
+/*
+ * MesseBuddy Core Utility Classes
+ *
+ * General-purpose utility classes that replace common inline style patterns.
+ * All values reference design tokens from tokens.css.
+ * These should be used as supplements to semantic component classes,
+ * not as a replacement for them.
+ *
+ * Naming convention: core-{property} for single-purpose utilities.
+ */
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+
+.core-flex-row {
+  display: flex;
+  align-items: center;
+}
+
+.core-flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.core-flex-1 {
+  flex: 1;
+}
+
+.core-shrink-0 {
+  flex-shrink: 0;
+}
+
+.core-justify-between {
+  justify-content: space-between;
+}
+
+.core-gap-1 {
+  gap: var(--space-1);
+}
+
+.core-gap-2 {
+  gap: var(--space-2);
+}
+
+.core-gap-3 {
+  gap: var(--space-3);
+}
+
+.core-gap-4 {
+  gap: var(--space-4);
+}
+
+/* ── Typography ──────────────────────────────────────────────────────────── */
+
+.core-text-xs {
+  font-size: var(--text-xs);
+}
+
+.core-text-sm {
+  font-size: var(--text-sm);
+}
+
+.core-text-base {
+  font-size: var(--text-base);
+}
+
+.core-text-lg {
+  font-size: var(--text-lg);
+}
+
+.core-text-xl {
+  font-size: var(--text-xl);
+}
+
+.core-text-muted {
+  color: hsl(var(--color-muted-fg));
+}
+
+.core-text-fg {
+  color: hsl(var(--color-fg));
+}
+
+.core-font-display {
+  font-family: var(--font-display);
+}
+
+.core-weight-medium {
+  font-weight: var(--weight-medium);
+}
+
+.core-weight-semibold {
+  font-weight: var(--weight-semibold);
+}
+
+.core-m-0 {
+  margin: 0;
+}
+
+.core-text-center {
+  text-align: center;
+}
+
+.core-leading-tight {
+  line-height: var(--leading-tight);
+}
+
+.core-leading-relaxed {
+  line-height: var(--leading-relaxed);
+}
+
+/* ── Icons ───────────────────────────────────────────────────────────────── */
+
+.core-icon-muted {
+  color: hsl(var(--color-muted-fg));
+  flex-shrink: 0;
+}
+
+.core-icon-accent {
+  color: hsl(var(--color-accent));
+  flex-shrink: 0;
+}
+
+.core-icon-primary {
+  color: hsl(var(--color-primary));
+  flex-shrink: 0;
+}
+
+/* ── Additional layout ────────────────────────────────────────────────────── */
+
+.core-flex-wrap {
+  flex-wrap: wrap;
+}
+
+.core-justify-end {
+  justify-content: flex-end;
+}
+
+.core-min-w-0 {
+  min-width: 0;
+}
+
+/* ── Additional typography ────────────────────────────────────────────────── */
+
+.core-text-destructive {
+  color: hsl(var(--color-destructive));
+}
+
+/* ── Spacing ──────────────────────────────────────────────────────────────── */
+
+.core-mb-2 { margin-bottom: var(--space-2); }
+.core-mb-3 { margin-bottom: var(--space-3); }
+.core-mb-4 { margin-bottom: var(--space-4); }
+.core-mt-1 { margin-top: var(--space-1); }
+.core-mt-2 { margin-top: var(--space-2); }
+.core-mt-3 { margin-top: var(--space-3); }
+.core-mt-4 { margin-top: var(--space-4); }
+
+/* ── Sizing ───────────────────────────────────────────────────────────────── */
+
+.core-w-full { width: 100%; }
+.core-max-w-sm { max-width: 24rem; }
+.core-max-w-md { max-width: 28rem; }
+.core-max-w-lg { max-width: 36rem; }
+
+/* ── Overflow ─────────────────────────────────────────────────────────────── */
+
+.core-overflow-hidden { overflow: hidden; }
+
+/* ── Layout additions ─────────────────────────────────────────────────────── */
+
+.core-flex-start {
+  display: flex;
+  align-items: flex-start;
+}
+
+/* ── Button reset ────────────────────────────────────────────────────────── */
+
+.core-btn-reset {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}

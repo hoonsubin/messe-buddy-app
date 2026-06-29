@@ -1,4 +1,3 @@
-// Phase 1 shell - upload logic wired in Phase 4.
 interface BackgroundImageUploaderProps {
   readonly currentImageUrl: string;
   readonly onUpload: (file: File) => void;
@@ -6,25 +5,14 @@ interface BackgroundImageUploaderProps {
 
 const BackgroundImageUploader = (props: BackgroundImageUploaderProps) => (
   <div
-    className="card"
+    className="card bg-uploader"
     data-testid="bg-image-uploader"
-    style={{
-      display: "flex",
-      flexDirection: "column",
-      gap: "var(--space-3)",
-      alignItems: "center",
-    }}
   >
     {props.currentImageUrl && (
       <img
         src={props.currentImageUrl}
         alt="Current background"
-        style={{
-          width: "100%",
-          maxHeight: "8rem",
-          objectFit: "cover",
-          borderRadius: "var(--radius)",
-        }}
+        className="bg-uploader__preview"
       />
     )}
     <label className="btn btn--secondary" htmlFor="bg-upload">

@@ -8,6 +8,11 @@ import {
   parseValidationToken,
   validationPathFromToken,
 } from "../../utils/qrUrl.ts";
+import Button from "../ui/Button.tsx";
+import { BUTTON_VARIANT } from "../ui/types.ts";
+import IconButton from "../ui/IconButton.tsx";
+import { Modal, ModalDescription, ModalTitle } from "../patterns/Modal.tsx";
+import { MODAL_VARIANT } from "../patterns/types.ts";
 
 type ScanState = "idle" | "scanning" | "success" | "invalid" | "error";
 
@@ -88,163 +93,68 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
     };
   }, [props.isOpen]);
 
-  if (!props.isOpen) return null;
-
   return (
-    <div
-      data-testid="admin-qr-scanner-modal"
-      role="dialog"
-      aria-modal="true"
+    <Modal
+      open={props.isOpen}
+      onBackdropClick={handleCancel}
+      variant={MODAL_VARIANT.STRUCTURED}
+      backdropClassName="modal-backdrop--blur"
       aria-label="Scan QR code"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 200, /* modal tier (design-tokens.md §6) */
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "var(--space-4)",
-      }}
+      testId="admin-qr-scanner-modal"
+      panelClassName="qr-scanner-modal"
     >
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "hsl(var(--color-fg) / 0.6)",
-          backdropFilter: "blur(4px)",
-        }}
-        onClick={handleCancel}
+      <div className="qr-scanner-modal__header core-flex-row core-justify-between">
+        <ModalTitle className="core-m-0">Scan QR Code</ModalTitle>
+        <IconButton onClick={handleCancel} aria-label="Close scanner">
+          <MdClose size={24} aria-hidden="true" />
+        </IconButton>
+      </div>
+
+      <ModalDescription className="core-m-0">
+        Point the camera at a player&apos;s mission QR code.
+      </ModalDescription>
+
+      <div className="qr-scanner-modal__viewport">
+        <CameraFeed
+          isActive={cameraActive}
+          onDecode={handleDecode}
+          onError={handleCameraError}
+        />
+      </div>
+
+      <ValidationResult
+        state={validationState}
+        errorMessage={errorMessage || undefined}
       />
 
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          maxWidth: "28rem",
-          maxHeight: "90dvh",
-          overflowY: "auto",
-          background: "hsl(var(--color-card))",
-          borderRadius: "var(--radius-lg)",
-          boxShadow: "var(--shadow-lg)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-4)",
-          padding: "var(--space-5)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <h2
-            style={{
-              margin: 0,
-              fontSize: "var(--text-lg)",
-              fontWeight: "var(--weight-semibold)",
-              color: "hsl(var(--color-fg))",
-            }}
-          >
-            Scan QR Code
-          </h2>
-          <button
-            type="button"
-            onClick={handleCancel}
-            aria-label="Close scanner"
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "hsl(var(--color-muted-fg))",
-              fontSize: "var(--text-xl)",
-              padding: "var(--space-1)",
-              borderRadius: "var(--radius-sm)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              minWidth: "var(--min-touch)",
-              minHeight: "var(--min-touch)",
-            }}
-          >
-            <MdClose size={24} aria-hidden="true" />
-          </button>
-        </div>
-
-        <p
-          style={{
-            margin: 0,
-            fontSize: "var(--text-sm)",
-            color: "hsl(var(--color-muted-fg))",
-          }}
-        >
-          Point the camera at a player&apos;s mission QR code.
-        </p>
-
-        <div
-          style={{
-            width: "100%",
-            aspectRatio: "4 / 3",
-            borderRadius: "var(--radius-md)",
-            overflow: "hidden",
-            background: "hsl(0 0% 0%)",
-          }}
-        >
-          <CameraFeed
-            isActive={cameraActive}
-            onDecode={handleDecode}
-            onError={handleCameraError}
-          />
-        </div>
-
-        <ValidationResult
-          state={validationState}
-          errorMessage={errorMessage || undefined}
-        />
-
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--space-2)",
-          }}
-        >
-          <div style={{ display: "flex", gap: "var(--space-3)" }}>
-            {!cameraActive && validationState !== "success" && (
-              <button
-                type="button"
-                className="btn btn--primary"
-                style={{ flex: 1 }}
-                onClick={() => {
-                  setValidationState("scanning");
-                  setErrorMessage("");
-                  setCameraReady(true);
-                }}
-              >
-                {validationState === "error" ? "Retry camera" : "Start camera"}
-              </button>
-            )}
-            <button
-              type="button"
-              className="btn btn--ghost"
-              onClick={handleCancel}
+      <div className="qr-scanner-modal__actions">
+        <div className="qr-scanner-modal__row">
+          {!cameraActive && validationState !== "success" && (
+            <Button
+              variant={BUTTON_VARIANT.PRIMARY}
+              className="qr-scanner-modal__primary"
+              onClick={() => {
+                setValidationState("scanning");
+                setErrorMessage("");
+                setCameraReady(true);
+              }}
             >
-              Cancel
-            </button>
-          </div>
-          <button
-            type="button"
-            className="btn btn--secondary"
-            onClick={() => void handleSimulate()}
-            disabled={validationState === "success"}
-          >
-            Simulate Scan
-          </button>
+              {validationState === "error" ? "Retry camera" : "Start camera"}
+            </Button>
+          )}
+          <Button variant={BUTTON_VARIANT.GHOST} onClick={handleCancel}>
+            Cancel
+          </Button>
         </div>
+        <Button
+          variant={BUTTON_VARIANT.SECONDARY}
+          onClick={() => void handleSimulate()}
+          disabled={validationState === "success"}
+        >
+          Simulate Scan
+        </Button>
       </div>
-    </div>
+    </Modal>
   );
 };
 

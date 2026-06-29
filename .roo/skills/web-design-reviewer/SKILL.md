@@ -32,7 +32,30 @@ This skill enables visual inspection and validation of website design quality, i
 3. **Access to source code (when making fixes)**
    - Project must exist within the workspace
 
-## Workflow Overview
+## MesseBuddy Project Context
+
+When reviewing this repository, use these project-specific rules **instead of** generic Tailwind/CSS-in-JS assumptions:
+
+| Item | Value |
+|------|-------|
+| Styling | Token-based CSS + BEM; **no Tailwind** |
+| Token source | [`src/styles/tokens.css`](../../../src/styles/tokens.css) |
+| Style files | [`src/styles/components/*.css`](../../../src/styles/components/), [`src/styles/layouts/*.css`](../../../src/styles/layouts/) |
+| Import manifest | [`src/index.css`](../../../src/index.css) — do not add rules here |
+| React primitives | [`src/components/ui/`](../../../src/components/ui/) |
+| Design docs | [`design/design-tokens.md`](../../../design/design-tokens.md), [`design/component-architecture.md`](../../../design/component-architecture.md) |
+| Primary viewport | **390×844** (mobile-first) |
+| Touch target min | `var(--touch-target)` = 44px |
+
+### Fix principles for this project
+
+1. **Token drift** — replace hardcoded colors in TSX/CSS with `var(--color-*)` from `tokens.css`
+2. **Primitive first** — migrate raw `.btn` / inline button styles to `<Button>` from `ui/`
+3. **No design inline styles** — move layout/spacing to BEM or `core-*` utilities
+4. **CSS file placement** — add rules to the correct `src/styles/components/*.css` or `src/styles/layouts/*.css` file
+5. **Icons** — `react-icons` only
+
+---
 
 ```mermaid
 flowchart TD
@@ -146,6 +169,7 @@ Test at the following viewports:
 | Name | Width | Representative Device |
 |------|-------|----------------------|
 | Mobile | 375px | iPhone SE/12 mini |
+| **MesseBuddy primary** | **390px** | **Project smoke viewport (prefer over 375)** |
 | Tablet | 768px | iPad |
 | Desktop | 1280px | Standard PC |
 | Wide | 1920px | Large display |

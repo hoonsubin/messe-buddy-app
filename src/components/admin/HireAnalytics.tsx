@@ -29,35 +29,12 @@ const StatCard = (
     readonly children: React.ReactNode;
   },
 ) => (
-  <div
-    className="card"
-    style={{
-      padding: "var(--space-4) var(--space-5)",
-      display: "flex",
-      flexDirection: "column",
-      gap: "var(--space-3)",
-      justifyContent: "space-between",
-    }}
-  >
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "var(--space-2)",
-      }}
-    >
-      <span
-        style={{ display: "inline-flex", color: "hsl(var(--color-primary))" }}
-      >
+  <div className="card hire-analytics__stat">
+    <div className="hire-analytics__stat-header">
+      <span className="hire-analytics__stat-icon">
         {icon}
       </span>
-      <span
-        style={{
-          fontSize: "var(--text-base)",
-          fontWeight: "var(--weight-semibold)",
-          color: "hsl(var(--color-fg))",
-        }}
-      >
+      <span className="hire-analytics__stat-label">
         {label}
       </span>
     </div>
@@ -107,60 +84,22 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
   }, [orderedMilestones, props.missions, completedSet]);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-4)",
-      }}
-    >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(15rem, 1fr))",
-          gap: "var(--space-3)",
-        }}
-      >
+    <div className="hire-analytics">
+      <div className="hire-analytics__grid">
         {/* 1. Onboarding age */}
         <StatCard
           icon={<MdWbSunny size={18} aria-hidden="true" />}
           label="Onboarding age"
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              gap: "var(--space-2)",
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "3rem",
-                fontWeight: "var(--weight-semibold)",
-                color: "hsl(var(--color-fg))",
-                lineHeight: 1,
-              }}
-            >
+          <div className="hire-analytics__stat-row">
+            <span className="hire-analytics__big-number">
               {days ?? "—"}
             </span>
-            <span
-              style={{
-                fontSize: "var(--text-lg)",
-                fontWeight: "var(--weight-medium)",
-                color: "hsl(var(--color-muted-fg))",
-              }}
-            >
+            <span className="hire-analytics__label">
               {days === 1 ? "day" : "days"}
             </span>
           </div>
-          <p
-            style={{
-              margin: 0,
-              fontSize: "var(--text-sm)",
-              color: "hsl(var(--color-muted-fg))",
-            }}
-          >
+          <p className="hire-analytics__caption">
             since onboarding started
           </p>
         </StatCard>
@@ -170,46 +109,20 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
           icon={<MdTrendingUp size={18} aria-hidden="true" />}
           label="Progress vs plan"
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              gap: "var(--space-2)",
-              flexWrap: "wrap",
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "3rem",
-                fontWeight: "var(--weight-semibold)",
-                color: "hsl(var(--color-fg))",
-                lineHeight: 1,
-              }}
-            >
+          <div className="hire-analytics__stat-row--wrap">
+            <span className="hire-analytics__big-number">
               {actualPct}%
             </span>
-            <span
-              style={{
-                fontSize: "var(--text-lg)",
-                fontWeight: "var(--weight-medium)",
-                color: "hsl(var(--color-muted-fg))",
-              }}
-            >
+            <span className="hire-analytics__label">
               of tasks completed
             </span>
           </div>
-          <p
-            style={{
-              margin: 0,
-              fontSize: "var(--text-sm)",
-              color: "hsl(var(--color-muted-fg))",
-            }}
-          >
-            Should be ~<strong style={{ color: "hsl(var(--color-fg))" }}>
+          <p className="hire-analytics__caption">
+            Should be ~<strong className="core-text-fg">
               {expectedPct}%
             </strong>
             {"  |  "}
+            {/* Dynamic: planColorVar is computed at runtime */}
             <strong style={{ color: `hsl(var(${planColorVar}))` }}>
               {planLabel}
             </strong>
@@ -224,36 +137,16 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
           {nextTask
             ? (
               <>
-                <div
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    fontSize: "var(--text-lg)",
-                    fontWeight: "var(--weight-semibold)",
-                    color: "hsl(var(--color-fg))",
-                    lineHeight: "var(--leading-tight)",
-                  }}
-                >
+                <div className="hire-analytics__next-title">
                   {nextTask.title}
                 </div>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "var(--text-sm)",
-                    color: "hsl(var(--color-muted-fg))",
-                  }}
-                >
+                <p className="hire-analytics__caption">
                   in {nextTask.milestone}
                 </p>
               </>
             )
             : (
-              <div
-                style={{
-                  fontSize: "var(--text-base)",
-                  color: "hsl(var(--color-status-complete))",
-                  fontWeight: "var(--weight-medium)",
-                }}
-              >
+              <div className="hire-analytics__all-done">
                 All tasks complete 🎉
               </div>
             )}
@@ -265,15 +158,7 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
         className="card"
         style={{ padding: "var(--space-4) var(--space-5)" }}
       >
-        <h3
-          style={{
-            margin: "0 0 var(--space-3)",
-            fontFamily: "var(--font-display)",
-            fontSize: "var(--text-base)",
-            fontWeight: "var(--weight-semibold)",
-            color: "hsl(var(--color-fg))",
-          }}
-        >
+        <h3 className="hire-analytics__section-title">
           Missions completed over time
         </h3>
         <MissionTimelineChart

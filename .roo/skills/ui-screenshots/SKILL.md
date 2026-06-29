@@ -16,6 +16,17 @@ Use this skill when you need to:
 - Screenshot interactive states (tooltips, hovers, selected elements)
 - Capture specific sections of a page without re-screenshotting
 
+## MesseBuddy Project Defaults
+
+When capturing this repository's UI:
+
+- **Viewport:** 390×844 (iPhone-class — matches AGENTS.md smoke tests)
+- **Save to:** `.playwright-mcp/` (preferred for agent workflows)
+- **Routes to smoke:** `/`, `/session/:id` (demo), `/admin/:id`, `/form/:missionId`
+- **After UI changes:** verify no console errors; never force-click obscured elements
+
+---
+
 ## Prerequisites
 
 ```bash

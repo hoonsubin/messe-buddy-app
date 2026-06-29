@@ -60,3 +60,40 @@ The React 19 compiler auto-memoizes components and hooks, reducing manual `useCa
 - Fix missing effect cleanup
 
 All architectural rules remain in effect regardless of compiler status. The compiler is a performance optimization, not a correctness tool.
+
+---
+
+## UI Component Architecture
+
+Locked design decisions for the MesseBuddy design system. Full detail: [`design/component-architecture.md`](../../design/component-architecture.md).
+
+### Layer model (do not skip)
+
+```
+tokens.css → ui/ primitives → patterns/ → domain/ → pages/
+```
+
+- **Pages** compose; they do not define new button styles, card surfaces, or overlay chrome.
+- **Domain** (`admin/`, `player/`, etc.) holds feature UI built from primitives + patterns.
+- **Patterns** (`patterns/`) are cross-route: `Toast`, future `Modal`, `BottomSheet`, `AppTopBar`.
+- **Primitives** (`ui/`) are the only place new interactive styling enters via React — thin wrappers over BEM.
+
+### CSS ownership
+
+| What | Where |
+|------|-------|
+| Design tokens | `src/styles/tokens.css` |
+| Primitive BEM (`.btn`, `.card`, `.form-input`) | `src/styles/components/{button,card,form,...}.css` |
+| Page composers | `src/pages/*Page.tsx` — wire hooks; extract views to `pages/<route>/` when > ~200 lines |
+| Import order | `src/index.css` (manifest only — no new rules) |
+
+### Adding new shared UI
+
+1. Used on ≥ 2 pages → `ui/` primitive or `patterns/` component first
+2. New color/spacing → extend `tokens.css` + document in `design-tokens.md`
+3. New overlay → extend existing modal/sheet system; no parallel backdrop implementations
+4. Semantic role/mission colors → use `--color-role-*` / `--color-mission-*` tokens with `data-*` selectors
+
+### Page size budget
+
+Page files target **< 200 lines**. Extract views to `src/pages/<route>/` subcomponents when a page grows (see `LandingPage` migration plan in component-architecture.md).

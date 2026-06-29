@@ -1,6 +1,6 @@
 # MesseBuddy Design Tokens
 
-Authoritative UI reference for agents modifying this codebase. **Source of truth for runtime values:** [`src/styles/tokens.css`](../src/styles/tokens.css). **Component styles:** [`src/index.css`](../src/index.css) (BEM class blocks). **Do not introduce inline styles** unless matching an existing exception (e.g. [`Toast.tsx`](../src/components/shared/Toast.tsx)).
+Authoritative UI reference for agents modifying this codebase. **Source of truth for runtime values:** [`src/styles/tokens.css`](../src/styles/tokens.css). **Component architecture:** [`component-architecture.md`](component-architecture.md). **Styles:** [`src/index.css`](../src/index.css) (import manifest) + [`src/styles/components/`](../src/styles/components/). **Do not introduce inline styles** unless matching an existing exception (dynamic geometry only).
 
 Mobile-first. Primary smoke viewport: **390×844** (iPhone-class). Admin desktop breakpoint: **≥ 40rem (640px)** for two-column cockpit.
 
@@ -10,10 +10,50 @@ Mobile-first. Primary smoke viewport: **390×844** (iPhone-class). Admin desktop
 
 | Layer | Location | Rule |
 |-------|----------|------|
-| Primitive tokens | `src/styles/tokens.css` `:root` | HSL channels without `hsl()` wrapper |
+| Primitive tokens | [`src/styles/tokens.css`](../src/styles/tokens.css) `:root` | HSL channels without `hsl()` wrapper |
 | Semantic usage | `hsl(var(--color-*))` or `hsl(var(--color-*) / 0.5)` | Always compose alpha this way |
-| Components | `src/index.css` | BEM: `.block`, `.block__element`, `.block--modifier` |
-| Pages | `src/pages/**` | Compose shared classes; page-scoped blocks under `pages/<page>/` |
+| Utility classes | [`src/styles/utilities.css`](../src/styles/utilities.css) | `core-{property}` prefix for single-purpose utilities |
+| UI primitive CSS | [`src/styles/components/button.css`](../src/styles/components/button.css) etc. | BEM blocks for Button, Card, Form, Avatar |
+| Pattern / domain CSS | [`src/styles/components/`](../src/styles/components/), [`src/styles/layouts/`](../src/styles/layouts/) | One focused file per domain or pattern |
+| Import manifest | [`src/index.css`](../src/index.css) | Fonts + ordered `@import` only |
+| React primitives | [`src/components/ui/`](../src/components/ui/) | Typed wrappers over BEM classes |
+| Pages | `src/pages/**` | Compose primitives + patterns; < 200 lines |
+
+### CSS file import order (in [`src/index.css`](../src/index.css))
+
+```css
+@import "./styles/reset.css";
+@import "./styles/tokens.css";
+@import "./styles/utilities.css";
+@import "./styles/layouts/page.css";
+@import "./styles/components/button.css";
+@import "./styles/components/card.css";
+@import "./styles/components/form.css";
+@import "./styles/components/icon-button.css";
+@import "./styles/components/avatar.css";
+@import "./styles/components/topbar.css";
+@import "./styles/components/modal.css";
+@import "./styles/components/bottom-sheet.css";
+@import "./styles/components/a11y.css";
+@import "./styles/components/chat.css";
+@import "./styles/components/map.css";
+@import "./styles/components/sidebar.css";
+@import "./styles/components/qr.css";
+@import "./styles/components/shared.css";
+@import "./styles/components/player.css";
+@import "./styles/components/admin.css";
+@import "./styles/components/tutorial.css";
+```
+
+### CSS class naming conventions
+
+| Prefix | Scope | Example |
+|--------|-------|---------|
+| `core-` | Utility (layout, typography, icons, spacing) | `.core-flex-row`, `.core-text-sm`, `.core-mb-4` |
+| `{component}-` | Component block (BEM: `block__element--modifier`) | `.daily-plan__header`, `.hire-analytics__stat-row--wrap` |
+| `{page}-` | Page-scoped layout | `.cockpit-col`, `.landing__card` |
+| `.btn` / `.btn--` | Shared button system | `.btn--primary`, `.btn--ghost` |
+| `.card` | Shared card surface | `.card` (padding, border-radius, shadow) |
 
 **Fonts loaded in** [`src/index.css`](../src/index.css): Geist (UI + display headings), Geist Mono (codes/keys).
 Note: PR #17 unified the project to Geist font family; DM Sans, Playfair Display, and Inter are no longer loaded.
@@ -59,6 +99,20 @@ All values are HSL channels. Usage: `hsl(var(--token))`.
 | `--color-status-upcoming` | `214 19% 65%` | Not started |
 | `--color-status-progress` | `227 59% 55%` | In progress |
 | `--color-status-complete` | `142 71% 45%` | Complete / success toast |
+
+### 2.4 Role & mission semantics
+
+| Token | Channels | Role |
+|-------|----------|------|
+| `--color-role-player` | `212 72% 37%` | Landing employee accent |
+| `--color-role-player-bg` | `212 72% 93%` | Landing employee surface |
+| `--color-role-admin` | `160 73% 28%` | Landing admin accent |
+| `--color-role-admin-bg` | `160 73% 91%` | Landing admin surface |
+| `--color-mission-text` | `200 70% 45%` | Text mission badge |
+| `--color-mission-link` | `270 60% 50%` | Link mission badge |
+| `--color-mission-form` | `150 55% 42%` | Form mission badge |
+
+Apply via `data-role` / `data-mission-type` in CSS — not hardcoded HSL in TSX.
 
 ---
 
@@ -185,7 +239,8 @@ Reuse these before creating new components. Paths relative to `src/components/`.
 
 | Class / component | Variants | When to use |
 |-------------------|----------|-------------|
-| `.btn` | — | Base; always pair with modifier |
+| [`Button`](../src/components/ui/Button.tsx) | `primary`, `secondary`, `ghost`, `destructive`, `fullWidth` | Preferred over raw `.btn` |
+| `.btn` | — | Base; prefer `Button` component |
 | `.btn--primary` | — | Primary CTA (join, create, submit) |
 | `.btn--secondary` | — | Secondary actions, "Use template" |
 | `.btn--ghost` | — | Back, tertiary, demo links |
@@ -227,9 +282,9 @@ Reuse these before creating new components. Paths relative to `src/components/`.
 
 | Pattern | Classes | Components |
 |---------|---------|------------|
-| Center modal | `.recovery-modal`, `.recovery-modal__*` | [`RecoveryKeyModal`](../src/components/shared/RecoveryKeyModal.tsx), [`NameCaptureModal`](../src/components/shared/NameCaptureModal.tsx) |
-| Generic modal | `.modal-backdrop`, `.modal`, `.modal__*` | Save template, confirm dialogs |
-| Bottom sheet | `.bottom-sheet-backdrop`, `.bottom-sheet`, `.sheet-*` | [`MissionBottomSheet`](../src/components/admin/MissionBottomSheet.tsx) |
+| Center modal | `.modal-backdrop`, `.modal`, `.modal__*` | [`Modal`](../src/components/patterns/Modal.tsx) — prefer component |
+| Bottom sheet | `.bottom-sheet-*`, `.sheet-*` | [`BottomSheet`](../src/components/patterns/BottomSheet.tsx) |
+| Recovery key (legacy CSS aliases) | `.recovery-modal__*` | Use `Modal variant="narrow"` |
 | Confirm sheet | `.sheet-confirm` | [`ConfirmSheet`](../src/components/admin/ConfirmSheet.tsx) |
 | Full-screen | `.tutorial-overlay`, `.qr-scanner` | Tutorial, QR scanner |
 | Toast | inline styles only | [`Toast.tsx`](../src/components/shared/Toast.tsx) |
@@ -240,7 +295,7 @@ Reuse these before creating new components. Paths relative to `src/components/`.
 | Component | Classes |
 |-----------|---------|
 | [`TagBadge`](../src/components/shared/TagBadge.tsx) | `.tag-badge`, `--mandatory`, `--urgent` |
-| [`XPBadge`](../src/components/shared/XPBadge.tsx) | `.xp-badge` |
+| [`XpBadge`](../src/components/shared/XpBadge.tsx) | `.xp-badge` |
 | [`SegmentGroup`](../src/components/shared/SegmentGroup.tsx) | `.segment-group`, `.segment-btn--active` |
 | [`TemplateLibrary`](../src/components/shared/TemplateLibrary.tsx) | `.template-library__*` |
 | [`SearchBar`](../src/components/shared/SearchBar.tsx) | Used inside template library |
@@ -344,12 +399,12 @@ After any UI change, verify on **390×844** (Playwright MCP, Firefox/iPhone 15 p
 
 ## 11. Adding new tokens
 
-1. Add primitive to `src/styles/tokens.css`.
-2. Reference via `var(--token)` in `src/index.css` component block.
+1. Add primitive to [`src/styles/tokens.css`](../src/styles/tokens.css).
+2. Reference via `var(--token)` in the appropriate component CSS file under [`src/styles/components/`](../src/styles/components/).
 3. Document semantic purpose in this file (section 2–6).
 4. If a new component is shared across ≥2 pages, place under `src/components/shared/`.
 5. Page-only UI stays under `src/pages/<page>/`.
 
 ---
 
-*Last synced with codebase: 2026-06-29 (post PR #17 merge — Geist typography, AdminHomePage + HireDetailPage routes, IsometricMilestoneMap, ChatPanel tabs).*
+*Last synced with codebase: 2026-06-29.*

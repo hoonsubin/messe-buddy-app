@@ -45,7 +45,42 @@ When an effect iterates over many items with async operations:
 
 - **Keep components lean.** If a single component file exceeds ~200 lines, extract reusable pieces (types, UI sub-components, hooks) into separate files. A component file should express orchestration logic, not inline hundreds of lines of markup.
 - **Prefer extraction over nesting.** When a component has clearly separable concerns — e.g., list view vs. editor view, drag-to-dismiss logic, draft persistence — extract them into dedicated modules under [`src/components/`](src/components/) or [`src/utils/`](src/utils/) as appropriate.
-- **Small components are preferred.** Each file should have one clear responsibility. Reference canonical patterns like [`ConfirmSheet`](src/components/admin/ConfirmSheet.tsx), [`DraftRestoreBanner`](src/components/admin/DraftRestoreBanner.tsx), and [`MissionListView`](src/components/admin/MissionListView.tsx) (extracted from [`MissionBottomSheet`](src/components/admin/MissionBottomSheet.tsx)).
+- **Small components are preferred.** Each file should have one clear responsibility. Reference canonical patterns like [`ConfirmSheet`](src/components/admin/ConfirmSheet.tsx) (uses `Button` from `ui/`), [`DraftRestoreBanner`](src/components/admin/DraftRestoreBanner.tsx), and [`MissionListView`](src/components/admin/MissionListView.tsx) (extracted from [`MissionBottomSheet`](src/components/admin/MissionBottomSheet.tsx)).
+
+---
+
+## UI Implementation Rules
+
+Complements the design system in [`design/component-architecture.md`](../../design/component-architecture.md) and [`design/design-tokens.md`](../../design/design-tokens.md).
+
+### Before writing UI code
+
+1. Check [`design/design-tokens.md`](../../design/design-tokens.md) component catalog — reuse before creating
+2. Import primitives from [`src/components/ui/index.ts`](../../src/components/ui/index.ts)
+3. Add CSS to the matching file under [`src/styles/components/`](../../src/styles/components/) — **never** add rules to [`src/index.css`](../../src/index.css) (import manifest only)
+
+### Required patterns
+
+| Need | Use | Do not |
+|------|-----|--------|
+| Button / CTA | `<Button variant="primary">` | Raw `.btn`, inline button styles |
+| Text input | `<Input hasError={…}>` | Raw `.form-input`, inline borders |
+| Icon action | `<IconButton variant="onPrimary">` | Inline `background: none; border: none` |
+| Avatar | `<Avatar initials={…}>` | Custom circle divs with inline sizing |
+| Card surface | `<Card>` | Inline `background`, `borderRadius`, `padding` |
+| Layout gap/flex | `core-flex-row`, `core-gap-3` | Inline `display: flex; gap: 8px` |
+| Conditional classes | `cn("btn", isActive && "btn--active")` | Template string concatenation |
+
+### Forbidden in new UI code
+
+- Hardcoded `hsl(...)`, `#hex`, or `rgb(...)` in TSX — add token to [`tokens.css`](../../src/styles/tokens.css)
+- `style={{}}` for colors, spacing, typography, borders, shadows
+- New BEM overlay blocks — use `.modal-*` or `.bottom-sheet-*` until `Modal`/`BottomSheet` patterns land
+- ASCII symbols or emojis as UI icons — use `react-icons`
+
+### Allowed `style={{}}` exceptions
+
+Dynamic geometry only: map node `%` positions, chart bar heights, camera/video viewport dimensions, drag transforms driven by pointer events.
 
 ---
 

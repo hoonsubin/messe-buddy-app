@@ -33,3 +33,22 @@ Check in this order when a component shows stale state:
 - **`React.memo` + unstables props** — wrapping a component with `React.memo` is defeated if it receives objects, arrays, or callbacks that are recreated every render. The shallow compare always fails.
 - **`useMemo` on trivial values** — wrapping a constant or simple arithmetic in `useMemo` is slower than computing it at render time. Only memoize non-trivial computations.
 - **`eslint-disable react-hooks/exhaustive-deps` without justification** — every suppression must be annotated with the exact reason ("ref is stable", "build-time constant"). New code should avoid suppression entirely.
+
+---
+
+## UI Design Drift Diagnosis
+
+When layout looks wrong or visually inconsistent, check design-system compliance before adding inline fixes.
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| Wrong font / generic system UI | Skipped `--font-sans` / Geist | Use token; check `reset.css` + font import |
+| Colors don't match rest of app | Hardcoded HSL in TSX | Move to `tokens.css`; use `hsl(var(--token))` |
+| Button looks different per page | Raw `.btn` vs `<Button>` mix | Standardize on `ui/Button` |
+| Spacing feels arbitrary | Inline `gap`/`padding` in px | Use `--space-*` via `core-gap-*` or BEM |
+| Modal/sheet styling diverges | New custom overlay classes | Consolidate to `.modal-*` or `.bottom-sheet-*` |
+| Touch target too small | Missing `min-height: var(--touch-target)` | Fix in component CSS, not force-click in tests |
+| Styles not applying | Rule added to `index.css` | Move to correct `src/styles/components/*.css` file |
+| Duplicate/conflicting rules | Edited wrong CSS file when a focused file exists | Prefer the matching extracted file (`button.css`, `player.css`, etc.) |
+
+**Reference:** [`design/design-tokens.md`](../../design/design-tokens.md), [`design/component-architecture.md`](../../design/component-architecture.md).

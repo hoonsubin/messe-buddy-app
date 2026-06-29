@@ -1,4 +1,3 @@
-// Phase 1 shell - logic wired in Phase 4.
 interface DifficultySelectorProps {
   readonly value: number;
   readonly xpPreview: number;
@@ -30,11 +29,8 @@ const DifficultySelector = (props: DifficultySelectorProps) => (
       ))}
     </div>
     <p
-      style={{
-        fontSize: "var(--text-xs)",
-        color: "hsl(var(--color-muted-fg))",
-        marginTop: "var(--space-1)",
-      }}
+      className="core-text-xs core-text-muted"
+      style={{ marginTop: "var(--space-1)" }}
     >
       ≈ {props.xpPreview} XP
     </p>

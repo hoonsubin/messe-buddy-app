@@ -1,4 +1,3 @@
-// Phase 1 shell - logic wired in Phase 4.
 import { MdPeople } from "react-icons/md";
 import type { BuddyProfile, PBRecord, Player } from "../../types/index.ts";
 
@@ -31,7 +30,7 @@ const BuddyAssignmentForm = (props: BuddyAssignmentFormProps) => (
       <MdPeople
         size={18}
         aria-hidden="true"
-        style={{ color: "hsl(var(--color-accent))", flexShrink: 0 }}
+        className="core-icon-accent"
       />
       <h3
         style={{

@@ -1,7 +1,6 @@
-// Phase 1 shell - logic wired in Phase 2+.
 import type { Mission, ProgressEvent } from "../../types/index.ts";
 import TagBadge from "./TagBadge.tsx";
-import XPBadge from "./XPBadge.tsx";
+import XpBadge from "./XpBadge.tsx";
 
 interface MissionCardProps {
   readonly mission: Mission;
@@ -27,20 +26,13 @@ const MissionCard = (props: MissionCardProps) => {
     >
       <button
         type="button"
-        className="mission-card__title-btn"
+        className="mission-card__title-btn core-btn-reset"
         onClick={props.onClick}
-        style={{
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          textAlign: "left",
-          padding: 0,
-        }}
       >
         <p className="mission-card__title">{props.mission.title}</p>
       </button>
       <div className="mission-card__meta">
-        <XPBadge value={props.mission.xpValue} />
+        <XpBadge value={props.mission.xpValue} />
         {props.mission.tags.map((tag) => (
           <TagBadge key={tag} label={tag} variant={tag} />
         ))}

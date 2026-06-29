@@ -131,7 +131,7 @@ const HireCard = (
       <MdChevronRight
         size={22}
         aria-hidden="true"
-        style={{ color: "hsl(var(--color-muted-fg))", flexShrink: 0 }}
+        className="core-icon-muted"
       />
     </li>
   );
