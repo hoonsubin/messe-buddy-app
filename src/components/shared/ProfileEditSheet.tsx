@@ -74,7 +74,13 @@ interface FieldProps {
 const Field = ({ label, value, onChange, placeholder, id }: FieldProps) => {
   const [focused, setFocused] = useState(false);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-1)",
+      }}
+    >
       <label
         htmlFor={id}
         style={{
@@ -97,7 +103,9 @@ const Field = ({ label, value, onChange, placeholder, id }: FieldProps) => {
           width: "100%",
           padding: "var(--space-3) var(--space-4)",
           borderRadius: "var(--radius)",
-          border: `1.5px solid ${focused ? "hsl(var(--color-primary))" : "hsl(var(--color-border))"}`,
+          border: `1.5px solid ${
+            focused ? "hsl(var(--color-primary))" : "hsl(var(--color-border))"
+          }`,
           background: "hsl(var(--color-card))",
           color: "hsl(var(--color-fg))",
           fontSize: "var(--text-base)",
@@ -147,7 +155,7 @@ const ProfileEditSheet = (props: ProfileEditSheetProps) => {
   const isDirty = Object.keys(initialValues).some(
     (k) =>
       (draft as unknown as Record<string, string>)[k] !==
-      (initialValues as unknown as Record<string, string>)[k],
+        (initialValues as unknown as Record<string, string>)[k],
   );
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -205,13 +213,17 @@ const ProfileEditSheet = (props: ProfileEditSheetProps) => {
     ? initials((draft as PlayerProfileFields).name)
     : initials((draft as GMProfileFields).name);
 
-  const avatarUrl = variant === "player" ? (props as PlayerVariantProps).avatarUrl : undefined;
+  const avatarUrl = variant === "player"
+    ? (props as PlayerVariantProps).avatarUrl
+    : undefined;
 
   return (
     <>
       {/* Scrim */}
       <div
-        className={`bottom-sheet-backdrop${isOpen ? " bottom-sheet-backdrop--visible" : ""}`}
+        className={`bottom-sheet-backdrop${
+          isOpen ? " bottom-sheet-backdrop--visible" : ""
+        }`}
         onClick={handleScrimClick}
         aria-hidden="true"
       />
@@ -281,7 +293,15 @@ const ProfileEditSheet = (props: ProfileEditSheetProps) => {
               }}
             >
               {avatarUrl
-                ? <img src={avatarUrl} alt="" width="56" height="56" style={{ borderRadius: "50%", objectFit: "cover" }} />
+                ? (
+                  <img
+                    src={avatarUrl}
+                    alt=""
+                    width="56"
+                    height="56"
+                    style={{ borderRadius: "50%", objectFit: "cover" }}
+                  />
+                )
                 : playerInitials
                 ? <span>{playerInitials}</span>
                 : <MdPerson size={24} />}
@@ -296,7 +316,9 @@ const ProfileEditSheet = (props: ProfileEditSheetProps) => {
                   lineHeight: "var(--leading-tight)",
                 }}
               >
-                {variant === "player" ? "Edit profile" : "Edit your display name"}
+                {variant === "player"
+                  ? "Edit profile"
+                  : "Edit your display name"}
               </p>
               {variant === "player" && (
                 <p
@@ -373,7 +395,13 @@ const ProfileEditSheet = (props: ProfileEditSheetProps) => {
           )}
 
           {/* Fields */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-4)",
+            }}
+          >
             <Field
               id="profile-name"
               label="Display name"

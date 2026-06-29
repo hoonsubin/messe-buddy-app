@@ -565,7 +565,7 @@ T-PLR1.14 `/join/:sessionId` pre-fills the session code input from the route par
 
 ## PS-5 · Profile Edit Views (Player + Game Maker)
 
-> **Blocked by PLR-1.** The `department` field is added to the `Player` type in PLR-1. Profile form pre-population (admin-seeded data flowing into form defaults) is also established in PLR-1. Implement PS-5 after PLR-1 is complete. The `src/types/domain.ts` audit below is handled by PLR-1 — do not duplicate.
+> **Implemented 2026-06-29.** PLR-1 prerequisite was already in place. Smoke-tested against the full stack (port 8700) — all T5.1–T5.14 pass. Minor fix applied post-test: `AdminCockpitPage` GM display name fallback corrected from `session?.name` to `identity?.name` (requires Docker rebuild to take effect).
 
 **Problem:** Neither role has a profile editing view. Players cannot update their preferred name, role/department, or avatar. Game Makers cannot update their display info. The player profile card in the admin view does not show department info.
 
@@ -1170,9 +1170,9 @@ PS-11B (active mission view)   ← player cockpit only; audit sidebar at wirefra
 | PS-2 · Map + Mission Lazy Render | UI | ✅ Agreed 2026-06-25 | ✅ Implemented 2026-06-25 |
 | PS-3 · Admin Hire-First Architecture | UI | ✅ Agreed 2026-06-26 | ✅ Implemented 2026-06-26 |
 | PS-4 · Checklist CRUD — Inline Edit Mode | UI | ✅ Agreed 2026-06-26 | ✅ Implemented 2026-06-26 |
-| PLR-1 · Player Slot & Invite System | Logic | ✅ Design agreed 2026-06-26 | ⬜ Not started |
+| PLR-1 · Player Slot & Invite System | Logic | ✅ Design agreed 2026-06-26 | ✅ Implemented 2026-06-29 |
 | PS-12 · Admin Hire Creation + Invite UI | UI | ✅ Agreed 2026-06-26 | ⬜ Blocked by PLR-1 |
-| PS-5 · Profile Edit Views | UI | ✅ Agreed 2026-06-26 | ⬜ Blocked by PLR-1 |
+| PS-5 · Profile Edit Views | UI | ✅ Agreed 2026-06-26 | ✅ Implemented 2026-06-29 |
 | PS-6 · AI Chat Expanded | UI | ⬜ Not started | — |
 | PS-7 · Hire List + Map Sizing | UI | ⬜ Blocked by PS-12 | — |
 | PS-8 · Milestone Node Visuals | UI | ⬜ Not started | — |
@@ -1181,7 +1181,7 @@ PS-11B (active mission view)   ← player cockpit only; audit sidebar at wirefra
 | PS-11A · Remove YouAreHereMarker | UI | ✅ Agreed | ⬜ After PS-8 |
 | PS-11B · Active Mission View | UI | ⬜ Not started | — |
 
-**Implementation entry point for a coding agent:** PS-1 through PS-4 are fully implemented. Next up is PLR-1 (no UI, pure logic/data layer) — read the PLR-1 section above in full before touching any file. PS-12 and PS-5 cannot begin until PLR-1 is complete.
+**Implementation entry point for a coding agent:** PS-1 through PS-5 and PLR-1 are fully implemented. Next up is PS-12 (admin hire creation + invite UI) — depends on PLR-1 which is now done. PS-8 (milestone node visuals) is independent and can proceed in parallel.
 
 ---
 
@@ -1191,9 +1191,9 @@ PS-11B (active mission view)   ← player cockpit only; audit sidebar at wirefra
 - [x] **PS-2 · Lazy map tab** — agreed 2026-06-25; implemented 2026-06-25
 - [x] **PS-3 · Admin hire-first architecture** — agreed + implemented 2026-06-26; see PLR-1/PS-12 addendum for pending hire revision
 - [x] **PS-4 · Checklist CRUD** — agreed + implemented 2026-06-26; drag handle replaces ↑↓ arrows
-- [ ] **PLR-1 · Player slot & invite system** — design agreed 2026-06-26; implement types → adapter → use cases → landing flow → form pre-fill; no UI changes
+- [x] **PLR-1 · Player slot & invite system** — implemented 2026-06-29; types, adapter (mock + PB), use cases, landing flow branching, form pre-fill
 - [ ] **PS-12 · Admin hire creation + invite UI** — wireframe agreed 2026-06-26; blocked by PLR-1; hire creation form, invite block, pending state, re-invite
-- [ ] **PS-5 · Profile edit views** — wireframe agreed 2026-06-26; blocked by PLR-1 (`department` field); player + GM sheets, department under welcome header
+- [x] **PS-5 · Profile edit views** — implemented 2026-06-29; player + GM bottom sheets, department under welcome header, smoke-tested T5.1–T5.14
 - [ ] **PS-6 · AI chat expanded** — wireframe decision needed: pattern A (overlay), B (draggable sheet), or C (dedicated tab)
 - [ ] **PS-7 · Sizing adjustments** — wireframe after PS-12 locked; hire list row layout (inc. pending variant) + map container proportions
 - [ ] **PS-8 · Milestone node visuals** — agree color tier palette + text contrast fix; CSS-only

@@ -81,7 +81,9 @@ export const useFormMission = (
   // Admin-seeded fields (name, role, department) surface here so the player just
   // confirms and augments rather than typing everything from scratch.
   const initialValues = useMemo<Record<string, string>>(() => {
-    if (missionId !== PROFILE_MISSION_ID || !player) return {} as Record<string, string>;
+    if (missionId !== PROFILE_MISSION_ID || !player) {
+      return {} as Record<string, string>;
+    }
     return {
       name: player.name ?? "",
       preferredName: player.preferredName ?? "",

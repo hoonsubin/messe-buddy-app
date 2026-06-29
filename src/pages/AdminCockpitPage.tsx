@@ -90,8 +90,11 @@ const AdminCockpitPage = () => {
 
   // ── GM profile ───────────────────────────────────────────────────────────────
   // Session-scoped override: null means "use session.name", string means GM edited
-  const [gmDisplayNameOverride, setGmDisplayNameOverride] = useState<string | null>(null);
-  const gmDisplayName = gmDisplayNameOverride ?? session?.name ?? "Game Master";
+  const [gmDisplayNameOverride, setGmDisplayNameOverride] = useState<
+    string | null
+  >(null);
+  const gmDisplayName = gmDisplayNameOverride ?? identity?.name ??
+    "Game Master";
   const [isGMProfileEditOpen, setIsGMProfileEditOpen] = useState(false);
 
   const handleAdminAvatarClick = useCallback(() => {

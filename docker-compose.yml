@@ -10,7 +10,7 @@
 #   litellm-pgvector - PG Vector Store connector (:8001), doc upload + search
 #   litellm-db       - PostgreSQL for LiteLLM metadata
 #   vector-db        - PostgreSQL + pgvector for RAG embeddings
-#   init-vector-store - one-shot bootstrap of the vector store (exits after completion)
+#   file-watcher     - bootstraps the vector store once, then watches consume-docs forever
 
 services:
 
@@ -155,13 +155,16 @@ services:
       retries: 3
       start_period: 30s
 
-  # -- Vector Store Initializer --
-  # One-shot bootstrap: creates the vector store in pgvector and registers it in LiteLLM.
-  # Required on first deploy. Workaround for: https://github.com/BerriAI/litellm/issues/25947
-  init-vector-store:
+  # -- File Watcher --
+  # Bootstraps the vector store + LiteLLM registration once (idempotent —
+  # safe to re-run on every restart), mints the PWA's virtual key, then
+  # watches consume-docs forever for changes (add / modify / delete).
+  # Absorbs what used to be the separate one-shot init-vector-store
+  # container. Workaround for: https://github.com/BerriAI/litellm/issues/25947
+  file-watcher:
     build:
-      context: ./docker/init-vector-store
-    container_name: messebuddy-init-vector-store
+      context: ./docker/file-watcher
+    container_name: messebuddy-file-watcher
     environment:
       POSTGRES_VECTOR_DB: ${POSTGRES_VECTOR_DB:-litellm_vector}
       POSTGRES_VECTOR_HOST: vector-db
@@ -191,32 +194,6 @@ services:
         condition: service_healthy
     networks:
       - litellm-internal
-    restart: "no"
-
-  # -- File Watcher --
-  # Long-running container that watches consume-docs for changes and
-  # updates pgvector embeddings incrementally (add / modify / delete).
-  # Runs after init-vector-store completes, in parallel with the app.
-  file-watcher:
-    build:
-      context: ./docker/file-watcher
-    container_name: messebuddy-file-watcher
-    environment:
-      POSTGRES_VECTOR_DB: ${POSTGRES_VECTOR_DB:-litellm_vector}
-      POSTGRES_VECTOR_HOST: vector-db
-      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
-      VECTOR_STORE_ID: "messe-buddy-kb"
-      POSTGRES_USER: ${POSTGRES_USER:-litellm}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      CHUNK_SIZE: ${CHUNK_SIZE:-2800}
-      OVERLAP: ${OVERLAP:-280}
-    volumes:
-      - ./consume-docs:/consume-docs:ro
-    depends_on:
-      init-vector-store:
-        condition: service_completed_successfully
-    networks:
-      - litellm-internal
     restart: unless-stopped
 
   # -- App (PWA + PocketBase) --
@@ -231,7 +208,6 @@ services:
         VITE_USE_MOCK_PB: ${VITE_USE_MOCK_PB:-false}
         VITE_LITELLM_URL: ${VITE_LITELLM_URL:-http://localhost:4000}
         VITE_LITELLM_MODEL: ${VITE_LITELLM_MODEL:-policy-assistant}
-        VITE_USE_MOCK_CHAT: ${VITE_USE_MOCK_CHAT:-true}
     ports:
       - "${APP_PORT:-80}:80"
       - "${APP_HTTPS_PORT:-443}:443"
@@ -249,8 +225,8 @@ services:
       PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-}
     restart: unless-stopped
     depends_on:
-      init-vector-store:
-        condition: service_completed_successfully
+      litellm:
+        condition: service_healthy
     networks:
       - litellm-external
 

@@ -15,7 +15,9 @@ interface AssistantChatCardProps {
 
 const AssistantChatCard = (props: AssistantChatCardProps) => {
   const [expanded, setExpanded] = useState(false);
-  const { messages, isStreaming, send, stop } = useChat(props.appContext);
+  const { messages, isStreaming, send, stop, assistantUnavailable } = useChat(
+    props.appContext,
+  );
 
   const hasConversation = messages.length > 0;
 
@@ -51,6 +53,7 @@ const AssistantChatCard = (props: AssistantChatCardProps) => {
                 isStreaming={isStreaming}
                 onSend={send}
                 onStop={stop}
+                assistantUnavailable={assistantUnavailable}
                 {...(props.buddyName !== undefined &&
                   { buddyName: props.buddyName })}
               />

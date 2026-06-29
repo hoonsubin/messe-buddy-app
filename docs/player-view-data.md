@@ -351,7 +351,7 @@ Players do **not** call `createResource`, `updateResource`, or `deleteResource`.
 
 **Source:** Derived inline in [`PlayerCockpitPage`](src/pages/PlayerCockpitPage.tsx:151) from `player` and `buddy`.
 
-The [`aiAppContext`](src/pages/PlayerCockpitPage.tsx:151) string wraps user name and buddy info in `<APPLICATION_CONTEXT>` tags recognized by the LiteLLM system prompt. Passed to [`AssistantChatCard`](src/components/player/AssistantChatCard.tsx:16) which delegates to [`useChat`](src/hooks/useChat.ts:12). The [`useChatStream`](src/hooks/useChatStream.ts:72) hook implements a full SSE streaming client with `AbortController` cancellation, while [`useMockChat`](src/hooks/useMockChat.ts) provides offline mock responses — the switch is controlled by the `VITE_USE_MOCK_CHAT` build flag. The live `useChatStream` is a fully working implementation using `ReadableStream` for server-sent events.
+The [`aiAppContext`](src/pages/PlayerCockpitPage.tsx:151) string wraps user name and buddy info in `<APPLICATION_CONTEXT>` tags recognized by the LiteLLM system prompt. Passed to [`AssistantChatCard`](src/components/player/AssistantChatCard.tsx:16) which delegates to [`useChat`](src/hooks/useChat.ts:12). The [`useChatStream`](src/hooks/useChatStream.ts:72) hook implements a full SSE streaming client with `AbortController` cancellation, while [`useMockChat`](src/hooks/useMockChat.ts) provides offline mock responses — the switch is now decided at runtime by [`useAssistantAvailability`](src/hooks/useAssistantAvailability.ts) polling `/llm/health/readiness`, not a build flag. The live `useChatStream` is a fully working implementation using `ReadableStream` for server-sent events.
 
 ---
 

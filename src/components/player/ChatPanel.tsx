@@ -3,7 +3,7 @@
 // and stop/send affordances are driven by props from the chat hook
 // (useChat → live stream or mock).
 import { useEffect, useRef } from "react";
-import { MdAutoAwesome, MdSend, MdStop } from "react-icons/md";
+import { MdAutoAwesome, MdInfoOutline, MdSend, MdStop } from "react-icons/md";
 import type { ChatMessage } from "../../hooks/useChat.ts";
 import { renderMarkdown } from "../../utils/markdown.ts";
 
@@ -22,6 +22,9 @@ interface ChatPanelProps {
   readonly onStop: () => void;
   readonly buddyName?: string;
   readonly suggestedPrompts?: ReadonlyArray<string>;
+  // True when the live AI backend is unreachable and responses are coming
+  // from the offline mock instead.
+  readonly assistantUnavailable?: boolean;
 }
 
 const ChatPanel = (props: ChatPanelProps) => {
@@ -61,6 +64,18 @@ const ChatPanel = (props: ChatPanelProps) => {
 
   return (
     <div className="chat-panel" data-testid="chat-panel">
+      {props.assistantUnavailable && (
+        <div
+          className="chat-panel__banner"
+          role="status"
+          data-testid="chat-unavailable-banner"
+        >
+          <MdInfoOutline size={16} aria-hidden="true" />
+          <span>
+            AI assistant is currently unavailable — showing example responses.
+          </span>
+        </div>
+      )}
       <div
         className="chat-panel__messages"
         aria-live="polite"

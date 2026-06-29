@@ -2,12 +2,23 @@
 """
 MesseBuddy - File Watcher
 
-Watches ``consume-docs`` for file create / modify / delete events and
-updates pgvector embeddings incrementally.
+Bootstraps the pgvector vector store + LiteLLM registration once, then
+watches ``consume-docs`` for file create / modify / delete events and
+updates pgvector embeddings incrementally. Absorbs what used to be the
+separate one-shot ``init-vector-store`` container — there's no longer a
+reason to ship bootstrap and ingestion as two containers duplicating the
+same chunking/embedding code.
 
 Design:
-  - One-shot initial sync on startup: compares disk state against the vector
-    store, re-ingests changed files, removes orphaned embeddings.
+  - Bootstrap on startup (idempotent): seed the LiteLLM master key, create
+    the vector store row, register it with LiteLLM, and mint the PWA's
+    virtual key — in that order, and deliberately *before* document
+    ingestion. The virtual key only depends on the vector store being
+    registered, not on documents actually being embedded, so minting it
+    first means the web app can go live almost immediately instead of
+    waiting out however long ingestion takes.
+  - Initial sync: compares disk state against the vector store, re-ingests
+    changed files, removes orphaned embeddings.
   - Long-running filesystem watch via ``watchdog`` with debounce.
   - Embedding generation goes through LiteLLM (``/v1/embeddings``).
   - Embedding storage goes through the pgvector connector
@@ -19,9 +30,6 @@ Content-hash tracking:
   Each embedding carries ``metadata.content_hash`` — an SHA-256 of the
   *full file content* (same for all chunks of a file).  This lets the
   watcher skip unchanged files after a restart.
-
-On first run after init-vector-store (which does *not* store content_hash),
-unchanged files get their metadata updated with the hash without re-ingestion.
 """
 
 from __future__ import annotations
@@ -51,6 +59,10 @@ POSTGRES_VECTOR_DB = os.getenv("POSTGRES_VECTOR_DB", "litellm_vector")
 POSTGRES_VECTOR_HOST = os.getenv("POSTGRES_VECTOR_HOST", "vector-db")
 POSTGRES_VECTOR_PORT = os.getenv("POSTGRES_VECTOR_PORT", "5432")
 
+LITELLM_DB_DB = os.getenv("POSTGRES_DB", "litellm")
+LITELLM_DB_HOST = os.getenv("LITELLM_DB_HOST", "litellm-db")
+LITELLM_DB_PORT = os.getenv("LITELLM_DB_PORT", "5432")
+
 PGVECTOR_HOST = os.getenv("PGVECTOR_HOST", "litellm-pgvector")
 PGVECTOR_PORT = os.getenv("PGVECTOR_PORT", "8001")
 
@@ -62,6 +74,9 @@ LITELLM_MASTER_KEY = os.getenv(
 )
 
 VECTOR_STORE_ID = os.getenv("VECTOR_STORE_ID", "messe-buddy-kb")
+VECTOR_STORE_NAME = os.getenv(
+    "VECTOR_STORE_NAME", "messe-buddy-knowledge-base"
+)
 DOCS_DIR = os.getenv("DOCS_DIR", "/consume-docs")
 
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "2000"))
@@ -79,11 +94,27 @@ WAIT_TIMEOUT = int(os.getenv("WAIT_TIMEOUT", "120"))
 WAIT_INTERVAL = int(os.getenv("WAIT_INTERVAL", "3"))
 DEBOUNCE_SECONDS = float(os.getenv("DEBOUNCE_SECONDS", "2.0"))
 
+# -- Virtual key (minted for the PWA, written to a shared volume) --
+RUNTIME_DIR = os.getenv("RUNTIME_DIR", "/runtime")
+VIRTUAL_KEY_ALIAS = os.getenv("VIRTUAL_KEY_ALIAS", "messebuddy-pwa")
+VIRTUAL_KEY_MODELS = [
+    m.strip()
+    for m in os.getenv("VIRTUAL_KEY_MODELS", "policy-assistant").split(",")
+    if m.strip()
+]
+VIRTUAL_KEY_BUDGET = float(os.getenv("VIRTUAL_KEY_BUDGET", "5"))
+
 # Derived — computed once at module load
 _VECTOR_DSN = (
     f"dbname={POSTGRES_VECTOR_DB} user={POSTGRES_USER}"
     f" password={POSTGRES_PASSWORD}"
     f" host={POSTGRES_VECTOR_HOST} port={POSTGRES_VECTOR_PORT}"
+)
+
+_LITELLM_DSN = (
+    f"dbname={LITELLM_DB_DB} user={POSTGRES_USER}"
+    f" password={POSTGRES_PASSWORD}"
+    f" host={LITELLM_DB_HOST} port={LITELLM_DB_PORT}"
 )
 
 _PGVECTOR_URL = f"http://{PGVECTOR_HOST}:{PGVECTOR_PORT}"
@@ -144,6 +175,317 @@ def wait_for_http(label: str, url: str) -> None:
         elapsed += WAIT_INTERVAL
     log(f"  ❌ {label} not healthy after {WAIT_TIMEOUT}s")
     sys.exit(1)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Bootstrap — runs once at startup, before initial sync. Ported from the old
+# init-vector-store container; kept idempotent so it's safe to re-run on
+# every restart (ON CONFLICT DO NOTHING / existing-row checks throughout).
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def seed_master_key() -> None:
+    """Seed LITELLM_MASTER_KEY into LiteLLM's ``LiteLLM_VerificationToken``
+    table. LiteLLM in database mode does not always auto-seed the master
+    key (known issue #9433); subsequent API calls (credentials, vector
+    store registration, key/generate) need it to already exist.
+    """
+    token_hash = hashlib.sha256(LITELLM_MASTER_KEY.encode()).hexdigest()
+
+    table_ready = False
+    elapsed = 0
+    while elapsed < WAIT_TIMEOUT:
+        try:
+            conn = psycopg2.connect(_LITELLM_DSN)
+            conn.autocommit = True
+            cur = conn.cursor()
+            cur.execute('SELECT 1 FROM "LiteLLM_VerificationToken" LIMIT 0')
+            cur.close()
+            conn.close()
+            table_ready = True
+            break
+        except psycopg2.Error:
+            time.sleep(WAIT_INTERVAL)
+            elapsed += WAIT_INTERVAL
+
+    if not table_ready:
+        log(f"  ❌ LiteLLM_VerificationToken table not ready after {WAIT_TIMEOUT}s")
+        sys.exit(1)
+
+    try:
+        conn = psycopg2.connect(_LITELLM_DSN)
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO "LiteLLM_VerificationToken"
+                (token, user_id, key_alias, created_at, updated_at)
+            VALUES (%s, %s, %s, NOW(), NOW())
+            ON CONFLICT (token) DO NOTHING
+            RETURNING token
+            """,
+            (token_hash, "default_user_id", "master-key"),
+        )
+        row = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        log("  ✅ Master key seeded" if row else "  ✅ Master key already seeded (idempotent)")
+    except Exception as exc:
+        log(f"  ❌ Could not seed master key in LiteLLM DB: {exc}")
+        sys.exit(1)
+
+
+def insert_vector_store_row() -> None:
+    """Insert the vector store directly into pgvector's ``vector_stores``
+    table. Idempotent via ``ON CONFLICT DO NOTHING``."""
+    try:
+        conn = psycopg2.connect(_VECTOR_DSN)
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO vector_stores
+                (id, name, file_counts, status, usage_bytes, created_at)
+            VALUES (%s, %s, %s, %s, %s, NOW())
+            ON CONFLICT (id) DO NOTHING
+            RETURNING id
+            """,
+            (
+                VECTOR_STORE_ID,
+                VECTOR_STORE_NAME,
+                json.dumps({
+                    "in_progress": 0,
+                    "completed": 0,
+                    "failed": 0,
+                    "cancelled": 0,
+                    "total": 0,
+                }),
+                "completed",
+                0,
+            ),
+        )
+        row = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        log(
+            f"  ✅ Inserted vector store row — id={row[0]}"
+            if row
+            else "  ✅ Vector store row already exists (idempotent)"
+        )
+    except Exception as exc:
+        log(f"  ❌ psycopg2 INSERT failed: {exc}")
+        sys.exit(1)
+
+
+def _report_registration_status(step_label: str, status: str) -> None:
+    if status in ("api", "db-fallback"):
+        log(f"  ✅ {step_label}: registered ({status})")
+    elif status in ("api-idempotent", "db-idempotent"):
+        log(f"  ✅ {step_label}: already registered (idempotent)")
+    else:  # "unregistered"
+        log(
+            f"  ⚠️  {step_label}: DB fallback also failed. RAG will NOT be"
+            " active for the policy-assistant model. Create the vector"
+            " store manually in the Admin UI at Experimental > Vector Stores."
+        )
+
+
+def register_credential_in_litellm() -> None:
+    """Register pgvector credentials in LiteLLM via ``POST /credentials``,
+    falling back to a direct DB insert if the API is unreachable."""
+    credential_payload = {
+        "credential_name": VECTOR_STORE_NAME,
+        "credential_values": {
+            "api_base": _PGVECTOR_URL,
+            "api_key": LITELLM_MASTER_KEY,
+            "custom_llm_provider": "pg_vector",
+        },
+        "credential_info": {
+            "vector_store_name": VECTOR_STORE_NAME,
+            "vector_store_id": VECTOR_STORE_ID,
+            "vector_store_description": (
+                "MesseBuddy onboarding and company documents"
+            ),
+        },
+    }
+
+    try:
+        resp = requests.post(
+            f"{_LITELLM_URL}/credentials",
+            headers={
+                "Authorization": f"Bearer {LITELLM_MASTER_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=credential_payload,
+            timeout=15,
+        )
+        if resp.status_code == 200 and resp.json().get("success") is True:
+            _report_registration_status("Register credential", "api")
+            return
+        if resp.status_code == 409 or (
+            resp.status_code == 500 and "unique constraint" in resp.text.lower()
+        ):
+            _report_registration_status("Register credential", "api-idempotent")
+            return
+    except requests.RequestException:
+        pass
+
+    status = _insert_managed_vector_store_row()
+    _report_registration_status("Register credential", status)
+
+
+def register_managed_vector_store() -> None:
+    """Register a managed vector store in LiteLLM via ``POST /vector_stores``,
+    populating the proxy's ``vector_store_registry`` in-memory state, which
+    is what actually enables RAG for models with ``vector_store_ids`` set.
+    Falls back to a direct DB insert if the API is unreachable."""
+    payload = {
+        "vector_store_name": VECTOR_STORE_NAME,
+        "litellm_params": {
+            "vector_store_id": VECTOR_STORE_ID,
+            "custom_llm_provider": "pg_vector",
+            "api_base": _PGVECTOR_URL,
+            "api_key": LITELLM_MASTER_KEY,
+            "vector_store_description": (
+                "MesseBuddy onboarding and company documents"
+            ),
+        },
+    }
+
+    try:
+        resp = requests.post(
+            f"{_LITELLM_URL}/vector_stores",
+            headers={
+                "Authorization": f"Bearer {LITELLM_MASTER_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=15,
+        )
+        if resp.status_code == 200:
+            _report_registration_status("Register vector store", "api")
+            return
+    except requests.RequestException:
+        pass
+
+    status = _insert_managed_vector_store_row()
+    _report_registration_status("Register vector store", status)
+
+
+def _insert_managed_vector_store_row() -> str:
+    """Shared DB-fallback insert used by both registration steps above."""
+    try:
+        conn = psycopg2.connect(_LITELLM_DSN)
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO "LiteLLM_ManagedVectorStoresTable"
+                (vector_store_id, custom_llm_provider, vector_store_name,
+                 vector_store_description, litellm_credential_name,
+                 litellm_params, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+            ON CONFLICT (vector_store_id) DO UPDATE
+            SET litellm_params = EXCLUDED.litellm_params,
+                litellm_credential_name = EXCLUDED.litellm_credential_name,
+                updated_at = NOW()
+            RETURNING vector_store_id
+            """,
+            (
+                VECTOR_STORE_ID,
+                "pg_vector",
+                VECTOR_STORE_NAME,
+                "MesseBuddy onboarding and company documents",
+                VECTOR_STORE_NAME,
+                json.dumps({
+                    "vector_store_id": VECTOR_STORE_ID,
+                    "custom_llm_provider": "pg_vector",
+                    "api_base": _PGVECTOR_URL,
+                    "api_key": LITELLM_MASTER_KEY,
+                    "vector_store_description": (
+                        "MesseBuddy onboarding and company documents"
+                    ),
+                }),
+            ),
+        )
+        row = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        return "db-fallback" if row else "db-idempotent"
+    except Exception:
+        return "unregistered"
+
+
+def provision_virtual_key() -> None:
+    """Mint the front-end virtual key and persist it to the shared
+    /runtime volume for the app container's entrypoint to pick up. Reuses
+    an existing, still-valid key across restarts instead of minting a new
+    one every time."""
+    key_file = Path(RUNTIME_DIR) / "virtual_key"
+
+    if key_file.is_file():
+        existing = key_file.read_text().strip()
+        if existing:
+            try:
+                resp = requests.get(
+                    f"{_LITELLM_URL}/key/info",
+                    headers={"Authorization": f"Bearer {LITELLM_MASTER_KEY}"},
+                    params={"key": existing},
+                    timeout=10,
+                )
+                if resp.status_code == 200:
+                    log("  ✅ Reusing existing virtual key (idempotent)")
+                    return
+            except requests.RequestException:
+                pass
+            log("  ⚠️  Existing virtual key invalid — minting a replacement")
+
+    try:
+        resp = requests.post(
+            f"{_LITELLM_URL}/key/generate",
+            headers={
+                "Authorization": f"Bearer {LITELLM_MASTER_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "key_alias": VIRTUAL_KEY_ALIAS,
+                "models": VIRTUAL_KEY_MODELS,
+                "max_budget": VIRTUAL_KEY_BUDGET,
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        key = resp.json().get("key")
+        if not key:
+            raise RuntimeError(f"/key/generate returned no key: {resp.text[:300]}")
+        Path(RUNTIME_DIR).mkdir(parents=True, exist_ok=True)
+        key_file.write_text(key)
+        log(
+            f"  ✅ Virtual key provisioned → {key_file} (alias={VIRTUAL_KEY_ALIAS},"
+            f" models={VIRTUAL_KEY_MODELS}, budget={VIRTUAL_KEY_BUDGET})"
+        )
+    except (requests.RequestException, RuntimeError) as exc:
+        log(f"  ❌ Could not generate virtual key: {exc}")
+        sys.exit(1)
+
+
+def bootstrap() -> None:
+    """Run the one-time setup pipeline. Order matters: the virtual key only
+    needs the vector store to be registered, not for documents to actually
+    be embedded — minting it before ingestion (not after) is what lets the
+    web app go live immediately instead of waiting out ingestion."""
+    log("=== Bootstrap ===")
+    log("Seeding LiteLLM master key...")
+    seed_master_key()
+    log(f"Creating vector store '{VECTOR_STORE_ID}'...")
+    insert_vector_store_row()
+    log("Registering pgvector credential in LiteLLM...")
+    register_credential_in_litellm()
+    log("Registering managed vector store in LiteLLM...")
+    register_managed_vector_store()
+    log("Provisioning front-end virtual key...")
+    provision_virtual_key()
+    log("=== Bootstrap complete ===\n")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -749,6 +1091,9 @@ def main() -> None:
     wait_for_http(
         "LiteLLM proxy", f"{_LITELLM_URL}/health/readiness"
     )
+
+    # -- Bootstrap (idempotent) ----------------------------------------------
+    bootstrap()
 
     # -- Initial sync -------------------------------------------------------
     initial_sync()
