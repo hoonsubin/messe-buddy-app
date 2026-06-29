@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { MdArrowBack, MdAutoAwesome } from "react-icons/md";
 import type { Mission } from "../types/index.ts";
 import { MISSION_TYPE, USER_ROLE } from "../types/index.ts";
 import { useActiveProfile } from "../hooks/useActiveProfile.ts";
@@ -10,10 +11,10 @@ import { useProgressPlayer } from "../hooks/useProgress/index.ts";
 import { useBuddyProfile } from "../hooks/useBuddyProfile.ts";
 import { useResources } from "../hooks/useResources.ts";
 import { useTutorial } from "../hooks/useTutorial.ts";
+import { useChat } from "../hooks/useChat.ts";
 import ConfirmDialog from "../components/shared/ConfirmDialog.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
-import ProfileEditSheet from "../components/shared/ProfileEditSheet.tsx";
-import AssistantChatCard from "../components/player/AssistantChatCard.tsx";
+import ChatPanel from "../components/player/ChatPanel.tsx";
 import MilestoneMapViewer from "../components/player/MilestoneMapViewer.tsx";
 import MilestoneSidebarViewer from "../components/player/MilestoneSidebarViewer.tsx";
 import MissionDetailPopup from "../components/player/MissionDetailPopup.tsx";
@@ -27,6 +28,12 @@ import {
 
 // sessionStorage key for tutorial form round-trips - also read inside useTutorial.
 const TUTORIAL_FORM_KEY = "mb_tutorial_form_pending";
+
+const TABS = [
+  { key: "dashboard", label: "Dashboard" },
+  { key: "assistant", label: "AI Assistant" },
+] as const;
+type TabKey = (typeof TABS)[number]["key"];
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
@@ -89,15 +96,11 @@ const PlayerCockpitPage = () => {
     }
   }, [sessionError, sessionLoading, navigate]);
 
+  const [tab, setTab] = useState<TabKey>("dashboard");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(
     null,
   );
   const [popupMission, setPopupMission] = useState<Mission | null>(null);
-  const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
-
-  const handleAvatarClick = useCallback(() => {
-    setIsProfileEditOpen(true);
-  }, []);
 
   const handleMissionClick = useCallback(
     (missionId: string, fromTutorial = false) => {
@@ -123,13 +126,6 @@ const PlayerCockpitPage = () => {
   );
 
   const currentMissions = missions.filter((m) => m.isInCurrentMissions);
-  const missionCountsByMilestone = missions.reduce<Record<string, number>>(
-    (acc, m) => {
-      acc[m.milestoneId] = (acc[m.milestoneId] ?? 0) + 1;
-      return acc;
-    },
-    {},
-  );
   const selectedMilestone = selectedMilestoneId !== null
     ? (milestones.find((m) => m.id === selectedMilestoneId) ?? undefined)
     : undefined;
@@ -181,6 +177,10 @@ const PlayerCockpitPage = () => {
     );
   })();
 
+  // Chat state lives at the page level so the conversation persists across tab
+  // switches (the AI Assistant tab and Dashboard share one mounted hook).
+  const chat = useChat(aiAppContext);
+
   if (!identity) {
     return (
       <div
@@ -226,6 +226,8 @@ const PlayerCockpitPage = () => {
       style={{
         minHeight: "100dvh",
         paddingTop: "var(--topbar-h)",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       {isLoading && (
@@ -233,7 +235,7 @@ const PlayerCockpitPage = () => {
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 999,
+            zIndex: 300, /* full-screen takeover tier (design-tokens.md §6) */
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -268,39 +270,91 @@ const PlayerCockpitPage = () => {
         playerName={player?.name ?? ""}
         totalXP={progress.playerProgress?.totalXP ?? 0}
         role={player?.role ?? ""}
-        onAvatarClick={handleAvatarClick}
-        onLogout={() => {
-          sessionStorage.removeItem("mb_tutorial_step");
-          sessionStorage.removeItem("mb_tutorial_form_pending");
-          if (identity && !identity.isDemo) {
-            removeProfile(identity.uid);
-          }
-          navigate("/", { replace: true });
-        }}
       />
 
-      {player !== null && (
-        <ProfileEditSheet
-          isOpen={isProfileEditOpen}
-          variant="player"
-          avatarUrl={player.avatarUrl}
-          initialValues={{
-            name: player.name ?? "",
-            preferredName: player.preferredName ?? "",
-            role: player.role ?? "",
-            department: player.department ?? "",
+      <div
+        style={{
+          display: "flex",
+          flexShrink: 0,
+          justifyContent: "flex-start",
+          padding: "var(--space-2) var(--space-4)",
+          background: "hsl(var(--color-card))",
+          borderBottom: "1px solid hsl(var(--color-border))",
+        }}
+      >
+        <button
+          type="button"
+          className="btn btn--ghost"
+          style={{
+            fontSize: "var(--text-sm)",
+            color: "hsl(var(--color-muted-fg))",
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--space-1)",
           }}
-          onSave={async (fields) => {
-            await updatePlayer({
-              name: fields.name,
-              preferredName: fields.preferredName || undefined,
-              role: fields.role,
-              department: fields.department || undefined,
-            });
+          onClick={() => {
+            sessionStorage.removeItem("mb_tutorial_step");
+            sessionStorage.removeItem("mb_tutorial_form_pending");
+            if (identity && !identity.isDemo) {
+              removeProfile(identity.uid);
+            }
+            navigate("/", { replace: true });
           }}
-          onClose={() => setIsProfileEditOpen(false)}
-        />
-      )}
+        >
+          <MdArrowBack size={16} />
+          {identity?.isDemo ? "Back to Landing" : "Log Out"}
+        </button>
+      </div>
+
+      {/* Tabs */}
+      <nav
+        aria-label="New hire views"
+        style={{
+          display: "flex",
+          flexShrink: 0,
+          justifyContent: "center",
+          overflowX: "auto",
+          scrollbarWidth: "none",
+          background: "hsl(var(--color-card))",
+          borderBottom: "1px solid hsl(var(--color-border))",
+          paddingInline: "var(--space-2)",
+        }}
+      >
+        {TABS.map((t) => {
+          const active = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTab(t.key)}
+              style={{
+                flexShrink: 0,
+                padding: "var(--space-3) var(--space-4)",
+                background: "transparent",
+                border: "none",
+                borderBottom: active
+                  ? "2px solid hsl(var(--color-primary))"
+                  : "2px solid transparent",
+                color: active
+                  ? "hsl(var(--color-primary))"
+                  : "hsl(var(--color-muted-fg))",
+                fontSize: "var(--text-sm)",
+                fontWeight: active
+                  ? "var(--weight-semibold)"
+                  : "var(--weight-medium)",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                minHeight: "var(--min-touch)",
+                fontFamily: "var(--font-sans)",
+              }}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </nav>
 
       {popupMission !== null && player !== null && (
         <MissionDetailPopup
@@ -333,129 +387,157 @@ const PlayerCockpitPage = () => {
         />
       )}
 
-      <main className="cockpit-main">
-        <header style={{ paddingTop: "var(--space-6)" }}>
-          <h1
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "var(--text-2xl)",
-              fontWeight: "var(--weight-semibold)",
-              color: "hsl(var(--color-fg))",
-              margin: "0 0 var(--space-1)",
-              lineHeight: "var(--leading-tight)",
-            }}
-          >
-            Welcome{player?.name ? `, ${player.name.split(" ")[0]}` : ""}.
-          </h1>
-          {(player?.role || player?.department) && (
+      {tab === "dashboard" && (
+        <main
+          className="cockpit-main"
+          style={{ flex: 1, paddingBlockStart: "var(--space-6)" }}
+        >
+          <header>
+            <h1
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--text-2xl)",
+                fontWeight: "var(--weight-semibold)",
+                color: "hsl(var(--color-fg))",
+                margin: "0 0 var(--space-1)",
+                lineHeight: "var(--leading-tight)",
+              }}
+            >
+              Welcome{player?.name ? `, ${player.name.split(" ")[0]}` : ""}.
+            </h1>
             <p
               style={{
                 fontSize: "var(--text-sm)",
                 color: "hsl(var(--color-muted-fg))",
-                margin: "0 0 var(--space-1)",
-                lineHeight: "var(--leading-normal)",
+                margin: 0,
               }}
             >
-              {[player.role, player.department].filter(Boolean).join(" · ")}
+              Your onboarding journey starts here.
             </p>
-          )}
-          <p
+          </header>
+
+          <div className="cockpit-grid">
+            <div className="cockpit-col">
+              <section aria-label="Milestones">
+                <h2 className="section-label">Milestones</h2>
+                <div
+                  style={{
+                    borderRadius: "var(--radius-lg)",
+                    overflow: "hidden",
+                    boxShadow: "var(--shadow-md)",
+                  }}
+                >
+                  <MilestoneMapViewer
+                    milestones={milestones}
+                    bgImageUrl={session?.bgImageUrl ?? ""}
+                    mapNodeScale={session?.mapNodeScale ?? 1}
+                    milestoneProgress={progress.playerProgress
+                      ?.milestoneProgress ??
+                      []}
+                    playerXPercent={currentMilestone?.xPercent}
+                    playerYPercent={currentMilestone?.yPercent}
+                    onMilestoneClick={(id) => setSelectedMilestoneId(id)}
+                  />
+                </div>
+              </section>
+
+              <CurrentMissionsList
+                missions={currentMissions}
+                progressEvents={progress.progressEvents}
+                onMissionClick={handleMissionClick}
+                onMarkComplete={() => undefined}
+              />
+            </div>
+
+            <div className="cockpit-col">
+              <section aria-label="Your buddy">
+                <h2 className="section-label">Your buddy</h2>
+                {buddy
+                  ? (
+                    <BuddyCard
+                      name={buddy.name}
+                      role={buddy.role}
+                      {...(buddy.tenure !== undefined &&
+                        { tenure: buddy.tenure })}
+                      {...(buddy.avatarUrl !== undefined && {
+                        avatarUrl: buddy.avatarUrl,
+                      })}
+                      {...(buddy.contactUrl !== undefined && {
+                        contactUrl: buddy.contactUrl,
+                      })}
+                      {...(buddy.quote !== undefined && { quote: buddy.quote })}
+                      {...(buddy.email !== undefined && { email: buddy.email })}
+                      {...(buddy.phone !== undefined && { phone: buddy.phone })}
+                    />
+                  )
+                  : (
+                    !isLoading && (
+                      <div
+                        className="card"
+                        style={{ padding: "var(--space-6)" }}
+                      >
+                        <p
+                          style={{
+                            fontSize: "var(--text-sm)",
+                            color: "hsl(var(--color-muted-fg))",
+                            textAlign: "center",
+                            margin: 0,
+                          }}
+                        >
+                          You'll be assigned a buddy soon.
+                        </p>
+                      </div>
+                    )
+                  )}
+              </section>
+
+              <ResourcesSection
+                resources={resources}
+                onSearch={() => undefined}
+              />
+            </div>
+          </div>
+        </main>
+      )}
+
+      {tab === "assistant" && (
+        <main className="assistant-fullscreen">
+          <section
+            className="assistant-chat-card"
             style={{
-              fontSize: "var(--text-sm)",
-              color: "hsl(var(--color-muted-fg))",
-              margin: 0,
+              flex: 1,
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column",
             }}
           >
-            Your onboarding journey starts here.
-          </p>
-        </header>
-
-        <div className="cockpit-grid">
-          <div className="cockpit-col">
-            <section aria-label="Milestones">
-              <h2 className="section-label">Milestones</h2>
-              <div
-                style={{
-                  borderRadius: "var(--radius-lg)",
-                  overflow: "hidden",
-                  boxShadow: "var(--shadow-md)",
-                }}
-              >
-                <MilestoneMapViewer
-                  milestones={milestones}
-                  bgImageUrl={session?.bgImageUrl ?? ""}
-                  mapNodeScale={session?.mapNodeScale ?? 1}
-                  milestoneProgress={progress.playerProgress
-                    ?.milestoneProgress ??
-                    []}
-                  missionCounts={missionCountsByMilestone}
-                  playerXPercent={currentMilestone?.xPercent}
-                  playerYPercent={currentMilestone?.yPercent}
-                  onMilestoneClick={(id) => setSelectedMilestoneId(id)}
-                />
+            <div className="assistant-chat-card__header">
+              <div className="assistant-chat-card__avatar" aria-hidden="true">
+                <MdAutoAwesome size={18} />
               </div>
-            </section>
-
-            <CurrentMissionsList
-              missions={currentMissions}
-              progressEvents={progress.progressEvents}
-              onMissionClick={handleMissionClick}
-              onMarkComplete={() => undefined}
-            />
-          </div>
-
-          <div className="cockpit-col">
-            <section aria-label="Your buddy">
-              {buddy
-                ? (
-                  <BuddyCard
-                    name={buddy.name}
-                    role={buddy.role}
-                    {...(buddy.tenure !== undefined &&
-                      { tenure: buddy.tenure })}
-                    {...(buddy.avatarUrl !== undefined && {
-                      avatarUrl: buddy.avatarUrl,
-                    })}
-                    {...(buddy.contactUrl !== undefined && {
-                      contactUrl: buddy.contactUrl,
-                    })}
-                    {...(buddy.quote !== undefined && { quote: buddy.quote })}
-                    {...(buddy.email !== undefined && { email: buddy.email })}
-                    {...(buddy.phone !== undefined && { phone: buddy.phone })}
-                  />
-                )
-                : (
-                  !isLoading && (
-                    <div className="card" style={{ padding: "var(--space-6)" }}>
-                      <p
-                        style={{
-                          fontSize: "var(--text-sm)",
-                          color: "hsl(var(--color-muted-fg))",
-                          textAlign: "center",
-                          margin: 0,
-                        }}
-                      >
-                        You'll be assigned a buddy soon.
-                      </p>
-                    </div>
-                  )
-                )}
-            </section>
-
-            <ResourcesSection
-              resources={resources}
-              onSearch={() => undefined}
-            />
-
-            <AssistantChatCard
-              {...(buddy?.name !== undefined && { buddyName: buddy.name })}
-              {...(aiAppContext !== undefined && {
-                appContext: aiAppContext,
-              })}
-            />
-          </div>
-        </div>
-      </main>
+              <p className="assistant-chat-card__title">
+                Ask AI about company policies
+              </p>
+            </div>
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <ChatPanel
+                messages={chat.messages}
+                isStreaming={chat.isStreaming}
+                onSend={chat.send}
+                onStop={chat.stop}
+                {...(buddy?.name !== undefined && { buddyName: buddy.name })}
+              />
+            </div>
+          </section>
+        </main>
+      )}
     </div>
   );
 };

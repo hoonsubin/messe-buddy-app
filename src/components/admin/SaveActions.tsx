@@ -1,9 +1,9 @@
-// Phase 1 shell - logic wired in Phase 4.
 interface SaveActionsProps {
   readonly isDirty: boolean;
   readonly isSaving: boolean;
   readonly onSave: () => void;
-  readonly onSaveAsTemplate: () => void;
+  /** Omit to hide the "Save as template" button. */
+  readonly onSaveAsTemplate?: () => void;
   readonly onDiscard: () => void;
 }
 
@@ -17,14 +17,16 @@ const SaveActions = (props: SaveActionsProps) => (
     >
       Discard changes
     </button>
-    <button
-      type="button"
-      className="btn btn--secondary"
-      onClick={props.onSaveAsTemplate}
-      disabled={props.isSaving}
-    >
-      Save as template
-    </button>
+    {props.onSaveAsTemplate && (
+      <button
+        type="button"
+        className="btn btn--secondary"
+        onClick={props.onSaveAsTemplate}
+        disabled={props.isSaving}
+      >
+        Save as template
+      </button>
+    )}
     <button
       type="button"
       className="btn btn--primary"

@@ -101,6 +101,10 @@ export const useProgressAdmin = (
     );
   }, [selectedPlayer, allProgressEvents, missions, milestones]);
 
+  const selectedPlayerEvents = selectedPlayer
+    ? allProgressEvents.filter((e) => e.playerId === selectedPlayer.id)
+    : [];
+
   const pendingEvents = allProgressEvents.filter(
     (e) => e.status === "pendingApproval",
   );
@@ -143,6 +147,7 @@ export const useProgressAdmin = (
     selectedPlayerId,
     selectedPlayer,
     selectedPlayerProgress,
+    selectedPlayerEvents,
     pendingEvents,
     loading,
     error,

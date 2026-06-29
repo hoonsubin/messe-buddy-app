@@ -202,16 +202,7 @@ const AdminMissionsList = (props: AdminMissionsListProps) => {
           borderTop: "1px solid hsl(var(--color-border))",
         }}
       >
-        <h2
-          style={{
-            fontSize: "var(--text-sm)",
-            fontWeight: "var(--weight-semibold)",
-            color: "hsl(var(--color-muted-fg))",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            margin: "0 0 var(--space-2)",
-          }}
-        >
+        <h2 className="section-label">
           Missions
         </h2>
         <p
@@ -247,8 +238,6 @@ const AdminMissionsList = (props: AdminMissionsListProps) => {
           fontSize: "var(--text-sm)",
           fontWeight: "var(--weight-semibold)",
           color: "hsl(var(--color-muted-fg))",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
           margin: 0,
           padding: "var(--space-3) var(--space-4)",
           borderBottom: "1px solid hsl(var(--color-border))",
@@ -425,7 +414,7 @@ const AdminMissionsList = (props: AdminMissionsListProps) => {
                           flexShrink: 0,
                           fontSize: "var(--text-xs)",
                           fontWeight: "var(--weight-semibold)",
-                          color: "#fff",
+                          color: "hsl(var(--color-primary-fg))",
                           background: typeColor,
                           borderRadius: "var(--radius-sm)",
                           padding: "0.1rem var(--space-2)",

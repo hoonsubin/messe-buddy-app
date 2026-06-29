@@ -19,6 +19,10 @@ export interface UseResourcesAdminResult {
   readonly addResource: (
     data: Omit<Resource, "id" | "created" | "updated">,
   ) => Promise<void>;
+  readonly updateResource: (
+    resourceId: string,
+    patch: Partial<Omit<Resource, "id" | "created" | "updated">>,
+  ) => Promise<void>;
   readonly deleteResource: (resourceId: string) => Promise<void>;
   readonly toggleVisibility: (
     resourceId: string,
@@ -90,6 +94,19 @@ export function useResources(
     [adapter],
   );
 
+  const updateResource = useCallback(
+    async (
+      resourceId: string,
+      patch: Partial<Omit<Resource, "id" | "created" | "updated">>,
+    ) => {
+      const updated = await adapter.updateResource(resourceId, patch);
+      setResources((prev) =>
+        prev.map((r) => (r.id === resourceId ? updated : r))
+      );
+    },
+    [adapter],
+  );
+
   const deleteResource = useCallback(
     async (resourceId: string) => {
       await adapter.deleteResource(resourceId);
@@ -118,6 +135,7 @@ export function useResources(
       error,
       refresh,
       addResource,
+      updateResource,
       deleteResource,
       toggleVisibility,
     };

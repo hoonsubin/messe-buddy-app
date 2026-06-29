@@ -70,8 +70,6 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
               style={{
                 fontSize: "var(--text-xs)",
                 fontWeight: "var(--weight-semibold)",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
                 color: "hsl(var(--color-muted-fg))",
                 margin: "0 0 var(--space-1)",
               }}

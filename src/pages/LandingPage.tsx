@@ -67,7 +67,6 @@ const ProfileCard = ({
         style={{
           background: "hsl(var(--color-card))",
           border: "1px solid hsl(var(--color-border))",
-          borderLeft: `3px solid ${accent}`,
           borderRadius: isKeyOpen
             ? "var(--radius-lg) var(--radius-lg) 0 0"
             : "var(--radius-lg)",
@@ -100,7 +99,7 @@ const ProfileCard = ({
               fontWeight: "var(--weight-semibold)",
               padding: "2px 7px",
               background: accent,
-              color: "#fff",
+              color: "hsl(var(--color-primary-fg))",
               borderRadius: "0 0 var(--radius-sm) 0",
               letterSpacing: "0.06em",
               lineHeight: 1.5,
@@ -150,7 +149,7 @@ const ProfileCard = ({
               margin: 0,
               fontSize: "var(--text-xs)",
               color: "hsl(var(--color-muted-fg))",
-              fontFamily: "monospace",
+              fontFamily: "var(--font-mono)",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -209,7 +208,6 @@ const ProfileCard = ({
           style={{
             background: "hsl(var(--color-muted))",
             border: "1px solid hsl(var(--color-border))",
-            borderLeft: `3px solid ${accent}`,
             borderTop: "none",
             borderRadius: "0 0 var(--radius-lg) var(--radius-lg)",
             padding: "var(--space-2) var(--space-3)",
@@ -225,7 +223,7 @@ const ProfileCard = ({
             Recovery key:{" "}
             <span
               style={{
-                fontFamily: "monospace",
+                fontFamily: "var(--font-mono)",
                 fontWeight: "var(--weight-semibold)",
                 color: "hsl(var(--color-fg))",
                 letterSpacing: "0.06em",
@@ -271,8 +269,7 @@ const EmployeeForm = ({
 }: EmployeeFormProps) => (
   <div
     style={{
-      border: "1px solid hsl(var(--color-border))",
-      borderLeft: `3px solid ${PLAYER_ACCENT}`,
+      border: `1px solid ${PLAYER_ACCENT}`,
       borderRadius: "var(--radius-lg)",
       padding: "var(--space-4)",
       marginTop: "var(--space-2)",
@@ -412,8 +409,7 @@ const AdminForm = ({
 }: AdminFormProps) => (
   <div
     style={{
-      border: "1px solid hsl(var(--color-border))",
-      borderLeft: `3px solid ${ADMIN_ACCENT}`,
+      border: `1px solid ${ADMIN_ACCENT}`,
       borderRadius: "var(--radius-lg)",
       padding: "var(--space-4)",
       marginTop: "var(--space-2)",

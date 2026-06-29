@@ -40,9 +40,11 @@
   --color-status-complete:  142 71% 45%;
 
   /* ── Typography ──────────────────────────────────────────────────────────── */
-  --font-sans:   "DM Sans", system-ui, sans-serif;
-  --font-display:"Playfair Display", Georgia, serif;
-  --font-mono:   "DM Mono", "Courier New", monospace;
+  /* Single project font family: Geist (used for all UI, body, and headings),
+     with its companion Geist Mono for codes/keys/URLs. */
+  --font-sans:   "Geist", system-ui, sans-serif;
+  --font-display:"Geist", system-ui, sans-serif;
+  --font-mono:   "Geist Mono", ui-monospace, monospace;
 
   --text-xs:   0.75rem;    /* 12px */
   --text-sm:   0.875rem;   /* 14px */

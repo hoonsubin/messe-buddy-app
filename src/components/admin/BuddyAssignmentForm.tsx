@@ -11,6 +11,8 @@ interface BuddyAssignmentFormProps {
     draft: Omit<BuddyProfile, keyof PBRecord | "assignedToPlayerId">,
   ) => void;
   readonly onSave: () => void;
+  /** Hide the "Assign to player" dropdown when the player is already fixed. */
+  readonly showPlayerSelect?: boolean;
 }
 
 const BuddyAssignmentForm = (props: BuddyAssignmentFormProps) => (
@@ -55,22 +57,24 @@ const BuddyAssignmentForm = (props: BuddyAssignmentFormProps) => (
         gap: "var(--space-4)",
       }}
     >
-      <div className="form-field">
-        <label className="form-label" htmlFor="buddy-player-select">
-          Assign to player
-        </label>
-        <select
-          id="buddy-player-select"
-          className="form-input"
-          value={props.selectedPlayerId}
-          onChange={(e) => props.onPlayerChange(e.target.value)}
-        >
-          <option value="">- select player -</option>
-          {props.players.map((p) => (
-            <option key={p.id} value={p.id}>{p.name || p.id}</option>
-          ))}
-        </select>
-      </div>
+      {(props.showPlayerSelect ?? true) && (
+        <div className="form-field">
+          <label className="form-label" htmlFor="buddy-player-select">
+            Assign to player
+          </label>
+          <select
+            id="buddy-player-select"
+            className="form-input"
+            value={props.selectedPlayerId}
+            onChange={(e) => props.onPlayerChange(e.target.value)}
+          >
+            <option value="">- select player -</option>
+            {props.players.map((p) => (
+              <option key={p.id} value={p.id}>{p.name || p.id}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="form-field">
         <label className="form-label" htmlFor="buddy-name">Buddy name</label>
         <input

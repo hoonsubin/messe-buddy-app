@@ -74,6 +74,7 @@ export interface UseProgressAdminResult {
   readonly selectedPlayerId: string;
   readonly selectedPlayer: Player | null;
   readonly selectedPlayerProgress: PlayerProgress | null;
+  readonly selectedPlayerEvents: ReadonlyArray<ProgressEvent>;
   readonly pendingEvents: ReadonlyArray<ProgressEvent>;
   readonly loading: boolean;
   readonly error: Error | null;

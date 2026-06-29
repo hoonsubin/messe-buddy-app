@@ -3,7 +3,8 @@ import { MdLogout, MdPerson } from "react-icons/md";
 interface TopBarProps {
   readonly playerName: string;
   readonly avatarUrl?: string;
-  readonly totalXP: number;
+  /** Omit to hide the XP figure (e.g. the Game Maker view). */
+  readonly totalXP?: number;
   readonly role: string;
   readonly onLogout?: () => void;
   readonly onAvatarClick?: () => void;
@@ -48,9 +49,11 @@ const TopBar = (props: TopBarProps) => {
           : <MdPerson size={18} />}
       </button>
       <span className="topbar__name">{props.playerName || "New hire"}</span>
-      <span className="topbar__xp" aria-label={`${props.totalXP} XP`}>
-        {props.totalXP} XP
-      </span>
+      {props.totalXP !== undefined && (
+        <span className="topbar__xp" aria-label={`${props.totalXP} XP`}>
+          {props.totalXP} XP
+        </span>
+      )}
       <span className="visually-hidden">{props.role}</span>
       {props.onLogout && (
         <button
