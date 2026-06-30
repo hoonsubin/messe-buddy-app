@@ -1,21 +1,10 @@
 # MesseBuddy - Docker Compose
-#
-# Quick start:
-#   cp .env.example .env          # fill in LITELLM_MASTER_KEY / LLM_SERVER_API_KEY
-#   docker compose up --build
-#
-# Services:
-#   app              - nginx (PWA :80) + PocketBase (:8090), one container
-#   litellm          - AI proxy (:4000), database mode + native pgvector RAG
-#   litellm-pgvector - PG Vector Store connector (:8001), doc upload + search
-#   litellm-db       - PostgreSQL for LiteLLM metadata
-#   vector-db        - PostgreSQL + pgvector for RAG embeddings
-#   file-watcher     - bootstraps the vector store once, then watches consume-docs forever
+# Services: app (nginx+PB), litellm-proxy, pgvector-connector, litellm-db, vector-db, file-watcher
 
 services:
 
   # -- PostgreSQL (LiteLLM metadata) --
-  # Keys, spend logs, model configs. Separate from vector-db to avoid Prisma schema conflicts.
+  # Separate from vector-db to avoid Prisma schema conflicts.
   litellm-db:
     image: pgvector/pgvector:pg16
     ports:
@@ -41,7 +30,6 @@ services:
       start_period: 15s
 
   # -- PostgreSQL + pgvector (Vector store) --
-  # Stores only vector_stores and embeddings tables for the pgvector connector.
   vector-db:
     image: pgvector/pgvector:pg16
     environment:
@@ -65,8 +53,6 @@ services:
       start_period: 15s
 
   # -- PG Vector Store Connector --
-  # OpenAI-compatible /v1/vector_stores/* endpoints backed by PGVector.
-  # EMBEDDING__MODEL must match a model_name in docker/litellm.yaml.
   litellm-pgvector:
     build:
       context: ./docker/litellm-pgvector
@@ -113,8 +99,6 @@ services:
       start_period: 15s
 
   # -- LiteLLM Proxy --
-  # Single OpenAI-compatible /chat/completions endpoint for the PWA.
-  # Swap providers or update system prompts by editing docker/litellm.yaml - no code change.
   litellm:
     image: ghcr.io/berriai/litellm:main-stable
     container_name: litellm
@@ -156,11 +140,7 @@ services:
       start_period: 30s
 
   # -- File Watcher --
-  # Bootstraps the vector store + LiteLLM registration once (idempotent —
-  # safe to re-run on every restart), mints the PWA's virtual key, then
-  # watches consume-docs forever for changes (add / modify / delete).
-  # Absorbs what used to be the separate one-shot init-vector-store
-  # container. Workaround for: https://github.com/BerriAI/litellm/issues/25947
+  # Bootstraps vector store + LiteLLM registration once (idempotent), mints PWA virtual key, then watches consume-docs.
   file-watcher:
     build:
       context: ./docker/file-watcher
@@ -175,11 +155,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
       POSTGRES_DB: ${POSTGRES_DB:-litellm}
       LITELLM_DB_HOST: litellm-db
-      # Char-based chunking (no token counting) - keep chunks comfortably
-      # under the embedding server's context window (2048 tokens, nomic
-      # v1.5 on llama.cpp) since dense text can run well above 4 chars/token.
-      CHUNK_SIZE: ${CHUNK_SIZE:-2800}
-      OVERLAP: ${OVERLAP:-280}
+      # Char-based chunking sized for reranker's 512-token vLLM batch limit (~3 chars/token worst case).
+      CHUNK_SIZE: ${CHUNK_SIZE:-1500}
+      OVERLAP: ${OVERLAP:-150}
     volumes:
       - ./consume-docs:/consume-docs:ro
       - app_runtime:/runtime
@@ -197,9 +175,6 @@ services:
     restart: unless-stopped
 
   # -- App (PWA + PocketBase) --
-  # Single container: nginx (PWA :80) + PocketBase Go wrapper (:8090).
-  # nginx proxies /api/* → PocketBase so the PWA uses same-origin URLs.
-  # PB_AUTO_MIGRATE=true auto-creates collections on first run.
   app:
     build:
       context: .
@@ -214,11 +189,7 @@ services:
     volumes:
       - pb_data:/pb_data
       - app_runtime:/runtime:ro
-      # Optional: mount mkcert certs for trusted HTTPS (no browser warning).
-      # Run on host: mkcert <your-lan-ip> localhost 127.0.0.1
-      # Then uncomment and point to the generated files:
-      # - ./certs/server.crt:/etc/nginx/ssl/server.crt:ro
-      # - ./certs/server.key:/etc/nginx/ssl/server.key:ro
+      # Optional: mount mkcert certs for trusted HTTPS (see entrypoint.sh self-signed cert note).
     environment:
       PB_AUTO_MIGRATE: ${PB_AUTO_MIGRATE:-true}
       PB_ADMIN_EMAIL: ${PB_ADMIN_EMAIL:-}

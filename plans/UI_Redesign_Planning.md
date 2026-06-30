@@ -341,6 +341,40 @@ T3.16 Setup view shows "← Hire list" back navigation
 T3.17 Dirty nav guard fires when leaving setup view with isDirty === true
 ```
 
+### Current architecture note (2026-06-30 Playwright audit)
+
+PS-1 and PS-2 (tab-based admin cockpit) were implemented and then **superseded by a route-based redesign**. The admin cockpit no longer uses a `viewMode` state machine or a tab bar. It is now two separate pages:
+
+**`/admin/:sessionId` — Hire list page (`AdminHomePage`)**
+- TopBar: avatar (disabled — PS-5 not wired), name, "Game Master"
+- "Back to Landing" text button below TopBar
+- Header: "New Hires" h1 + "N active · N% avg progress" subtitle
+- "Add new hire" button → simple name-only dialog (not the full form PS-12 specifies)
+- Hire cards: name, "Just started" / progress label, progress bar, %
+- **Absent:** program management strip (Templates/Resources buttons from PS-3 wireframe)
+- **Absent:** sort dropdown, stalled count in stats
+
+**`/admin/:sessionId/hire/:hireId` — Hire detail page (`HireDetailPage`)**
+- Sub-header: "All new hires" back button | "[Name]'s Onboarding Process" title | "Scan QR" button
+- Four tabs: **Analytics** (default) · **Customize** · **Assign Buddy** · **Pre-boarding**
+- **Analytics tab:** 3 KPI cards (Onboarding age / Progress vs plan / Suggested next step) + "Missions completed over time" timeline chart + "Alex's Journey Map" (mission list with an open Mission editor panel) + "Send [name] their onboarding link" invite accordion
+- **Customize tab:** Onboarding template selector + "New template" button + "Milestones & Missions" (expandable list of milestones with mission counts) + Resources section + invite accordion
+- **Assign Buddy tab:** Buddy assignment form + "Save buddy assignment" button
+- **Pre-boarding tab:** Checklist (7 items, different from PS-4's 8) + "Add item" + "Mark all done" + progress "N of 7 tasks complete"
+- **Absent from PS-3 spec:** read-only `MilestoneMapViewer`, Pending Approvals panel, "Configure" button in sub-header
+
+**Other routes:**
+- `/admin/:sessionId/scan` → `QRScannerView` (camera scanner, "Start camera" / "Back to cockpit")
+- `/validate/:sessionId` → `ValidationPage` ("Confirm validation" heading)
+- No `/admin/:sessionId/setup` route exists
+
+**Player page observations (2026-06-30):**
+- `YouAreHereMarker` component file is absent (deleted) but `playerXPercent`/`playerYPercent` props remain in `MilestoneMapViewer` — PS-11A is partially done (component removed but props not cleaned up)
+- Department line is absent from welcome header (PS-5 not done)
+- No `ProfileEditSheet` (PS-5 not done)
+- Milestone node click opens a sidebar with Missions/Resources tabs (Resources shows placeholder text)
+- Resources card in right column is a collapsed bar that opens a search — `resourcesSection` exists as `ResourcesSection.tsx`
+
 ### Test results — PS-3 (desktop 1440px + mobile 390×844, 2026-06-26)
 
 ```
@@ -378,6 +412,8 @@ Notes:
 ---
 
 ## PS-4 · Checklist CRUD — Inline Edit Mode
+
+> **⚠️ Current state differs from spec (2026-06-30 audit).** The Pre-boarding tab has 7 items (not 8), different from `DEFAULT_CHECKLIST` in this spec. Current items are: "Workspace prepared (desk, badge, parking)", "Laptop ordered and configured", "System access requested (email, WeNet, HR tools)", "Team intro email drafted (buddy + manager)", "Buddy assigned and briefed", "First-week schedule shared with new hire", "Safety briefing scheduled (Ersthelfer contact shared)". The tab shows "N of 7 tasks complete" and has "Add item" + "Mark all done" buttons — no "Edit"/"Done" toggle or drag handles visible. This may be an alternative implementation of the same concept, or a different component entirely.
 
 **Problem:** The onboarding checklist added in PS-3 had a broken "Edit" button: `_editMode` state was toggled but intentionally unused (underscore prefix). No edit UI was rendered. Admins could check items off but could not customize the checklist for a specific hire's context — they couldn't add items, remove irrelevant ones, rename, or reorder.
 
@@ -565,7 +601,7 @@ T-PLR1.14 `/join/:sessionId` pre-fills the session code input from the route par
 
 ## PS-5 · Profile Edit Views (Player + Game Maker)
 
-> **Implemented 2026-06-29.** PLR-1 prerequisite was already in place. Smoke-tested against the full stack (port 8700) — all T5.1–T5.14 pass. Minor fix applied post-test: `AdminCockpitPage` GM display name fallback corrected from `session?.name` to `identity?.name` (requires Docker rebuild to take effect).
+> **⚠️ NOT IMPLEMENTED — confirmed by Playwright audit 2026-06-30.** The prior "implemented" note was inaccurate. `ProfileEditSheet.tsx` does not exist in `src/components/shared/`. `onAvatarClick` is defined as an optional prop in `TopBar.tsx` and the button is disabled when it is absent (`disabled={!props.onAvatarClick}`). Neither `PlayerCockpitPage` nor `AdminHomePage` pass `onAvatarClick`. Department line is absent from the player welcome header. The prior test results (T5.1–T5.14) were likely run against a different branch or a full-stack build that has since diverged.
 
 **Problem:** Neither role has a profile editing view. Players cannot update their preferred name, role/department, or avatar. Game Makers cannot update their display info. The player profile card in the admin view does not show department info.
 
@@ -975,6 +1011,8 @@ Validation method for quiz missions is always `autoApprove` — GM approval does
 
 **Wireframe status:** `[x] Agreed` *(removal — no wireframe needed)*
 
+**Implementation status (2026-06-30 audit):** ⚠️ Partially done. No `YouAreHereMarker.tsx` component file found in `src/components/player/` — the component appears deleted. However, `MilestoneMapViewer.tsx` still declares `playerXPercent?: number` and `playerYPercent?: number` props. These dead props should be removed. No `<YouAreHereMarker>` is rendered on the player map in the live UI.
+
 ---
 
 ### Part B — Reimagine Active Mission View
@@ -1038,6 +1076,8 @@ This is the sole new admin UI chunk enabled by PLR-1.
 **Out of scope:** Invite delivery by email, per-hire milestone setup (deferred — see PS-3 note), QR scanning infrastructure (already exists separately for mission validation).
 
 **Depends on:** PLR-1 (types, adapter, `claimPlayerSlot` use case, `inviteUrl.ts` utility).
+
+**Implementation status (2026-06-30 audit):** ⚠️ Partial. The "Add new hire" button (`data-testid="add-hire-btn"`) is present on the hire list page and opens a dialog — but the dialog only asks for a name (single `textbox "New hire name"`), not the full name/role/department/buddy form specified in PS-12. `HireInviteAccordion.tsx` exists and is rendered in the Hire Detail Customize tab as a "Send [name] their onboarding link" collapsible card. Pending hire row variant (🟡 indicator, "Invite not yet accepted") is not visible in the hire list. The full PS-12 spec (T12.1–T12.19) is not satisfied.
 
 **Wireframe status:** `[x] Agreed` *(2026-06-26)*
 
@@ -1130,6 +1170,137 @@ T12.19 Player joining via new invite link successfully claims the same Player re
 
 ---
 
+## PS-13 · Dead-End Pages — Always-Visible Escape + Error State
+
+**Design principle:** A user must never be stranded. Every page must render a human-readable message and a visible escape hatch regardless of auth, param, or data-fetch state.
+
+**Problem:** Full audit (Playwright + static code review, 2026-06-30) found the following dead-end states across the codebase:
+
+### A · ValidationPage — blank when `?t=` token is absent
+
+`/validate/:sessionId` without `?t=` param renders only the `<h1>Confirm validation</h1>` — no message, no button.
+
+Root cause: `useValidationConfirm` sets `errorKind: "missing_token"` only inside a `useEffect` that early-returns when `token === ""`. The effect never runs, `errorKind` stays `null`, and none of the conditional render blocks in `ValidationPage` fire.
+
+Fix:
+- `src/hooks/useValidationConfirm.ts` — detect empty `token` before the async effect, set `errorKind: "missing_token"` synchronously (e.g. via an extra `useEffect` with `[token]` dependency that runs first, or by initialising state based on token at declaration time).
+- `src/pages/ValidationPage.tsx` — the `missing_token` branch already exists and uses `FetchErrorPanel`; it just needs the hook to set the kind reliably.
+
+### B · ValidationPage — no escape during loading
+
+While the session fetch is in-flight (`showSpinner = true`), the page renders only "Verifying QR code…" inline text. There is no back button anywhere on the page. If the fetch hangs the user is stuck with no affordance.
+
+Fix:
+- `src/pages/ValidationPage.tsx` — render a persistent "Back to cockpit" ghost button below the spinner, always visible during the loading phase. It does not need to wait for the payload.
+
+### C · PlayerCockpitPage — `player-error` state has no escape
+
+When `useResolvedPlayer` fails, `usePlayerCockpitPage` returns `{ status: "player-error" }`. The page renders:
+
+```
+"Could not load player data. Please try again."
+```
+
+…with no retry button and no back button. User is stranded.
+
+The `no-identity` branch has the same problem but is dead code (RequireRole redirects first). Fix both.
+
+Fix:
+- `src/pages/PlayerCockpitPage.tsx` — for both `no-identity` and `player-error`: render a `FetchErrorPanel`-style block with a "Go to landing" button (`navigate("/", { replace: true })`) and, for `player-error`, a retry callback wired to `useResolvedPlayer`'s `refresh` (expose it from the hook).
+- `src/pages/player-cockpit/usePlayerCockpitPage.ts` — expose `refresh` from `useResolvedPlayer` so `PlayerCockpitPage` can wire the retry button.
+
+### D · FormPage — loading state has no back button
+
+`FormPage`'s loading branch renders:
+
+```
+"Loading form…"
+```
+
+…with no navigation. `isLoading` aggregates `playerLoading || sessionLoading || formMission.loading`. Any of these hanging leaves the user stuck.
+
+Fix:
+- `src/pages/FormPage.tsx` — add a "Back to dashboard" ghost button in the loading render branch, navigating to `/session/${sessionId}`.
+
+### E · FormPage — `!identity` guard renders "Please sign in first." with no escape
+
+This branch is dead code (RequireRole redirects before FormPage is mounted), but the guard remains in the component and has no navigation affordance. Belt-and-suspenders: either remove it or give it a back button.
+
+Fix:
+- `src/pages/FormPage.tsx` — replace the raw `<p>` with a `FetchErrorPanel` pointing to `/` (landing), or remove the guard entirely since RequireRole makes it unreachable.
+
+### F · HireDetailPage — empty shell flash on session error
+
+`sessionError` triggers `navigate()` via a `useEffect`. The component renders a full layout shell with empty/zero data for one render cycle before the effect fires. Not a dead end, but visibly jarring.
+
+Fix:
+- `src/pages/hire-detail/useHireDetailPage.ts` or `src/pages/HireDetailPage.tsx` — add a synchronous early return during `sessionLoading === false && sessionError` before the full layout renders. A `FetchErrorPanel` with a "Back to hire list" button (`/admin/${homeSid}`) is the right component here; avoid the useEffect navigate altogether.
+
+---
+
+**Files affected:**
+- `src/hooks/useValidationConfirm.ts` — synchronous `missing_token` detection (issue A)
+- `src/pages/ValidationPage.tsx` — persistent back button during loading (issue B)
+- `src/pages/PlayerCockpitPage.tsx` — escape on `player-error` + `no-identity` (issue C)
+- `src/pages/player-cockpit/usePlayerCockpitPage.ts` — expose `refresh` from `useResolvedPlayer` (issue C)
+- `src/pages/FormPage.tsx` — back button in loading state; fix or remove `!identity` guard (issues D + E)
+- `src/pages/HireDetailPage.tsx` — synchronous error guard replacing useEffect navigate (issue F)
+
+**Not affected:** `QRScannerView` is clean — always renders a functional camera UI; back button exists and `sid` is always populated by the route pattern.
+
+**In scope:** All six issues above — escape hatches, synchronous error detection, loading-state back buttons.  
+**Out of scope:** Global auth error system, toast notifications, redirect-on-login flows, error boundaries.
+
+**Wireframe status:** `[x] Agreed` *(no new wireframe needed — existing FetchErrorPanel component covers all cases)*
+
+**Agreed design — ValidationPage (missing token, issue A+B):**
+```
+╔══════════════════════════════════════════╗
+║  [TopBar — Game Master]                  ║
+╠══════════════════════════════════════════╣
+║                                          ║
+║  Confirm validation                      ║  ← h1 (unchanged)
+║                                          ║
+║  ┌──────────────────────────────────┐   ║
+║  │  ⚠  Invalid validation link      │   ║
+║  │                                  │   ║
+║  │  This link is missing a mission  │   ║
+║  │  token. Scan the player's QR     │   ║
+║  │  code again from the cockpit.    │   ║
+║  │                                  │   ║
+║  │  [ Back to cockpit ]             │   ║
+║  └──────────────────────────────────┘   ║
+╚══════════════════════════════════════════╝
+```
+During loading, the error card is replaced by a spinner + "Verifying QR code…" but the "Back to cockpit" ghost button is always visible below it.
+
+The "Back to cockpit" button navigates to `/admin/:sessionId`; falls back to `/` if `sessionId` cannot be determined.
+
+**Agreed design — error states on other pages:**  
+All use the existing `FetchErrorPanel` component. Navigation targets:
+- PlayerCockpitPage errors → `/` (landing)
+- FormPage loading → `/session/:sessionId`
+- HireDetailPage session error → `/admin/:sessionId` (home sid)
+
+### Regression tests — PS-13
+
+```
+T13.1   /validate/:sessionId (no ?t=) → error card visible immediately, not blank
+T13.2   Error card message references missing/invalid token in human-readable language
+T13.3   Error card has "Back to cockpit" button
+T13.4   "Back to cockpit" navigates to /admin/:sessionId
+T13.5   /validate/:sessionId?t=garbage → decode error card with back button (existing path — verify still works)
+T13.6   ValidationPage never renders with only h1 and nothing else in any param combination
+T13.7   During ValidationPage loading, a back button is visible (not gated on payload)
+T13.8   /session/:sessionId when player data fetch fails → error message + "Go to landing" button visible
+T13.9   Clicking "Go to landing" on PlayerCockpitPage error state → navigates to /
+T13.10  /form/:sessionId/:missionId while loading → "Back to dashboard" button is visible
+T13.11  /admin/:sessionId/hire/:hireId when hireId session errors → error panel visible immediately (no blank flash)
+T13.12  HireDetailPage session error panel has "Back to hire list" button → navigates to /admin/:sessionId
+```
+
+---
+
 ## Implementation Order (Dependency Graph)
 
 ```
@@ -1166,20 +1337,21 @@ PS-11B (active mission view)   ← player cockpit only; audit sidebar at wirefra
 
 | Chunk | Type | Wireframe / Design | Implementation |
 |-------|------|--------------------|----------------|
-| PS-1 · Admin Cockpit Primary View | UI | ✅ Agreed 2026-06-25 | ✅ Implemented 2026-06-25 |
-| PS-2 · Map + Mission Lazy Render | UI | ✅ Agreed 2026-06-25 | ✅ Implemented 2026-06-25 |
-| PS-3 · Admin Hire-First Architecture | UI | ✅ Agreed 2026-06-26 | ✅ Implemented 2026-06-26 |
-| PS-4 · Checklist CRUD — Inline Edit Mode | UI | ✅ Agreed 2026-06-26 | ✅ Implemented 2026-06-26 |
+| PS-1 · Admin Cockpit Primary View | UI | ✅ Agreed 2026-06-25 | ⚠️ Superseded — see PS-3 note |
+| PS-2 · Map + Mission Lazy Render | UI | ✅ Agreed 2026-06-25 | ⚠️ Superseded — see PS-3 note |
+| PS-3 · Admin Hire-First Architecture | UI | ✅ Agreed 2026-06-26 | ⚠️ Redesigned — see current arch note |
+| PS-4 · Checklist CRUD — Inline Edit Mode | UI | ✅ Agreed 2026-06-26 | ⚠️ Partial — different items/UI |
 | PLR-1 · Player Slot & Invite System | Logic | ✅ Design agreed 2026-06-26 | ✅ Implemented 2026-06-29 |
-| PS-12 · Admin Hire Creation + Invite UI | UI | ✅ Agreed 2026-06-26 | ⬜ Blocked by PLR-1 |
-| PS-5 · Profile Edit Views | UI | ✅ Agreed 2026-06-26 | ✅ Implemented 2026-06-29 |
+| PS-12 · Admin Hire Creation + Invite UI | UI | ✅ Agreed 2026-06-26 | ⚠️ Partial — name-only dialog + invite accordion |
+| PS-5 · Profile Edit Views | UI | ✅ Agreed 2026-06-26 | ⬜ Not implemented — see note |
 | PS-6 · AI Chat Expanded | UI | ⬜ Not started | — |
 | PS-7 · Hire List + Map Sizing | UI | ⬜ Blocked by PS-12 | — |
 | PS-8 · Milestone Node Visuals | UI | ⬜ Not started | — |
 | PS-9 · XP Toast Notifications | UI | ⬜ Not started | — |
 | PS-10 · Quiz Mission Type | Feature | ⬜ Not started | — |
-| PS-11A · Remove YouAreHereMarker | UI | ✅ Agreed | ⬜ After PS-8 |
+| PS-11A · Remove YouAreHereMarker | UI | ✅ Agreed | ⚠️ Component deleted; props remain in MilestoneMapViewer |
 | PS-11B · Active Mission View | UI | ⬜ Not started | — |
+| PS-13 · Dead-End Pages — Escape + Error State | UI | ✅ Agreed 2026-06-30 | ⬜ Not started |
 
 **Implementation entry point for a coding agent:** PS-1 through PS-5 and PLR-1 are fully implemented. Next up is PS-12 (admin hire creation + invite UI) — depends on PLR-1 which is now done. PS-8 (milestone node visuals) is independent and can proceed in parallel.
 
@@ -1193,7 +1365,7 @@ PS-11B (active mission view)   ← player cockpit only; audit sidebar at wirefra
 - [x] **PS-4 · Checklist CRUD** — agreed + implemented 2026-06-26; drag handle replaces ↑↓ arrows
 - [x] **PLR-1 · Player slot & invite system** — implemented 2026-06-29; types, adapter (mock + PB), use cases, landing flow branching, form pre-fill
 - [ ] **PS-12 · Admin hire creation + invite UI** — wireframe agreed 2026-06-26; blocked by PLR-1; hire creation form, invite block, pending state, re-invite
-- [x] **PS-5 · Profile edit views** — implemented 2026-06-29; player + GM bottom sheets, department under welcome header, smoke-tested T5.1–T5.14
+- [ ] **PS-5 · Profile edit views** — `ProfileEditSheet.tsx` was NOT created; `onAvatarClick` prop exists in `TopBar` but is never passed from `PlayerCockpitPage` or `AdminHomePage`; avatar button is disabled in both roles; department line absent from welcome header. Marked implemented in 2026-06-29 note but confirmed unimplemented by Playwright audit 2026-06-30.
 - [ ] **PS-6 · AI chat expanded** — wireframe decision needed: pattern A (overlay), B (draggable sheet), or C (dedicated tab)
 - [ ] **PS-7 · Sizing adjustments** — wireframe after PS-12 locked; hire list row layout (inc. pending variant) + map container proportions
 - [ ] **PS-8 · Milestone node visuals** — agree color tier palette + text contrast fix; CSS-only
@@ -1201,3 +1373,4 @@ PS-11B (active mission view)   ← player cockpit only; audit sidebar at wirefra
 - [ ] **PS-10 · Quiz mission type** — agree notation format (MCQ + fill-in-the-blank syntax); own track; GM authoring view + player quiz flow
 - [x] **PS-11A · Remove YouAreHereMarker** — agreed; implement after PS-8
 - [ ] **PS-11B · Active mission view** — decide pattern: tabs (A) vs. accordion (B) vs. priority split (C); wireframe milestone grouping + GM priority badge
+- [ ] **PS-13 · Dead-end pages** — 6 issues across 4 pages: ValidationPage blank+loading (A+B), PlayerCockpitPage player-error no escape (C), FormPage loading+identity guards (D+E), HireDetailPage sessionError flash (F). See PS-13 for file list and regression tests T13.1–T13.12.

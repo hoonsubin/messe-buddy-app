@@ -31,10 +31,6 @@ graph LR
     LANDING -->|redirect| NFP
     NFP -->|"Go home"| LANDING
 
-    style ACP fill:#e8f0fe,stroke:#1a73e8
-    style QSV fill:#e8f0fe,stroke:#1a73e8
-    style VP fill:#e8f0fe,stroke:#1a73e8
-    style NFP fill:#fff3e0,stroke:#ef6c00
 ```
 
 ---
