@@ -73,7 +73,7 @@ Copy [`.env.example`](.env.example) to `.env`. Key variables:
 | `LLM_SERVER_API_KEY` | Yes | API key for the upstream inference provider (OpenAI, Anthropic, etc.) |
 | `LITELLM_MASTER_KEY` | Yes | Proxy management + pgvector connector auth |
 | `VITE_USE_MOCK_PB` | No | `"false"` in production — real PocketBase adapter |
-| `EMBEDDING_MODEL` | No | RAG embedding model (default: `nomic-embed-text-v2-moe`) |
+| `EMBEDDING_MODEL` | No | RAG embedding model (default: `gemini-embedding-2`) |
 | `RERANK_ENABLED` | No | `"false"` → plain vector-similarity order |
 
 > [!TIP]
@@ -145,7 +145,7 @@ See [LiteLLM Azure docs](https://docs.litellm.ai/docs/providers/azure).
 
 ### Embedding Model
 
-The default embedding model is [Nomic Embed Text v1.5](https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF) (137M params, Apache 2.0, 768 dim), served locally by a llama.cpp server (OpenAI-compatible `/v1/embeddings` endpoint). Set `EMBEDDING_MODEL` in `.env` to change it.
+The default embedding model is [Gemini Embedding 2](https://cloud.google.com/gemini/docs/embeddings) — a multimodal model producing 3072-dim vectors by default (MRL-supported). Set `EMBEDDING_MODEL` in `.env` to change it.
 
 To use OpenAI embeddings instead:
 

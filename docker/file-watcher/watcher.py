@@ -81,7 +81,7 @@ DOCS_DIR = os.getenv("DOCS_DIR", "/consume-docs")
 
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1500"))
 OVERLAP = int(os.getenv("OVERLAP", "150"))
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nomic-embed-text-v2-moe")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "gemini-embedding-2")
 
 SUPPORTED_EXTENSIONS = tuple(
     os.getenv(
