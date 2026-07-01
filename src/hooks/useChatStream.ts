@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  LLM_API_KEY,
+  LITELLM_PROXY_KEY,
   LLM_CHAT_URL,
   LLM_MODEL,
   LLM_SYSTEM_PROMPT,
@@ -164,7 +164,9 @@ export const useChatStream = (appContext?: string): UseChatReturn => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(LLM_API_KEY ? { Authorization: `Bearer ${LLM_API_KEY}` } : {}),
+            ...(LITELLM_PROXY_KEY
+              ? { Authorization: `Bearer ${LITELLM_PROXY_KEY}` }
+              : {}),
           },
           body: JSON.stringify({
             model: LLM_MODEL,

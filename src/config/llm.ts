@@ -8,23 +8,25 @@
 //
 // In the recommended container setup the browser talks SAME-ORIGIN to nginx at
 // `/llm`, and nginx injects the Authorization header server-side, so no key
-// reaches the browser (LLM_API_KEY stays empty). The build-time VITE_LITELLM_*
-// vars remain only as a dev/escape hatch.
+// reaches the browser (LITELLM_PROXY_KEY stays empty). The build-time
+// VITE_LITELLM_PROXY_KEY var remains only as a dev/escape hatch.
 
 const rt = (typeof window !== "undefined" && window.__MB_CONFIG__) || {};
 const env = import.meta.env;
 
-// Base URL of the LLM endpoint (no trailing slash). In the container this is
-// the same-origin proxy path "/llm"; in dev it falls back to the proxy URL.
+// Base URL of the LLM endpoint (no trailing slash). In production this is the
+// same-origin proxy path "/llm"; in dev it falls back to the proxy URL.
 export const LLM_BASE_URL: string =
   (rt.llmBaseUrl ?? env.VITE_LITELLM_URL ?? "http://localhost:4000").replace(
     /\/+$/,
     "",
   );
 
-// Bearer key. Empty in proxy mode (nginx injects it). Only set for the
-// direct-from-browser dev/escape-hatch path.
-export const LLM_API_KEY: string = rt.llmKey ?? env.VITE_LITELLM_KEY ?? "";
+// Bearer key for the local LiteLLM proxy (ephemeral virtual key, minted at
+// runtime by file-watcher). Empty in production (nginx injects it server-side).
+// Only set for the direct-from-browser dev/escape-hatch path.
+export const LITELLM_PROXY_KEY: string = rt.litellmProxyKey ??
+  env.VITE_LITELLM_PROXY_KEY ?? "";
 
 // Stable model alias the proxy routes (see docker/litellm.yaml → model_name).
 export const LLM_MODEL: string = rt.llmModel ?? env.VITE_LITELLM_MODEL ??
@@ -34,16 +36,7 @@ export const LLM_MODEL: string = rt.llmModel ?? env.VITE_LITELLM_MODEL ??
 export const LLM_CHAT_URL = `${LLM_BASE_URL}/v1/chat/completions`;
 
 // System prompt sent as the first message of every request.
-//
-// NOTE: LiteLLM's `general_settings.default_system_prompt` in docker/litellm.yaml
-// is NOT honored by the proxy - it is silently ignored. RAG (vector_store_ids)
-// is injected server-side regardless, but the instruction/guardrail prompt must
-// be supplied by the client. Overridable at runtime via
-// window.__MB_CONFIG__.systemPrompt.
-//
-// Two trusted sources are distinguished: the <APPLICATION_CONTEXT> block the
-// PWA appends (this user's name + buddy) for personal questions, and the
-// retrieved COMPANY DOCUMENTS for policy questions.
+// Overridable at runtime via window.__MB_CONFIG__.systemPrompt (not yet wired).
 const DEFAULT_SYSTEM_PROMPT =
   `You are the MesseBuddy onboarding assistant for new employees at Messe ` +
   `München.\n\n` +

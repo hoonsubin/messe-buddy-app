@@ -79,8 +79,8 @@ VECTOR_STORE_NAME = os.getenv(
 )
 DOCS_DIR = os.getenv("DOCS_DIR", "/consume-docs")
 
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "2000"))
-OVERLAP = int(os.getenv("OVERLAP", "200"))
+CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1500"))
+OVERLAP = int(os.getenv("OVERLAP", "150"))
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nomic-embed-text-v2-moe")
 
 SUPPORTED_EXTENSIONS = tuple(
@@ -418,27 +418,20 @@ def _insert_managed_vector_store_row() -> str:
 
 def provision_virtual_key() -> None:
     """Mint the front-end virtual key and persist it to the shared
-    /runtime volume for the app container's entrypoint to pick up. Reuses
-    an existing, still-valid key across restarts instead of minting a new
-    one every time."""
+    /runtime volume for the app container's entrypoint to pick up.
+
+    The virtual key is ephemeral by design — a fresh one is generated on
+    every bootstrap. This avoids stale keys surviving `docker compose
+    down -v` (where the virtual_key file on the app_runtime volume may
+    outlive the LiteLLM DB that held its auth record)."""
     key_file = Path(RUNTIME_DIR) / "virtual_key"
 
+    # Always delete any stale key first — entrypoint.sh does the same
+    # on its side, but this ensures we never reuse a cached key even if
+    # the watcher restarts independently of the app container.
     if key_file.is_file():
-        existing = key_file.read_text().strip()
-        if existing:
-            try:
-                resp = requests.get(
-                    f"{_LITELLM_URL}/key/info",
-                    headers={"Authorization": f"Bearer {LITELLM_MASTER_KEY}"},
-                    params={"key": existing},
-                    timeout=10,
-                )
-                if resp.status_code == 200:
-                    log("  ✅ Reusing existing virtual key (idempotent)")
-                    return
-            except requests.RequestException:
-                pass
-            log("  ⚠️  Existing virtual key invalid — minting a replacement")
+        key_file.unlink()
+        log("  🗑️  Removed stale virtual key file")
 
     try:
         resp = requests.post(
