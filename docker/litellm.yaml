@@ -4,17 +4,46 @@
 #       https://docs.litellm.ai/docs/completion/knowledgebase
 
 model_list:
-  # ── OpenAI (direct) ──────────────────────────────────────────────────────────
+  # ── Google Gemini (AI Studio) — primary chat model ───────────────────────────
   # "policy-assistant" is the stable alias the PWA sends.
   # vector_store_ids makes RAG always-on for this model - every request
   # includes relevant document context automatically.
   # To swap providers: change the litellm_params block below. Never touch PWA code.
   - model_name: policy-assistant
     litellm_params:
-      model: openai/ibm/granite-4.0-h-tiny
+      model: gemini/gemini-3.5-flash
+      api_key: os.environ/GEMINI_API_KEY
+      vector_store_ids: ["messe-buddy-kb"]
+      rpm: 1000
+      tpm: 2000000
+    model_info:
+      mode: chat
+      max_input_tokens: 131072
+      max_output_tokens: 8192
+      # $1.50/M input, $9.00/M output (Google AI Studio standard tier)
+      input_cost_per_token: 0.0000015
+      output_cost_per_token: 0.000009
+
+  - model_name: gemini-3.5-flash
+    litellm_params:
+      model: gemini/gemini-3.5-flash
+      api_key: os.environ/GEMINI_API_KEY
+      rpm: 1000
+      tpm: 2000000
+    model_info:
+      mode: chat
+      max_input_tokens: 131072
+      max_output_tokens: 8192
+      # $1.50/M input, $9.00/M output (Google AI Studio standard tier)
+      input_cost_per_token: 0.0000015
+      output_cost_per_token: 0.000009
+
+  # ── HoonLabs upstream — Granite chat model (alternative to Gemini) ────────────
+  - model_name: granite-4.0-h-tiny
+    litellm_params:
+      model: litellm_proxy/ibm/granite-4.0-h-tiny
       api_base: https://litellm.hoonlabs.xyz/v1
       api_key: os.environ/LLM_SERVER_API_KEY
-      vector_store_ids: ["messe-buddy-kb"]
       rpm: 500
       tpm: 1000000
     model_info:
@@ -24,39 +53,34 @@ model_list:
       input_cost_per_token: 0
       output_cost_per_token: 0
 
-  # ── Anthropic (uncomment to use instead) ────────────────────────────────────
-  # - model_name: policy-assistant
-  #   litellm_params:
-  #     model: anthropic/claude-haiku-4-5-20251001
-  #     api_key: os.environ/ANTHROPIC_API_KEY
-  #     vector_store_ids: ["messe-buddy-kb"]
-
-  # ── Azure OpenAI (uncomment to use instead) ──────────────────────────────────
-  # - model_name: policy-assistant
-  #   litellm_params:
-  #     model: azure/gpt-4o-mini
-  #     api_base: os.environ/AZURE_API_BASE
-  #     api_key: os.environ/AZURE_API_KEY
-  #     api_version: "2024-02-15-preview"
-  #     vector_store_ids: ["messe-buddy-kb"]
-
-  # Embedding: Nomic Embed Text v1.5 (768 dim, Matryoshka-capable)
-  # Served locally by a llama.cpp server (OpenAI-compatible /v1/embeddings),
-  # not the HoonLabs upstream — no API key needed, llama.cpp doesn't check it.
-  # v1.5 over v2-moe: llama.cpp serves it at 2048 tokens of context (vs.
-  # v2-moe's hard 512-token limit), giving ingestion much more chunking room.
-  - model_name: nomic-embed-text-v2-moe
+  # Embedding: Gemini Embedding 2 (Google AI Studio)
+  - model_name: gemini-embedding-2
     litellm_params:
-      model: openai/nomic-ai/nomic-embed-text-v1.5-GGUF
-      api_base: http://192.168.8.169:8090/v1
-      api_key: "sk-no-key-required"
-      rpm: 500
+      model: gemini/embedding-004
+      api_key: os.environ/GEMINI_API_KEY
+      rpm: 1500
       tpm: 1000000
     model_info:
       mode: embedding
       max_input_tokens: 2048
+      # $0.20/M input, no output cost (Google AI Studio standard tier)
+      input_cost_per_token: 0.0000002
+      output_cost_per_token: 0
+
+  # ── HoonLabs upstream — Nomic Embedding (alternative to Gemini) ───────────────
+  - model_name: nomic-embed-text-v2-moe
+    litellm_params:
+      model: litellm_proxy/nomic-ai/embed-text-v2-moe
+      api_base: https://litellm.hoonlabs.xyz/v1
+      api_key: os.environ/LLM_SERVER_API_KEY
+      rpm: 500
+      tpm: 1000000
+    model_info:
+      mode: embedding
+      max_input_tokens: 512
       input_cost_per_token: 0
       output_cost_per_token: 0
+      # output dimension: 768
 
   # Reranker: BGE Reranker v2 M3 (cross-encoder, used by the pgvector connector
   # to re-rank retrieved chunks before they're injected into the prompt).
@@ -73,9 +97,9 @@ model_list:
     model_info:
       mode: rerank
       max_input_tokens: 8192
+      # Hosted on litellm.hoonlabs.xyz (internal infrastructure) — cost tracked separately
       input_cost_per_token: 0
       output_cost_per_token: 0
-
 
 # ── Vector Store Registry ─────────────────────────────────────────────────────
 # Configured to use the litellm-pgvector connector service.

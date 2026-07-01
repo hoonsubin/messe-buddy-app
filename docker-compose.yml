@@ -62,7 +62,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-litellm}:${POSTGRES_PASSWORD:-changeme}@vector-db:5432/${POSTGRES_VECTOR_DB:-litellm_vector}
       SERVER_API_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
-      EMBEDDING__MODEL: ${EMBEDDING_MODEL:-nomic-embed-text-v2-moe}
+      EMBEDDING__MODEL: ${EMBEDDING_MODEL:-gemini-embedding-2}
       EMBEDDING__BASE_URL: http://litellm:4000
       EMBEDDING__API_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
       EMBEDDING__DIMENSIONS: ${EMBEDDING_DIM:-768}
@@ -112,7 +112,7 @@ services:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
       UI_USERNAME: ${LITELLM_UI_USERNAME:-admin}
       LLM_SERVER_API_KEY: ${LLM_SERVER_API_KEY:-}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text-v2-moe}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-gemini-embedding-2}
       PG_VECTOR_API_BASE: http://litellm-pgvector:8001
       PG_VECTOR_API_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
       DATABASE_URL: postgresql://${POSTGRES_USER:-litellm}:${POSTGRES_PASSWORD:-changeme}@litellm-db:5432/${POSTGRES_DB:-litellm}
@@ -155,6 +155,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
       POSTGRES_DB: ${POSTGRES_DB:-litellm}
       LITELLM_DB_HOST: litellm-db
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-gemini-embedding-2}
       # Char-based chunking sized for reranker's 512-token vLLM batch limit (~3 chars/token worst case).
       CHUNK_SIZE: ${CHUNK_SIZE:-1500}
       OVERLAP: ${OVERLAP:-150}
