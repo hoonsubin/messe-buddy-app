@@ -36,8 +36,8 @@ Flow: User Input → Handler → Adapter Method → Storage
 
 | Element | User Action | Handler | Adapter Call | Stored? | Mock Behavior | Production Behavior |
 |---------|------------|---------|-------------|---------|---------------|-------------------|
-| Mission "Mark Complete" (`selfApprove`) | Clicks button | [`markSelfComplete(missionId)`](../src/pages/PlayerCockpitPage.tsx:105) | [`upsertProgressEvent(..., { status: "autoApproved" })`](../src/components/player/MissionDetailPopup.tsx:93) | ✅ `ProgressEvent` | Instant `autoApproved` | Instant `autoApproved` |
-| Mission "Mark Complete" (`gmApprove`) | Clicks button | [`markPending(missionId)`](../src/pages/PlayerCockpitPage.tsx:106) | [`upsertProgressEvent(..., { status: "pendingApproval" })`](../src/components/player/MissionDetailPopup.tsx:104) | ✅ `ProgressEvent` | Auto-transitions to `completed` after 4s via [`simulateGmApproval()`](../src/adapters/mock/mockAdapter.ts:79) | Stays `pendingApproval` until admin approves/rejects |
+| Mission "Mark Complete" (`selfApprove`) | Clicks button | [`markSelfComplete(missionId)`](../src/pages/PlayerCockpitPage.tsx:105) | [`upsertProgressEvent(..., { status: "autoApproved" })`](../src/hooks/useProgress/player.ts:80) | ✅ `ProgressEvent` | Instant `autoApproved` | Instant `autoApproved` |
+| Mission "Mark Complete" (`gmApprove`) | Clicks button | [`markPending(missionId)`](../src/pages/PlayerCockpitPage.tsx:106) | [`upsertProgressEvent(..., { status: "pendingApproval" })`](../src/hooks/useProgress/player.ts:70) | ✅ `ProgressEvent` | Auto-transitions to `completed` after 4s via [`setTimeout`](../src/adapters/mock/mockAdapter.ts:147) | Stays `pendingApproval` until admin approves/rejects |
 | Mission "Show QR" (`qr`) | Shows QR code | [`QRDisplay`](../src/components/player/QRDisplay.tsx) | Player **never writes** for QR missions (C-07) | ❌ Player does not write | QR displays payload; GM scans to write `completed` | QR displays payload; GM scans to write `completed` |
 | Form fields | Fills + submits | [`useFormMission`](../src/hooks/useFormMission.ts:82) | [`upsertProgressEvent(..., { status: "autoApproved", formResponse })`](../src/hooks/useFormMission.ts:82) | ✅ `ProgressEvent.formResponse` | Stores in-memory | Stores in PB |
 
@@ -53,9 +53,9 @@ Flow: User Input → Handler → Adapter Method → Storage
 
 | Input | Where | Why It Matters |
 |-------|-------|----------------|
-| Chat messages | [`PlayerAssistantView`](../src/pages/player-cockpit/PlayerDashboardView.tsx:147) | User expects conversation history to persist; lost on reload or tab switch |
+| Chat messages | [`PlayerAssistantView`](../src/pages/player-cockpit/PlayerDashboardView.tsx:132) | User expects conversation history to persist; lost on reload or tab switch |
 | Resource search query | [`ResourcesSection`](../src/components/player/ResourcesSection.tsx) | Search state lost on tab switch to "AI Assistant" and back |
-| Tutorial step progress | [`sessionStorage: mb_tutorial_step`](../src/hooks/useTutorial.ts:15) | Survives page reload but **not** cleared on tutorial completion (orphan key) |
+| Tutorial step progress | [`sessionStorage: mb_tutorial_step`](../src/hooks/useTutorial.ts:14) | Survives page reload but **not** cleared on tutorial completion (orphan key) |
 
 ---
 
@@ -103,7 +103,7 @@ These fields exist in [`Player`](../src/types/domain.ts:36), [`Mission`](../src/
 
 | Field | Type | Defined Line | Rendered On | Missing From |
 |-------|------|-------------|-------------|-------------|
-| `avatarUrl` | `string?` | [domain.ts:67](../src/types/domain.ts:67) | [`BuddyCard`](../src/components/player/BuddyCard.tsx) has `avatarUrl` prop but **never receives it** from `PlayerDashboardView` | [`PlayerDashboardView.tsx:92-100`](../src/pages/player-cockpit/PlayerDashboardView.tsx:92) — only spreads `name`, `role`, `tenure`, `contactUrl`, `quote`, `email`, `phone` |
+| `avatarUrl` | `string?` | [domain.ts:67](../src/types/domain.ts:67) | [`BuddyCard`](../src/components/player/BuddyCard.tsx) has `avatarUrl` prop; [`PlayerDashboardView`](../src/pages/player-cockpit/PlayerDashboardView.tsx:96) **conditionally passes it** only when a valid URL exists, otherwise the avatar slot remains empty | [`PlayerDashboardView.tsx:95-98`](../src/pages/player-cockpit/PlayerDashboardView.tsx:95) — fewer player fields show the buddy's photo than could |
 
 ---
 
@@ -132,14 +132,14 @@ These fields exist in [`Player`](../src/types/domain.ts:36), [`Mission`](../src/
 
 ### 3.4 "Loading your journey…" Appears During Every Data Fetch
 
-- **What renders:** Loading overlay at [`PlayerCockpitPage.tsx:55`](../src/pages/PlayerCockpitPage.tsx:55).
+- **What renders:** Loading overlay at [`PlayerCockpitPage.tsx:56`](../src/pages/PlayerCockpitPage.tsx:56).
 - **What should happen:** More specific loading states per section (e.g., "Loading milestones…", "Loading missions…").
 - **What actually happens:** Generic message that overlaps all content.
 
 ### 3.5 XP Bar Shows "0 / 360 XP" — 360 Is Hardcoded
 
 - **What renders:** `0 / 360 XP` total progress at bottom of milestone map (from snapshot: `generic [ref=f1e147]: 0 / 360 XP`).
-- **Where it comes from:** The mock dataset sums to 360 XP across all milestones (50 + 15 + 125 + 85 + 35 + 50 = 360 XP thresholds). This is **not** hardcoded in the code; `computeProgress` derives total XP from milestone `xpThreshold` values.
+- **Where it comes from:** The mock dataset sums to 360 XP across all milestones (50 + 15 + 125 + 85 + 35 + 50 = 360 XP thresholds). The hardcoded sum reference is accurate — the six milestone XP values in mock data total 360 XP. This is **not** hardcoded in the code; `computeProgress` derives total XP from milestone `xpThreshold` values.
 - **Potential issue:** If a production session has different milestone XP thresholds, the total will be correct. But the display never labels *which milestones* contribute what XP — the user only sees a monolithic total.
 
 ---
