@@ -134,7 +134,13 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
           icon={<MdFlag size={18} aria-hidden="true" />}
           label={`Suggested next step for ${props.firstName}`}
         >
-          {nextTask
+          {total === 0
+            ? (
+              <div className="hire-analytics__all-done">
+                No missions set up yet — add some in the Customize tab.
+              </div>
+            )
+            : nextTask
             ? (
               <>
                 <div className="hire-analytics__next-title">

@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { useIdentity } from "./useIdentity.ts";
 import {
-  claimPlayerSlot,
   createGameMakerSession,
   joinSession,
   verifySession,
@@ -83,7 +82,6 @@ export const useLandingFlow = (): UseLandingFlowResult => {
 
   // ── Route params — present when rendered at /join/:sessionId ─────────────
   const { sessionId: routeSessionId } = useParams<{ sessionId: string }>();
-  const [searchParams] = useSearchParams();
 
   // ── Seed demo profiles once on mount ──────────────────────────────────────
   const seeded = useRef(false);
@@ -121,39 +119,6 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     setToast(msg);
     const timer = setTimeout(() => setToast(null), 4000);
     return () => clearTimeout(timer);
-  }, []);
-
-  // ── Auto-claim: /join/:sessionId?token=<token> ────────────────────────────
-  // Runs once on mount. If both routeSessionId and ?token are present,
-  // attempt to claim the slot and navigate directly to the player cockpit.
-  const tokenClaimed = useRef(false);
-  useEffect(() => {
-    const token = searchParams.get("token");
-    if (!routeSessionId || !token || tokenClaimed.current) return;
-    tokenClaimed.current = true;
-
-    const claim = async () => {
-      setStatus("loading");
-      setErrorMessage("");
-      try {
-        const { identity } = await claimPlayerSlot(
-          token,
-          routeSessionId,
-          adapter,
-        );
-        setIdentity(identity);
-        navigate(`/session/${identity.sessionId}`, { replace: true });
-      } catch {
-        setStatus("error");
-        setErrorMessage(
-          "This invite link has already been used or is invalid. Ask your Game Maker for a new one.",
-        );
-      }
-    };
-
-    void claim();
-    // Intentionally run only on mount — token is a one-time claim.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Helpers ───────────────────────────────────────────────────────────────

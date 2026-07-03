@@ -6,7 +6,7 @@ All collections use **public API rules** (C-03 — no auth system). The PWA mana
 
 **Target schema** below includes migration `003_hardening.go` (pending implementation). Collections created by `001`/`002` alone omit `sessions.mapNodeScale`, use `bgImageUrl` as text, and lack the `progress_events` composite unique index.
 
-See also: [`docs/shared-data-access.md`](shared-data-access.md) (hook → collection map), [`plans/pocketbase-full-integration-strategy.md`](../plans/pocketbase-full-integration-strategy.md).
+See also: [`docs/shared-data-access.md`](shared-data-access.md) (hook → collection map), [`plans/production-implementation-plans.md`](../plans/production-implementation-plans.md).
 
 ## Collections
 
@@ -59,7 +59,7 @@ See also: [`docs/shared-data-access.md`](shared-data-access.md) (hook → collec
 | `name` | text | ✓ | Display name |
 | `xPercent` | number | ✓ | 0–100 (C-08) |
 | `yPercent` | number | ✓ | 0–100 (C-08) |
-| `xpThreshold` | number | ✓ | Always 100 (C-04) |
+| `xpThreshold` | number | ✓ | Sum of `missions.xpValue` in this milestone (C-04); recomputed on mission save |
 | `order` | number | ✓ | Sort order |
 
 **GM CRUD** via `useAdminMilestoneEditor`. **Player read** via `useSession`.
@@ -74,13 +74,15 @@ See also: [`docs/shared-data-access.md`](shared-data-access.md) (hook → collec
 | `body` | editor | | Markdown content |
 | `type` | text | ✓ | `text`, `link`, or `form` |
 | `externalUrl` | text | | Only when type = `link` |
-| `difficulty` | number | ✓ | 1–5 |
-| `xpValue` | number | ✓ | Derived at save time by `deriveXP()` |
+| `xpValue` | number | ✓ | **Set directly by GM** — XP awarded on validation |
 | `tags` | JSON | | `MissionTag[]` |
 | `suggestedDueDate` | text | | ISO date string |
 | `order` | number | ✓ | Sort order |
 | `isInCurrentMissions` | bool | | Shown on player dashboard |
-| `validationMethod` | text | ✓ | `gmApprove`, `selfApprove`, or `qr` |
+| `validationMethod` | text | ✓ | `gmApprove`, `selfApprove`, `qr`, or `peerScan` |
+| `peerScanTarget` | number | | Required when `validationMethod = peerScan` (min unique scanners) |
+
+> **Migration note:** `difficulty` field is **deprecated** — remove in a future migration once code no longer references it.
 
 **GM CRUD** via `useAdminMissionEditor`. **Player read** via `useSession`; progress via `useProgressPlayer`.
 
@@ -107,7 +109,20 @@ See also: [`docs/shared-data-access.md`](shared-data-access.md) (hook → collec
 
 > **C-05:** One event per `(playerId, missionId)`. Enforced by adapter `upsertProgressEvent` and, after migration 003, DB unique index `idx_player_mission` on `(playerId, missionId)`.
 
-**Player writes:** self-approve, request approval, form submit. **GM writes:** approve/reject, QR confirm on `ValidationPage`.
+**Player writes:** self-approve, request approval, form submit. **GM writes:** approve/reject, QR confirm on `ValidationPage`. **Peer scans:** insert only via `PeerScanPage`.
+
+### `peer_scans` (planned — C-25)
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `sessionId` | text | ✓ | FK → sessions |
+| `missionId` | text | ✓ | FK → missions |
+| `playerId` | text | ✓ | Mission owner (FK → players) |
+| `scannerDeviceId` | text | ✓ | From `localStorage.mb_scan_device_id` |
+| `scannerName` | text | ✓ | Attester display name |
+| `formResponse` | JSON | | Optional custom fields |
+
+**Unique index:** `(missionId, playerId, scannerDeviceId)`. GM subscribes via SSE for live hire analytics.
 
 ### `buddy_profiles`
 
@@ -158,6 +173,7 @@ See also: [`docs/shared-data-access.md`](shared-data-access.md) (hook → collec
 | `buddy_profiles` | `idx_assignedToPlayerId` | ✓ | `assignedToPlayerId` |
 | `templates` | `idx_name` | ✓ | `name` |
 | `progress_events` | `idx_player_mission` (003) | ✓ | `playerId`, `missionId` |
+| `peer_scans` | `idx_peer_scan_unique` (planned) | ✓ | `missionId`, `playerId`, `scannerDeviceId` |
 
 ## API Rules
 

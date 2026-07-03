@@ -5,7 +5,6 @@ import DraftRestoreBanner from "./DraftRestoreBanner.tsx";
 
 interface MissionEditorViewProps {
   readonly draft: DraftMission | null;
-  readonly xpPreview: number;
   readonly storedDraft: StoredDraft | null;
   readonly onDraftChange: (draft: DraftMission) => void;
   readonly onDismissStoredDraft: () => void;
@@ -28,7 +27,6 @@ const MissionEditorView = (props: MissionEditorViewProps) => (
         <div className="mission-editor-view__editor">
           <MissionEditor
             draft={props.draft}
-            xpPreview={props.xpPreview}
             onDraftChange={props.onDraftChange}
           />
         </div>

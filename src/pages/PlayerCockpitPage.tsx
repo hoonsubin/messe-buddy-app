@@ -69,7 +69,7 @@ const PlayerCockpitPage = () => {
       <ConfirmDialog
         isOpen={m.showSkipConfirm}
         title="Skip tutorial?"
-        body="You can always complete the tutorial later from settings."
+        body="You won't see this again, but your buddy and the Resources tab are there if you need a hand later."
         confirmLabel="Skip tutorial"
         onConfirm={m.handleSkipConfirm}
         onCancel={m.handleSkipCancel}

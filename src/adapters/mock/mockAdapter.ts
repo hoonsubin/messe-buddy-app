@@ -233,19 +233,6 @@ const getPlayerById = async (playerId: string): Promise<Player | null> => {
   return players.get(playerId) ?? null;
 };
 
-const getPlayerByInviteToken = async (
-  token: string,
-  sessionId: string,
-): Promise<Player | null> => {
-  await Promise.resolve();
-  // Guard: empty token must never match anything.
-  if (!token) return null;
-  for (const p of players.values()) {
-    if (p.sessionId === sessionId && p.inviteToken === token) return p;
-  }
-  return null;
-};
-
 const createPlayer = async (
   data: Omit<Player, keyof PBRecord>,
 ): Promise<Player> => {
@@ -524,7 +511,6 @@ export const mockAdapter: AppAdapter = {
   getPlayer,
   getPlayerById,
   getPlayerByRecoveryKey,
-  getPlayerByInviteToken,
   createPlayer,
   updatePlayer,
   listPlayers,

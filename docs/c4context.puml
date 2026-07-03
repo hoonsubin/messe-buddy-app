@@ -11,8 +11,8 @@ System(messeBuddy, "MesseBuddy", "Mobile-first PWA that gamifies corporate onboa
 System_Ext(aiProvider, "AI Provider", "Upstream LLM API. OpenAI, Anthropic, Azure OpenAI, or any OpenAI-compatible endpoint. Selected and authenticated at the LiteLLM proxy layer — the PWA never calls the provider directly.")
 System_Ext(pgvectorConnector, "PG Vector Store Connector", "OpenAI-compatible /v1/vector_stores/* endpoints backed by PostgreSQL + pgvector. Handles document upload, embedding generation, and semantic search for RAG retrieval.")
 
-Rel(player, messeBuddy, "Joins session, completes missions, submits validation requests, asks policy questions via AI chat", "HTTPS / PWA")
-Rel(gameMaker, messeBuddy, "Creates sessions, edits milestones/missions via templates, approves completions, uploads policy documents", "HTTPS / PWA")
+Rel(player, messeBuddy, "Claims hire via invite QR, completes missions, earns XP, asks policy questions", "HTTPS / PWA")
+Rel(gameMaker, messeBuddy, "Creates hires, applies templates, configures missions, validates completions, monitors all hire progress", "HTTPS / PWA")
 Rel(messeBuddy, player, "Shows cockpit, mission progress, XP, buddy info, and AI chat responses", "SSE / REST")
 Rel(messeBuddy, aiProvider, "Routes chat completions via LiteLLM proxy (RAG-augmented)", "HTTPS / REST")
 Rel(messeBuddy, pgvectorConnector, "Semantic search for relevant document chunks (RAG)", "HTTP / OpenAI-compatible API")

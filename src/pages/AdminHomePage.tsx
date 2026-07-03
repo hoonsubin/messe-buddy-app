@@ -4,6 +4,7 @@ import { MdAdd, MdArrowBack, MdChevronRight } from "react-icons/md";
 import { USER_ROLE } from "../types/index.ts";
 import { useActiveProfile } from "../hooks/useActiveProfile.ts";
 import { useIdentity } from "../hooks/useIdentity.ts";
+import { useSessionExists } from "../hooks/useSessionExists.ts";
 import { useGmHires } from "../hooks/useProgress/gmHires.ts";
 import type { GmHireRow } from "../hooks/useProgress/gmHires.ts";
 import TopBar from "../components/shared/TopBar.tsx";
@@ -149,6 +150,19 @@ const AdminHomePage = () => {
   const [adding, setAdding] = useState(false);
   const [creating, setCreating] = useState(false);
 
+  // useGmHires lists sessions and filters by gameMakerId — a stale/deleted
+  // GM identity never 404s there, it just yields zero rows, indistinguishable
+  // from a genuinely new account with no hires yet. useSessionExists checks
+  // the GM's own home session directly, which is the only way to tell the
+  // two apart.
+  const { checking: checkingSession, missing: sessionMissing } =
+    useSessionExists(sid);
+
+  const handleRemoveStaleProfile = useCallback(() => {
+    if (identity) removeProfile(identity.uid);
+    navigate("/", { replace: true });
+  }, [identity, removeProfile, navigate]);
+
   const handleCreate = useCallback(
     (name: string) => {
       setCreating(true);
@@ -164,16 +178,16 @@ const AdminHomePage = () => {
     [createHire, navigate, sid],
   );
 
-  // Only show hires who have actually joined (real players), not empty/pending
-  // sessions.
-  const visibleHires = hires.filter((h) => h.joined);
-  const joinedCount = visibleHires.length;
+  // Show all hire sessions — pending (not yet joined) and active alike (C-24).
+  const visibleHires = hires;
+  const joinedCount = hires.filter((h) => h.joined).length;
+  const joinedHires = hires.filter((h) => h.joined);
   const avgProgress = joinedCount > 0
     ? Math.round(
-      visibleHires.reduce((s, h) => s + h.progressPercent, 0) / joinedCount,
+      joinedHires.reduce((s, h) => s + h.progressPercent, 0) / joinedCount,
     )
     : 0;
-  const stalledCount = visibleHires.filter((h) => h.isStalled).length;
+  const stalledCount = joinedHires.filter((h) => h.isStalled).length;
 
   return (
     <div
@@ -210,10 +224,7 @@ const AdminHomePage = () => {
             alignItems: "center",
             gap: "var(--space-1)",
           }}
-          onClick={() => {
-            if (identity && !identity.isDemo) removeProfile(identity.uid);
-            navigate("/", { replace: true });
-          }}
+          onClick={() => navigate("/", { replace: true })}
         >
           <MdArrowBack size={16} />
           {identity?.isDemo ? "Back to Landing" : "Log Out"}
@@ -259,21 +270,54 @@ const AdminHomePage = () => {
             >
               {joinedCount} active · {avgProgress}% avg progress
               {stalledCount > 0 ? ` · ${stalledCount} stalled` : ""}
+              {visibleHires.length > joinedCount
+                ? ` · ${visibleHires.length - joinedCount} pending`
+                : ""}
             </p>
           </div>
-          <button
-            type="button"
-            className="btn btn--primary"
-            data-testid="add-hire-btn"
-            style={{ gap: "var(--space-1)", flexShrink: 0 }}
-            onClick={() => setAdding(true)}
-          >
-            <MdAdd size={18} aria-hidden="true" />
-            Add new hire
-          </button>
+          {visibleHires.length > 0 && (
+            <button
+              type="button"
+              className="btn btn--primary"
+              data-testid="add-hire-btn"
+              style={{ gap: "var(--space-1)", flexShrink: 0 }}
+              onClick={() => setAdding(true)}
+            >
+              <MdAdd size={18} aria-hidden="true" />
+              Add new hire
+            </button>
+          )}
         </header>
 
-        {loading && visibleHires.length === 0
+        {checkingSession ? null : sessionMissing
+          ? (
+            <div
+              className="card"
+              style={{
+                padding: "var(--space-8) var(--space-6)",
+                textAlign: "center",
+                color: "hsl(var(--color-muted-fg))",
+              }}
+            >
+              <p
+                style={{
+                  margin: "0 0 var(--space-4)",
+                  fontSize: "var(--text-sm)",
+                }}
+              >
+                This session could not be found. It may have been reset or
+                removed — this profile is no longer valid.
+              </p>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={handleRemoveStaleProfile}
+              >
+                Remove this profile
+              </button>
+            </div>
+          )
+          : loading && hires.length === 0
           ? (
             <p
               style={{

@@ -17,7 +17,6 @@ const HireDetailOverlays = ({ vm }: HireDetailOverlaysProps) => (
       missions={vm.sheetMissions}
       activeMissionId={vm.missionEditor.selectedMissionId}
       draft={vm.missionEditor.activeDraftMission}
-      xpPreview={vm.missionEditor.xpPreview}
       isDirty={vm.isDirty}
       isSaving={vm.isSaving}
       sessionId={vm.sid}

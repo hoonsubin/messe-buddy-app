@@ -107,7 +107,6 @@ export const marshalMission = (raw: RecordModel): Mission => ({
   body: String(raw.body ?? ""),
   type: String(raw.type ?? "text") as MissionType,
   externalUrl: raw.externalUrl ? String(raw.externalUrl) : undefined,
-  difficulty: Number(raw.difficulty ?? 1),
   xpValue: Number(raw.xpValue ?? 0),
   tags: parseJsonField<ReadonlyArray<MissionTag>>(raw.tags, []),
   suggestedDueDate: raw.suggestedDueDate

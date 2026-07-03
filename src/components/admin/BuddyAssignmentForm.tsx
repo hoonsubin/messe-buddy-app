@@ -124,9 +124,18 @@ const BuddyAssignmentForm = (props: BuddyAssignmentFormProps) => (
           placeholder="https://..."
         />
       </div>
-      <button type="submit" className="btn btn--primary">
+      <button
+        type="submit"
+        className="btn btn--primary"
+        disabled={!props.selectedPlayerId}
+      >
         Save buddy assignment
       </button>
+      {!props.selectedPlayerId && (
+        <p className="core-text-xs core-text-muted">
+          Buddy can be assigned once a player has joined.
+        </p>
+      )}
     </form>
   </div>
 );

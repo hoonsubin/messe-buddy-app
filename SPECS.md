@@ -1,7 +1,7 @@
 # MesseBuddy - Project Specification
 
 > **Status:** Active implementation reference · Sprint 3 **Last updated:**
-> 2026-06-17 **Authors:** Group 3 - Alisa Diakova · Hoon Kim ·
+> 2026-07-03 **Authors:** Group 3 - Alisa Diakova · Hoon Kim ·
 > Kseniya Tsiabus · Luis Müller **External PO:** Peter Tubak (Messe München)
 > **Course:** Management & Digital Technologies II · LMU Munich School of
 > Management · Summer Term 2026
@@ -37,16 +37,36 @@ delete or edit existing ones.
 MesseBuddy is a **mobile-first Progressive Web App (PWA)** that gamifies the
 corporate onboarding experience. It represents an onboarding journey as an
 interactive map of office spaces (Milestones), each containing a set of
-activities (Missions) a new employee must complete. Progress is tracked via XP
-points, and completion is validated through a configurable validation mechanism
-chosen per Mission by the Game Maker.
+activities (Missions) a new employee must complete. Progress is tracked via **XP
+earned per Mission**; the Game Maker sets each Mission's `xpValue` directly.
 
 **Core value propositions:**
 
-- Customization by the Game Maker with no developer involvement
+- Customization by the Game Maker with no developer involvement (templates make
+  reuse easy)
 - Gamified progression that is non-linear and autonomy-preserving
-- Simple offline-first interaction that promotes real human contact over digital
-  automation
+- Simple identity model — no account signup; players claim a hire slot via QR
+- Validation flows that promote real human contact (GM approval, GM scan, crowd
+  attestation) over opaque automation
+
+### Core Product Journey
+
+The app exists to support one primary loop:
+
+1. **Game Maker** creates a **hire** (an onboarding `Session`) — from scratch or
+   by applying a **Template** (Milestones, Missions, Resources).
+2. **Game Maker** shares an **invite QR / link** (`/join/:hireSessionId`).
+3. **New hire** scans the invite on their phone → claims a **Player** identity
+   (no password) → enters the **Player Cockpit**.
+4. **Player** completes Missions on the map → earns **XP** when validation
+   succeeds.
+5. **Game Maker** monitors all hires and per-player progress from the **hire
+   dashboard** and **hire detail** views; approves requests, scans completion
+   QRs, and reviews form / peer-scan submissions in real time.
+
+Everything else (buddy card, resources, AI chat, tutorial, pre-boarding checklist,
+background image, templates) is **quality-of-life** around this loop — not a
+separate product surface.
 
 ### What MesseBuddy Is Not
 
@@ -63,20 +83,25 @@ This glossary is authoritative.
 
 | Term                   | Definition                                                                                                                                                                                                                                                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Session**            | One onboarding journey instance. Has a unique ID, a Game Maker, and a set of Players.                                                                                                                                                                                                                                    |
-| **Milestone**          | A top-level grouping on the map - analogous to a hall or room. Contains Missions. Represented as a node on the Milestone Map.                                                                                                                                                                                            |
-| **Mission**            | An individual task item within a Milestone. The atomic unit of work for a Player.                                                                                                                                                                                                                                        |
-| **Player**             | A new employee going through an onboarding journey. Has read-only access to the cockpit.                                                                                                                                                                                                                                 |
-| **Game Maker**         | The admin who configures the session - sets up Milestones, Missions, and validates completions.                                                                                                                                                                                                                          |
-| **XP**                 | Experience points earned by completing Missions. Each Milestone has an `xpThreshold` of 100.                                                                                                                                                                                                                             |
-| **Validation Method**  | The mechanism by which a Mission completion is confirmed. One of: `gmApprove` (Game Maker approves in admin cockpit), `selfApprove` (Player self-marks, immediately approved), or `qr` (Player shows a URL-encoded QR code; Game Maker scans and confirms on `ValidationPage`). Set per Mission by the Game Maker; default is `gmApprove`. |
-| **Validation URL**     | QR transport format: `{origin}/validate/{sessionId}?t={base64-encoded signed QRPayload}`. Parsed by `qrUrl.ts`; HMAC verified on `ValidationPage` before any `ProgressEvent` write. |
-| **Validation Request** | The transient state after a Player marks a non-`selfApprove` Mission complete. For `gmApprove`, the Mission enters `pendingApproval` and `PendingApprovalDisplay` is shown. For `qr`, no `ProgressEvent` is written until the GM confirms on `ValidationPage`. |
-| **Validation**         | An app mechanism that allows the game maker or another player to verify that a mission as been completed. Need for XP distribution.                                                                                                                                                                                      |
-| **Current Missions**   | A curated list of Missions the Game Maker has surfaced to the Player's main view - not all Missions are in this list by default.                                                                                                                                                                                         |
-| **Buddy**              | A company-assigned mentor figure displayed on the Player's cockpit. Not a system user - their info is manually entered by the Game Maker.                                                                                                                                                                                |
-| **Template**           | A named, portable snapshot of a Session's structure (Milestones, Missions, Resources) with no player data. Used to bootstrap new sessions.                                                                                                                                                                               |
-| **Recovery Key**       | An 8-character alphanumeric token shown to a user on first join, used to restore their identity if localStorage is cleared.                                                                                                                                                                                              |
+| **Home Session**       | The Game Maker's own `Session` (`/admin/:homeSessionId`). Owns the hire list; `sessions.gameMakerId` matches the GM's `uid`.                                                                                                                                                                                             |
+| **Hire / Hire Session** | One onboarding journey for one new employee. A `Session` owned by the Game Maker. Configured at `/admin/:homeSessionId/hire/:hireSessionId`. Distinct from the GM home session.                                                                                                                                         |
+| **Session**            | One onboarding journey instance (either a hire session or, for a GM, their home session). Has a unique ID, a `gameMakerId`, Milestones, Missions, and at most one primary Player after claim.                                                                                                                              |
+| **Milestone**          | A top-level grouping on the map — analogous to a hall or room. Contains Missions. Represented as a node on the Milestone Map.                                                                                                                                                                                            |
+| **Mission**            | An individual task within a Milestone. Atomic unit of work. Carries a GM-set `xpValue` and a `validationMethod`.                                                                                                                                                                                                         |
+| **Player**             | A new employee going through a hire session. Read-only cockpit. Created when the hire claims the invite link / QR.                                                                                                                                                                                                       |
+| **Game Maker**         | Admin who creates hires, configures Milestones/Missions (or applies Templates), validates completions, and monitors progress.                                                                                                                                                                                            |
+| **XP**                 | Experience points awarded when a Mission is validated. **The Game Maker sets `missions.xpValue` directly.** Milestone `xpThreshold` = sum of `xpValue` for Missions in that Milestone (recomputed on save). Session total XP = sum of earned Mission XP across Milestones.                                              |
+| **Validation Method**  | How completion is confirmed. One of: `gmApprove` (player requests → GM approves in UI), `selfApprove` (player self-marks → immediate), `qr` (player shows signed URL QR → **GM scans** on `ValidationPage`), `peerScan` (player shows signed URL QR → **N unique third parties** scan on `PeerScanPage` — no app identity required). `form` **type** always `autoApproved` regardless of method. Default: `gmApprove`. |
+| **Hire Invite URL**    | `{origin}/join/{hireSessionId}` — plain HTTPS URI in a QR. Scanned by a device **without** an existing player/GM identity → claim flow → Player cockpit. Scanned by a device that already holds an identity → `InvalidIdentityPage`.                                                                                    |
+| **GM Validation URL**  | `{origin}/validate/{sessionId}?t={signed}` — player completion QR (`validationMethod = qr`). **GM-only** confirm path. Player or anonymous scanner → `InvalidIdentityPage`. HMAC via `sessions.qrSecret` (C-16).                                                                                                        |
+| **Peer Scan URL**      | `{origin}/peer/{sessionId}?t={signed}` — crowd attestation QR (`validationMethod = peerScan`). Public: scanner enters name (or mission-specific form). One attestation per `scannerDeviceId` per `(missionId, playerId)`. GM sees live feed.                                                                            |
+| **Validation Request** | Transient state after player marks complete on `gmApprove` (`pendingApproval`) or while waiting for GM scan (`qr`) or peer target (`peerScan`).                                                                                                                                                                          |
+| **Current Missions**   | Missions the GM surfaced to the player's dashboard (`isInCurrentMissions`).                                                                                                                                                                                                                                            |
+| **Buddy**              | QoL — mentor info entered by GM, shown on player cockpit. Not a system user.                                                                                                                                                                                                                                            |
+| **Resource**           | QoL — session-scoped link/document shown on player dashboard. **No `missionId` FK** in v1.                                                                                                                                                                                                                               |
+| **Template**           | Portable export of Milestones, Missions, FormSchemas, and Resources (no player progress). GM applies to a hire or saves edits back to library.                                                                                                                                                                         |
+| **Recovery Key**       | 8-character token shown once on identity claim; restores `localStorage` identity.                                                                                                                                                                                                                                        |
+| **Scanner Device ID**  | Client-generated UUID in `localStorage` (`mb_scan_device_id`) — dedupes peer-scan attestations per mission.                                                                                                                                                                                                            |
 | **Shared Hook**         | A React hook that serves both Player and GameMaker roles from a single implementation. Accepts a `role` parameter (or infers it from context) to return role-appropriate data and callbacks. Examples: `useProgress`, `useBuddyProfile`, `useResources`. Components never call [`AppAdapter`](src/adapters/interface.ts:18) directly — they consume data exclusively through shared hooks. |
 | **Canonical Domain Type** | The single authoritative TypeScript interface for a PocketBase-persisted entity, defined in [`domain.ts`](src/types/domain.ts:1). All views, hooks, and adapter methods derive from these types. Never forked — variations are created via `Omit<>`, `Pick<>`, or `Readonly<>` utility types. |
 | **View Type**            | A role-scoped projection of a canonical domain type. Player components receive `Player*View` types (e.g., `PlayerSessionView` omits `qrSecret` and `gameMakerId`). Admin components receive full domain types. Created via TypeScript utility types — zero runtime cost. Defined in `src/types/views.ts`. |
@@ -282,8 +307,18 @@ The app does **not** use PocketBase auth. Identity is resolved client-side via
 
 | Source | Storage | Written by | Cleared by |
 | ------ | ------- | ---------- | ---------- |
-| **Persisted** | `localStorage` key `mb_identity` (stores `CachedIdentity` — a `Player` subset) | `joinSession`, `recoverIdentity`, `createGameMakerSession`, `setIdentity` | `clearIdentity`, browser data wipe |
+| **Persisted** | `localStorage` key `mb_identity` (stores `CachedIdentity` — a `Player` subset) | `joinSession`, `recoverIdentity`, `createGameMakerSession`, `setIdentity` | **`removeProfile(uid)`** — explicit user action (landing profile card, stale-session banner). **Not** on logout. |
+| **Scanner device** | `localStorage` key `mb_scan_device_id` | First peer-scan page visit | Browser data wipe |
 | **Ephemeral demo** | In-memory `ephemeralIdentityStore` (module singleton) | Landing page demo buttons via `setEphemeralIdentity` | `clearEphemeralIdentity` (e.g. ephemeral admin "back to landing") |
+
+**Identity lifecycle (normative):**
+
+| User action | Behavior |
+| ----------- | -------- |
+| **Log out / Back to landing** | `navigate("/")` only. Profile remains in `mb_identity`. |
+| **Remove profile** | `removeProfile(uid)` — landing UI or stale-session card on GM home when home session missing. |
+| **Claim hire invite** | No existing identity → join flow → `setIdentity` → `/session/:hireSessionId`. |
+| **Scan wrong QR type** | Route to `InvalidIdentityPage` with reason (see [`docs/qr-routing.puml`](docs/qr-routing.puml)). |
 
 **Resolution order:** `readEphemeralIdentity()` first; if absent, parse
 `localStorage.mb_identity`. Cross-tab `localStorage` changes sync via the
@@ -305,6 +340,21 @@ Protected routes wrap children in `RequireRole`, which redirects to `/` when:
 3. `identity.sessionId` does not match the URL `:sessionId` param
 
 This applies to Player Cockpit, Admin Cockpit, and `ValidationPage`.
+
+### Session & hire model
+
+- A **Game Maker** has one **home session** (`/admin/:homeSessionId`) created at
+  GM onboarding.
+- Each **new hire** is a **separate session** (`hireSessionId`) with the same
+  `gameMakerId`. Route: `/admin/:homeSessionId/hire/:hireSessionId`.
+- **Hire list** (`AdminHomePage`) lists **all** sessions owned by the GM —
+  joined and not-yet-joined. Status:
+  - `joined: false` — no `players` row yet → **"Not joined yet"**
+  - `joined: true` — player claimed invite → progress %, stalled detection
+- **Player display name (admin):** show `preferredName` when set, with assigned
+  `name` as secondary label when they differ (e.g. "Alex · Sofia Chen").
+
+Diagram: [`docs/hire-lifecycle.puml`](docs/hire-lifecycle.puml)
 
 ### Session constraint
 
@@ -364,16 +414,20 @@ import).
 
 | Path | Guard | Page | Notes |
 | ---- | ----- | ---- | ----- |
-| `/` | Public | `LandingPage` | Role select, join, create, recover, templates |
-| `/join/:sessionId` | Public | `LandingPage` | Invite link; session code pre-filled |
-| `/session/:sessionId` | `RequireRole` → `player` | `PlayerCockpitPage` | |
-| `/admin/:sessionId` | `RequireRole` → `gamemaker` | `AdminCockpitPage` | |
-| `/form/:missionId` | None | `FormPage` | Player identity read from `useIdentity` at runtime |
-| `/validate/:sessionId` | `RequireRole` → `gamemaker` | `ValidationPage` | QR confirm; query `?t=` = signed payload token |
-| `/admin/:sessionId/scan` | `RequireRole` → `gamemaker` | `QRScannerView` | Target GM scanner route (replaces legacy `/qr/:missionId`) |
+| `/` | Public | `LandingPage` | Profiles, join, create GM, recover, demo |
+| `/join/:sessionId` | Public | `LandingPage` | Hire invite QR target; claim identity |
+| `/session/:sessionId` | `RequireRole` → `player` | `PlayerCockpitPage` | Hire session cockpit |
+| `/admin/:sessionId` | `RequireRole` → `gamemaker` | `AdminHomePage` | GM home — **hire list & add hire** |
+| `/admin/:sessionId/hire/:hireId` | `RequireRole` → `gamemaker` | `HireDetailPage` | Configure hire, analytics, invite |
+| `/form/:sessionId/:missionId` | `RequireRole` → `player` | `FormPage` | Dynamic form missions |
+| `/validate/:sessionId` | GM auth on page | `ValidationPage` | GM scans player completion QR (`qr`) |
+| `/peer/:sessionId` | Public | `PeerScanPage` | Crowd attestation (`peerScan`) — **planned** |
+| `/admin/:sessionId/scan` | `RequireRole` → `gamemaker` | `QRScannerView` | In-app URL scanner → routes by URL type |
+| `/invalid-identity` | Public | `InvalidIdentityPage` | Wrong scanner for URL type — **planned** |
 
-> **[NEED-UPDATE — routing]** Legacy `/qr/:missionId` (unguarded, mission-scoped
-> param) is deprecated; remove or redirect when `/admin/:sessionId/scan` ships.
+> `ValidationPage` is not wrapped in `RequireRole` because the hire `sessionId`
+> never matches the GM's home `sessionId` in `mb_identity`. Authorization matches
+> `session.gameMakerId` to any cached GM identity.
 
 ### Player Cockpit
 
@@ -395,6 +449,22 @@ The Player's primary view - read-only. Components in render order:
 - Step 2 → explains the Milestone Map · Step 3 → Buddy Card · Step 4 → Resources
 - `tutorialComplete = true` → Player has free access
 
+### Quality-of-life features (supporting the core loop)
+
+These do not change validation or XP rules; they reduce friction for GMs and
+players:
+
+| Feature | Role | Scope |
+| ------- | ---- | ----- |
+| **Templates** | GM | Export/import Milestones, Missions, FormSchemas, Resources |
+| **Buddy card** | Both | GM assigns mentor info; player sees contact card |
+| **Resources** | Both | Session-scoped links/docs on player dashboard (no `missionId` FK — OD-22) |
+| **AI chat** | Player | LiteLLM + RAG policy Q&A |
+| **Tutorial overlay** | Player | First-run guided tour |
+| **Pre-boarding checklist** | GM | Session-scoped tasks before day one |
+| **Background image / map scale** | GM | Shared map aesthetics for hire session |
+| **Recovery key** | Both | Identity restore without accounts |
+
 ### Mission Type Routing
 
 | Type   | Behavior                                      | Completion Path                                                                                             |
@@ -405,95 +475,111 @@ The Player's primary view - read-only. Components in render order:
 
 ### Mission Validation
 
-When a Player marks a non-`form` Mission complete, `ValidationDisplay` mounts
-and routes to one of three strategies based on `mission.validationMethod`:
+All validation paths award **`mission.xpValue` XP** on successful completion
+(`computeProgress` sums completed missions at read time — C-11).
 
-**`gmApprove` (default)**
+Diagram: [`docs/mission-validation-flow.puml`](docs/mission-validation-flow.puml) ·
+QR routing: [`docs/qr-routing.puml`](docs/qr-routing.puml)
 
-1. Player marks Mission complete → `ValidationDisplay` mounts showing a "Waiting
-   for approval" state
-2. `upsertProgressEvent` called → `status: pendingApproval`
-3. `ValidationDisplay` polls `progress_events` for `(playerId, missionId)` (or
-   holds SSE subscription)
-4. Game Maker sees the pending request in `PendingApprovalsPanel` (Admin
-   Cockpit)
-5. Game Maker clicks Approve → `upsertProgressEvent` → `status: completed`
-6. `ValidationDisplay` receives update → dismisses → XP recalculates
+| Method | Player action | Who confirms | ProgressEvent write |
+| ------ | ------------- | ------------ | ------------------- |
+| **`gmApprove`** | Mark complete | GM in `PendingApprovalsPanel` | `pendingApproval` → `completed` |
+| **`selfApprove`** | Mark complete | Immediate | `autoApproved` |
+| **`qr`** | Mark complete → show QR | **GM scans** `/validate/...` | `completed` on GM confirm (no write before — C-07) |
+| **`peerScan`** | Show peer QR | **N unique scanners** on `/peer/...` | `completed` when `peer_scans` count ≥ `peerScanTarget` |
+| **`form` type** | Submit on `FormPage` | Automatic | `autoApproved` + `formResponse` (ignores `validationMethod` — C-06) |
 
-> **[NEED-UPDATE — UX / data storage]** OD-10: Player may see `pendingApproval`
-> inline on mission cards instead of full-screen `ValidationDisplay`. Affects
-> where progress state is surfaced and when subscriptions mount.
+**`gmApprove`**
+
+1. Player marks complete → `status: pendingApproval`
+2. `ValidationDisplay` — waiting state (poll/SSE per C-20)
+3. GM approves in hire analytics → `status: completed`
+4. Player cockpit XP updates
 
 **`selfApprove`**
 
-1. Player marks Mission complete → `upsertProgressEvent` called immediately with
-   `status: autoApproved`
-2. No `ValidationDisplay` shown - cockpit updates inline
+1. Player marks complete → `status: autoApproved` immediately
+2. No `ValidationDisplay`
 
-**`qr` (physical co-location — URL-encoded QR + shared ValidationPage)**
+**`qr` (GM scans player QR)**
 
-1. Player marks Mission complete → `ValidationDisplay` mounts with `QRDisplay`
-   (no `ProgressEvent` write before GM confirms — C-07)
-2. `QRDisplay` calls `encodeQRPayload` in `qrPayload.ts`, wraps with
-   `buildValidationUrl` in `qrUrl.ts` → QR encodes full URL:
-   `{origin}/validate/{sessionId}?t={base64 signed QRPayload}`
-3. `QRDisplay` holds an adapter `subscribeProgressEvent` callback so the Player
-   is notified when status becomes `completed` (mock: in-memory notify; PB:
-   SSE). This is **player-side only** — the GM scan/confirm path does not hold
-   a PocketBase subscription.
-4. Game Maker scans the QR via any entry point:
-   - **External device camera** → browser opens `/validate/:sessionId?t=...`
-   - **Built-in scanner** → `AdminQRScannerModal` or `QRScannerView` parses URL
-     via `parseValidationToken` → `navigate` to the same `ValidationPage`
-5. `ValidationPage` (GM-only, `RequireRole`): fetch `session.qrSecret`,
-   `decodeQRPayload` from `?t=`, load player / mission / milestone names,
-   render confirmation card (milestone, mission, player, XP)
-6. Game Maker taps **Confirm** → `upsertProgressEvent` → `status: completed`,
-   `validatedBy` = GM `identity.uid`, `validatedAt` = now
-7. Player `QRDisplay` subscription fires → `onValidated` → cockpit XP
-   recalculates
+1. Player marks complete → `QRDisplay` with `/validate/{sessionId}?t=...`
+2. No `ProgressEvent` until GM confirms (C-07)
+3. GM scans via camera or `QRScannerView` → `ValidationPage`
+4. HMAC verify → confirm → `status: completed`
+5. Player SSE/poll dismisses wait state
 
-**QR signing key (`qrSecret`):** Stored on `sessions.qrSecret` (64-char hex,
-auto-generated on PocketBase session create). Used only on the GM device for
-HMAC verification on `ValidationPage`. Prototype mock sets `qrSecret = sessionId`
-so encode and decode stay aligned.
+**`peerScan` (crowd attestation — e.g. "Say hi to 5 people")**
 
-> **[NEED-UPDATE — UX / data storage]** _Reason: Player-side `encodeQRPayload`
-> currently needs the same secret as GM decode; production may move signing
-> server-side or issue short-lived player tokens. See OD-13._
+1. Player opens mission → `PeerQRDisplay` with `/peer/{sessionId}?t=...`
+2. Third party scans with any QR app → `PeerScanPage` (no identity)
+3. Scanner submits name / optional form fields → `peer_scans` record
+4. Dedup: one row per `(missionId, playerId, scannerDeviceId)`
+5. When count ≥ `mission.peerScanTarget` → `upsertProgressEvent(completed)`
+6. GM hire analytics shows live attestations (SSE)
 
-> **Trust boundary (qr only):** `xpValue` in the QR payload is client-generated
-> and not server-verified at encode time. `ValidationPage` should prefer
-> `missions.xpValue` at confirm when available. Acceptable for prototype demo.
-> See OD-07.
+**QR identity rules (normative)**
 
-Real-time subscriptions: `ValidationDisplay` for `qr` uses adapter subscribe on
-the **player** device only. `gmApprove` may use polling or SSE while waiting for
-approval (see OD-09). The GM QR confirm path is offline until the explicit PB
-write on `ValidationPage` (C-07).
+| URL scanned | Scanner identity | Result |
+| ----------- | ---------------- | ------ |
+| `/join/:hireSessionId` | None | Claim hire → player cockpit |
+| `/join/:hireSessionId` | Player or GM exists | `InvalidIdentityPage` |
+| `/validate/...` | GM for this hire | Validation confirm |
+| `/validate/...` | Player or none | `InvalidIdentityPage` |
+| `/peer/...` | Any (incl. none) | Peer attestation form |
 
-### Admin Cockpit
+**Signing:** `qrPayload.ts` / `peerPayload.ts` are single encode/decode points
+(C-16). All QR codes are **plain HTTPS URIs** — scannable by the device camera
+without the MesseBuddy app installed; the browser handles routing.
 
-The Game Maker's primary view - read-write. Components in render order:
+> **Trust boundary (`qr`):** Prefer server `missions.xpValue` at confirm over
+> payload value. See OD-07.
 
-- `TopBar`
-- `PlayerSelectorDropdown`
-- `PlayerProfileCard`
-- `MilestoneMapEditor`
-- `MilestoneSidebarEditor`
-- `CurrentMissionsList` (drag-to-reorder)
-- `BuddyAssignmentForm`
-- `ResourcesEditor`
-- `SaveActions`
-- `AdminQRScannerModal` (optional GM QoL — generic URL scanner → `ValidationPage`)
-- `PendingApprovalsPanel` / `useAdminPlayers` for approve/reject (`gmApprove` only)
+### Admin surfaces
 
-**Background Image:** Game Maker uploads JPEG/PNG/WEBP → stored in Pocketbase
-file storage → `session.bgImageUrl` updated → both Player and Admin
-`BackgroundCanvas` instances fetch the same URL.
+**GM Home (`AdminHomePage`)** — hire portfolio
 
-**GridOverlay:** Toggleable snap-to-grid, visible in edit mode only. Aids
-Milestone node placement.
+- Lists **all** owned hire sessions (joined + pending)
+- Summary stats: active count, average progress, stalled count
+- **One** "Add new hire" CTA (header when list populated; empty-state when none)
+- Navigate to hire detail for configure / analytics
+- Stale home session → "Remove this profile" (not logout)
+
+**Hire Detail (`HireDetailPage`)** — per-hire command center
+
+| Tab | Purpose |
+| --- | ------- |
+| **Analytics** | Map progress, pending approvals, peer-scan feed, form submissions |
+| **Customize** | Milestones, missions (bottom sheet editor), templates, resources, map BG |
+| **Buddy** | QoL mentor card |
+| **Pre-boarding** | QoL checklist on session |
+
+- `MissionBottomSheet` — mission list + editor per milestone
+- `SessionInviteCard` — hire invite QR
+- `AdminQRScannerModal` — scan any MesseBuddy URL
+
+Diagram: [`docs/hire-lifecycle.puml`](docs/hire-lifecycle.puml)
+
+### Admin draft architecture (normative)
+
+Hire customization uses **draft layers** until explicit Save:
+
+| State | Location | Rule |
+| ----- | -------- | ---- |
+| `draftMilestones[]` | `useAdminMilestoneEditor` | Source of truth for name, position |
+| `draftMissions` Map | `useAdminMissionEditor` | Source of truth for mission fields incl. `xpValue` |
+| `missionOrderChanges` Map | `useAdminMissionEditor` | Must be **merged into list props** for display before save |
+| `selectedMilestoneId` | hire detail | **Store ID only** — derive `Milestone` from `draftMilestones` for UI |
+
+**Dirty guards:** Any exit from mission editor (back, close, overlay dismiss)
+must run the same confirm sheet when `isDirty`.
+
+**Mutations:** All adapter writes from admin UI must surface errors (toast) —
+no silent `void` on promises.
+
+**Background Image:** Game Maker uploads JPEG/PNG/WEBP → Pocketbase file storage
+→ `session.bgImageUrl` updated → both Player and Admin `BackgroundCanvas` fetch
+the same URL.
 
 ## Use Cases
 
@@ -506,9 +592,10 @@ flexible as possible for the users.
 
 | Use case              | Inputs                                | Output                | Side effects                |
 | --------------------- | ------------------------------------- | --------------------- | --------------------------- |
-| `deriveXP`            | `Mission[]`                           | `number[]` (xpValues) | None - pure function        |
+| `computeMilestoneThreshold` | `Mission[]` for one milestone | `number` | None — sum of xpValue |
 | `computeProgress`     | `ProgressEvent[]`, `Mission[]`        | `PlayerProgress`      | None - pure function        |
 | `upsertProgressEvent` | `playerId`, `missionId`, `patch`      | `ProgressEvent`       | PATCH or POST to PB         |
+| `recordPeerScan`      | `missionId`, `playerId`, attestation  | `PeerScan`            | POST to PB; may complete mission |
 | `validateMission`     | `ScanData`, `gameMakerUid`            | `ProgressEvent`       | Calls `upsertProgressEvent` |
 | `completeForm`        | `missionId`, `formResponse`           | `ProgressEvent`       | Calls `upsertProgressEvent` |
 | `joinSession`         | `sessionId`                           | `LocalIdentity`       | Writes `localStorage`       |
@@ -535,9 +622,12 @@ flexible as possible for the users.
 App
 ├── LandingPage                       [/ , /join/:sessionId]
 ├── PlayerCockpitPage                 [/session/:sessionId]
-├── AdminCockpitPage                  [/admin/:sessionId]
-├── FormPage                          [/form/:missionId]
+├── AdminHomePage                     [/admin/:homeSessionId]  hire list
+├── HireDetailPage                    [/admin/:homeSessionId/hire/:hireId]
+├── FormPage                          [/form/:sessionId/:missionId]
 ├── ValidationPage                    [/validate/:sessionId]  GM QR confirm
+├── PeerScanPage                      [/peer/:sessionId]  crowd attestation (planned)
+├── InvalidIdentityPage               [/invalid-identity]  wrong QR for identity (planned)
 └── QRScannerView                     [/admin/:sessionId/scan]  GM camera scanner
 ```
 
@@ -572,6 +662,7 @@ PlayerCockpitPage
 ├── MissionDetailPopup                [on mission click, text/link types]
 ├── ValidationDisplay                 [full-screen, mounts on Mark Complete]
 │   ├── QRDisplay                     [validationMethod = 'qr'; URL QR + player subscribe]
+│   ├── PeerQRDisplay                 [validationMethod = 'peerScan'; crowd QR]
 │   └── PendingApprovalDisplay        [validationMethod = 'gmApprove']
 ├── BuddyCard
 └── ResourcesSection
@@ -657,7 +748,7 @@ QRScannerView                         [/admin/:sessionId/scan]
 ```ts
 type MissionType = "text" | "link" | "form";
 type MissionTag = "mandatory" | "needsApproval" | "urgent" | "overdue";
-type ValidationMethod = "gmApprove" | "selfApprove" | "qr"; // per-mission; form missions ignore this
+type ValidationMethod = "gmApprove" | "selfApprove" | "qr" | "peerScan"; // per-mission; form missions ignore this
 type ProgressStatus =
   | "pending"
   | "pendingApproval"
@@ -806,7 +897,7 @@ interface Milestone extends PBRecord {
   readonly name: string;
   readonly xPercent: number; // 0–100, percentage of canvas width
   readonly yPercent: number; // 0–100, percentage of canvas height
-  readonly xpThreshold: number; // always 100; stored for clarity
+  readonly xpThreshold: number; // sum of missions.xpValue in this milestone; synced on save
   readonly order: number;
 }
 
@@ -817,13 +908,13 @@ interface Mission extends PBRecord {
   readonly body: string; // markdown
   readonly type: MissionType;
   readonly externalUrl?: string; // only when type = 'link'
-  readonly difficulty: number; // 1–5, set by Game Maker
-  readonly xpValue: number; // derived by deriveXP, written on save
+  readonly xpValue: number; // set directly by Game Maker (XP awarded on validation)
   readonly tags: ReadonlyArray<MissionTag>;
   readonly suggestedDueDate?: string;
   readonly order: number;
   readonly isInCurrentMissions: boolean;
   readonly validationMethod: ValidationMethod; // default: 'gmApprove'; ignored when type = 'form'
+  readonly peerScanTarget?: number; // required when validationMethod = 'peerScan'; min unique scanners
 }
 
 interface FormSchema extends PBRecord {
@@ -836,11 +927,18 @@ interface ProgressEvent extends PBRecord {
   readonly playerId: string;
   readonly missionId: string;
   readonly status: ProgressStatus;
-  readonly validatedBy?: string; // Game Maker UID
+  readonly validatedBy?: string; // Game Maker UID or 'peerScan' system marker
   readonly validatedAt?: string;
   readonly formResponse?: Readonly<Record<string, string>>; // parsed by adapter
-  // **[NEED-UPDATE — UX / data storage]** OD-02: snapshot validatedXp at
-  // confirm time instead of re-deriving from mission difficulty changes.
+}
+
+interface PeerScan extends PBRecord {
+  readonly sessionId: string;
+  readonly missionId: string;
+  readonly playerId: string; // mission owner
+  readonly scannerDeviceId: string; // from mb_scan_device_id
+  readonly scannerName: string;
+  readonly formResponse?: Readonly<Record<string, string>>;
 }
 
 interface Resource extends PBRecord {
@@ -859,7 +957,7 @@ interface Resource extends PBRecord {
 interface MilestoneProgress {
   readonly milestoneId: string;
   readonly earnedXP: number;
-  readonly xpThreshold: number; // always 100
+  readonly xpThreshold: number; // sum of mission xpValues in milestone
   readonly percentComplete: number; // earnedXP / xpThreshold
   readonly status: MilestoneStatus;
   readonly completedMissionIds: ReadonlyArray<string>;
@@ -880,9 +978,11 @@ interface DraftMission {
   readonly body?: string;
   readonly type?: MissionType;
   readonly externalUrl?: string;
-  readonly difficulty?: number;
+  readonly xpValue?: number;
   readonly tags?: ReadonlyArray<MissionTag>;
   readonly suggestedDueDate?: string;
+  readonly validationMethod?: ValidationMethod;
+  readonly peerScanTarget?: number;
 }
 
 // IDs stripped on export; used for template JSON
@@ -907,7 +1007,8 @@ interface TemplateRecord {
 | `milestones`      | `sessionId`, `order`                                | -                                              |
 | `missions`        | `milestoneId`, `sessionId`, `order`                 | -                                              |
 | `form_schemas`    | `missionId` (unique)                                | One schema per mission                         |
-| `progress_events` | `(playerId, missionId)` composite                   | App-layer uniqueness via `upsertProgressEvent` |
+| `progress_events` | `(playerId, missionId)` composite                   | App-layer uniqueness via `upsertProgressEvent` (C-05) |
+| `peer_scans`      | `(missionId, playerId, scannerDeviceId)` composite  | C-25; one attestation per device per mission          |
 | `buddy_profiles`  | `assignedToPlayerId`                                | -                                              |
 | `resources`       | `sessionId`                                         | -                                              |
 
@@ -936,81 +1037,36 @@ upsertProgressEvent(playerId, missionId, patch):
 PB does not natively support composite unique indexes. The upsert function is
 the single enforcement point for C-05.
 
-## XP Derivation Algorithm
+## XP Model
 
-### Governing Constraints
+### Governing rules
 
-- `xpThreshold` = **100 per Milestone**, fixed constant
-- `xpValue` per Mission is derived at **save time** by `deriveXP` and stored in
-  `missions.xpValue`
-- `PlayerProgress.earnedXP` is computed at **read time** by `computeProgress` -
-  retroactive difficulty changes affect earned XP
-- Rounding remainder distributed to highest-difficulty Missions first (then
-  `mission.order` as tiebreaker)
+- **`missions.xpValue`** is set **directly by the Game Maker** in the mission
+  editor. There is **no `difficulty` field** and no normalization algorithm.
+- **`milestones.xpThreshold`** = sum of `xpValue` for all Missions in that
+  Milestone. Recomputed and persisted when missions are saved.
+- **`PlayerProgress.earnedXP`** is computed at read time by `computeProgress`
+  (C-11) — sums `xpValue` of completed missions.
+- **Session `totalXP`** = sum of `earnedXP` across milestones.
+- Changing `xpValue` after a player completed a mission affects displayed
+  progress retroactively unless OD-24 (snapshot) is implemented.
 
-### Difficulty Weight Mapping
+### Editor UX
 
-Linear 1:1 mapping. Transparent, explainable, appropriate for prototype scale.
+- GM picks XP from a constrained chip set (e.g. 5, 10, 15, 20) or numeric input.
+- Player and admin lists display the same `xpValue` the GM saved.
+- Validation confirm screens show `mission.xpValue` from server record.
 
-```
-difficulty 1 → weight 1  ·  difficulty 2 → weight 2  ·  difficulty 3 → weight 3
-difficulty 4 → weight 4  ·  difficulty 5 → weight 5
-```
+### Worked example
 
-### Algorithm (pseudocode)
-
-```
-CONSTANTS:
-  XP_THRESHOLD = 100
-  WEIGHT_MAP   = { 1:1, 2:2, 3:3, 4:4, 5:5 }
-
-FUNCTION deriveXP(missions: Mission[]) → xpValues: number[]
-
-  IF missions.length === 0 → RETURN []
-
-  weights     = missions.map(m → WEIGHT_MAP[m.difficulty])
-  totalWeight = sum(weights)
-
-  xpValues = weights.map(w → floor(XP_THRESHOLD × w / totalWeight))
-
-  remainder = XP_THRESHOLD − sum(xpValues)
-  sortedIdx = indices sorted by (weights[i] DESC, missions[i].order ASC)
-  FOR i = 0 TO remainder − 1
-    xpValues[sortedIdx[i]] += 1
-
-  RETURN xpValues   // invariant: sum(xpValues) === XP_THRESHOLD
-```
-
-### Recomputation Triggers
-
-Recompute all `xpValue` fields for a Milestone and batch-PATCH to Pocketbase
-whenever:
-
-- A Mission's `difficulty` changes
-- A Mission is added to or deleted from a Milestone
-
-Recomputation runs on **Game Maker save**, not live while editing.
-
-### Worked Example
-
-20 Missions: 1× difficulty-5, 19× difficulty-1:
+Milestone "Arrive & Get Set Up" with missions worth 10, 5, 10, 5, 10, 5, 5 XP:
 
 ```
-totalWeight = 5 + 19 = 24
-hard:  floor(100 × 5/24) = 20 → +1 from remainder = 21
-easy:  floor(100 × 1/24) = 4  → 3 get +1 from remainder = 5; 16 remain at 4
-sum: 21 + 3×5 + 16×4 = 100 ✓
+xpThreshold = 50
+Player completes first three → earnedXP = 25 → percentComplete = 50%
 ```
 
-### Session-Level XP
-
-```
-totalXP        = sum of earnedXP across all Milestones
-maxPossibleXP  = numberOfMilestones × 100
-overallPercent = totalXP / maxPossibleXP
-```
-
-Used in `TopBar` and Game Maker's player overview.
+Used in `TopBar` and Game Maker's hire analytics.
 
 ## Session Export / Import
 
@@ -1069,7 +1125,7 @@ interface FullSessionExport {
 | C-01 | One user identity per session                                                                                                                                                                                                           | `players.uid` unique globally                                                                         |
 | C-02 | Progress is always recoverable                                                                                                                                                                                                          | `recoveryKey` stored in PB, shown once on first join                                                  |
 | C-03 | No auth system required                                                                                                                                                                                                                 | Pocketbase auth collections unused; identity via unified `Player` type + `RequireRole` (client-trusted role). `localStorage.mb_identity` caches a `CachedIdentity` subset of `Player` fields for offline resolution. |
-| C-04 | `xpThreshold` is always 100 per Milestone                                                                                                                                                                                               | Constant; not stored as a variable field                                                              |
+| C-04 | `xpThreshold` = sum of `missions.xpValue` in the Milestone | Recomputed on mission save; stored on `milestones` for progress % |
 | C-05 | One `ProgressEvent` per `(playerId, missionId)`                                                                                                                                                                                         | Enforced at `upsertProgressEvent` - the single write path                                             |
 | C-06 | Form missions always `autoApproved`, regardless of `validationMethod`                                                                                                                                                                   | `autoApproved` status set on submit; `ValidationDisplay` never mounts for `form` type                 |
 | C-07 | The GM `qr` path holds no PocketBase SSE subscription during scan or confirm — offline HMAC verify on `ValidationPage` → GM confirm → `upsertProgressEvent`. Player `QRDisplay` may use adapter subscribe to detect completion after the write. `gmApprove` may use polling or SSE in `ValidationDisplay` (see OD-09). | `ValidationPage` + `qrPayload.ts`; no `pb.collection().subscribe()` on GM QR confirm path |
@@ -1081,7 +1137,11 @@ interface FullSessionExport {
 | C-13 | No component calls `JSON.parse` on a PB record field                                                                                                                                                                                    | All parsing happens inside the PB adapter module                                                      |
 | C-14 | No component writes directly to `progress_events`                                                                                                                                                                                       | All mutations go through `upsertProgressEvent`                                                        |
 | C-15 | `validationMethod` defaults to `'gmApprove'` for all new Missions                                                                                                                                                                       | Set in `MissionEditor` default state; form missions ignore this field                                 |
-| C-16 | QR payloads must include HMAC-SHA256 keyed with `sessions.qrSecret`. `qrPayload.ts` is the single encode/decode point; `qrUrl.ts` wraps payloads in validation URLs. No component calls `JSON.stringify`/`JSON.parse` on QR strings directly. | `qrPayload.ts`, `qrUrl.ts`; `QRDisplay`, scanners, `ValidationPage` |
+| C-16 | QR payloads must include HMAC-SHA256 keyed with `sessions.qrSecret`. `qrPayload.ts` / `peerPayload.ts` are single encode/decode points; `qrUrl.ts` wraps validation URLs. No component calls `JSON.stringify`/`JSON.parse` on QR strings directly. | `QRDisplay`, `PeerQRDisplay`, scanners, `ValidationPage`, `PeerScanPage` |
+| C-22 | Admin list views must project pending edits (`missionOrderChanges`, `draftMilestones`) — never read stale selection snapshots for display | `useHireDetailPage`, `MissionBottomSheet` |
+| C-23 | Logout navigates to landing only; `removeProfile` is reserved for explicit profile removal | `AdminHomePage`, `usePlayerCockpitPage`, landing profile card |
+| C-24 | Hire list shows all GM-owned sessions (joined and not joined) | `AdminHomePage` / `useGmHires` |
+| C-25 | `peerScan` attestations are unique per `(missionId, playerId, scannerDeviceId)` | `peer_scans` collection unique index |
 | C-17 | `ChatThread` and `ChatMessage` are ephemeral client-only state. Chat history is never written to PocketBase and is reset on page navigation                                                                                             | `useChatStream` hook holds state in React; no PB adapter call for chat data                           |
 | C-18 | All domain data access flows through shared hooks. No component or page calls [`AppAdapter`](src/adapters/interface.ts:18) methods directly.                                                                                            | `useProgress`, `useBuddyProfile`, `useResources` are the sole consumers of `AppAdapter` for their respective domains. Pages and components consume data exclusively through these hooks. |
 | C-19 | Role-scoped view types enforce compile-time field access. Player components receive `Player*View` types that omit admin-only fields (e.g., `PlayerSessionView` omits `qrSecret`, `gameMakerId`). Admin components receive full domain types. TypeScript enforces this at build time. | `src/types/views.ts`; `SharedDataProvider` returns typed views via `useSharedData(entity, role)`. |
@@ -1092,17 +1152,36 @@ interface FullSessionExport {
 
 | #     | Question                                                                                                                                                                                                    | Impact                                                                     | Target Sprint  |
 | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | -------------- |
-| OD-01 | Should `link`-type Missions auto-complete on click, or require "Mark as Visited" + QR flow?                                                                                                                 | Determines if link missions need `QRDisplay`                               | Sprint 2       |
-| OD-02 | Should difficulty changes retroactively affect earned XP, or should `ProgressEvent` snapshot `xpValue` at validation time?                                                                                  | Data model + fairness UX                                                   | Sprint 2       |
+| OD-01 | Should `link`-type Missions auto-complete on click, or require "Mark as Visited" + validation flow?                                                                                                         | Determines if link missions need `ValidationDisplay`                       | Sprint 2       |
 | OD-03 | Should `MilestoneNode` fill color use a gradient (0–100%) or step thresholds (0%, 25%, 50%, 75%, 100%)?                                                                                                     | Visual design only                                                         | Sprint 2       |
 | OD-04 | Does the `ResourcesSection` support metadata filtering (type, tags) or free-text search only?                                                                                                               | `SearchBar` complexity                                                     | Sprint 2       |
 | OD-05 | Should the Game Maker be able to create multiple Buddy profiles per session (a pool), or one per player only?                                                                                               | `BuddyProfile` schema impact                                               | Sprint 3       |
 | OD-06 | What is the offline behavior for form submission - queue and sync, or block until online?                                                                                                                   | Service Worker strategy                                                    | Sprint 3       |
-| OD-07 | In production, should `xpValue` be re-derived from `missions.xpValue` at scan time rather than trusted from the QR payload?                                                                                 | Security; out of scope for prototype; applies only to `qr` method          | Post-prototype |
-| OD-08 | Should `validationMethod` be configurable at session level (all missions inherit a session-wide default), or per-mission only?                                                                              | Game Maker UX and template design complexity                               | Sprint 3       |
-| OD-09 | For `gmApprove` missions, should `ValidationDisplay` use polling or SSE to detect approval? SSE keeps the existing real-time pattern but extends the subscription scope.                                    | Real-time UX vs. infrastructure simplicity                                 | Sprint 3 — Partially resolved by C-20: the subscription strategy is now an implementation detail of the shared `useProgress` hook, not a component-level decision. The `ValidationDisplay` delegates to the hook; the hook author chooses SSE or polling. |
-| OD-10 | Should the Player see the `pendingApproval` state inline (e.g., greyed-out mission card with "Waiting for approval") rather than a full-screen `ValidationDisplay`?                                         | Player UX feedback loop; affects when `ValidationDisplay` dismisses        | Sprint 3       |
-| OD-11 | What is the auth mechanism for the LiteLLM proxy? Options: (a) Bearer token hardcoded in env var at build time, (b) session token passed from `Player`, (c) unauthenticated (internal network only).         | Security posture of the AI gateway; affects `useChatStream` implementation | Sprint 3       |
+| OD-07 | In production, should `xpValue` be re-derived from `missions.xpValue` at scan time rather than trusted from the QR payload?                                                                                 | Security; applies to `qr` method                                           | Post-prototype |
+| OD-10 | Should the Player see the `pendingApproval` state inline (e.g., greyed-out mission card with "Waiting for approval") rather than a full-screen `ValidationDisplay`?                                         | Player UX feedback loop                                                    | Sprint 3       |
 | OD-12 | Should the QR payload's `issuedAt` expiry tolerance be configurable per session, or a fixed constant (e.g., 5 minutes)?                                                                                     | UX for slow QR scans; security for replayed tokens                         | Sprint 3       |
-| OD-13 | How should player-side QR signing obtain the HMAC key in production? Options: server-signed token endpoint, short-lived player signing key, or accept prototype `sessionId` stand-in in mock only.          | Security of `qr` path; `qrSecret` must not leak to untrusted clients       | Post-prototype |
-| OD-14 | Should identity move from `localStorage` + ephemeral demo to persisted `SessionRole` records with server-validated roles?                                                                                  | Multi-session UX, route guard trust, recovery flows                        | Post-prototype — Simplified by the unified `Player`/identity model. Identity is already a canonical `players` PB row; the remaining step is server-validating the `role` field on mutations. |
+| OD-13 | How should player-side QR signing obtain the HMAC key in production?                                                                                                                                          | Security of `qr` / `peerScan` paths                                        | Post-prototype |
+| OD-14 | Should identity move from `localStorage` to server-validated roles?                                                                                                                                          | Multi-session UX, route guard trust                                        | Post-prototype |
+| OD-20 | Should new hires auto-receive a starter template (e.g. profile form mission) on `createHire`, or remain empty until GM applies a template?                                                                  | Onboarding empty-state UX                                                  | Sprint 3       |
+| OD-21 | Should `peerScan` missions use the mission's `FormSchema` for scanner input, or a fixed name-only form?                                                                                                       | `PeerScanPage` + admin analytics                                           | Sprint 3       |
+| OD-22 | Should Resources gain optional `milestoneId` for per-milestone sidebar tabs, or stay session-global?                                                                                                        | Data model + player sidebar                                                | Post-prototype |
+| OD-24 | Should `ProgressEvent` snapshot `validatedXp` at confirm time to prevent retroactive GM edits from changing earned XP?                                                                                      | Fairness vs C-11 simplicity                                                | Sprint 3       |
+
+## Implementation gaps (code vs spec)
+
+**Track open gaps in [`plans/production-implementation-plans.md`](plans/production-implementation-plans.md)** — single living register (status dashboard, phased plan, smoke checklist). Spec sections above remain **target behavior**.
+
+Recently closed (2026-07-03): C-23 logout, C-24 hire list, C-22 partial (back dirty guard), OD-02 XP-only, duplicate add-hire CTA.
+
+Still open (see plan): C-22 draft projection, `peerScan`, invite token wiring, analytics empty-state, buddy pre-join save, settings/tutorial mismatch.
+
+Diagram index: [`docs/README.md`](docs/README.md)
+
+### Resolved (2026-07-03)
+
+| # | Decision |
+| - | -------- |
+| OD-02 | **XP is GM-set `xpValue` only.** No `difficulty`, no `deriveXP`. |
+| OD-08 | **Per-mission** `validationMethod` (supports mixed strategies in one hire). |
+| OD-09 | Subscription strategy is hook-internal (C-20). |
+| C-04 | **`xpThreshold` = sum of mission XP** in milestone, not fixed 100. |

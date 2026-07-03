@@ -52,8 +52,7 @@ export interface DraftMission {
   readonly body?: string;
   readonly type?: MissionType;
   readonly externalUrl?: string;
-  readonly difficulty?: number;
-  readonly xpValue?: number; // direct Fibonacci XP input (1,2,3,5,8,13,21,34)
+  readonly xpValue?: number;
   readonly tags?: ReadonlyArray<MissionTag>;
   readonly suggestedDueDate?: string;
   readonly validationMethod?: ValidationMethod;

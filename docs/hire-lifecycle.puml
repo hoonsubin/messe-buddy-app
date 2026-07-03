@@ -1,0 +1,60 @@
+@startuml diagram_hire_lifecycle
+title Hire Lifecycle — Game Maker, Session, Player
+
+actor GameMaker as "Game Maker"
+actor NewHire as "New Hire"
+participant AdminHome as "AdminHomePage\n(/admin/:homeSid)"
+participant HireDetail as "HireDetailPage\n(/admin/:homeSid/hire/:hireSid)"
+participant Landing as "LandingPage\n(/join/:hireSid)"
+participant Cockpit as "PlayerCockpitPage\n(/session/:hireSid)"
+database PocketBase as "PocketBase"
+
+== GM creates a hire ==
+
+GameMaker -> AdminHome : Open hire dashboard
+AdminHome -> PocketBase : listSessions WHERE gameMakerId = gm.uid
+PocketBase --> AdminHome : home session + hire sessions
+
+GameMaker -> AdminHome : "Add new hire" → name capture
+AdminHome -> PocketBase : createSession(hireName, gameMakerId)
+PocketBase --> AdminHome : hireSessionId
+AdminHome -> HireDetail : navigate /admin/:homeSid/hire/:hireSid?new=1
+
+== GM configures journey (or applies template) ==
+
+GameMaker -> HireDetail : Customize tab
+HireDetail -> PocketBase : milestones, missions, resources\n(via adapter on save)
+note right of HireDetail
+  **Templates (QoL):** import/export portable
+  Milestones + Missions + FormSchemas + Resources.
+  No player progress in templates.
+end note
+
+GameMaker -> HireDetail : Copy invite QR / link
+note right of HireDetail
+  Invite URL: {origin}/join/{hireSessionId}
+  Scannable by any phone camera — plain HTTPS URI.
+end note
+
+== Player claims identity ==
+
+NewHire -> Landing : Scan invite QR (no local identity)
+Landing -> PocketBase : verifySession(hireSessionId)
+Landing -> PocketBase : createPlayer + recoveryKey
+Landing -> Landing : setIdentity(CachedIdentity) → localStorage
+Landing -> Cockpit : navigate /session/:hireSessionId
+
+== GM monitors progress ==
+
+GameMaker -> AdminHome : Hire list (all owned sessions)
+note right of AdminHome
+  **Desired:** show joined AND not-joined hires.
+  joined=false → status "Not joined yet".
+  joined=true → progress %, stalled flag.
+end note
+
+GameMaker -> HireDetail : Analytics tab
+HireDetail -> PocketBase : progress_events, players
+HireDetail -> HireDetail : computeProgress → XP, approvals,\npeer scans, form responses
+
+@enduml

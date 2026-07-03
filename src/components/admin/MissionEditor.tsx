@@ -35,7 +35,6 @@ const VALIDATION_OPTIONS: ReadonlyArray<
 
 interface MissionEditorProps {
   readonly draft: DraftMission;
-  readonly xpPreview: number; // kept for compat; no longer shown (XP is direct)
   readonly onDraftChange: (draft: DraftMission) => void;
 }
 
@@ -165,11 +164,10 @@ const MissionEditor = (props: MissionEditorProps) => {
         </div>
       )}
 
-      {/* XP value — direct Fibonacci selection */}
       <div className="form-field">
-        <label className="form-label">XP</label>
+        <label className="form-label">XP value</label>
         <XpSelector
-          value={props.draft.xpValue ?? 1}
+          value={props.draft.xpValue ?? 10}
           onChange={(xpValue) =>
             props.onDraftChange({ ...props.draft, xpValue })}
         />

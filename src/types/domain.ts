@@ -55,7 +55,6 @@ export interface Player extends PBRecord {
   readonly workStyle?: string;
   readonly energizers?: ReadonlyArray<string>;
   readonly drainers?: ReadonlyArray<string>;
-  readonly inviteToken?: string; // one-time claim token; cleared on join; admin-visible only
 }
 
 export interface BuddyProfile extends PBRecord {
@@ -87,8 +86,7 @@ export interface Mission extends PBRecord {
   readonly body: string; // markdown
   readonly type: MissionType;
   readonly externalUrl?: string; // only when type = 'link'
-  readonly difficulty: number; // 1–5, set by Game Maker
-  readonly xpValue: number; // derived by deriveXP, written on save
+  readonly xpValue: number; // set by Game Maker; awarded on validation
   readonly tags: ReadonlyArray<MissionTag>;
   readonly suggestedDueDate?: string;
   readonly order: number;

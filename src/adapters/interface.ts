@@ -31,11 +31,6 @@ export interface AppAdapter {
   getPlayer(uid: string): Promise<Player | null>;
   getPlayerById(playerId: string): Promise<Player | null>;
   getPlayerByRecoveryKey(recoveryKey: string): Promise<Player | null>;
-  /** Returns the pending slot whose inviteToken matches, or null if used/unknown. */
-  getPlayerByInviteToken(
-    token: string,
-    sessionId: string,
-  ): Promise<Player | null>;
   createPlayer(data: Omit<Player, keyof PBRecord>): Promise<Player>;
   updatePlayer(
     playerId: string,

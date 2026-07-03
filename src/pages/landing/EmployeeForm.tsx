@@ -53,7 +53,7 @@ const EmployeeForm = ({
               value={sessionCode}
               onChange={(e) => onCodeChange(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onVerify()}
-              placeholder="e.g. sess_mmt2026"
+              placeholder="Code from your invite link"
               autoFocus
             />
           </div>

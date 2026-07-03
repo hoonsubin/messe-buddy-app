@@ -69,42 +69,6 @@ export const joinSession = async (
   return { identity, player };
 };
 
-// ── claimPlayerSlot ───────────────────────────────────────────────────────────
-
-// Allows a player to claim an admin-seeded slot via a one-time invite token.
-// On success: writes uid + recoveryKey to the Player record and clears inviteToken.
-// Returns JoinSessionResult identical in shape to joinSession's result.
-// Throws if the token is unknown, already used, or belongs to a different session.
-export const claimPlayerSlot = async (
-  token: string,
-  sessionId: string,
-  adapter: AppAdapter,
-): Promise<JoinSessionResult> => {
-  const slot = await adapter.getPlayerByInviteToken(token, sessionId);
-  if (!slot) {
-    throw new Error("This invite link has already been used or is invalid.");
-  }
-
-  const uid = crypto.randomUUID();
-  const recoveryKey = generateRecoveryKey();
-
-  const player = await adapter.updatePlayer(slot.id, {
-    uid,
-    recoveryKey,
-    inviteToken: undefined, // cleared — token is single-use
-  });
-
-  const identity: CachedIdentity = {
-    uid,
-    recoveryKey,
-    sessionId,
-    role: USER_ROLE.PLAYER,
-    name: slot.name,
-  };
-
-  return { identity, player };
-};
-
 // ── createGameMakerSession ────────────────────────────────────────────────────
 
 // Returns CachedIdentity; the caller persists it via useIdentity.setIdentity.

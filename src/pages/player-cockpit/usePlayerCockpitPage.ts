@@ -9,7 +9,6 @@ import type {
 import { MISSION_TYPE, USER_ROLE } from "../../types/index.ts";
 import type { CachedIdentity } from "../../types/index.ts";
 import { useActiveProfile } from "../../hooks/useActiveProfile.ts";
-import { useIdentity } from "../../hooks/useIdentity.ts";
 import { useResolvedPlayer } from "../../hooks/useResolvedPlayer.ts";
 import { useSession } from "../../hooks/useSession.ts";
 import { useProgressPlayer } from "../../hooks/useProgress/index.ts";
@@ -68,7 +67,6 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
   const { sessionId: routeSessionId } = useParams<{ sessionId: string }>();
   const sessionId = routeSessionId ?? "";
   const navigate = useNavigate();
-  const { removeProfile } = useIdentity();
   const identity = useActiveProfile(sessionId, USER_ROLE.PLAYER);
 
   const {
@@ -204,11 +202,8 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
   const handleLeave = useCallback(() => {
     sessionStorage.removeItem("mb_tutorial_step");
     sessionStorage.removeItem(TUTORIAL_FORM_KEY);
-    if (identity && !identity.isDemo) {
-      removeProfile(identity.uid);
-    }
     navigate("/", { replace: true });
-  }, [identity, removeProfile, navigate]);
+  }, [navigate]);
 
   if (!identity) return { status: "no-identity" };
   if (playerError) return { status: "player-error" };

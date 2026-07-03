@@ -8,7 +8,6 @@ interface MilestoneSidebarEditorProps {
   readonly missions: ReadonlyArray<Mission>;
   readonly activeMissionId: string | null;
   readonly draft: DraftMission | null;
-  readonly xpPreview: number;
   readonly isDirty: boolean;
   readonly isSaving: boolean;
   readonly onMissionSelect: (missionId: string) => void;
@@ -114,7 +113,6 @@ const MilestoneSidebarEditor = (props: MilestoneSidebarEditorProps) => {
         <div className="milestone-sidebar-editor__editor-area">
           <MissionEditor
             draft={props.draft}
-            xpPreview={props.xpPreview}
             onDraftChange={props.onDraftChange}
           />
         </div>

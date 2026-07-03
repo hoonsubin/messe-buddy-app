@@ -7,7 +7,7 @@ C-18-compliant hook layer — pages and components import hooks only; [`AppAdapt
 - Game Maker CRUD: [`docs/admin-view-data.md`](admin-view-data.md)
 - Player reads/writes: [`docs/player-view-data.md`](player-view-data.md)
 - PocketBase schema: [`docs/pb-schema.md`](pb-schema.md)
-- Implementation plan: [`plans/pocketbase-full-integration-strategy.md`](../plans/pocketbase-full-integration-strategy.md)
+- Implementation plan: [`plans/production-implementation-plans.md`](../plans/production-implementation-plans.md)
 
 ## Local vs synced data
 

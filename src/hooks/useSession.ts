@@ -8,7 +8,7 @@ import { useAdapter } from "../adapters/useAdapter.ts";
 // some other in-flight request pre-empted this one. Treating it as a real
 // error trips the "session not found, bounce to Admin Home" effect in
 // useHireDetailPage.ts on a request that was never actually resolved either
-// way. See plans/production-integration-audit-2026-07-01.md §1.1.
+// way. See plans/production-implementation-plans.md (hire creation race / P0 history).
 const isAbortError = (e: unknown): boolean => {
   if (e instanceof ClientResponseError && e.isAbort) return true;
   if (e instanceof DOMException && e.name === "AbortError") return true;

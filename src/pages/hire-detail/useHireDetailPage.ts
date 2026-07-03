@@ -166,7 +166,7 @@ export const useHireDetailPage = () => {
     setIsSaving(true);
     try {
       await milestoneEditor.saveMilestones(sid, milestones);
-      await missionEditor.saveMissions(sid, missions, missionEditor.xpPreview);
+      await missionEditor.saveMissions(sid, missions, milestones);
       milestoneEditor.clearDirtyMilestones();
       missionEditor.clearDirtyMissions();
       missionEditor.clearOrderChanges();

@@ -16,7 +16,7 @@ import SaveActions from "./SaveActions.tsx";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type SheetView = "list" | "editor";
-type ConfirmState = "idle" | "pending-close";
+type ConfirmState = "idle" | "pending-close" | "pending-back";
 
 interface MissionBottomSheetProps {
   readonly isOpen: boolean;
@@ -24,7 +24,6 @@ interface MissionBottomSheetProps {
   readonly missions: ReadonlyArray<Mission>;
   readonly activeMissionId: string | null;
   readonly draft: DraftMission | null;
-  readonly xpPreview: number;
   readonly isDirty: boolean;
   readonly isSaving: boolean;
   readonly sessionId: string;
@@ -48,7 +47,6 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
     missions,
     activeMissionId,
     draft,
-    xpPreview,
     isDirty,
     isSaving,
     sessionId,
@@ -109,6 +107,14 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
     }
   }, [isDirty, onClose]);
 
+  const attemptBack = useCallback(() => {
+    if (isDirty) {
+      setConfirmState("pending-back");
+    } else {
+      navigateTo("list", "back");
+    }
+  }, [isDirty, navigateTo]);
+
   // ── Draft persistence ───────────────────────────────────────────────────────
   const [
     dismissedStoredDraftForMissionId,
@@ -161,6 +167,23 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
     onClose();
   }, [activeMissionId, sessionId, onDiscard, onClose]);
 
+  const handleSaveDraftAndBack = useCallback(() => {
+    if (draft && activeMissionId) {
+      saveStoredDraft(sessionId, activeMissionId, draft);
+    }
+    setConfirmState("idle");
+    navigateTo("list", "back");
+  }, [draft, activeMissionId, sessionId, navigateTo]);
+
+  const handleDiscardAndBack = useCallback(() => {
+    if (activeMissionId) {
+      clearStoredDraft(sessionId, activeMissionId);
+    }
+    setConfirmState("idle");
+    onDiscard();
+    navigateTo("list", "back");
+  }, [activeMissionId, sessionId, onDiscard, navigateTo]);
+
   // ── Callback wrappers for list-view navigation ──────────────────────────────
   // MissionListView doesn't know about the sheet's internal navigation, so we
   // wrap the external callbacks to also navigate to the editor view.
@@ -185,7 +208,7 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
         <button
           type="button"
           className="btn btn--ghost sheet-icon-btn"
-          onClick={() => navigateTo("list", "back")}
+          onClick={attemptBack}
           aria-label="Back to mission list"
         >
           <MdArrowBack size={20} aria-hidden="true" />
@@ -268,12 +291,16 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
       testId="mission-bottom-sheet"
       header={sheetHeader}
       footer={sheetFooter}
-      overlay={confirmState === "pending-close"
+      overlay={confirmState !== "idle"
         ? (
           <ConfirmSheet
             onKeepEditing={handleKeepEditing}
-            onSaveDraft={handleSaveDraft}
-            onDiscardAndClose={handleDiscardAndClose}
+            onSaveDraft={confirmState === "pending-back"
+              ? handleSaveDraftAndBack
+              : handleSaveDraft}
+            onDiscardAndClose={confirmState === "pending-back"
+              ? handleDiscardAndBack
+              : handleDiscardAndClose}
           />
         )
         : undefined}
@@ -295,7 +322,6 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
           : (
             <MissionEditorView
               draft={draft}
-              xpPreview={xpPreview}
               storedDraft={storedDraft}
               onDraftChange={onDraftChange}
               onDismissStoredDraft={() => {
