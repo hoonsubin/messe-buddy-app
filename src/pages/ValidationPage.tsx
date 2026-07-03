@@ -1,7 +1,7 @@
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { USER_ROLE } from "../types/index.ts";
-import { useActiveProfile } from "../hooks/useActiveProfile.ts";
+import { useIdentity } from "../hooks/useIdentity.ts";
 import { useValidationConfirm } from "../hooks/useValidationConfirm.ts";
 import FetchErrorPanel from "../components/shared/FetchErrorPanel.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
@@ -12,13 +12,52 @@ const ValidationPage = () => {
   const navigate = useNavigate();
   const sid = sessionId ?? "";
   const token = searchParams.get("t") ?? "";
-  const identity = useActiveProfile(sid, USER_ROLE.GAMEMAKER);
+
+  // This route's sessionId is the *hire's* session, which never matches a
+  // GM's cached identity (scoped to their own home session) — so instead of
+  // useActiveProfile's exact-sessionId lookup, find any locally stored GM
+  // identity whose uid owns this hire (session.gameMakerId), once the hire
+  // session has loaded. `gameMakerId` is mirrored into state — adjusted
+  // during render (React's documented pattern for deriving state from a
+  // changed prop/value without an Effect) rather than in a useEffect — so the
+  // single `useValidationConfirm` call below can be re-invoked with the
+  // resolved validator uid without a second, duplicate session/decode fetch.
+  const { profiles } = useIdentity();
+  const [prevGameMakerId, setPrevGameMakerId] = useState<string | null>(null);
+  const [gameMakerId, setGameMakerId] = useState<string | null>(null);
+  const identity = useMemo(
+    () =>
+      gameMakerId
+        ? profiles.find(
+          (p) => p.role === USER_ROLE.GAMEMAKER && p.uid === gameMakerId,
+        ) ?? null
+        : null,
+    [profiles, gameMakerId],
+  );
 
   const validation = useValidationConfirm(sid, token, identity?.uid);
 
+  if (validation.gameMakerId !== prevGameMakerId) {
+    setPrevGameMakerId(validation.gameMakerId);
+    setGameMakerId(validation.gameMakerId);
+  }
+
+  // Session has loaded (we know who owns it) but no locally stored GM
+  // identity matches — this GM is not authorized to validate this hire.
+  const unauthorized = !validation.loading && validation.gameMakerId !== null &&
+    identity === null;
+
+  // Always return the GM to their own home session, never the hire's — the
+  // two are different sessionIds, and /admin/:sessionId's RequireRole guard
+  // checks the GM's home session specifically. `identity` (resolved above via
+  // gameMakerId) carries that home sessionId; if it hasn't resolved yet (or
+  // this GM isn't authorized for this hire), fall back to the public landing
+  // page instead of a route that will just bounce.
   const goToAdmin = useCallback(() => {
-    navigate(`/admin/${sid}`, { replace: true });
-  }, [navigate, sid]);
+    navigate(identity?.sessionId ? `/admin/${identity.sessionId}` : "/", {
+      replace: true,
+    });
+  }, [navigate, identity]);
 
   const handleConfirm = useCallback(async () => {
     try {
@@ -54,6 +93,18 @@ const ValidationPage = () => {
         onRetry={() => validation.refresh()}
         onBack={goToAdmin}
         backLabel="Back to cockpit"
+        testId="validation-page"
+        page="validation"
+      />
+    );
+  }
+
+  if (unauthorized) {
+    return (
+      <FetchErrorPanel
+        message="You're not signed in as this hire's Game Master, so you can't confirm this validation. Sign in from that Game Master's own admin session and scan again."
+        onRetry={() => navigate("/", { replace: true })}
+        retryLabel="Go to home"
         testId="validation-page"
         page="validation"
       />

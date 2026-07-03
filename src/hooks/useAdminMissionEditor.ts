@@ -52,7 +52,14 @@ interface UseAdminMissionEditorResult {
   readonly handleAddMission: (milestoneId: string) => void;
   readonly handleDraftChange: (draft: DraftMission) => void;
   readonly handleMissionReorder: (missionId: string, newOrder: number) => void;
-  readonly handleDeleteMission: (missionId: string) => void;
+  /**
+   * Deletes a mission. If it's already persisted (present in the
+   * server-fetched `missions` list), this calls `adapter.deleteMission`
+   * before hiding it from the UI — a not-yet-saved draft mission (keyed by
+   * its local draft id) is just dropped locally. Throws if the server
+   * delete fails; callers should catch and surface an error.
+   */
+  readonly handleDeleteMission: (missionId: string) => Promise<void>;
   readonly clearSelectedMission: () => void;
   readonly saveMissions: (
     sid: string,
@@ -145,7 +152,14 @@ export const useAdminMissionEditor = (
     [],
   );
 
-  const handleDeleteMission = useCallback((missionId: string) => {
+  const handleDeleteMission = useCallback(async (missionId: string) => {
+    // Only call the adapter for missions that actually exist server-side —
+    // a freshly-added draft mission (keyed by its local draft id) has no PB
+    // record yet.
+    const isPersisted = missions.some((m) => m.id === missionId);
+    if (isPersisted) {
+      await adapter.deleteMission(missionId);
+    }
     setDeletedMissionIds((prev) => new Set([...prev, missionId]));
     // If the deleted mission was being edited, remove its draft and deselect
     setDraftMissions((prev) => {
@@ -160,7 +174,7 @@ export const useAdminMissionEditor = (
       return changed ? next : prev;
     });
     setSelectedMissionId((prev) => (prev === missionId ? null : prev));
-  }, []);
+  }, [adapter, missions]);
 
   const clearSelectedMission = useCallback(() => {
     setSelectedMissionId(null);
@@ -192,9 +206,15 @@ export const useAdminMissionEditor = (
     ) => {
       const drafts = draftMissionsRef.current;
 
-      // 1. Save mission content
+      // 1. Save mission content, capturing the effective server-side id for
+      // each draft (either the pre-existing originalId, or the id newly
+      // assigned by createMission) so step 2 can save form schemas for
+      // brand-new form missions too, not just ones that already existed.
       for (const [, draft] of drafts) {
         if (!draft.isDirty) continue;
+
+        let effectiveId: string | undefined = draft.originalId;
+
         if (draft.originalId) {
           const real = serverMissions.find((m) => m.id === draft.originalId);
           if (real) {
@@ -215,7 +235,7 @@ export const useAdminMissionEditor = (
           // draft.milestoneId is the client-generated ID. Since we pass id: dm.id
           // to createMilestone, the server assigns that same ID, so no remapping
           // needed — draft milestoneId is already the server ID.
-          await adapter.createMission({
+          const created = await adapter.createMission({
             sessionId: sid,
             milestoneId: draft.milestoneId,
             title: draft.title ?? "New mission",
@@ -228,14 +248,16 @@ export const useAdminMissionEditor = (
             isInCurrentMissions: draft.isInCurrentMissions ?? true,
             validationMethod: draft.validationMethod ?? "gmApprove",
           });
+          effectiveId = created.id;
         }
-      }
 
-      // 2. Save form schemas
-      for (const [, draft] of drafts) {
-        if (!draft.isDirty || draft.type !== MISSION_TYPE.FORM) continue;
-        if (draft.originalId && draft.formFields?.length) {
-          await adapter.upsertFormSchema(draft.originalId, draft.formFields);
+        // 2. Save this draft's form schema now, while we know its real id —
+        // covers both "just updated" and "just created" missions.
+        if (
+          effectiveId && draft.type === MISSION_TYPE.FORM &&
+          draft.formFields?.length
+        ) {
+          await adapter.upsertFormSchema(effectiveId, draft.formFields);
         }
       }
 

@@ -55,13 +55,16 @@ const router = createBrowserRouter([
     ),
   },
   {
+    // Not wrapped in RequireRole: the sessionId here is the *hire's* session,
+    // while a GM's cached identity is scoped to their own home session — the
+    // two never match, so RequireRole's exact-sessionId check always fails
+    // for this route. ValidationPage does its own authorization instead, by
+    // matching the hire's gameMakerId against any locally stored GM identity.
     path: "/validate/:sessionId",
     element: (
-      <RequireRole role={USER_ROLE.GAMEMAKER}>
-        <DemoAwareAdapterProvider>
-          <ValidationPage />
-        </DemoAwareAdapterProvider>
-      </RequireRole>
+      <DemoAwareAdapterProvider>
+        <ValidationPage />
+      </DemoAwareAdapterProvider>
     ),
   },
   {

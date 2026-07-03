@@ -72,9 +72,18 @@ const HireDetailPage = () => {
           missions={vm.missions}
           completedMissionIds={vm.completedMissionIds}
           resources={vm.adminResources.resources}
+          bgImageUrl={vm.bgImageUrl}
+          mapNodeScale={vm.mapNodeScale}
           onSelectTemplate={vm.handleUseTemplate}
           onAddTemplate={() => vm.setShowAddTemplate(true)}
           onSelectMilestone={vm.openMilestone}
+          onAddMilestoneAt={vm.milestoneEditor.handleAddMilestoneAt}
+          onNodeDrop={vm.milestoneEditor.handleNodeDrop}
+          onDeleteMilestone={vm.handleDeleteMilestone}
+          onResetToGrid={vm.milestoneEditor.handleResetToGrid}
+          onUploadBackground={(file) => void vm.uploadBackground(file)}
+          onMapNodeScaleChange={(scale) => void vm.updateMapNodeScale(scale)}
+          onOpenScanner={() => vm.setScannerOpen(true)}
           onAddResource={(data) => void vm.adminResources.addResource(data)}
           onUpdateResource={(id, patch) =>
             void vm.adminResources.updateResource(id, patch)}

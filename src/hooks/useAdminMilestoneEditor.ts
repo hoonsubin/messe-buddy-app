@@ -26,7 +26,15 @@ interface UseAdminMilestoneEditorResult {
     yPercent: number,
   ) => void;
   readonly handleRenameMilestone: (id: string, name: string) => void;
-  readonly handleDeleteMilestone: (id: string) => void;
+  /**
+   * Deletes a milestone. If it's already persisted (present in the
+   * server-fetched `milestones` list), this calls `adapter.deleteMilestone`
+   * before removing it from local draft state — a not-yet-saved draft
+   * milestone is just dropped locally, since there's nothing to delete
+   * server-side yet. Throws if the server delete fails; callers should
+   * catch and surface an error rather than assume the delete succeeded.
+   */
+  readonly handleDeleteMilestone: (id: string) => Promise<void>;
   /** Reposition all milestones to a sequential 4-column grid layout. */
   readonly handleResetToGrid: () => void;
   /**
@@ -119,9 +127,15 @@ export const useAdminMilestoneEditor = (
     );
   }, []);
 
-  const handleDeleteMilestone = useCallback((id: string) => {
+  const handleDeleteMilestone = useCallback(async (id: string) => {
+    // Only call the adapter for milestones that actually exist server-side —
+    // a freshly-added draft milestone (not yet saved) has no PB record yet.
+    const isPersisted = milestones.some((m) => m.id === id);
+    if (isPersisted) {
+      await adapter.deleteMilestone(id);
+    }
     setDraftMilestones((prev) => prev.filter((dm) => dm.id !== id));
-  }, []);
+  }, [adapter, milestones]);
 
   const handleResetToGrid = useCallback(() => {
     setDraftMilestones((prev) => {

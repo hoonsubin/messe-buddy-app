@@ -39,6 +39,8 @@ export const useHireDetailPage = () => {
     error: sessionError,
     loading: sessionLoading,
     refresh: refreshSession,
+    uploadBackground,
+    updateMapNodeScale,
   } = useSession(sid, { role: "gamemaker" });
 
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -126,6 +128,27 @@ export const useHireDetailPage = () => {
     if (!adminProgress.selectedPlayerId) return;
     void buddyProfile.upsertBuddy().then(() => showToast("Buddy assigned"));
   }, [adminProgress.selectedPlayerId, buddyProfile, showToast]);
+
+  // Wrap the editors' raw delete handlers so a failed server-side delete
+  // surfaces as a toast instead of an unhandled rejection — the raw
+  // handlers only remove local draft state after the adapter call succeeds.
+  const handleDeleteMilestone = useCallback(
+    (id: string) => {
+      void milestoneEditor.handleDeleteMilestone(id)
+        .then(() => showToast("Milestone deleted"))
+        .catch(() => showToast("Could not delete milestone"));
+    },
+    [milestoneEditor, showToast],
+  );
+
+  const handleDeleteMission = useCallback(
+    (missionId: string) => {
+      void missionEditor.handleDeleteMission(missionId)
+        .then(() => showToast("Mission deleted"))
+        .catch(() => showToast("Could not delete mission"));
+    },
+    [missionEditor, showToast],
+  );
 
   const isDirty = useMemo(
     () =>
@@ -264,6 +287,10 @@ export const useHireDetailPage = () => {
     milestoneProgress,
     completedMissionIds,
     draftMilestonesAsMilestones,
+    bgImageUrl: session?.bgImageUrl ?? "",
+    mapNodeScale: session?.mapNodeScale ?? 1,
+    uploadBackground,
+    updateMapNodeScale,
     adminProgress,
     buddyProfile,
     adminResources,
@@ -286,6 +313,8 @@ export const useHireDetailPage = () => {
     handleUseTemplate,
     handleAddTemplate,
     handleBuddySave,
+    handleDeleteMilestone,
+    handleDeleteMission,
     handleSave,
     handleSaveToTemplate,
     handleDiscard,

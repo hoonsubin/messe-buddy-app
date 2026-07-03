@@ -38,7 +38,7 @@ const HireDetailOverlays = ({ vm }: HireDetailOverlaysProps) => (
             vm.milestoneEditor.selectedMilestone.id,
           )
           : undefined}
-      onDeleteMission={vm.missionEditor.handleDeleteMission}
+      onDeleteMission={vm.handleDeleteMission}
       onReorderMission={vm.missionEditor.handleMissionReorder}
       onClose={vm.closeMilestoneEditor}
     />
