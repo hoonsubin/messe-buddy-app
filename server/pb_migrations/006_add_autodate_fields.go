@@ -18,7 +18,8 @@ func init() {
 		"form_schemas",
 		"progress_events",
 		"buddy_profiles",
-		"resources",
+		"library_resources",
+		"milestone_resources",
 		"templates",
 	}
 

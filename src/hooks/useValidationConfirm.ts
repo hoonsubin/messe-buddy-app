@@ -40,16 +40,14 @@ export const useValidationConfirm = (
   validatorUid: string | undefined,
 ): UseValidationConfirmResult => {
   const adapter = useAdapter();
+  const [payload, setPayload] = useState<QRPayload | null>(null);
+  const scopedPlayerId = payload?.playerId;
   const {
     session,
-    milestones,
-    missions,
     loading: sessionLoading,
     error: sessionError,
     refresh: refreshSession,
-  } = useSession(sessionId);
-
-  const [payload, setPayload] = useState<QRPayload | null>(null);
+  } = useSession(sessionId, { playerId: scopedPlayerId });
   const [playerName, setPlayerName] = useState("");
   const [missionTitle, setMissionTitle] = useState("");
   const [milestoneName, setMilestoneName] = useState("");
@@ -63,6 +61,7 @@ export const useValidationConfirm = (
 
   const refresh = useCallback(() => refreshSession(), [refreshSession]);
   const retry = useCallback(() => {
+    setPayload(null);
     setDecodeKey((k) => k + 1);
     setErrorKind(null);
     setErrorMessage(null);
@@ -71,7 +70,7 @@ export const useValidationConfirm = (
   useEffect(() => {
     if (!token) return;
 
-    if (!sessionId || sessionLoading || sessionError || !session) return;
+    if (!sessionId) return;
 
     let cancelled = false;
 
@@ -81,9 +80,9 @@ export const useValidationConfirm = (
       setErrorMessage(null);
       setPayload(null);
 
-      const secret = session.qrSecret ?? sessionId;
-
       try {
+        const s = session ?? await adapter.getSession(sessionId);
+        const secret = s.qrSecret ?? sessionId;
         const decoded = await decodeQRPayload(token, secret);
 
         if (decoded.sessionId !== sessionId) {
@@ -94,6 +93,10 @@ export const useValidationConfirm = (
           return;
         }
 
+        const [missions, milestones] = await Promise.all([
+          adapter.listMissions(sessionId, { playerId: decoded.playerId }),
+          adapter.listMilestones(sessionId, { playerId: decoded.playerId }),
+        ]);
         const mission = missions.find((m) => m.id === decoded.missionId);
         const milestone = mission
           ? milestones.find((ms) => ms.id === mission.milestoneId)
@@ -130,17 +133,7 @@ export const useValidationConfirm = (
     return () => {
       cancelled = true;
     };
-  }, [
-    adapter,
-    decodeKey,
-    milestones,
-    missions,
-    session,
-    sessionError,
-    sessionId,
-    sessionLoading,
-    token,
-  ]);
+  }, [adapter, decodeKey, session, sessionId, token]);
 
   const confirm = useCallback(async () => {
     if (!payload || alreadyCompleted || confirming) return;

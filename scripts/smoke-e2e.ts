@@ -1,7 +1,7 @@
 /**
  * PocketBase E2E smoke — Firefox + iPhone 15 against Docker app.
  *
- * GM creates a session via inline Admin form → player joins via Employee form.
+ * GM creates a session via inline Game Maker form → player joins via Employee form.
  *
  * Run:
  *   SMOKE_BASE_URL=https://localhost deno task smoke-e2e
@@ -54,7 +54,7 @@ const main = async () => {
     await gmPage.goto(`${BASE}/`, { waitUntil: "networkidle" });
     await gmPage.waitForSelector('[data-testid="landing-page"]');
 
-    await gmPage.getByRole("button", { name: "Admin", exact: true }).click();
+    await gmPage.getByRole("button", { name: "Game Maker", exact: true }).click();
     await gmPage.waitForSelector("#lp-session-name", { timeout: 5000 });
     await gmPage.locator("#lp-session-name").fill("E2E Smoke Test");
     await gmPage.locator("#lp-gm-name").fill("Smoke GM");
@@ -144,7 +144,7 @@ const main = async () => {
     );
 
     record(
-      "SMOKE-02 Admin home reachable after create",
+      "SMOKE-02 Game Maker home reachable after create",
       await gmPage.locator('[data-testid="gamemaker-home-page"]').isVisible(),
     );
 

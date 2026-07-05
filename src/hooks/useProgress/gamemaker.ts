@@ -22,7 +22,6 @@ export const useProgressGamemaker = (
   const [loading, setLoading] = useState(!!sid);
   const [error, setError] = useState<Error | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const isInitialPlayerLoad = useRef(true);
   const validatorUidRef = useRef(validatorUid);
 
   useEffect(() => {
@@ -65,11 +64,6 @@ export const useProgressGamemaker = (
     if (!players.length) return;
     let cancelled = false;
 
-    if (isInitialPlayerLoad.current) {
-      handlePlayerSelect(players[0]!.id);
-      isInitialPlayerLoad.current = false;
-    }
-
     const fetchAll = async () => {
       try {
         const results = await Promise.all(
@@ -86,7 +80,7 @@ export const useProgressGamemaker = (
     return () => {
       cancelled = true;
     };
-  }, [adapter, handlePlayerSelect, players, refreshKey]);
+  }, [adapter, players, refreshKey]);
 
   const selectedPlayer = players.find((p) => p.id === selectedPlayerId) ?? null;
 

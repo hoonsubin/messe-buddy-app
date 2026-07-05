@@ -186,16 +186,39 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     if (!routeSessionId || !inviteTokenFromUrl) return;
     let cancelled = false;
     const verifyFromLink = async () => {
+      setStatus("loading");
+      setErrorMessage("");
       try {
         const player = await adapter.getPlayerByInviteToken(inviteTokenFromUrl);
-        if (cancelled || !player || player.sessionId !== routeSessionId) return;
+        if (cancelled) return;
+        if (!player || player.sessionId !== routeSessionId) {
+          setActiveFormState("employee");
+          setEmployeeStep("code");
+          setSessionCode(routeSessionId);
+          setInviteToken(inviteTokenFromUrl);
+          setStatus("error");
+          setErrorMessage(
+            "Invite not found. Check the link from your Game Master and try again.",
+          );
+          return;
+        }
+        setActiveFormState("employee");
         setVerifiedSessionId(routeSessionId);
         setVerifiedInviteToken(inviteTokenFromUrl);
         setSessionCode(routeSessionId);
         setInviteToken(inviteTokenFromUrl);
         setEmployeeStep("name");
+        setStatus("idle");
       } catch {
-        /* invalid link — user can retry manually */
+        if (cancelled) return;
+        setActiveFormState("employee");
+        setEmployeeStep("code");
+        setSessionCode(routeSessionId);
+        setInviteToken(inviteTokenFromUrl);
+        setStatus("error");
+        setErrorMessage(
+          "Invite not found. Check the link from your Game Master and try again.",
+        );
       }
     };
     void verifyFromLink();

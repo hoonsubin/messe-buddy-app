@@ -44,7 +44,7 @@ fi
 # The virtual key must be ephemeral — delete any stale key from a previous
 # deployment before polling for a fresh one. This prevents a key whose DB
 # record was lost (e.g. `docker compose down -v`) from being reused.
-rm -f "$KEY_FILE"
+rm -f "$KEY_FILE" 2>/dev/null || true
 echo "entrypoint: cleared any stale virtual key at $KEY_FILE"
 
 # This container does NOT wait on file-watcher's bootstrap (only on litellm

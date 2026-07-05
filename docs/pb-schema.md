@@ -205,8 +205,8 @@ Session-scoped in **001**. Replaced by `library_resources` +
 | `players` | `idx_uid` | ✓ | `uid` |
 | `players` | `idx_recoveryKey` | ✓ | `recoveryKey` |
 | `players` | `idx_inviteToken` | ✓ | `inviteToken` |
-| `milestones` | `idx_playerId` | | `playerId` |
-| `missions` | `idx_playerId` | | `playerId` |
+| `milestones` | `idx_milestones_playerId` | | `playerId` |
+| `missions` | `idx_missions_playerId` | | `playerId` |
 | `form_schemas` | `idx_missionId` | ✓ | `missionId` |
 | `buddy_profiles` | `idx_assignedToPlayerId` | ✓ | `assignedToPlayerId` |
 | `library_resources` | `idx_resourceKey` | ✓ | `resourceKey` |

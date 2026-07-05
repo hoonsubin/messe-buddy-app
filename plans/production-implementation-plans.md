@@ -1,7 +1,7 @@
 # Production Implementation Plan — MesseBuddy
 
 **Status:** Active handoff document  
-**Last updated:** 2026-07-05
+**Last updated:** 2026-07-05 (ARCH-08–11 shipped in mock/dev)
 
 Use this file to resume implementation in a new session. **Product behavior** is
 in [`SPECS.md`](../SPECS.md) (including the append-only Decision Log — see
@@ -24,31 +24,32 @@ When SPECS and code disagree, **SPECS wins** until ARCH closes the gap.
 
 ## Current state (code today)
 
-The **target** is the locked architecture in SPECS (**D-ARCH-2** … **D-NAMING-2**):
+The **target** is the locked architecture in SPECS (**D-ARCH-2** … **D-NAMING-2**).
+**Mock adapter + daily dev UI** implement the target model. PocketBase adapter and
+`:8700` compose stack need end-to-end verification (**ARCH-13**).
 
-- One `sessions` row per GM (`gameMakerId`, `gmRecoveryKey`) — **session ≈ department**
-- Claimable onboarding identities in `players` only (no GM `players` row)
-- Per-player journeys (`milestones.playerId`, `missions.playerId`)
-- Global `templates` + `library_resources`; per-player `milestone_resources`
-- `invitePlayer` / `claimPlayer` via `/join/:sessionId?t=:inviteToken`
-- UI naming: **player** everywhere — no **hire** in routes/hooks/files
+### Shipped (target model — mock / dev)
 
-**The codebase still implements the legacy model:**
+| Area | Status | Key files |
+| ---- | ------ | --------- |
+| GM workspace session | One `sessions` row per GM; `gmRecoveryKey` on signup | `createGameMakerSession`, `mockAdapter`, `pb_migrations/001_*` |
+| Player list | `useGmPlayers(sessionId)` lists `players`; `invitePlayer` on add | `gmPlayers.ts`, `GameMakerHomePage.tsx` |
+| Per-player journeys | `milestones.playerId`, `missions.playerId`; `useSession` scoped by `playerId` | `useSession.ts`, `usePlayerCockpitPage.ts`, `FormPage.tsx`, `useValidationConfirm.ts` |
+| Invite / claim | `/join/:sessionId?t=:inviteToken`; `claimPlayer` | `joinSession.ts`, `claimPlayer.ts`, `useLandingFlow.ts` |
+| Resource library | Global `library_resources` CRUD; GM home **Players \| Resource library** tabs | `useLibraryResources.ts`, `ResourceLibraryTab.tsx` |
+| Milestone resources | `milestone_resources` attach/detach per player milestone | `useResources.ts`, `mockAdapter` |
+| Templates | `importTemplate(template, playerId)` / `exportTemplate(playerId)` | `importTemplate.ts`, `usePlayerTemplates.ts` |
+| Routes & naming | `/gamemaker/:sessionId/player/:playerId`; no `hire` in `src/` | `App.tsx`, `player-detail/`, `components/gamemaker/` |
+| Player detail | `PlayerDetailPage` + scoped GM hooks | `usePlayerDetailPage.ts` |
 
-| Area | Target (SPECS) | Code today |
-| ---- | -------------- | ---------- |
-| GM player list | `listPlayers(sessionId)` on `players` | `useGmHires` lists `sessions` where `gameMakerId === gmUid` |
-| Add player | `invitePlayer` + `inviteToken` | `adapter.createSession` → phantom “hire #1” is the workspace |
-| GM identity | `sessions.gameMakerId` + `gmRecoveryKey` | `localStorage` + `gameMakerId` only |
-| Milestones / missions | `playerId` FK | `sessionId` only (shared per session) |
-| Resources | `library_resources` + `milestone_resources` | `resources` with `sessionId` only |
-| Templates | Global; `importTemplate(template, playerId)` | `importTemplate` creates new session |
-| Player invite | `/join/:sessionId?t=:inviteToken` | `/join/:sessionId` shared link |
-| Admin routes | `/gamemaker/:sessionId/player/:playerId` | `/gamemaker/:sessionId/hire/:hireId` |
-| `players.role` | **No field** — `UserRole` in cache only | Job title string (legacy overload) |
-| Naming | `useGmPlayers`, `PlayerDetailPage` | `useGmHires`, `PlayerDetailPage`, `player-detail/` |
+### Remaining gaps
 
-**Recently shipped (legacy model — re-verify after ARCH):**
+| Area | Gap | Task |
+| ---- | --- | ---- |
+| PB verification | `pbAdapter` exists; full loop untested on `:8700` | **ARCH-13** |
+| Feature backlog | P-02 peerScan, polish items | After ARCH-13 |
+
+### Recently shipped (pre-ARCH polish — still valid)
 
 | Area | What landed | Key files |
 | ---- | ----------- | --------- |
@@ -57,70 +58,70 @@ The **target** is the locked architecture in SPECS (**D-ARCH-2** … **D-NAMING-
 | GM Journey Map XP (no player) | `computeProgress` fallback for threshold display | `usePlayerDetailPage.ts` |
 | Orphaned profiles | Landing badge + confirm remove | `useLandingFlow.ts`, `ProfileCard.tsx` |
 | Auto-resume | `RootRedirect` + `mb_active_uid` | `RootRedirect.tsx`, `useIdentity.ts`, `App.tsx` |
-| Logout / identity | Logout keeps profile; `clearActiveUid` on leave | C-23 paths across admin + player |
+| Logout / identity | Logout keeps profile; `clearActiveUid` on leave | C-23 paths across GM + player |
 
 ---
 
-## Next work — ARCH (blocking)
+## Next work — ARCH
 
-**Do not start feature backlog until ARCH ships.** Task order:
+**Feature backlog waits on ARCH-13** (compose smoke on `:8700`). Task status:
 
 ### Phase A — Schema & types (foundation)
 
-| ID | Task | Primary files |
-| -- | ---- | ------------- |
-| **ARCH-01** | PB migration: `sessions.gmRecoveryKey`; reshape `players` (`claimStatus`, `inviteToken`, `jobTitle`; drop legacy job-title `role`); no GM rows in `players` | `server/pb_migrations/`, `src/types/domain.ts`, `docs/pb-schema.md` |
-| **ARCH-02** | PB: `milestones.playerId`, `missions.playerId`; add `library_resources`, `milestone_resources`; deprecate session-scoped `resources` | migrations, `docs/pb-schema.md` |
+| ID | Task | Status | Primary files |
+| -- | ---- | ------ | ------------- |
+| **ARCH-01** | PB migration: `sessions.gmRecoveryKey`; reshape `players` (`claimStatus`, `inviteToken`, `jobTitle`); no GM rows in `players` | **Done** | `server/pb_migrations/001_initial_collections.go`, `src/types/domain.ts` |
+| **ARCH-02** | PB: `milestones.playerId`, `missions.playerId`; `library_resources`, `milestone_resources` | **Done** | `001_initial_collections.go`, `docs/pb-schema.md` |
 
 ### Phase B — Adapters & use cases
 
-| ID | Task | Primary files |
-| -- | ---- | ------------- |
-| **ARCH-03** | Adapter: `invitePlayer`, `claimPlayer`, `getPlayerByInviteToken`; GM signup sets `gmRecoveryKey` on session; landing `?t=` flow | `mockAdapter.ts`, `pbAdapter.ts`, `joinSession.ts`, `useLandingFlow.ts`, `recoverIdentity.ts` |
-| **ARCH-04** | Adapter: `listLibraryResources`, CRUD library + `milestone_resources`; template `resourceKey` bindings | `interface.ts`, adapters, parsers |
-| **ARCH-05** | `importTemplate(template, playerId)` + `exportTemplate(playerId)`; remove session-creating bootstrap path | `importTemplate.ts`, `exportTemplate.ts`, `useTemplateLibrary.ts` |
+| ID | Task | Status | Primary files |
+| -- | ---- | ------ | ------------- |
+| **ARCH-03** | Adapter: `invitePlayer`, `claimPlayer`, `getPlayerByInviteToken`; landing `?t=` flow | **Done** (mock + pb) | `mockAdapter.ts`, `pbAdapter.ts`, `joinSession.ts`, `useLandingFlow.ts` |
+| **ARCH-04** | Adapter: `listLibraryResources`, CRUD library + `milestone_resources` | **Done** (mock + pb) | `interface.ts`, adapters, `useLibraryResources.ts` |
+| **ARCH-05** | `importTemplate(template, playerId)` + `exportTemplate(playerId)`; remove session-creating bootstrap | **Done** — deleted `bootstrapFromTemplate.ts` | `importTemplate.ts`, `exportTemplate.ts`, `usePlayerTemplates.ts` |
 
 ### Phase C — UI, routes, player scoping
 
-| ID | Task | Primary files |
-| -- | ---- | ------------- |
-| **ARCH-06** | Routes: `/gamemaker/:sid/player/:pid`; `GameMakerHomePage` **Players \| Resource library** tabs | `App.tsx`, `GameMakerHomePage.tsx` |
-| **ARCH-07** | `useGmPlayers(sessionId)` lists `players` — not `sessions`; `invitePlayer` on add | `gmHires.ts` → `gmPlayers.ts`, `createGameMakerSession` |
-| **ARCH-08** | Player cockpit + `useSession` scoped by resolved `playerId` | `useSession.ts`, `usePlayerCockpitPage.ts`, `useResources.ts` |
+| ID | Task | Status | Primary files |
+| -- | ---- | ------ | ------------- |
+| **ARCH-06** | `GameMakerHomePage` **Players \| Resource library** tabs | **Done** | `GameMakerHomePage.tsx`, `ResourceLibraryTab.tsx` |
+| **ARCH-07** | `useGmPlayers(sessionId)` + `invitePlayer` on add | **Done** | `gmPlayers.ts`, `GameMakerHomePage.tsx` |
+| **ARCH-08** | `useSession` scoped by resolved `playerId` on all player/validation paths | **Done** | `usePlayerCockpitPage.ts`, `FormPage.tsx`, `useValidationConfirm.ts`, `QRDisplay.tsx` |
 
 ### Phase D — Systematic rename (hire → player)
 
-| ID | Task | Primary files |
-| -- | ---- | ------------- |
-| **ARCH-09** | Rename pages: `PlayerDetailPage` → `PlayerDetailPage`; `player-detail/` → `player-detail/`; `usePlayerDetailPage` → `usePlayerDetailPage` | `src/pages/` |
-| **ARCH-10** | Rename hooks/types: `useGmHires` → `useGmPlayers`; `GmHireRow` → `GmPlayerRow`; `crossHire.ts` → `crossPlayer.ts` (or fold into `gmPlayers`) | `src/hooks/useProgress/` |
-| **ARCH-11** | Grep pass: remove **hire** from user-facing strings, `data-testid`, comments, remaining docs | `src/`, `AGENTS.md` — **docs/ done 2026-07-05** |
+| ID | Task | Status | Primary files |
+| -- | ---- | ------ | ------------- |
+| **ARCH-09** | `player-detail/` + `/gamemaker/:sessionId/player/:playerId` | **Done** — removed orphan `hire-detail/` | `src/pages/player-detail/` |
+| **ARCH-10** | `useGmPlayers`, `GmPlayerRow`, `usePlayerTemplates`; removed duplicate `components/admin/` | **Done** | `src/hooks/useProgress/gmPlayers.ts` |
+| **ARCH-11** | Grep pass: no **hire** in `src/` routes, hooks, strings, `data-testid` | **Done** | `src/` clean; `AGENTS.md` aligned |
 
 ### Phase E — Docs & verification
 
-| ID | Task | Primary files |
-| -- | ---- | ------------- |
-| **ARCH-12** | Align `AGENTS.md` with SPECS; verify code matches docs | **docs/ done 2026-07-05** |
-| **ARCH-13** | Smoke on target model (see checklist below) | `:8700` after compose rebuild |
+| ID | Task | Status | Primary files |
+| -- | ---- | ------ | ------------- |
+| **ARCH-12** | Align `AGENTS.md` with SPECS | **Done** | `AGENTS.md` |
+| **ARCH-13** | Smoke on target model (see checklist below) | **Open** | `:8700` after compose rebuild |
 
-**Verify after ARCH:** `deno task build` · `deno task lint` · smoke on
+**Verify after ARCH-13:** `deno task build` · `deno task lint` · smoke on
 `http://localhost:8700/` (requires compose rebuild; confirm with user before
 testing).
 
-### Rename reference (ARCH-09 / ARCH-10)
+### Rename reference (ARCH-09 / ARCH-10) — completed
 
-| Legacy | Target |
-| ------ | ------ |
+| Legacy (removed) | Target (shipped) |
+| ---------------- | ---------------- |
 | `useGmHires`, `GmHireRow`, `createHire` | `useGmPlayers`, `GmPlayerRow`, `invitePlayer` |
-| `PlayerDetailPage`, `usePlayerDetailPage` | `PlayerDetailPage`, `usePlayerDetailPage` |
-| `src/pages/player-detail/` | `src/pages/player-detail/` |
+| `src/pages/hire-detail/`, `HireDetailPage` | `src/pages/player-detail/`, `PlayerDetailPage` |
 | `/gamemaker/:sessionId/hire/:hireId` | `/gamemaker/:sessionId/player/:playerId` |
+| `src/components/admin/` | `src/components/gamemaker/` |
 | `joinSession` creating player row | `claimPlayer` on invited row |
-| `bootstrapFromTemplate` → new session | Remove; templates apply to `playerId` only |
+| `bootstrapFromTemplate` → new session | Removed; `importTemplate(template, playerId)` |
 
 ---
 
-## Backlog (after ARCH)
+## Backlog (after ARCH-13)
 
 | Pri | ID | Item | Spec / OD |
 | --- | -- | ---- | --------- |
@@ -154,25 +155,30 @@ for player · G-05 profile field display · G-06–G-09 · G-16–G-17 tutorial 
 
 ### Smoke checklist
 
-**Legacy model (valid until ARCH lands):**
+**Dev mock (`:5173`) — verified 2026-07-05:**
 
-- [ ] GM create → player list (currently includes workspace as first “hire”)
-- [ ] gmApprove + selfApprove + form mission loops on `:8700`
-- [ ] Logout preserves profile; auto-resume via `/` when `mb_active_uid` set
-- [ ] Orphaned profile badge on landing; player `session-missing` card
-- [ ] Mission reorder + milestone rename reflect in sheet before save
-- [ ] `deno task build` · `deno task lint` · PR CI green
+- [x] GM home **Players \| Resource library** tabs; library CRUD
+- [x] Player detail `/gamemaker/:sessionId/player/:playerId`
+- [x] Invite URL `?t=` prefill on landing
+- [x] Player cockpit loads; `deno task build` · `deno task lint` green
 
-**Target model (run after ARCH):**
+**Target model on `:8700` (ARCH-13 — run after compose rebuild):**
 
-- [ ] GM workspace → empty player list (no phantom player/workspace row)
+- [ ] GM workspace → player list (no phantom workspace row)
 - [ ] Add player → `inviteToken`; URL `/join/:sessionId?t=`
 - [ ] Claim sets `claimStatus=claimed`; GM sees joined vs invited
 - [ ] Same invite on second device → same `players` row, progress syncs
-- [ ] Resource library visible to second GM session; attach to player milestone
+- [ ] Resource library visible; attach to player milestone
 - [ ] Template import onto selected player only (not new session)
 - [ ] Drill-down `/gamemaker/:sessionId/player/:playerId`
-- [ ] No `hire` in routes or primary hook names
+- [ ] Multi-player workspace: form + validation scoped to correct `playerId`
+
+**Regression (both environments):**
+
+- [ ] gmApprove + selfApprove + form mission loops
+- [ ] Logout preserves profile; auto-resume via `/` when `mb_active_uid` set
+- [ ] Orphaned profile badge on landing; player `session-missing` card
+- [ ] Mission reorder + milestone rename reflect in sheet before save
 
 ---
 
@@ -181,17 +187,19 @@ for player · G-05 profile field display · G-06–G-09 · G-16–G-17 tutorial 
 | Concern | Files |
 | ------- | ----- |
 | Spec + decisions | `SPECS.md` (D-ARCH-2 … D-NAMING-2) |
-| Schema target | `docs/pb-schema.md`, `server/pb_migrations/` |
-| GM signup / claim | `src/use-cases/joinSession.ts` (+ `invitePlayer`, `claimPlayer`) |
-| Player list | `src/hooks/useProgress/gmHires.ts` → **`gmPlayers.ts`** |
-| Admin dashboard | `src/pages/GameMakerHomePage.tsx` |
-| Per-player editor | `src/pages/player-detail/` → **`player-detail/`** |
-| Mission / milestone editors | `src/hooks/useGmMissionEditor.ts`, `useGmMilestoneEditor.ts` |
-| Landing / identity | `src/hooks/useLandingFlow.ts`, `useIdentity.ts`, `RootRedirect.tsx` |
+| Schema | `docs/pb-schema.md`, `server/pb_migrations/001_initial_collections.go` |
+| GM signup / claim | `joinSession.ts`, `claimPlayer.ts`, `invitePlayer.ts` |
+| Player list | `src/hooks/useProgress/gmPlayers.ts` |
+| GM dashboard | `src/pages/GameMakerHomePage.tsx`, `GmPlayersTab.tsx`, `ResourceLibraryTab.tsx` |
+| Per-player editor | `src/pages/player-detail/`, `usePlayerDetailPage.ts` |
+| Player scoping | `useSession.ts`, `usePlayerCockpitPage.ts`, `FormPage.tsx`, `useValidationConfirm.ts` |
+| Mission / milestone editors | `useGmMissionEditor.ts`, `useGmMilestoneEditor.ts` |
+| Landing / identity | `useLandingFlow.ts`, `useIdentity.ts`, `RootRedirect.tsx` |
 | Player cockpit | `src/pages/player-cockpit/usePlayerCockpitPage.ts` |
-| Adapters | `src/adapters/mock/mockAdapter.ts`, `pocketbase/pbAdapter.ts` |
-| Templates | `src/use-cases/importTemplate.ts`, `exportTemplate.ts` |
-| QR validate | `src/pages/ValidationPage.tsx`, `src/utils/qrPayload.ts` |
+| Adapters | `mockAdapter.ts`, `pocketbase/pbAdapter.ts` |
+| Templates | `importTemplate.ts`, `exportTemplate.ts`, `usePlayerTemplates.ts` |
+| Resource library | `useLibraryResources.ts`, `LibraryResourceFormModal.tsx` |
+| QR validate | `ValidationPage.tsx`, `qrPayload.ts` |
 
 ---
 
@@ -212,6 +220,24 @@ for player · G-05 profile field display · G-06–G-09 · G-16–G-17 tutorial 
 ## Changelog
 
 Append-only history. Do not duplicate this material in sections above.
+
+### 2026-07-05 — ARCH-08 through ARCH-11 shipped (mock/dev)
+
+- **ARCH-08:** Scoped `useSession` by `playerId` in `FormPage`, `useValidationConfirm`
+  (adapter-scoped decode + `payload.playerId`), and `QRDisplay`.
+- **ARCH-09:** Deleted orphan `src/pages/hire-detail/`; live route remains
+  `/gamemaker/:sessionId/player/:playerId` → `PlayerDetailPage`.
+- **ARCH-10:** Deleted duplicate `src/components/admin/`; active GM UI is
+  `src/components/gamemaker/` only (`useGmPlayers`, `usePlayerTemplates`).
+- **ARCH-11:** `src/` grep clean — no `hire` in routes, hooks, strings, or
+  `data-testid`. Updated `scripts/smoke-e2e.ts` label **Admin** → **Game Maker**.
+- Deleted unused `bootstrapFromTemplate.ts` (ARCH-05).
+- `deno task build` and `deno task lint` pass.
+
+### 2026-07-05 — ARCH-06 resource library (mock/dev)
+
+- `GameMakerHomePage` **Players \| Resource library** tabs; global library CRUD;
+  `useLibraryResources`, `ResourceLibraryTab`, tag input, auto `resourceKey`.
 
 ### 2026-07-05 — Docs aligned to locked architecture
 
