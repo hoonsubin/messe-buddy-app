@@ -20,7 +20,7 @@
   inset-inline: 0;
   bottom: 0;
   top: auto;
-  height: 94dvh;
+  height: var(--sheet-height);
   background-color: hsl(var(--color-card));
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   box-shadow: var(--shadow-lg);
@@ -79,6 +79,37 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.sheet-header--stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+.sheet-header__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.sheet-header__step {
+  font-size: var(--text-sm);
+  color: hsl(var(--color-muted-fg));
+}
+.sheet-header__cancel {
+  background: none;
+  border: none;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  color: hsl(var(--color-muted-fg));
+  cursor: pointer;
+  min-height: var(--touch-target);
+}
+.sheet-header__cancel:hover:not(:disabled) {
+  color: hsl(var(--color-fg));
+}
+.sheet-header__cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .sheet-close-btn {
   flex-shrink: 0;
   min-width: var(--touch-target);
@@ -130,7 +161,60 @@
   to   { opacity: 1; transform: translateX(0); }
 }
 
-/* Mission list in sheet */
+/* Select card — tappable bordered option (wizard, template list) */
+.select-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.select-card {
+  width: 100%;
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  border: 1.5px solid hsl(var(--color-border));
+  border-radius: var(--radius-md);
+  background: hsl(var(--color-muted));
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.select-card:hover {
+  border-color: hsl(var(--color-primary) / 0.4);
+}
+.select-card--selected {
+  border-color: hsl(var(--color-primary));
+  background: hsl(var(--color-primary) / 0.06);
+}
+.select-card__title {
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  color: hsl(var(--color-fg));
+}
+.select-card__subtitle {
+  font-size: var(--text-sm);
+  color: hsl(var(--color-muted-fg));
+}
+.select-card__tertiary {
+  font-size: var(--text-xs);
+  color: hsl(var(--color-muted-fg));
+}
+
+/* Milestone resources inside mission sheet */
+.sheet-resources {
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  border-top: 1px solid hsl(var(--color-border));
+}
+.sheet-resources__title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: hsl(var(--color-fg));
+}
+
 .sheet-mission-list {
   list-style: none;
   padding: 0;

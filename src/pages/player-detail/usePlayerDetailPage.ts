@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { Milestone, MilestoneProgress } from "../../types/index.ts";
 import { USER_ROLE } from "../../types/index.ts";
-import { useAdapter } from "../../adapters/useAdapter.ts";
 import { computeProgress } from "../../use-cases/computeProgress.ts";
 import { useActiveProfile } from "../../hooks/useActiveProfile.ts";
 import { useSession } from "../../hooks/useSession.ts";
@@ -32,7 +31,6 @@ export const usePlayerDetailPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const identity = useActiveProfile(homeSid, USER_ROLE.GAMEMAKER);
-  const adapter = useAdapter();
 
   const [tab, setTab] = useState<PlayerDetailTabKey>(
     searchParams.get("journey") === "1" || searchParams.get("new") === "1"
@@ -171,31 +169,17 @@ export const usePlayerDetailPage = () => {
   const handleAddResource = useCallback(
     (data: AddResourceInput) => {
       void (async () => {
-        let milestoneId = milestoneEditor.selectedMilestone?.id ??
-          milestones[0]?.id ??
-          milestoneEditor.draftMilestones[0]?.id;
+        const milestoneId = data.milestoneId ??
+          milestoneEditor.selectedMilestone?.id;
         if (!milestoneId) {
-          const live = await adapter.listMilestones(homeSid, { playerId });
-          milestoneId = live[0]?.id;
-        }
-        if (!milestoneId) {
-          showToast("Add a milestone before attaching resources");
+          showToast("Select a milestone before attaching resources");
           return;
         }
         await gmResources.addResource({ ...data, milestoneId });
         showToast("Resource attached");
       })().catch(() => showToast("Could not attach resource"));
     },
-    [
-      adapter,
-      gmResources,
-      homeSid,
-      milestoneEditor.draftMilestones,
-      milestoneEditor.selectedMilestone,
-      milestones,
-      playerId,
-      showToast,
-    ],
+    [gmResources, milestoneEditor.selectedMilestone, showToast],
   );
 
   const isDirty = useMemo(
@@ -307,6 +291,16 @@ export const usePlayerDetailPage = () => {
   const startDateISO = gmProgress.selectedPlayer?.startDate ??
     session?.created;
   const hasMilestones = milestones.length > 0;
+  const claimStatus = gmProgress.selectedPlayer?.claimStatus ?? "invited";
+
+  const showAnalyticsTab = useMemo(() => {
+    if (claimStatus !== "claimed") return false;
+    return gmProgress.selectedPlayerEvents.length > 0;
+  }, [claimStatus, gmProgress.selectedPlayerEvents]);
+
+  const activeTab: PlayerDetailTabKey = tab === "analytics" && !showAnalyticsTab
+    ? "customize"
+    : tab;
 
   const openMilestone = useCallback(
     (id: string) => {
@@ -354,6 +348,7 @@ export const usePlayerDetailPage = () => {
     playerId,
     identity,
     tab,
+    activeTab,
     setTab,
     playerName,
     playerFirstName,
@@ -363,6 +358,8 @@ export const usePlayerDetailPage = () => {
     missions,
     milestoneProgress,
     completedMissionIds,
+    claimStatus,
+    showAnalyticsTab,
     draftMilestonesAsMilestones,
     bgImageUrl: session?.bgImageUrl ?? "",
     mapNodeScale: session?.mapNodeScale ?? 1,

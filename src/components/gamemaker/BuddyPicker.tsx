@@ -1,19 +1,20 @@
 import type {
-  BuddyPickerDraft,
   BuddyProfile,
+  BuddyProfileDraft,
   BuddySelection,
 } from "../../types/index.ts";
 import {
   defaultBuddySelection,
-  emptyBuddyPickerDraft,
+  emptyBuddyProfileDraft,
 } from "../../types/buddyPicker.ts";
 import { cn } from "../../utils/cn.ts";
-import { Input } from "../ui/Input.tsx";
-import OjSelectCard from "./OjSelectCard.tsx";
+import SelectCard from "../patterns/SelectCard.tsx";
+import BuddyAssignmentFields from "./BuddyAssignmentFields.tsx";
 
 type BuddyMode = "existing" | "new";
 
 interface BuddyPickerProps {
+  readonly sessionId: string;
   readonly options: ReadonlyArray<BuddyProfile>;
   readonly loading: boolean;
   readonly value: BuddySelection | null;
@@ -21,6 +22,7 @@ interface BuddyPickerProps {
 }
 
 const BuddyPicker = ({
+  sessionId,
   options,
   loading,
   value,
@@ -31,22 +33,20 @@ const BuddyPicker = ({
 
   const setMode = (next: BuddyMode) => {
     if (next === "existing") {
-      onChange(defaultBuddySelection(options));
+      onChange(defaultBuddySelection(sessionId, options));
       return;
     }
     onChange({
       kind: "new",
-      draft: value?.kind === "new" ? value.draft : emptyBuddyPickerDraft(),
+      draft: value?.kind === "new"
+        ? value.draft
+        : emptyBuddyProfileDraft(sessionId),
     });
   };
 
-  const draft: BuddyPickerDraft = value?.kind === "new"
+  const draft: BuddyProfileDraft = value?.kind === "new"
     ? value.draft
-    : emptyBuddyPickerDraft();
-
-  const updateDraft = (patch: Partial<BuddyPickerDraft>) => {
-    onChange({ kind: "new", draft: { ...draft, ...patch } });
-  };
+    : emptyBuddyProfileDraft(sessionId);
 
   return (
     <div className="oj-buddy-picker">
@@ -82,7 +82,7 @@ const BuddyPicker = ({
         : mode === "existing" && canPickExisting
         ? (
           <div
-            className="oj-select-list"
+            className="select-card-list"
             role="radiogroup"
             aria-label="Existing buddy"
           >
@@ -93,7 +93,7 @@ const BuddyPicker = ({
                 " · ",
               );
               return (
-                <OjSelectCard
+                <SelectCard
                   key={profile.id}
                   selected={selected}
                   testId={`oj-buddy-option-${profile.id}`}
@@ -111,61 +111,13 @@ const BuddyPicker = ({
           </div>
         )
         : (
-          <div className="oj-buddy-picker__form">
-            <div className="form-field">
-              <label className="form-label" htmlFor="oj-buddy-new-name">
-                Name
-              </label>
-              <Input
-                id="oj-buddy-new-name"
-                type="text"
-                value={draft.name}
-                onChange={(e) => updateDraft({ name: e.target.value })}
-                placeholder="e.g. Marcus Weber"
-                autoFocus={mode === "new"}
-                data-testid="oj-buddy-new-name"
-              />
-            </div>
-            <div className="form-field">
-              <label className="form-label" htmlFor="oj-buddy-new-email">
-                Email
-              </label>
-              <Input
-                id="oj-buddy-new-email"
-                type="email"
-                value={draft.email}
-                onChange={(e) => updateDraft({ email: e.target.value })}
-                placeholder="marcus.weber@messe.de"
-                data-testid="oj-buddy-new-email"
-              />
-            </div>
-            <div className="form-field">
-              <label className="form-label" htmlFor="oj-buddy-new-telephone">
-                Telephone
-              </label>
-              <Input
-                id="oj-buddy-new-telephone"
-                type="tel"
-                value={draft.telephone}
-                onChange={(e) => updateDraft({ telephone: e.target.value })}
-                placeholder="+49 89 1234 5678"
-                data-testid="oj-buddy-new-telephone"
-              />
-            </div>
-            <div className="form-field">
-              <label className="form-label" htmlFor="oj-buddy-new-role">
-                Role
-              </label>
-              <Input
-                id="oj-buddy-new-role"
-                type="text"
-                value={draft.role}
-                onChange={(e) => updateDraft({ role: e.target.value })}
-                placeholder="e.g. Senior Product Manager"
-                data-testid="oj-buddy-new-role"
-              />
-            </div>
-          </div>
+          <BuddyAssignmentFields
+            draft={draft}
+            onDraftChange={(next) => onChange({ kind: "new", draft: next })}
+            idPrefix="oj-buddy-new"
+            testIdPrefix="oj-buddy-new"
+            autoFocus={mode === "new"}
+          />
         )}
     </div>
   );

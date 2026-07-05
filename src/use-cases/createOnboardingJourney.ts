@@ -1,12 +1,6 @@
 import type { AppAdapter } from "../adapters/interface.ts";
-import type {
-  BuddyPickerDraft,
-  BuddyProfile,
-  BuddySelection,
-} from "../types/index.ts";
-import {
-  buddyPickerDraftToProfileFields,
-} from "../types/buddyPicker.ts";
+import type { BuddyProfile, BuddySelection } from "../types/index.ts";
+import { buddyDraftToProfileFields } from "../types/buddyPicker.ts";
 import { importTemplate } from "./importTemplate.ts";
 import { invitePlayer } from "./invitePlayer.ts";
 
@@ -47,7 +41,7 @@ const resolveBuddyFields = async (
   Omit<BuddyProfile, "id" | "created" | "updated" | "assignedToPlayerId">
 > => {
   if (buddy.kind === "new") {
-    return buddyPickerDraftToProfileFields(sessionId, buddy.draft);
+    return buddyDraftToProfileFields(buddy.draft);
   }
 
   const profiles = await adapter.listBuddyProfiles(sessionId);
@@ -98,5 +92,3 @@ export const createOnboardingJourney = async (
     appliedTemplateName,
   };
 };
-
-export type { BuddyPickerDraft };

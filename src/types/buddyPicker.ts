@@ -1,21 +1,31 @@
 import type { BuddyProfile } from "./domain.ts";
 
-/** Wizard step 2 — new buddy form (UI field names). */
-export interface BuddyPickerDraft {
-  readonly name: string;
-  readonly email: string;
-  readonly telephone: string;
-  readonly role: string;
-}
+/** Shared buddy draft — wizard “Add new” and Assign Buddy tab. */
+export type BuddyProfileDraft = Omit<
+  BuddyProfile,
+  "id" | "created" | "updated" | "assignedToPlayerId"
+>;
 
 export type BuddySelection =
-  | { readonly kind: "new"; readonly draft: BuddyPickerDraft }
+  | { readonly kind: "new"; readonly draft: BuddyProfileDraft }
   | { readonly kind: "existing"; readonly buddyProfileId: string };
 
-export const isBuddyDraftComplete = (draft: BuddyPickerDraft): boolean =>
+export const emptyBuddyProfileDraft = (
+  sessionId: string,
+): BuddyProfileDraft => ({
+  sessionId,
+  name: "",
+  role: "",
+  email: "",
+  phone: "",
+  tenure: "",
+  contactUrl: "",
+});
+
+export const isBuddyDraftComplete = (draft: BuddyProfileDraft): boolean =>
   draft.name.trim() !== "" &&
-  draft.email.trim() !== "" &&
-  draft.telephone.trim() !== "" &&
+  (draft.email?.trim() ?? "") !== "" &&
+  (draft.phone?.trim() ?? "") !== "" &&
   draft.role.trim() !== "";
 
 export const isBuddySelectionValid = (
@@ -26,27 +36,24 @@ export const isBuddySelectionValid = (
   return isBuddyDraftComplete(value.draft);
 };
 
-export const emptyBuddyPickerDraft = (): BuddyPickerDraft => ({
-  name: "",
-  email: "",
-  telephone: "",
-  role: "",
-});
-
 export const defaultBuddySelection = (
+  sessionId: string,
   options: ReadonlyArray<{ readonly id: string }>,
 ): BuddySelection =>
   options.length > 0
     ? { kind: "existing", buddyProfileId: options[0].id }
-    : { kind: "new", draft: emptyBuddyPickerDraft() };
+    : { kind: "new", draft: emptyBuddyProfileDraft(sessionId) };
 
-export const buddyPickerDraftToProfileFields = (
-  sessionId: string,
-  draft: BuddyPickerDraft,
-): Omit<BuddyProfile, "id" | "created" | "updated" | "assignedToPlayerId"> => ({
-  sessionId,
+export const buddyDraftToProfileFields = (
+  draft: BuddyProfileDraft,
+): BuddyProfileDraft => ({
+  sessionId: draft.sessionId,
   name: draft.name.trim(),
   role: draft.role.trim(),
-  email: draft.email.trim(),
-  phone: draft.telephone.trim(),
+  email: draft.email?.trim() ?? "",
+  phone: draft.phone?.trim() ?? "",
+  tenure: draft.tenure?.trim() || undefined,
+  contactUrl: draft.contactUrl?.trim() || undefined,
+  quote: draft.quote,
+  avatarUrl: draft.avatarUrl,
 });

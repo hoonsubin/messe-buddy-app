@@ -9,7 +9,6 @@ import PlayerAnalytics from "../../components/gamemaker/PlayerAnalytics.tsx";
 import IsometricMilestoneMap from "../../components/player/IsometricMilestoneMap.tsx";
 import PendingApprovalsPanel from "../../components/gamemaker/PendingApprovalsPanel.tsx";
 import PlayerDetailSection from "./PlayerDetailSection.tsx";
-import PlayerInviteAccordion from "./PlayerInviteAccordion.tsx";
 
 interface PlayerAnalyticsTabProps {
   readonly playerFirstName: string;
@@ -22,8 +21,6 @@ interface PlayerAnalyticsTabProps {
   readonly draftMilestones: ReadonlyArray<Milestone>;
   readonly milestoneProgress: ReadonlyArray<MilestoneProgress>;
   readonly hasMilestones: boolean;
-  readonly sessionId: string;
-  readonly inviteToken: string;
   readonly onApprove: (playerId: string, missionId: string) => void;
   readonly onReject: (playerId: string, missionId: string) => void;
   readonly onMilestoneClick: (id: string) => void;
@@ -40,8 +37,6 @@ const PlayerAnalyticsTab = ({
   draftMilestones,
   milestoneProgress,
   hasMilestones,
-  sessionId,
-  inviteToken,
   onApprove,
   onReject,
   onMilestoneClick,
@@ -93,12 +88,6 @@ const PlayerAnalyticsTab = ({
           </p>
         )}
     </div>
-
-    <PlayerInviteAccordion
-      playerFirstName={playerFirstName}
-      sessionId={sessionId}
-      inviteToken={inviteToken}
-    />
   </main>
 );
 

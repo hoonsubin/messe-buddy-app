@@ -102,10 +102,18 @@ const main = async () => {
     record("Redirect to player detail", onPlayerDetail, page.url());
 
     await page.waitForSelector('[data-testid="player-detail-page"]');
-    const customizeTab = page.getByRole("tab", { name: "Customize" });
+    const customizeTab = page.getByTestId("player-detail-tab-customize");
     record(
       "Customize tab active",
       await customizeTab.getAttribute("aria-selected") === "true",
+    );
+    record(
+      "Analytics tab hidden for invited player",
+      await page.getByTestId("player-detail-tab-analytics").count() === 0,
+    );
+    record(
+      "Invite accordion pinned open",
+      await page.getByTestId("player-invite-body").isVisible(),
     );
     record(
       "Customize template section visible",
@@ -142,7 +150,7 @@ const main = async () => {
     await browser.close();
   }
 
-  summarizeAndExit(results, "Phase 3 onboarding journey smoke");
+  summarizeAndExit(results, "Phase 4 onboarding journey smoke");
 };
 
 main().catch((e) => {

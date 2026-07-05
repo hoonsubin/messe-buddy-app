@@ -1,8 +1,8 @@
 import TopBar from "../components/shared/TopBar.tsx";
 import RouteTabBar from "../components/shared/RouteTabBar.tsx";
 import {
-  PLAYER_DETAIL_TABS,
   type PlayerDetailTabKey,
+  visiblePlayerDetailTabs,
 } from "./player-detail/constants.ts";
 import { usePlayerDetailPage } from "./player-detail/usePlayerDetailPage.ts";
 import PlayerDetailHeader from "./player-detail/PlayerDetailHeader.tsx";
@@ -14,6 +14,7 @@ import PlayerDetailOverlays from "./player-detail/PlayerDetailOverlays.tsx";
 
 const PlayerDetailPage = () => {
   const vm = usePlayerDetailPage();
+  const tabs = visiblePlayerDetailTabs({ showAnalytics: vm.showAnalyticsTab });
 
   return (
     <div
@@ -33,13 +34,14 @@ const PlayerDetailPage = () => {
       />
 
       <RouteTabBar
-        tabs={PLAYER_DETAIL_TABS}
-        activeKey={vm.tab}
+        tabs={tabs}
+        activeKey={vm.activeTab}
         onChange={(key) => vm.setTab(key as PlayerDetailTabKey)}
         ariaLabel="Player views"
+        testIdPrefix="player-detail-tab"
       />
 
-      {vm.tab === "analytics" && (
+      {vm.activeTab === "analytics" && vm.showAnalyticsTab && (
         <PlayerAnalyticsTab
           playerFirstName={vm.playerFirstName}
           {...(vm.startDateISO !== undefined &&
@@ -52,8 +54,6 @@ const PlayerDetailPage = () => {
           draftMilestones={vm.draftMilestonesAsMilestones}
           milestoneProgress={vm.milestoneProgress}
           hasMilestones={vm.hasMilestones}
-          sessionId={vm.homeSid}
-          inviteToken={vm.gmProgress.selectedPlayer?.inviteToken ?? ""}
           onApprove={(playerId, missionId) =>
             void vm.gmProgress.handleApprove(playerId, missionId)}
           onReject={(playerId, missionId) =>
@@ -62,18 +62,17 @@ const PlayerDetailPage = () => {
         />
       )}
 
-      {vm.tab === "customize" && (
+      {vm.activeTab === "customize" && (
         <PlayerCustomizeTab
           playerFirstName={vm.playerFirstName}
           sessionId={vm.homeSid}
           inviteToken={vm.gmProgress.selectedPlayer?.inviteToken ?? ""}
+          claimStatus={vm.claimStatus}
           templates={vm.templates}
           appliedTemplate={vm.appliedTemplate}
           applyingTemplate={vm.applyingTemplate}
           draftMilestones={vm.draftMilestonesAsMilestones}
           missions={vm.missions}
-          completedMissionIds={vm.completedMissionIds}
-          resources={vm.gmResources.resources}
           bgImageUrl={vm.bgImageUrl}
           mapNodeScale={vm.mapNodeScale}
           onSelectTemplate={vm.handleUseTemplate}
@@ -86,16 +85,10 @@ const PlayerDetailPage = () => {
           onUploadBackground={(file) => void vm.uploadBackground(file)}
           onMapNodeScaleChange={(scale) => void vm.updateMapNodeScale(scale)}
           onOpenScanner={() => vm.setScannerOpen(true)}
-          onAddResource={vm.handleAddResource}
-          onUpdateResource={(id, patch) =>
-            void vm.gmResources.updateResource(id, patch)}
-          onDeleteResource={(id) => void vm.gmResources.deleteResource(id)}
-          onToggleVisibility={(id, visible) =>
-            void vm.gmResources.toggleVisibility(id, visible)}
         />
       )}
 
-      {vm.tab === "buddy" && (
+      {vm.activeTab === "buddy" && (
         <PlayerBuddyTab
           players={vm.gmProgress.players}
           draft={vm.buddyProfile.buddyDraft}
@@ -106,7 +99,7 @@ const PlayerDetailPage = () => {
         />
       )}
 
-      {vm.tab === "preboarding" && (
+      {vm.activeTab === "preboarding" && (
         <PlayerPreboardingTab
           playerFirstName={vm.playerFirstName}
           items={vm.preBoardingChecklist.items}

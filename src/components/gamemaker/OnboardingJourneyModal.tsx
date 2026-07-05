@@ -56,7 +56,9 @@ const OnboardingJourneyModal = ({
 
   const handleContinue = () => {
     if (step === 1 && canContinueStep1) {
-      setBuddy((current) => current ?? defaultBuddySelection(buddyOptions));
+      setBuddy((current) =>
+        current ?? defaultBuddySelection(sessionId, buddyOptions)
+      );
       setStep(2);
       return;
     }
@@ -80,19 +82,19 @@ const OnboardingJourneyModal = ({
   };
 
   const sheetHeader = (
-    <div className="oj-sheet__header">
-      <div className="oj-sheet__header-row">
-        <span className="oj-sheet__step">Step {step} of 3</span>
+    <div className="sheet-header sheet-header--stacked">
+      <div className="sheet-header__meta">
+        <span className="sheet-header__step">Step {step} of 3</span>
         <button
           type="button"
-          className="oj-sheet__cancel"
+          className="sheet-header__cancel"
           onClick={onClose}
           disabled={loading}
         >
           Cancel
         </button>
       </div>
-      <h2 id="onboarding-journey-modal-title" className="oj-sheet__title">
+      <h2 id="onboarding-journey-modal-title" className="sheet-header__title">
         {stepTitle}
       </h2>
     </div>
@@ -156,7 +158,7 @@ const OnboardingJourneyModal = ({
     >
       <div className="oj-sheet__body">
         {step === 1 && (
-          <div data-testid="oj-step-name" className="oj-sheet__step">
+          <div data-testid="oj-step-name" className="oj-sheet__step-panel">
             <div className="form-field">
               <label className="form-label" htmlFor="oj-player-name">
                 Player name
@@ -178,8 +180,9 @@ const OnboardingJourneyModal = ({
         )}
 
         {step === 2 && (
-          <div data-testid="oj-step-buddy" className="oj-sheet__step">
+          <div data-testid="oj-step-buddy" className="oj-sheet__step-panel">
             <BuddyPicker
+              sessionId={sessionId}
               options={buddyOptions}
               loading={buddyLoading}
               value={buddy}
@@ -189,7 +192,7 @@ const OnboardingJourneyModal = ({
         )}
 
         {step === 3 && (
-          <div data-testid="oj-step-template" className="oj-sheet__step">
+          <div data-testid="oj-step-template" className="oj-sheet__step-panel">
             <TemplateRadioList
               templates={templates}
               value={templateName}

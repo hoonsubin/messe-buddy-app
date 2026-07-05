@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { MdArrowBack, MdClose, MdEditNote } from "react-icons/md";
-import type { DraftMission, Milestone, Mission } from "../../types/index.ts";
+import type { DraftMission, Milestone, Mission, Resource } from "../../types/index.ts";
+import type { AddResourceInput } from "../../hooks/useResources.ts";
 import type { StoredDraft } from "../../utils/draftStorage.ts";
 import {
   clearStoredDraft,
@@ -11,6 +12,7 @@ import ConfirmSheet from "./ConfirmSheet.tsx";
 import { BottomSheet } from "../patterns/BottomSheet.tsx";
 import MissionEditorView from "./MissionEditorView.tsx";
 import MissionListView from "./MissionListView.tsx";
+import ResourcesEditor from "./ResourcesEditor.tsx";
 import SaveActions from "./SaveActions.tsx";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -36,6 +38,19 @@ interface MissionBottomSheetProps {
   readonly onDeleteMission: (missionId: string) => void;
   readonly onReorderMission: (missionId: string, newOrder: number) => void;
   readonly onClose: () => void;
+  readonly milestoneResources: ReadonlyArray<Resource>;
+  readonly onAddResource: (data: AddResourceInput) => void;
+  readonly onUpdateResource: (
+    resourceId: string,
+    patch: Partial<
+      Pick<Resource, "title" | "type" | "url" | "isVisibleToPlayer">
+    >,
+  ) => void;
+  readonly onDeleteResource: (resourceId: string) => void;
+  readonly onToggleResourceVisibility: (
+    resourceId: string,
+    visible: boolean,
+  ) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -59,6 +74,11 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
     onDeleteMission,
     onReorderMission,
     onClose,
+    milestoneResources,
+    onAddResource,
+    onUpdateResource,
+    onDeleteResource,
+    onToggleResourceVisibility,
   } = props;
 
   // ── View state ──────────────────────────────────────────────────────────────
@@ -310,14 +330,32 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
       >
         {view === "list"
           ? (
-            <MissionListView
-              missions={missions}
-              activeMissionId={activeMissionId}
-              onMissionSelect={handleMissionSelectAndNavigate}
-              onAddMission={handleAddMissionAndNavigate}
-              onDeleteMission={onDeleteMission}
-              onReorderMission={onReorderMission}
-            />
+            <>
+              <MissionListView
+                missions={missions}
+                activeMissionId={activeMissionId}
+                onMissionSelect={handleMissionSelectAndNavigate}
+                onAddMission={handleAddMissionAndNavigate}
+                onDeleteMission={onDeleteMission}
+                onReorderMission={onReorderMission}
+              />
+              {milestone && (
+                <section
+                  className="sheet-resources"
+                  aria-label="Milestone resources"
+                >
+                  <h4 className="sheet-resources__title">Resources</h4>
+                  <ResourcesEditor
+                    resources={milestoneResources}
+                    sessionId={sessionId}
+                    onAdd={onAddResource}
+                    onUpdate={onUpdateResource}
+                    onDelete={onDeleteResource}
+                    onToggleVisibility={onToggleResourceVisibility}
+                  />
+                </section>
+              )}
+            </>
           )
           : (
             <MissionEditorView

@@ -204,6 +204,7 @@ Map collapse uses `0.35s cubic-bezier(0.4, 0, 0.2, 1)` — keep consistent when 
 | Token | Value | Use |
 |-------|-------|-----|
 | `--topbar-h` | 3.5rem (56px) | Fixed header; pages use `.page--has-topbar` |
+| `--sheet-height` | 94dvh | Bottom sheet panel height; `--topbar-h` remains visible above sheet |
 | `--sidebar-w` | 22rem (352px) | Admin sidebar at desktop |
 | `--ms-strip-h` | 7rem | Player mission strip |
 | `--touch-target` / `--min-touch` | 2.75rem (44px) | WCAG minimum tap target |
@@ -283,11 +284,12 @@ Reuse these before creating new components. Paths relative to `src/components/`.
 | Pattern | Classes | Components |
 |---------|---------|------------|
 | Center modal | `.modal-backdrop`, `.modal`, `.modal__*` | [`Modal`](../src/components/patterns/Modal.tsx) — prefer component |
-| Bottom sheet | `.bottom-sheet-*`, `.sheet-*` | [`BottomSheet`](../src/components/patterns/BottomSheet.tsx) |
+| Bottom sheet | `.bottom-sheet-*`, `.sheet-*`, `.select-card*` | [`BottomSheet`](../src/components/patterns/BottomSheet.tsx), [`SelectCard`](../src/components/patterns/SelectCard.tsx) |
+| Select card | `.select-card`, `.select-card-list` | Tappable bordered option (wizard buddy/template steps) |
 | Recovery key (legacy CSS aliases) | `.recovery-modal__*` | Use `Modal variant="narrow"` |
 | Confirm sheet | `.sheet-confirm` | [`ConfirmSheet`](../src/components/gamemaker/ConfirmSheet.tsx) |
 | Full-screen | `.tutorial-overlay`, `.qr-scanner` | Tutorial, QR scanner |
-| Toast | inline styles only | [`Toast.tsx`](../src/components/shared/Toast.tsx) |
+| Toast | `.toast` in `shared.css` | [`Toast.tsx`](../src/components/shared/Toast.tsx) |
 | Error full page | inline styles | [`FetchErrorPanel`](../src/components/shared/FetchErrorPanel.tsx) |
 
 ### 7.6 Data display
@@ -322,8 +324,8 @@ How routes assemble components (for regression scope). PR #17 replaced the legac
 |-------|------|--------|----------------|
 | `/`, `/join/:sessionId` | [`LandingPage`](../src/pages/LandingPage.tsx) | `LandingShell` + view switch | `RoleSelectView`, `JoinSessionView`, `CreateSessionView`, `TemplatesView`, `RecoverView`, modals |
 | `/session/:id` | [`PlayerCockpitPage`](../src/pages/PlayerCockpitPage.tsx) | `TopBar` + tab bar (Dashboard / AI Assistant) | `MilestoneMapViewer` (→ `IsometricMilestoneMap`), `MilestoneSidebarViewer`, `CurrentMissionsList`, `BuddyCard`, `ResourcesSection`, `ChatPanel`, `TutorialOverlay` |
-| `/gamemaker/:id` | [`GameMakerHomePage`](../src/pages/GameMakerHomePage.tsx) | `TopBar` + player list | Player cards, status indicators, "Add player" |
-| `/gamemaker/:id/player/:playerId` | [`PlayerDetailPage`](../src/pages/PlayerDetailPage.tsx) | `TopBar` + detail columns | `IsometricMilestoneMap` (read-only), `MilestoneMapEditor` (editable), `MissionBottomSheet`, `PlayerAnalytics`, `MissionTimelineChart`, `SessionInviteCard`, `ResourcesEditor`, `TemplateSelect`, `SaveActions`, `BuddyAssignmentForm` |
+| `/gamemaker/:id` | [`GameMakerHomePage`](../src/pages/GameMakerHomePage.tsx) | `TopBar` + player list | Player cards, status indicators, **New onboarding journey** CTA, [`OnboardingJourneyModal`](../src/components/gamemaker/OnboardingJourneyModal.tsx) |
+| `/gamemaker/:id/player/:playerId` | [`PlayerDetailPage`](../src/pages/PlayerDetailPage.tsx) | `TopBar` + tab bar | **Customize:** `PlayerInviteAccordion` (pinned when invited), `TemplateSelect`, `MilestoneMapEditor` → [`MissionBottomSheet`](../src/components/gamemaker/MissionBottomSheet.tsx) (missions + milestone-scoped `ResourcesEditor`). **Analytics** (gated): `PlayerAnalytics`, read-only `IsometricMilestoneMap`. **Assign Buddy:** `BuddyAssignmentForm`. Tabs: `player-detail-tab-*` testids |
 | `/form/:sessionId/:missionId` | [`FormPage`](../src/pages/FormPage.tsx) | `TopBar` + `FormShell` | `FormField` per schema |
 | `/gamemaker/:sessionId/scan` | [`QRScannerView`](../src/pages/QRScannerView.tsx) | Full-screen `.qr-scanner` | `CameraFeed`, `ValidationResult` |
 
@@ -355,7 +357,7 @@ Invite URL `/join/:sessionId` pre-fills join form — **no auto-submit**.
 
 - Design at **390px width** first; verify no horizontal overflow.
 - Admin map collapses to **20svh** on sidebar scroll (`data-map-collapsed="true"`).
-- Bottom sheets height **94dvh** — content scrolls inside sheet body.
+- Bottom sheets use **`--sheet-height` (94dvh)** — content scrolls inside `.sheet-body`; TopBar remains visible above the sheet.
 - **Never** `display: none` on primary actions to fix overlap — fix stacking/spacing.
 
 ### Visual consistency

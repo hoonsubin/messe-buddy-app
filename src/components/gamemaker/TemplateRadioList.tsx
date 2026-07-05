@@ -1,5 +1,5 @@
 import type { TemplateExport } from "../../types/index.ts";
-import OjSelectCard from "./OjSelectCard.tsx";
+import SelectCard from "../patterns/SelectCard.tsx";
 
 interface TemplateRadioListProps {
   readonly templates: ReadonlyArray<TemplateExport>;
@@ -12,8 +12,8 @@ const TemplateRadioList = ({
   value,
   onChange,
 }: TemplateRadioListProps) => (
-  <div className="oj-select-list" role="radiogroup" aria-label="Starting template">
-    <OjSelectCard
+  <div className="select-card-list" role="radiogroup" aria-label="Starting template">
+    <SelectCard
       selected={value === null}
       testId="oj-template-scratch"
       title="Start from scratch"
@@ -24,7 +24,7 @@ const TemplateRadioList = ({
       const milestoneCount = template.milestones.length;
       const missionCount = template.missions.length;
       return (
-        <OjSelectCard
+        <SelectCard
           key={template.name}
           selected={value === template.name}
           testId={`oj-template-option-${template.name}`}
