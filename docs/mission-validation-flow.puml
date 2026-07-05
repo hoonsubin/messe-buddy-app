@@ -12,7 +12,7 @@ participant PeerPage as "PeerScanPage"
 
 note over Player, PB
   **Form missions (type = form)** always write status: autoApproved on submit.
-  validationMethod is ignored. GM always sees formResponse in hire analytics.
+  validationMethod is ignored. GM always sees formResponse in player analytics.
 end note
 
 == 1. gmApprove — player requests, GM approves in web UI ==
@@ -54,7 +54,7 @@ end note
 
 ThirdParty -> PeerPage : Scan QR → name / custom form
 PeerPage -> PB : INSERT peer_scans\n(scannerDeviceId unique per mission+player)
-PB --> GameMaker : SSE live feed in hire analytics
+PB --> GameMaker : SSE live feed in player analytics
 
 alt count(peer_scans) >= peerScanTarget
   PeerPage -> upsert : status: completed

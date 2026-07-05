@@ -1,0 +1,69 @@
+@startuml diagram_player_lifecycle
+title Player Lifecycle — Game Maker, Workspace, Player
+
+actor GameMaker as "Game Maker"
+actor NewPlayer as "New Player"
+participant AdminHome as "AdminHomePage\n(/admin/:sessionId)"
+participant PlayerDetail as "PlayerDetailPage\n(/admin/:sid/player/:playerId)"
+participant Landing as "LandingPage\n(/join/:sessionId?t=)"
+participant Cockpit as "PlayerCockpitPage\n(/session/:sessionId)"
+database PocketBase as "PocketBase"
+
+== GM creates workspace ==
+
+GameMaker -> AdminHome : Create session (landing)
+AdminHome -> PocketBase : createSession + gmRecoveryKey\n(gameMakerId = uid)
+PocketBase --> AdminHome : sessionId
+AdminHome -> AdminHome : CachedIdentity role=gamemaker
+
+== GM adds a player ==
+
+GameMaker -> AdminHome : Players tab → "Add player"
+AdminHome -> PocketBase : invitePlayer(sessionId, name?)\n→ inviteToken, claimStatus=invited
+PocketBase --> AdminHome : playerId
+AdminHome -> PlayerDetail : /admin/:sid/player/:playerId?new=1
+
+== GM configures journey (or applies template) ==
+
+GameMaker -> PlayerDetail : Customize tab
+PlayerDetail -> PocketBase : milestones, missions\n(scoped by playerId)
+note right of PlayerDetail
+  **Templates (global):** importTemplate(template, playerId)
+  Milestones + Missions + FormSchemas +
+  resourceBindings → milestone_resources.
+  Each player gets an independent copy.
+end note
+
+GameMaker -> PlayerDetail : Copy invite QR / link
+note right of PlayerDetail
+  Invite URL: {origin}/join/{sessionId}?t={inviteToken}
+  Plain HTTPS URI — any camera scanner.
+end note
+
+== Player claims identity ==
+
+NewPlayer -> Landing : Open invite link
+Landing -> PocketBase : getPlayerByInviteToken(t)
+
+alt claimStatus = invited, no conflicting local identity
+  Landing -> PocketBase : claimPlayer → uid, recoveryKey, claimed
+  Landing -> Landing : CachedIdentity role=player → localStorage
+else claimStatus = claimed (same link, new device)
+  Landing -> Landing : hydrate CachedIdentity from players row
+end
+
+Landing -> Cockpit : /session/:sessionId
+
+== GM monitors progress ==
+
+GameMaker -> AdminHome : Players list (all players in workspace)
+note right of AdminHome
+  claimStatus=invited → "Not joined yet"
+  claimStatus=claimed → progress %, stalled flag
+end note
+
+GameMaker -> PlayerDetail : Analytics tab
+PlayerDetail -> PocketBase : progress_events for playerId
+PlayerDetail -> PlayerDetail : computeProgress → XP, approvals,\npeer scans, form responses
+
+@enduml

@@ -94,13 +94,13 @@ The **target** is the locked architecture in SPECS (**D-ARCH-2** … **D-NAMING-
 | -- | ---- | ------------- |
 | **ARCH-09** | Rename pages: `HireDetailPage` → `PlayerDetailPage`; `hire-detail/` → `player-detail/`; `useHireDetailPage` → `usePlayerDetailPage` | `src/pages/` |
 | **ARCH-10** | Rename hooks/types: `useGmHires` → `useGmPlayers`; `GmHireRow` → `GmPlayerRow`; `crossHire.ts` → `crossPlayer.ts` (or fold into `gmPlayers`) | `src/hooks/useProgress/` |
-| **ARCH-11** | Grep pass: remove **hire** from user-facing strings, `data-testid`, comments, docs (`hire-lifecycle.puml` → `player-lifecycle.puml`) | `docs/`, `src/`, `AGENTS.md` |
+| **ARCH-11** | Grep pass: remove **hire** from user-facing strings, `data-testid`, comments, remaining docs | `src/`, `AGENTS.md` — **docs/ done 2026-07-05** |
 
 ### Phase E — Docs & verification
 
 | ID | Task | Primary files |
 | -- | ---- | ------------- |
-| **ARCH-12** | Align `docs/pb-schema.md`, diagrams, `AGENTS.md` with SPECS | docs tree |
+| **ARCH-12** | Align `AGENTS.md` with SPECS; verify code matches docs | **docs/ done 2026-07-05** |
 | **ARCH-13** | Smoke on target model (see checklist below) | `:8700` after compose rebuild |
 
 **Verify after ARCH:** `deno task build` · `deno task lint` · smoke on
@@ -212,6 +212,12 @@ for player · G-05 profile field display · G-06–G-09 · G-16–G-17 tutorial 
 ## Changelog
 
 Append-only history. Do not duplicate this material in sections above.
+
+### 2026-07-05 — Docs aligned to locked architecture
+
+- Rewrote `docs/pb-schema.md` (library_resources, milestone_resources, GM on session).
+- Replaced `hire-lifecycle.puml` → `player-lifecycle.puml`; updated ts-data-model,
+  qr-routing, mission-validation, C4 diagrams; added `docs/README.md`.
 
 ### 2026-07-05 — Architecture lock-in (SPECS + plan)
 

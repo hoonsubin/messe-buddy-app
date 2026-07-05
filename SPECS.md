@@ -630,7 +630,7 @@ without the MesseBuddy app installed; the browser handles routing.
 - Per-player invite link (`SessionInviteCard`) — `/join/:sessionId?t=:inviteToken`
 - `AdminQRScannerModal` — scan any MesseBuddy URL
 
-Diagram: [`docs/player-lifecycle.puml`](docs/player-lifecycle.puml) *(rename from `hire-lifecycle.puml` in ARCH)*
+Diagram: [`docs/player-lifecycle.puml`](docs/player-lifecycle.puml)
 
 ### Admin draft architecture (normative)
 

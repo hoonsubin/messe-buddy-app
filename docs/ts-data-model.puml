@@ -1,5 +1,5 @@
 @startuml diagram_06_class_data_model
-title TypeScript Data Model (target architecture)
+title TypeScript Data Model (target architecture — D-ARCH-2)
 
 ' ── UNION TYPES (const object + keyof — C-12) ─────────────────
 enum MissionType {
@@ -33,6 +33,7 @@ enum ResourceType {
 enum UserRole {
   player
   gamemaker
+  ' CachedIdentity only — not stored on Player rows
 }
 
 ' ── VALUE OBJECTS ─────────────────────────────────────────────
@@ -49,7 +50,6 @@ interface QRPayload {
   +xpValue: number
   +issuedAt: number
   +hmac: string
-  ' GM validation QR only (validationMethod = qr)
 }
 interface PeerScanPayload {
   +playerId: string
@@ -57,7 +57,6 @@ interface PeerScanPayload {
   +sessionId: string
   +issuedAt: number
   +hmac: string
-  ' Crowd attestation QR (validationMethod = peerScan)
 }
 interface CachedIdentity {
   +uid: string
@@ -79,42 +78,45 @@ class Session <<persistent>> {
   +name: string
   +bgImageUrl: string
   +gameMakerId: string
+  +gmRecoveryKey: string
   +qrSecret: string
   +preBoardingChecks: JSON
+  ' GM identity — not a players row
 }
 
 class Player <<persistent>> {
+  +sessionId: string
+  +inviteToken: string
+  +claimStatus: invited | claimed
   +uid: string
   +recoveryKey: string
-  +sessionId: string
   +name: string
-  +preferredName: string
+  +jobTitle: string
   +profileComplete: boolean
   +tutorialComplete: boolean
-  ' ... profile fields
+  ' no role field — collection = player identities
 }
 
 class Milestone <<persistent>> {
   +sessionId: string
+  +playerId: string
   +name: string
   +xPercent: number
   +yPercent: number
   +xpThreshold: number
   +order: number
-  ' xpThreshold = sum(missions.xpValue) in milestone
 }
 
 class Mission <<persistent>> {
   +sessionId: string
+  +playerId: string
   +milestoneId: string
   +title: string
   +body: string
   +type: MissionType
   +xpValue: number
-  ' **GM-set directly — no difficulty field**
   +validationMethod: ValidationMethod
   +peerScanTarget: number
-  ' required when validationMethod = peerScan
   +order: number
   +isInCurrentMissions: boolean
 }
@@ -136,16 +138,24 @@ class PeerScan <<persistent>> {
   +scannerDeviceId: string
   +scannerName: string
   +formResponse: Record
-  ' unique (missionId, playerId, scannerDeviceId)
 }
 
-class Resource <<persistent>> {
-  +sessionId: string
+class LibraryResource <<persistent>> {
+  +resourceKey: string
   +title: string
+  +description: string
   +type: ResourceType
   +url: string
+  +tags: string
+  ' company-wide catalog
+}
+
+class MilestoneResource <<persistent>> {
+  +sessionId: string
+  +playerId: string
+  +milestoneId: string
+  +libraryResourceId: string
   +isVisibleToPlayer: boolean
-  ' session-scoped QoL — no missionId FK
 }
 
 class FormSchema <<persistent>> {
@@ -153,11 +163,18 @@ class FormSchema <<persistent>> {
   +fields: List~FieldSchema~
 }
 
+class TemplateRecord <<persistent>> {
+  +name: string
+  +data: TemplateExport
+  ' global — no sessionId
+}
+
 class TemplateExport <<ephemeral export>> {
   +milestones: List
   +missions: List
   +formSchemas: List
-  +resources: List
+  +resourceBindings: List
+  ' milestoneOrder + resourceKey
 }
 
 ' ── EPHEMERAL (client-only) ────────────────────────────────────
@@ -173,7 +190,6 @@ class DraftMission <<ephemeral>> {
   +milestoneId: string
   +xpValue: number
   +isDirty: boolean
-  ' ... editable mission fields
 }
 
 class MilestoneProgress <<ephemeral>> {
@@ -197,23 +213,28 @@ PBRecord <|-- Milestone
 PBRecord <|-- Mission
 PBRecord <|-- ProgressEvent
 PBRecord <|-- PeerScan
-PBRecord <|-- Resource
+PBRecord <|-- LibraryResource
+PBRecord <|-- MilestoneResource
 PBRecord <|-- FormSchema
+PBRecord <|-- TemplateRecord
 
-Session "1" --> "0..*" Milestone
-Session "1" --> "0..1" Player : hire player slot
-Session "1" --> "0..*" Resource : QoL
+Session "1" --> "0..*" Player : onboarding identities
+Session "1" --> "0..*" Milestone : via player journeys
+Player "1" --> "0..*" Milestone
 Milestone "1" --> "0..*" Mission
 Mission "1" --> "0..1" FormSchema
-Mission "1" --> "0..*" PeerScan : peerScan validations
-ProgressEvent --> Mission : completion per player
+Mission "1" --> "0..*" PeerScan
+Milestone "1" --> "0..*" MilestoneResource
+LibraryResource "1" --> "0..*" MilestoneResource
+ProgressEvent --> Mission
 PlayerProgress ..> ProgressEvent : derived (C-11)
-PlayerProgress ..> Mission : sums xpValue
+TemplateExport ..> LibraryResource : resourceKey bindings
+TemplateRecord --> TemplateExport : data JSON
 
-note bottom of Mission
-  Templates round-trip full mission config
-  including validationMethod, xpValue,
-  peerScanTarget, and linked FormSchema.
+note bottom of Player
+  invitePlayer → invited row
+  claimPlayer → uid + recoveryKey
+  UserRole.player only in CachedIdentity
 end note
 
 @enduml

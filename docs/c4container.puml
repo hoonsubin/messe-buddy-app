@@ -10,7 +10,7 @@ System_Ext(aiProvider, "AI Provider", "Upstream LLM API — OpenAI, Anthropic, A
 
 System_Boundary(docker, "Docker Compose Services") {
     Container(app, "App (PWA + PocketBase)", "nginx + PocketBase Go wrapper", "Single container: nginx serves the React PWA on :80; PocketBase Go binary runs on :8090. Handles REST API, SSE push, file storage, SQLite database, and admin UI.")
-    ContainerDb(sqlite, "SQLite", "Embedded in PocketBase", "Stores sessions, players, milestones, missions, progress_events, buddy_profiles, resources, form_schemas.")
+    ContainerDb(sqlite, "SQLite", "Embedded in PocketBase", "sessions, players, milestones, missions, progress_events, buddy_profiles, library_resources, milestone_resources, form_schemas, templates.")
     ContainerDb(filestore, "File Storage", "PocketBase managed", "Stores uploaded background images and player avatars.")
 
     Container(litellm, "LiteLLM Proxy", "Python / LiteLLM", "Single OpenAI-compatible /chat/completions endpoint. Handles model routing, provider auth, system prompt injection, RAG retrieval via pgvector connector, caching, and rate-limiting. Config-driven: swap providers and update embedded documents by editing litellm.yaml without touching PWA code.")
