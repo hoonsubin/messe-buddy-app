@@ -1,7 +1,7 @@
 # Implementation Plan — Onboarding Journey UI Redesign
 
 **ID:** OJ-01  
-**Status:** In progress (Phases 1–2 complete)  
+**Status:** In progress (Phases 1–3 complete; Phase 4 next)  
 **Last updated:** 2026-07-05  
 **Wireframe:** Cursor canvas [`onboarding-journey-redesign.canvas.tsx`](../../.cursor/projects/Users-hoonkim-Projects-messe-buddy-app/canvases/onboarding-journey-redesign.canvas.tsx) (open beside chat in IDE)
 
@@ -285,9 +285,11 @@ interface CreateOnboardingJourneyResult {
 - Auto-template on add-player — superseded by explicit wizard step 3
 - `existingBuddyId` naming in early plan drafts — use `buddyProfileId`
 
-### Phase 3 — Wizard modal + GM home
+### Phase 3 — Wizard bottom sheet + GM home
 
-**Status:** Planned (next)
+**Status:** Done (2026-07-05)
+
+**UI polish (3.11):** Migrated wizard from centered `modal--narrow` to full-height **`BottomSheet`** (`oj-sheet`, `100dvh`); added `OjSelectCard` tappable cards; wireframe header hierarchy (step counter + Cancel + single title).
 
 #### Buddy data model (pre-flight — resolved for Phase 3)
 
@@ -331,13 +333,14 @@ GameMakerHomePage
 | 3.1 | **`useBuddyPickerOptions`** — fetch `listDistinctBuddyProfilesForPicker`; expose `{ options, loading, error, refresh }` | `src/hooks/useBuddyPickerOptions.ts` | Adapter via `useAdapter`; active-guard like `useGmPlayers` |
 | 3.2 | **`BuddyPicker`** — mode toggle; existing radios (`data-testid="oj-buddy-option-{id}"`); new form with `BuddyPickerDraft`; validation: all four fields required for new; one existing selected for pick | `src/components/gamemaker/BuddyPicker.tsx` | Display `phone` as telephone in UI |
 | 3.3 | **`TemplateRadioList`** — “Start from scratch” (`templateName=null`) + templates from props; show milestone/mission counts | `src/components/gamemaker/TemplateRadioList.tsx` | Reuse `TemplateExport` shape from `usePlayerTemplates` |
-| 3.4 | **`OnboardingJourneyModal`** — 3 steps, Back/Cancel, `data-testid` contract; accumulates `CreateOnboardingJourneyInput`; calls `onSubmit` on Create journey | `src/components/gamemaker/OnboardingJourneyModal.tsx` | Bottom sheet or `Modal` pattern like `NameCaptureModal` / library modals |
+| 3.4 | **`OnboardingJourneyModal`** — 3 steps, Back/Cancel, `data-testid` contract; accumulates `CreateOnboardingJourneyInput`; calls `onSubmit` on Create journey | `src/components/gamemaker/OnboardingJourneyModal.tsx` | **`BottomSheet`** (`oj-sheet`, full viewport); not centered modal |
 | 3.5 | **`useGmPlayers`** — add `createOnboardingJourney(input)`; **deprecate** `invitePlayer` from public hook API (remove or keep private until callers gone) | `src/hooks/useProgress/gmPlayers.ts` | On success: `writeAppliedTemplate` when `appliedTemplateName` set; `refresh()` player list |
 | 3.6 | **`GameMakerHomePage`** — replace `NameCaptureModal` + `handleCreate` with `OnboardingJourneyModal`; loading/error toast on failure | `GameMakerHomePage.tsx` | Navigate `…/player/:pid?journey=1` (interim tab hint; Phase 4 removes query) |
 | 3.7 | **`usePlayerDetailPage`** — `?journey=1` → initial tab **Customize** (replaces `?new=1` interim) | `usePlayerDetailPage.ts` | Small cross-phase hook; full invite/analytics gating stays Phase 4 |
 | 3.8 | **`GmPlayersTab`** — CTA copy **New onboarding journey**; `data-testid="new-onboarding-journey-btn"` on header + empty state | `GmPlayersTab.tsx` | Remove “Add player” strings |
-| 3.9 | **Styles** — wizard step layout, buddy option cards, template radios | `gamemaker.css` or colocated module | Match `design-tokens.md`; 390px modal width |
+| 3.9 | **Styles** — wizard step layout, buddy option cards, template radios | `gamemaker.css` | `oj-sheet__*`, `oj-select-card`, `oj-mode-toggle` |
 | 3.10 | **Remove** GM-home `NameCaptureModal` import | `GameMakerHomePage.tsx` | Keep `NameCaptureModal` for other flows if any |
+| 3.11 | **Wizard UI polish** — bottom sheet shell, `OjSelectCard`, header hierarchy | `OnboardingJourneyModal.tsx`, `OjSelectCard.tsx`, `BottomSheet.tsx` | Full-height sheet; Phase 3.5 visual pass before Phase 4 |
 
 #### Phase 3 component contracts
 
@@ -350,9 +353,8 @@ interface UseBuddyPickerOptionsResult {
   readonly refresh: () => void;
 }
 
-// OnboardingJourneyModal.tsx
+// OnboardingJourneyModal.tsx — mounted when open; remount via key on GameMakerHomePage
 interface OnboardingJourneyModalProps {
-  readonly open: boolean;
   readonly sessionId: string;
   readonly templates: ReadonlyArray<TemplateExport>;
   readonly loading: boolean;
@@ -375,17 +377,32 @@ interface BuddyPickerProps {
 - Refactoring `useBuddyProfile` / `BuddyAssignmentForm` field set (Phase 4)
 - Invite card pin-to-top / `pinnedUntilClaimed` (Phase 4)
 - Analytics tab gating (Phase 4)
-- `smoke-onboarding-journey` script (Phase 5; manual MCP check optional after 3.10)
+- `smoke-onboarding-journey` script — **Phase 3 scope** added (Phase 5 extends with invite/analytics gates)
 - SPECS D-OJ-1 entry (Phase 5)
 
 #### Phase 3 exit criteria
 
-- [ ] GM home shows **New onboarding journey** only (no Add player / name modal).
-- [ ] Wizard completes all 3 steps; mock session shows ≥1 existing buddy option (Marcus/Lena).
-- [ ] Submit calls `createOnboardingJourney`; new player appears in list as **Not joined yet**.
-- [ ] Redirect to `/gamemaker/:sessionId/player/:playerId?journey=1` with **Customize** tab active.
-- [ ] `deno task build` + `deno task lint` pass.
-- [ ] No new calls to `useGmPlayers.invitePlayer` from UI.
+- [x] GM home shows **New onboarding journey** only (no Add player / name modal).
+- [x] Wizard completes all 3 steps; mock session shows ≥1 existing buddy option (Marcus/Lena).
+- [x] Submit calls `createOnboardingJourney`; new player appears in list as **Not joined yet**.
+- [x] Redirect to `/gamemaker/:sessionId/player/:playerId?journey=1` with **Customize** tab active.
+- [x] `deno task build` + `deno task lint` pass (src + smoke script).
+- [x] No new calls to `useGmPlayers.invitePlayer` from UI.
+- [x] `deno task smoke-onboarding-journey` — **10/10** on mock `:5173` (2026-07-05).
+
+#### Phase 3 verification log (2026-07-05)
+
+| Check | Result |
+| ----- | ------ |
+| `deno task build` | Pass |
+| `deno task smoke-onboarding-journey` | **10/10** (Firefox, iPhone 15 viewport) |
+| Screenshots | `.playwright-mcp/oj-00` … `oj-05` |
+| Redirect URL | `/gamemaker/sess_mmt2026/player/:id?journey=1` |
+| Customize tab | `aria-selected=true` |
+| Template section | `template-select` visible |
+| Pending on GM list | New player card after SPA back nav |
+
+**Note:** Full page `goto` GM home resets mock adapter — smokes use in-app **All players** back nav for pending-player assertion.
 
 #### Phase 3 manual test script (mock `:5173`)
 
@@ -415,7 +432,7 @@ interface BuddyPickerProps {
 | ---- | ----- |
 | Rewrite `smoke-landing.ts` | `scripts/smoke-landing.ts` |
 | Rewrite GM/player path in `smoke-e2e.ts` | `scripts/smoke-e2e.ts` |
-| Add `deno task smoke-onboarding-journey` (optional dedicated script) | `deno.json`, `scripts/smoke-onboarding-journey.ts` |
+| Add `deno task smoke-onboarding-journey` (Phase 3 scope ✅; extend after Phase 4) | `deno.json`, `scripts/smoke-onboarding-journey.ts` |
 | SPECS Decision Log entry **D-OJ-1** (landing join removal, wizard pipeline) | `SPECS.md` |
 | Mark OJ-01 in production plan backlog | `production-implementation-plans.md` |
 
@@ -426,14 +443,14 @@ interface BuddyPickerProps {
 | Concern | Primary files |
 | ------- | ------------- |
 | Landing | `LandingPage.tsx`, `ProfileList.tsx`, `ProfileCard.tsx`, `GameMakerForm.tsx`, `useLandingFlow.ts` |
-| GM home + wizard | `GameMakerHomePage.tsx`, `GmPlayersTab.tsx`, `OnboardingJourneyModal.tsx`, `BuddyPicker.tsx`, `TemplateRadioList.tsx`, `useBuddyPickerOptions.ts` |
+| GM home + wizard | `GameMakerHomePage.tsx`, `GmPlayersTab.tsx`, `OnboardingJourneyModal.tsx`, `BuddyPicker.tsx`, `TemplateRadioList.tsx`, `OjSelectCard.tsx`, `useBuddyPickerOptions.ts` |
 | Use cases | `createOnboardingJourney.ts`, `invitePlayer.ts`, `importTemplate.ts` |
 | Player detail | `PlayerDetailPage.tsx`, `PlayerCustomizeTab.tsx`, `PlayerInviteAccordion.tsx`, `usePlayerDetailPage.ts` |
 | Adapters | `interface.ts`, `mockAdapter.ts`, `pocketbase/pbAdapter.ts` |
-| Smokes | `smoke-landing.ts`, `smoke-e2e.ts`, new `smoke-onboarding-journey.ts` |
+| Smokes | `smoke-landing.ts`, `smoke-onboarding-journey.ts` (Phase 3 scope), `smoke-e2e.ts` |
 | Styles | `landing.css`, `player-detail` / `gamemaker` CSS as needed |
 
-**Delete / deprecate (by phase):** `RecoverySection.tsx` (done); GM-home `NameCaptureModal` usage (Phase 3); `?new=1` query (Phase 4 → `?journey=1` interim in Phase 3); `useGmPlayers.invitePlayer` public API (Phase 3).
+**Delete / deprecate (by phase):** `RecoverySection.tsx` (done); GM-home `NameCaptureModal` usage (done, Phase 3); `?new=1` query (Phase 4 → `?journey=1` interim in Phase 3); `useGmPlayers.invitePlayer` public API (done, Phase 3).
 
 ---
 
@@ -465,7 +482,7 @@ Smokes follow existing repo pattern: **Playwright + Firefox + iPhone 15**, scree
 | Script | Base URL | Adapter | When |
 | ------ | -------- | ------- | ---- |
 | `smoke-landing` | `:5173` | Mock | After Phase 1 |
-| `smoke-onboarding-journey` (new) | `:5173` | Mock | After Phase 3–4 |
+| `smoke-onboarding-journey` | `:5173` | Mock | Phase 3 scope ✅; extend in Phase 5 |
 | `smoke-e2e` | `https://localhost` | PocketBase (Docker) | Full stack validation |
 
 ### `smoke-landing` (rewrite)
@@ -486,24 +503,22 @@ Smokes follow existing repo pattern: **Playwright + Firefox + iPhone 15**, scree
 
 Screenshot: `01-landing-profiles.png`, `02-landing-workspace-form.png`.
 
-### `smoke-onboarding-journey` (new — mock, `:5173`)
+### `smoke-onboarding-journey` (mock, `:5173`) — Phase 3 scope ✅
 
-End-to-end GM happy path without Docker:
+End-to-end GM happy path (10 assertions, 2026-07-05):
 
-1. Resume demo GM or create workspace.
-2. Tap `new-onboarding-journey-btn` → modal step 1.
+1. Resume demo GM → GM home.
+2. `new-onboarding-journey-btn` → wizard step 1.
 3. Fill player name → Continue.
-4. Step 2: select existing buddy (or add new with all four fields).
-5. Step 3: select **Standard** template (or scratch).
-6. `oj-create-journey-btn` → URL matches `/gamemaker/.+/player/.+`.
-7. Customize tab active; `player-invite-accordion` visible; `player-invite-body` visible (expanded).
-8. `player-detail-tab-analytics` **not** in DOM.
-9. Copy link from invite card; extract `t=` token.
-10. Second browser context → `/join/:sessionId?t=` → claim → cockpit loads.
-11. GM context refresh player detail → invite collapsible; still no Analytics until progress.
-12. (Optional mock) trigger one progress event via adapter seed → Analytics tab appears.
+4. Step 2: select first existing buddy (`oj-buddy-option-*`).
+5. Step 3: **Start from scratch** → `oj-create-journey-btn`.
+6. URL matches `/gamemaker/.+/player/.+?journey=1`.
+7. Customize tab active; `template-select` visible.
+8. SPA back to GM home → new player **Not joined yet**.
 
-Screenshots per step under `.playwright-mcp/oj-*`.
+**Phase 5 extensions** (after Phase 4): invite card pin/expand, Analytics gate, join claim in second context.
+
+Screenshots: `.playwright-mcp/oj-00-gm-home.png` … `oj-05-gm-pending-player.png`.
 
 ### `smoke-e2e` (update)
 
@@ -557,6 +572,8 @@ Keep existing regression blocks (gmApprove, logout, orphan profile) from `produc
 
 | Date | Note |
 | ---- | ---- |
+| 2026-07-05 | **Phase 3 complete** — bottom sheet wizard, `smoke-onboarding-journey` 10/10 |
+| 2026-07-05 | Phase 3 UI polish — `BottomSheet` + `OjSelectCard`, full-height `oj-sheet` |
 | 2026-07-05 | Phase 2 complete; buddy DB investigation; Phase 3 expanded with hook boundaries and task order |
 | 2026-07-05 | Phase 1 landing simplification complete |
 | 2026-07-05 | Initial plan from wireframe canvas OJ-01 |

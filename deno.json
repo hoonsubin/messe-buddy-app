@@ -5,6 +5,7 @@
     "lint": "deno run -A npm:eslint .",
     "preview": "deno run -A npm:vite preview -- --host",
     "smoke-landing": "deno run -A --node-modules-dir=auto scripts/smoke-landing.ts",
+    "smoke-onboarding-journey": "deno run -A --node-modules-dir=auto scripts/smoke-onboarding-journey.ts",
     "smoke-e2e": "deno run -A --node-modules-dir=auto scripts/smoke-e2e.ts",
     "smoke-pb-phase1": "deno run -A --node-modules-dir=auto scripts/smoke-pb-phase1.ts",
     "smoke-pb-phase2": "deno run -A --node-modules-dir=auto scripts/smoke-pb-phase2.ts"
