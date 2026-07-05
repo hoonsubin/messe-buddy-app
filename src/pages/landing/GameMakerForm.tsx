@@ -22,7 +22,11 @@ const GameMakerForm = ({
   onCreate,
   onClose,
 }: GameMakerFormProps) => (
-  <div className="landing-form-panel" data-role="gamemaker">
+  <div
+    className="landing-form-panel"
+    data-role="gamemaker"
+    data-testid="landing-workspace-form"
+  >
     <div className="landing-form-panel__header">
       <span className="landing-form-panel__title">Create workspace</span>
       <IconButton type="button" aria-label="Close" onClick={onClose}>
@@ -38,8 +42,7 @@ const GameMakerForm = ({
         id="lp-session-name"
         type="text"
         value={sessionName}
-        onChange={(e) =>
-          onSessionNameChange(e.target.value)}
+        onChange={(e) => onSessionNameChange(e.target.value)}
         placeholder="e.g. MMT Onboarding June 2026"
         autoFocus
       />
@@ -53,8 +56,7 @@ const GameMakerForm = ({
         id="lp-gm-name"
         type="text"
         value={gmName}
-        onChange={(e) =>
-          onGmNameChange(e.target.value)}
+        onChange={(e) => onGmNameChange(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && onCreate()}
         placeholder="e.g. Peter Tubak"
       />

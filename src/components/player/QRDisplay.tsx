@@ -16,7 +16,9 @@ interface QRDisplayProps {
 const QRDisplay = (props: QRDisplayProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [encodeError, setEncodeError] = useState<string | null>(null);
-  const { session } = useSession(props.sessionId);
+  const { session } = useSession(props.sessionId, {
+    playerId: props.playerId,
+  });
   const { watchMission } = useWatchMission(props.playerId);
 
   const { playerId, missionId, sessionId, xpValue, onValidated } = props;

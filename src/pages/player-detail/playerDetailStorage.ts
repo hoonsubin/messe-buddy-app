@@ -1,20 +1,20 @@
-export const playerTemplateStorageKey = (sessionId: string): string =>
-  `mb_player_template_${sessionId}`;
+export const playerTemplateStorageKey = (playerId: string): string =>
+  `mb_player_template_${playerId}`;
 
-export const readAppliedTemplate = (sessionId: string): string | null => {
+export const readAppliedTemplate = (playerId: string): string | null => {
   try {
-    return localStorage.getItem(playerTemplateStorageKey(sessionId));
+    return localStorage.getItem(playerTemplateStorageKey(playerId));
   } catch {
     return null;
   }
 };
 
 export const writeAppliedTemplate = (
-  sessionId: string,
+  playerId: string,
   name: string,
 ): void => {
   try {
-    localStorage.setItem(playerTemplateStorageKey(sessionId), name);
+    localStorage.setItem(playerTemplateStorageKey(playerId), name);
   } catch {
     /* ignore */
   }

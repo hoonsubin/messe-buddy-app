@@ -6,7 +6,6 @@ import {
   createGameMakerSession,
   joinSession,
 } from "../use-cases/joinSession.ts";
-import { recoverIdentity } from "../use-cases/recoverIdentity.ts";
 import type { CachedIdentity } from "../types/index.ts";
 import { USER_ROLE } from "../types/index.ts";
 
@@ -35,17 +34,14 @@ export const DEMO_PROFILES: readonly CachedIdentity[] = [
 
 export type LandingStatus = "idle" | "loading" | "error";
 
-// Which inline form is expanded
-export type ActiveForm = "employee" | "gamemaker" | null;
-
-// Employee join: verify invite token → name (claim)
 export type EmployeeStep = "code" | "name";
 
 export interface UseLandingFlowResult {
   readonly profiles: ReadonlyArray<CachedIdentity>;
   /** UIDs whose backend session no longer exists (P-17). */
   readonly orphanedUids: ReadonlySet<string>;
-  readonly activeForm: ActiveForm;
+  readonly workspacePanelOpen: boolean;
+  readonly isJoinRoute: boolean;
   readonly employeeStep: EmployeeStep;
   readonly verifiedSessionId: string;
   readonly sessionCode: string;
@@ -53,26 +49,20 @@ export interface UseLandingFlowResult {
   readonly playerName: string;
   readonly sessionName: string;
   readonly gmName: string;
-  readonly recoveryKeyInput: string;
   readonly status: LandingStatus;
   readonly errorMessage: string;
-  readonly keyPopupUid: string | null;
   readonly toast: string | null;
-  readonly setActiveForm: (form: ActiveForm) => void;
+  readonly setWorkspacePanelOpen: (open: boolean) => void;
   readonly setSessionCode: (v: string) => void;
   readonly setInviteToken: (v: string) => void;
   readonly setPlayerName: (v: string) => void;
   readonly setSessionName: (v: string) => void;
   readonly setGmName: (v: string) => void;
-  readonly setRecoveryKeyInput: (v: string) => void;
   readonly handleVerifySession: () => Promise<void>;
   readonly handleJoinSession: () => Promise<void>;
   readonly handleCreateGamemaker: () => Promise<void>;
-  readonly handleRecover: () => Promise<void>;
   readonly handleResume: (identity: CachedIdentity) => void;
   readonly handleRemoveProfile: (uid: string) => void;
-  readonly handleShowKey: (uid: string) => void;
-  readonly handleHideKey: () => void;
   readonly resetError: () => void;
 }
 
@@ -86,6 +76,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
 
   const { sessionId: routeSessionId } = useParams<{ sessionId: string }>();
   const inviteTokenFromUrl = searchParams.get("t") ?? "";
+  const isJoinRoute = Boolean(routeSessionId);
 
   // ── Seed demo profiles once on mount ──────────────────────────────────────
   const seeded = useRef(false);
@@ -100,9 +91,6 @@ export const useLandingFlow = (): UseLandingFlowResult => {
   }, []);
 
   // ── Orphan detection (P-17) ──────────────────────────────────────────────
-  // On mount, check each non-demo cached identity's session against the
-  // backend. Sessions that 404 are marked orphaned so ProfileCard can render
-  // a "User removed" badge instead of silently navigating to a dead route.
   const [orphanedUids, setOrphanedUids] = useState<ReadonlySet<string>>(
     new Set(),
   );
@@ -129,12 +117,11 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     return () => {
       cancelled = true;
     };
-    // Re-check when the profile list changes (e.g. after removing one).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adapter, profiles.length]);
 
   // ── Form state ────────────────────────────────────────────────────────────
-  const [activeForm, setActiveFormState] = useState<ActiveForm>(null);
+  const [workspacePanelOpen, setWorkspacePanelOpenState] = useState(false);
   const [employeeStep, setEmployeeStep] = useState<EmployeeStep>("code");
   const [verifiedSessionId, setVerifiedSessionId] = useState("");
   const [verifiedInviteToken, setVerifiedInviteToken] = useState("");
@@ -143,10 +130,8 @@ export const useLandingFlow = (): UseLandingFlowResult => {
   const [playerName, setPlayerName] = useState("");
   const [sessionName, setSessionName] = useState("");
   const [gmName, setGmName] = useState("");
-  const [recoveryKeyInput, setRecoveryKeyInput] = useState("");
   const [status, setStatus] = useState<LandingStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
-  const [keyPopupUid, setKeyPopupUid] = useState<string | null>(null);
 
   // ── Toast (from sessionStorage on mount — set by cockpit pages) ──────────
   const [toast, setToast] = useState<string | null>(null);
@@ -154,55 +139,68 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     const msg = sessionStorage.getItem("mb_landing_toast");
     if (!msg) return;
     sessionStorage.removeItem("mb_landing_toast");
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing React with sessionStorage external store fires once on mount
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync sessionStorage once on mount
     setToast(msg);
     const timer = setTimeout(() => setToast(null), 4000);
     return () => clearTimeout(timer);
   }, []);
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
 
   const resetError = useCallback(() => {
     setErrorMessage("");
     setStatus("idle");
   }, []);
 
-  const setActiveForm = useCallback((form: ActiveForm) => {
-    setActiveFormState(form);
-    setEmployeeStep("code");
-    setVerifiedSessionId("");
-    setVerifiedInviteToken("");
-    setSessionCode(form === "employee" && routeSessionId ? routeSessionId : "");
-    setInviteToken(
-      form === "employee" && inviteTokenFromUrl ? inviteTokenFromUrl : "",
-    );
-    setPlayerName("");
-    setSessionName("");
-    setGmName("");
-    resetError();
-  }, [resetError, routeSessionId, inviteTokenFromUrl]);
+  const setWorkspacePanelOpen = useCallback((open: boolean) => {
+    setWorkspacePanelOpenState(open);
+    if (open) {
+      setSessionName("");
+      setGmName("");
+      resetError();
+    }
+  }, [resetError]);
 
+  // ── Invite link: verify token on /join/:sessionId?t= ─────────────────────
   useEffect(() => {
-    if (!routeSessionId || !inviteTokenFromUrl) return;
+    if (!isJoinRoute || !routeSessionId || !inviteTokenFromUrl) return;
     let cancelled = false;
     const verifyFromLink = async () => {
+      setStatus("loading");
+      setErrorMessage("");
       try {
         const player = await adapter.getPlayerByInviteToken(inviteTokenFromUrl);
-        if (cancelled || !player || player.sessionId !== routeSessionId) return;
+        if (cancelled) return;
+        if (!player || player.sessionId !== routeSessionId) {
+          setEmployeeStep("code");
+          setSessionCode(routeSessionId);
+          setInviteToken(inviteTokenFromUrl);
+          setStatus("error");
+          setErrorMessage(
+            "Invite not found. Check the link from your Game Master and try again.",
+          );
+          return;
+        }
         setVerifiedSessionId(routeSessionId);
         setVerifiedInviteToken(inviteTokenFromUrl);
         setSessionCode(routeSessionId);
         setInviteToken(inviteTokenFromUrl);
         setEmployeeStep("name");
+        setStatus("idle");
       } catch {
-        /* invalid link — user can retry manually */
+        if (cancelled) return;
+        setEmployeeStep("code");
+        setSessionCode(routeSessionId);
+        setInviteToken(inviteTokenFromUrl);
+        setStatus("error");
+        setErrorMessage(
+          "Invite not found. Check the link from your Game Master and try again.",
+        );
       }
     };
     void verifyFromLink();
     return () => {
       cancelled = true;
     };
-  }, [adapter, routeSessionId, inviteTokenFromUrl]);
+  }, [adapter, isJoinRoute, routeSessionId, inviteTokenFromUrl]);
 
   const handleVerifySession = useCallback(async () => {
     const sid = (sessionCode.trim() || routeSessionId || "").trim();
@@ -240,22 +238,18 @@ export const useLandingFlow = (): UseLandingFlowResult => {
       );
       setIdentity(identity);
       writeActiveUid(identity.uid);
-      setActiveForm(null);
       navigate(`/session/${identity.sessionId}`, { replace: true });
-    } catch {
+    } catch (e) {
       setStatus("error");
-      setErrorMessage("Could not join session. Please try again.");
+      const msg = e instanceof Error ? e.message : "";
+      setErrorMessage(
+        msg === "Invite not found"
+          ? "Invite not found. Check the link from your Game Master and try again."
+          : "Could not join session. Please try again.",
+      );
     }
-  }, [
-    adapter,
-    playerName,
-    verifiedInviteToken,
-    setIdentity,
-    navigate,
-    setActiveForm,
-  ]);
+  }, [adapter, playerName, verifiedInviteToken, setIdentity, navigate]);
 
-  // ── Game Maker: create workspace session ──────────────────────────────────
   const handleCreateGamemaker = useCallback(async () => {
     const name = gmName.trim();
     const sName = sessionName.trim();
@@ -266,37 +260,21 @@ export const useLandingFlow = (): UseLandingFlowResult => {
       const identity = await createGameMakerSession(sName, name, adapter);
       setIdentity(identity);
       writeActiveUid(identity.uid);
-      setActiveForm(null);
+      setWorkspacePanelOpen(false);
       navigate(`/gamemaker/${identity.sessionId}`, { replace: true });
     } catch {
       setStatus("error");
       setErrorMessage("Could not create session. Please try again.");
     }
-  }, [adapter, gmName, sessionName, setIdentity, navigate, setActiveForm]);
+  }, [
+    adapter,
+    gmName,
+    sessionName,
+    setIdentity,
+    navigate,
+    setWorkspacePanelOpen,
+  ]);
 
-  // ── Recovery: key-only ────────────────────────────────────────────────────
-  const handleRecover = useCallback(async () => {
-    const key = recoveryKeyInput.trim().toUpperCase();
-    if (!key) return;
-    setStatus("loading");
-    setErrorMessage("");
-    try {
-      const identity = await recoverIdentity(key, adapter);
-      setIdentity(identity);
-      writeActiveUid(identity.uid);
-      setRecoveryKeyInput("");
-      resetError();
-      const dest = identity.role === USER_ROLE.PLAYER
-        ? `/session/${identity.sessionId}`
-        : `/gamemaker/${identity.sessionId}`;
-      navigate(dest, { replace: true });
-    } catch {
-      setStatus("error");
-      setErrorMessage("No account found for that key.");
-    }
-  }, [adapter, recoveryKeyInput, setIdentity, navigate, resetError]);
-
-  // ── Profile actions ───────────────────────────────────────────────────────
   const handleResume = useCallback((identity: CachedIdentity) => {
     writeActiveUid(identity.uid);
     const dest = identity.role === USER_ROLE.PLAYER
@@ -306,24 +284,16 @@ export const useLandingFlow = (): UseLandingFlowResult => {
   }, [navigate]);
 
   const handleRemoveProfile = useCallback((uid: string) => {
-    // Prevent removing demo profiles
     const isDemoProfile = DEMO_PROFILES.some((d) => d.uid === uid);
     if (isDemoProfile) return;
     removeProfile(uid);
   }, [removeProfile]);
 
-  const handleShowKey = useCallback((uid: string) => {
-    setKeyPopupUid(uid);
-  }, []);
-
-  const handleHideKey = useCallback(() => {
-    setKeyPopupUid(null);
-  }, []);
-
   return {
     profiles,
     orphanedUids,
-    activeForm,
+    workspacePanelOpen,
+    isJoinRoute,
     employeeStep,
     verifiedSessionId,
     sessionCode,
@@ -331,26 +301,20 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     playerName,
     sessionName,
     gmName,
-    recoveryKeyInput,
     status,
     errorMessage,
-    keyPopupUid,
     toast,
-    setActiveForm,
+    setWorkspacePanelOpen,
     setSessionCode,
     setInviteToken,
     setPlayerName,
     setSessionName,
     setGmName,
-    setRecoveryKeyInput,
     handleVerifySession,
     handleJoinSession,
     handleCreateGamemaker,
-    handleRecover,
     handleResume,
     handleRemoveProfile,
-    handleShowKey,
-    handleHideKey,
     resetError,
   };
 };

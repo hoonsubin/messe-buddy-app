@@ -6,3 +6,10 @@ export const PLAYER_DETAIL_TABS = [
 ] as const;
 
 export type PlayerDetailTabKey = (typeof PLAYER_DETAIL_TABS)[number]["key"];
+
+export const visiblePlayerDetailTabs = (options: {
+  readonly showAnalytics: boolean;
+}) =>
+  PLAYER_DETAIL_TABS.filter((tab) =>
+    tab.key !== "analytics" || options.showAnalytics
+  );

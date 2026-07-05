@@ -68,11 +68,10 @@ const PlayerAnalytics = (props: PlayerAnalyticsProps) => {
     ? `Behind ${gap}%`
     : `Ahead ${gap}%`;
 
-  const orderedMilestones = useMemo(
-    () => [...props.milestones].sort((a, b) => a.order - b.order),
-    [props.milestones],
+  const orderedMilestones = [...props.milestones].sort((a, b) =>
+    a.order - b.order
   );
-  const nextTask = useMemo(() => {
+  const nextTask = (() => {
     for (const ms of orderedMilestones) {
       const next = props.missions
         .filter((m) => m.milestoneId === ms.id)
@@ -81,7 +80,7 @@ const PlayerAnalytics = (props: PlayerAnalyticsProps) => {
       if (next) return { title: next.title, milestone: ms.name };
     }
     return null;
-  }, [orderedMilestones, props.missions, completedSet]);
+  })();
 
   return (
     <div className="player-analytics">

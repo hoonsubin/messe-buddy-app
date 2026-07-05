@@ -13,6 +13,7 @@ interface BottomSheetProps {
   readonly footer?: ReactNode;
   readonly overlay?: ReactNode;
   readonly testId?: string;
+  readonly sheetClassName?: string;
   /** When false, backdrop clicks do not call onClose. Default true. */
   readonly dismissOnBackdrop?: boolean;
 }
@@ -30,6 +31,7 @@ export function BottomSheet({
   footer,
   overlay,
   testId = "bottom-sheet",
+  sheetClassName,
   dismissOnBackdrop = true,
 }: BottomSheetProps) {
   const [dragY, setDragY] = useState(0);
@@ -103,10 +105,13 @@ export function BottomSheet({
           "bottom-sheet",
           open && "bottom-sheet--open",
           isDragging && "bottom-sheet--dragging",
+          sheetClassName,
         )}
         style={{ transform: sheetTransform }}
         role="dialog"
         aria-label={ariaLabel}
+        aria-hidden={!open}
+        inert={!open}
         data-testid={testId}
       >
         <div

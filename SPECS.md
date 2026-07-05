@@ -1281,7 +1281,7 @@ or delete existing rows.** Open questions use `Status: open`; settled items use
 | OD-10 | — | open | Inline `pendingApproval` on mission card vs full-screen `ValidationDisplay` | Player feedback UX |
 | OD-12 | — | open | QR `issuedAt` expiry: per-session config vs fixed constant | Scan UX vs replay security |
 | OD-13 | — | open | How player-side QR signing obtains HMAC key in production | `qr` / `peerScan` security |
-| OD-20 | — | open | Auto-apply starter template when GM adds a player vs empty until manual import | Onboarding empty-state |
+| OD-20 | 2026-07-05 | decided | Auto-apply first template from `listTemplates()` when GM adds a player; empty journey only when no templates exist | `invitePlayer` use-case + `importTemplate` |
 | OD-21 | — | open | `peerScan` scanner input: mission `FormSchema` vs fixed name-only form | `PeerScanPage` + analytics |
 | OD-24 | — | open | Snapshot `validatedXp` on confirm vs re-derive from live `missions.xpValue` | Fairness vs C-11 simplicity |
 | OD-28 | — | open | Harden invite tokens (expiry, PIN, or one-time claim) | Prototype uses permanent capability URLs (OD-25) |

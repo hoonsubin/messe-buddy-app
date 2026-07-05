@@ -25,13 +25,15 @@ const FormPage = () => {
     updatePlayer,
   } = useResolvedPlayer(identity?.uid);
 
+  const playerId = player?.id ?? "";
+
   const {
     milestones,
     missions,
     loading: sessionLoading,
     error: sessionError,
     refresh: refreshSession,
-  } = useSession(sessionId);
+  } = useSession(sessionId, { playerId: playerId || undefined });
 
   const progress = useProgressPlayer({
     playerId: player?.id ?? "",

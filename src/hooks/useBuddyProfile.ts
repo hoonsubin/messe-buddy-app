@@ -1,16 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import type { BuddyProfile } from "../types/index.ts";
+import {
+  type BuddyProfileDraft,
+  emptyBuddyProfileDraft,
+} from "../types/buddyPicker.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
-
-const emptyBuddyDraft = (
-  sessionId: string,
-): Omit<BuddyProfile, "id" | "created" | "updated" | "assignedToPlayerId"> => ({
-  sessionId,
-  name: "",
-  role: "",
-  tenure: "",
-  contactUrl: "",
-});
 
 export interface UseBuddyProfilePlayerResult {
   readonly role: "player";
@@ -22,17 +16,9 @@ export interface UseBuddyProfilePlayerResult {
 
 export interface UseBuddyProfileGmResult {
   readonly role: "gamemaker";
-  readonly buddyDraft: Omit<
-    BuddyProfile,
-    "id" | "created" | "updated" | "assignedToPlayerId"
-  >;
+  readonly buddyDraft: BuddyProfileDraft;
   readonly savedBuddy: BuddyProfile | null;
-  readonly setBuddyDraft: (
-    draft: Omit<
-      BuddyProfile,
-      "id" | "created" | "updated" | "assignedToPlayerId"
-    >,
-  ) => void;
+  readonly setBuddyDraft: (draft: BuddyProfileDraft) => void;
   readonly upsertBuddy: () => Promise<void>;
   readonly loading: boolean;
   readonly error: Error | null;
@@ -62,7 +48,7 @@ export function useBuddyProfile(
   const [buddy, setBuddy] = useState<BuddyProfile | null>(null);
   const [savedBuddy, setSavedBuddy] = useState<BuddyProfile | null>(null);
   const [buddyDraft, setBuddyDraft] = useState(() =>
-    emptyBuddyDraft(sessionId)
+    emptyBuddyProfileDraft(sessionId)
   );
   const [loading, setLoading] = useState(!!playerId);
   const [error, setError] = useState<Error | null>(null);
@@ -88,11 +74,15 @@ export function useBuddyProfile(
               sessionId: profile.sessionId,
               name: profile.name,
               role: profile.role,
+              email: profile.email ?? "",
+              phone: profile.phone ?? "",
               tenure: profile.tenure ?? "",
               contactUrl: profile.contactUrl ?? "",
+              quote: profile.quote,
+              avatarUrl: profile.avatarUrl,
             });
           } else {
-            setBuddyDraft(emptyBuddyDraft(sessionId));
+            setBuddyDraft(emptyBuddyProfileDraft(sessionId));
           }
         } else {
           setBuddy(profile);

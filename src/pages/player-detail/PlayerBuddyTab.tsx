@@ -1,20 +1,12 @@
-import type { BuddyProfile, Player } from "../../types/index.ts";
+import type { BuddyProfileDraft, Player } from "../../types/index.ts";
 import BuddyAssignmentForm from "../../components/gamemaker/BuddyAssignmentForm.tsx";
 
 interface PlayerBuddyTabProps {
   readonly players: ReadonlyArray<Player>;
-  readonly draft: Omit<
-    BuddyProfile,
-    "id" | "created" | "updated" | "assignedToPlayerId"
-  >;
+  readonly draft: BuddyProfileDraft;
   readonly selectedPlayerId: string;
   readonly onPlayerChange: (id: string) => void;
-  readonly onDraftChange: (
-    draft: Omit<
-      BuddyProfile,
-      "id" | "created" | "updated" | "assignedToPlayerId"
-    >,
-  ) => void;
+  readonly onDraftChange: (draft: BuddyProfileDraft) => void;
   readonly onSave: () => void;
 }
 

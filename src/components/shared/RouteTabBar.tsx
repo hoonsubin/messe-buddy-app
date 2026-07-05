@@ -10,6 +10,8 @@ interface RouteTabBarProps {
   readonly activeKey: string;
   readonly onChange: (key: string) => void;
   readonly ariaLabel: string;
+  /** When set, each tab gets data-testid="{prefix}-{key}". */
+  readonly testIdPrefix?: string;
 }
 
 const RouteTabBar = ({
@@ -17,6 +19,7 @@ const RouteTabBar = ({
   activeKey,
   onChange,
   ariaLabel,
+  testIdPrefix,
 }: RouteTabBarProps) => (
   <nav
     className="route-tab-bar"
@@ -32,6 +35,9 @@ const RouteTabBar = ({
           aria-selected={active}
           className={cn("tab-bar__tab", active && "tab-bar__tab--active")}
           onClick={() => onChange(t.key)}
+          {...(testIdPrefix !== undefined && {
+            "data-testid": `${testIdPrefix}-${t.key}`,
+          })}
         >
           {t.label}
         </button>

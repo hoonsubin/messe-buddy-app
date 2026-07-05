@@ -826,6 +826,8 @@ export const MOCK_BUDDY_PROFILES: ReadonlyArray<BuddyProfile> = [
     name: "Marcus Weber",
     role: "Senior Event Manager",
     tenure: "5 years at Messe München",
+    email: "marcus.weber@messe-muenchen.de",
+    phone: "+49 89 949-21340",
     contactUrl: "https://teams.microsoft.com/",
     quote: "Don't hesitate to ask — there are no stupid questions on day one.",
   },
@@ -865,6 +867,7 @@ export const MOCK_LIBRARY_RESOURCES: ReadonlyArray<LibraryResource> = [
     description: "Find your way around the Messe München grounds",
     type: "guide",
     url: "https://www.messe-muenchen.de/en/trade-fair-venue/fair-grounds/",
+    tags: "facilities,onboarding",
   },
   {
     ...pb("lib_wenet"),
@@ -873,6 +876,7 @@ export const MOCK_LIBRARY_RESOURCES: ReadonlyArray<LibraryResource> = [
     description: "Policies, news, and department-specific info",
     type: "link",
     url: "https://www.messe-muenchen.de/en/company/about-us/",
+    tags: "intranet,it",
   },
   {
     ...pb("lib_benefits"),
@@ -881,6 +885,7 @@ export const MOCK_LIBRARY_RESOURCES: ReadonlyArray<LibraryResource> = [
     description: "Transport, sports, canteen, and social perks",
     type: "document",
     url: "https://www.messe-muenchen.de/en/company/career/benefits/",
+    tags: "hr,onboarding",
   },
   {
     ...pb("lib_it_help"),
@@ -889,6 +894,7 @@ export const MOCK_LIBRARY_RESOURCES: ReadonlyArray<LibraryResource> = [
     description: "Technical support — Building A, Ground Floor, 08:00–18:00",
     type: "link",
     url: "https://www.messe-muenchen.de/en/company/about-us/",
+    tags: "it",
   },
   {
     ...pb("lib_welcome_video"),
@@ -897,6 +903,7 @@ export const MOCK_LIBRARY_RESOURCES: ReadonlyArray<LibraryResource> = [
     description: "A message from the management board",
     type: "video",
     url: "https://www.messe-muenchen.de/en/company/about-us/",
+    tags: "video,pre-boarding",
   },
   {
     ...pb("lib_absence"),
@@ -905,6 +912,7 @@ export const MOCK_LIBRARY_RESOURCES: ReadonlyArray<LibraryResource> = [
     description: "How to report absences and request leave",
     type: "document",
     url: "https://www.messe-muenchen.de/en/company/about-us/",
+    tags: "hr",
   },
   {
     ...pb("lib_org_chart"),
@@ -913,6 +921,7 @@ export const MOCK_LIBRARY_RESOURCES: ReadonlyArray<LibraryResource> = [
     description: "Full org structure and reporting lines (GM only)",
     type: "document",
     url: "https://www.messe-muenchen.de/en/company/about-us/",
+    tags: "onboarding",
   },
 ];
 

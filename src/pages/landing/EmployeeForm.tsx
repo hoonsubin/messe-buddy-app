@@ -32,7 +32,11 @@ const EmployeeForm = ({
   onJoin,
   onClose,
 }: EmployeeFormProps) => (
-  <div className="landing-form-panel" data-role="player">
+  <div
+    className="landing-form-panel"
+    data-role="player"
+    data-testid="join-claim-form"
+  >
     <div className="landing-form-panel__header">
       <span className="landing-form-panel__title">
         {step === "code"

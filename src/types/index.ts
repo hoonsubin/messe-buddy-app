@@ -3,6 +3,7 @@ export type * from "./domain.ts";
 export type * from "./value-objects.ts";
 export type * from "./ephemeral.ts";
 export type * from "./exports.ts";
+export type * from "./buddyPicker.ts";
 
 // Also re-export const objects so components can use MISSION_TYPE.TEXT etc.
 export {

@@ -479,6 +479,13 @@ const getBuddyProfile = async (
   return buddyProfiles.get(playerId) ?? null;
 };
 
+const listBuddyProfiles = async (
+  sessionId: string,
+): Promise<ReadonlyArray<BuddyProfile>> => {
+  await Promise.resolve();
+  return [...buddyProfiles.values()].filter((b) => b.sessionId === sessionId);
+};
+
 const upsertBuddyProfile = async (
   playerId: string,
   data: Omit<BuddyProfile, keyof PBRecord | "assignedToPlayerId">,
@@ -617,6 +624,7 @@ export const mockAdapter: AppAdapter = {
   listProgressEvents,
   subscribeProgressEvent,
   getBuddyProfile,
+  listBuddyProfiles,
   upsertBuddyProfile,
   listLibraryResources,
   createLibraryResource,

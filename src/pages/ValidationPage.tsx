@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { USER_ROLE } from "../types/index.ts";
 import { useIdentity } from "../hooks/useIdentity.ts";
@@ -23,24 +23,16 @@ const ValidationPage = () => {
   // single `useValidationConfirm` call below can be re-invoked with the
   // resolved validator uid without a second, duplicate session/decode fetch.
   const { profiles } = useIdentity();
-  const [prevGameMakerId, setPrevGameMakerId] = useState<string | null>(null);
-  const [gameMakerId, setGameMakerId] = useState<string | null>(null);
-  const identity = useMemo(
-    () =>
-      gameMakerId
-        ? profiles.find(
-          (p) => p.role === USER_ROLE.GAMEMAKER && p.uid === gameMakerId,
-        ) ?? null
-        : null,
-    [profiles, gameMakerId],
-  );
 
-  const validation = useValidationConfirm(sid, token, identity?.uid);
+  const validation = useValidationConfirm(sid, token, undefined);
 
-  if (validation.gameMakerId !== prevGameMakerId) {
-    setPrevGameMakerId(validation.gameMakerId);
-    setGameMakerId(validation.gameMakerId);
-  }
+  const identity = useMemo(() => {
+    const gmId = validation.gameMakerId;
+    if (!gmId) return null;
+    return profiles.find(
+      (p) => p.role === USER_ROLE.GAMEMAKER && p.uid === gmId,
+    ) ?? null;
+  }, [validation.gameMakerId, profiles]);
 
   // Session has loaded (we know who owns it) but no locally stored GM
   // identity matches — this GM is not authorized to validate this player.
@@ -59,14 +51,14 @@ const ValidationPage = () => {
     });
   }, [navigate, identity]);
 
-  const handleConfirm = useCallback(async () => {
+  const handleConfirm = async () => {
     try {
-      await validation.confirm();
+      await validation.confirm(identity?.uid);
       goToGmHome();
     } catch {
       // confirm error surfaced via validation.errorMessage
     }
-  }, [goToGmHome, validation]);
+  };
 
   if (validation.errorKind === "missing_token") {
     return (
@@ -273,6 +265,7 @@ const ValidationPage = () => {
                   className="btn btn--primary"
                   style={{ flex: 1 }}
                   disabled={validation.confirming}
+                  data-testid="validation-confirm-btn"
                   onClick={() => void handleConfirm()}
                 >
                   {validation.confirming ? "Saving…" : "Confirm"}

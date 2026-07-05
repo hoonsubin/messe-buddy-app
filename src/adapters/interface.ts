@@ -109,6 +109,7 @@ export interface AppAdapter {
   ): () => void;
 
   // BuddyProfiles
+  listBuddyProfiles(sessionId: string): Promise<ReadonlyArray<BuddyProfile>>;
   getBuddyProfile(playerId: string): Promise<BuddyProfile | null>;
   upsertBuddyProfile(
     playerId: string,

@@ -8,7 +8,7 @@ import { useAdapter } from "../adapters/useAdapter.ts";
 // some other in-flight request pre-empted this one. Treating it as a real
 // error trips the "session not found, bounce to Game Maker home" effect in
 // usePlayerDetailPage.ts on a request that was never actually resolved either
-// way. See plans/production-implementation-plans.md (hire creation race / P0 history).
+// way. See plans/production-implementation-plans.md (player invite race / P0 history).
 const isAbortError = (e: unknown): boolean => {
   if (e instanceof ClientResponseError && e.isAbort) return true;
   if (e instanceof DOMException && e.name === "AbortError") return true;

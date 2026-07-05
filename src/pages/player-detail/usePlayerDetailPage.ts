@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import type { Milestone, MilestoneProgress } from "../../types/index.ts";
 import { USER_ROLE } from "../../types/index.ts";
+import { usePlayerInviteToken } from "../../hooks/usePlayerInviteToken.ts";
 import { computeProgress } from "../../use-cases/computeProgress.ts";
 import { useActiveProfile } from "../../hooks/useActiveProfile.ts";
 import { useSession } from "../../hooks/useSession.ts";
@@ -9,7 +15,10 @@ import { useGmMilestoneEditor } from "../../hooks/useGmMilestoneEditor.ts";
 import { useGmMissionEditor } from "../../hooks/useGmMissionEditor.ts";
 import { useProgressGamemaker } from "../../hooks/useProgress/index.ts";
 import { useBuddyProfile } from "../../hooks/useBuddyProfile.ts";
-import { useResources } from "../../hooks/useResources.ts";
+import {
+  type AddResourceInput,
+  useResources,
+} from "../../hooks/useResources.ts";
 import { usePreBoardingChecklist } from "../../hooks/usePreBoardingChecklist.ts";
 import { usePlayerTemplates } from "../../hooks/usePlayerTemplates.ts";
 import type { PlayerDetailTabKey } from "./constants.ts";
@@ -17,6 +26,10 @@ import {
   readAppliedTemplate,
   writeAppliedTemplate,
 } from "./playerDetailStorage.ts";
+
+type PlayerDetailNavState = {
+  readonly inviteToken?: string;
+};
 
 export const usePlayerDetailPage = () => {
   const { sessionId, playerId: routePlayerId } = useParams<{
@@ -26,11 +39,16 @@ export const usePlayerDetailPage = () => {
   const homeSid = sessionId ?? "";
   const playerId = routePlayerId ?? "";
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
+  const navInviteToken =
+    (location.state as PlayerDetailNavState | null)?.inviteToken ?? "";
   const identity = useActiveProfile(homeSid, USER_ROLE.GAMEMAKER);
 
   const [tab, setTab] = useState<PlayerDetailTabKey>(
-    searchParams.get("new") === "1" ? "customize" : "analytics",
+    searchParams.get("journey") === "1" || searchParams.get("new") === "1"
+      ? "customize"
+      : "analytics",
   );
 
   const {
@@ -57,7 +75,24 @@ export const usePlayerDetailPage = () => {
 
   useEffect(() => {
     if (playerId) gmProgress.handlePlayerSelect(playerId);
+    // gmProgress is a fresh object every render; handlePlayerSelect is the
+    // only thing used here and is itself stable (useCallback([], [])), so
+    // depending on the whole object would refire this on every unrelated
+    // gmProgress change (e.g. loading/players updates).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerId, gmProgress.handlePlayerSelect]);
+
+  useEffect(() => {
+    if (playerId) gmProgress.refresh();
+    // Same reasoning as above: depending on the whole gmProgress object here
+    // would re-trigger refresh() on every state change it causes, looping.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerId, gmProgress.refresh]);
+
+  const inviteToken = usePlayerInviteToken(playerId, {
+    listToken: gmProgress.selectedPlayer?.inviteToken,
+    navToken: navInviteToken,
+  });
 
   const buddyProfile = useBuddyProfile(homeSid, playerId, {
     role: "gamemaker",
@@ -157,6 +192,22 @@ export const usePlayerDetailPage = () => {
     [missionEditor, showToast],
   );
 
+  const handleAddResource = useCallback(
+    (data: AddResourceInput) => {
+      void (async () => {
+        const milestoneId = data.milestoneId ??
+          milestoneEditor.selectedMilestone?.id;
+        if (!milestoneId) {
+          showToast("Select a milestone before attaching resources");
+          return;
+        }
+        await gmResources.addResource({ ...data, milestoneId });
+        showToast("Resource attached");
+      })().catch(() => showToast("Could not attach resource"));
+    },
+    [gmResources, milestoneEditor.selectedMilestone, showToast],
+  );
+
   const isDirty = useMemo(
     () =>
       milestoneEditor.draftMilestonesAreDirty ||
@@ -209,6 +260,7 @@ export const usePlayerDetailPage = () => {
       .catch(() => showToast("Could not update template"));
   }, [
     appliedTemplate,
+    session,
     milestones,
     missions,
     gmResources.resources,
@@ -266,6 +318,16 @@ export const usePlayerDetailPage = () => {
   const startDateISO = gmProgress.selectedPlayer?.startDate ??
     session?.created;
   const hasMilestones = milestones.length > 0;
+  const claimStatus = gmProgress.selectedPlayer?.claimStatus ?? "invited";
+
+  const showAnalyticsTab = useMemo(() => {
+    if (claimStatus !== "claimed") return false;
+    return gmProgress.selectedPlayerEvents.length > 0;
+  }, [claimStatus, gmProgress.selectedPlayerEvents]);
+
+  const activeTab: PlayerDetailTabKey = tab === "analytics" && !showAnalyticsTab
+    ? "customize"
+    : tab;
 
   const openMilestone = useCallback(
     (id: string) => {
@@ -313,6 +375,7 @@ export const usePlayerDetailPage = () => {
     playerId,
     identity,
     tab,
+    activeTab,
     setTab,
     playerName,
     playerFirstName,
@@ -322,6 +385,9 @@ export const usePlayerDetailPage = () => {
     missions,
     milestoneProgress,
     completedMissionIds,
+    claimStatus,
+    inviteToken,
+    showAnalyticsTab,
     draftMilestonesAsMilestones,
     bgImageUrl: session?.bgImageUrl ?? "",
     mapNodeScale: session?.mapNodeScale ?? 1,
@@ -351,6 +417,7 @@ export const usePlayerDetailPage = () => {
     handleBuddySave,
     handleDeleteMilestone,
     handleDeleteMission,
+    handleAddResource,
     handleSave,
     handleSaveToTemplate,
     handleDiscard,

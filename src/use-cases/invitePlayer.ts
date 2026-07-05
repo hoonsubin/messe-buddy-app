@@ -1,7 +1,7 @@
 import type { AppAdapter } from "../adapters/interface.ts";
 import type { Player } from "../types/index.ts";
-import { generateInviteToken } from "../utils/inviteToken.ts";
 
+/** Creates an invited `players` row only — no template or buddy side effects. */
 export const invitePlayer = async (
   sessionId: string,
   adapter: AppAdapter,
@@ -12,15 +12,4 @@ export const invitePlayer = async (
     name: data.name?.trim() || "New player",
     jobTitle: data.jobTitle?.trim() || "",
   });
-};
-
-export const generateUniqueInviteToken = async (
-  adapter: AppAdapter,
-): Promise<string> => {
-  for (let attempt = 0; attempt < 8; attempt++) {
-    const token = generateInviteToken();
-    const existing = await adapter.getPlayerByInviteToken(token);
-    if (!existing) return token;
-  }
-  throw new Error("Could not generate invite token");
 };

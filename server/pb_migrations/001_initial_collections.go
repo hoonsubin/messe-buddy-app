@@ -76,7 +76,7 @@ func init() {
 			&core.AutodateField{Name: "created", OnCreate: true},
 			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
 		)
-		milestones.AddIndex("idx_playerId", false, "playerId", "")
+		milestones.AddIndex("idx_milestones_playerId", false, "playerId", "")
 		setPublicRules(milestones)
 		if err := app.Save(milestones); err != nil {
 			return err
@@ -102,7 +102,7 @@ func init() {
 			&core.AutodateField{Name: "created", OnCreate: true},
 			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
 		)
-		missions.AddIndex("idx_playerId", false, "playerId", "")
+		missions.AddIndex("idx_missions_playerId", false, "playerId", "")
 		setPublicRules(missions)
 		if err := app.Save(missions); err != nil {
 			return err
