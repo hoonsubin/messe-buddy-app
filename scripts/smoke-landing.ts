@@ -75,11 +75,11 @@ const main = async () => {
       !(await page.locator("#lp-session-code").isVisible()),
     );
 
-    // ── Inline Admin form ─────────────────────────────────────────────────
-    await page.getByRole("button", { name: "Admin", exact: true }).click();
+    // ── Inline Game Maker form ────────────────────────────────────────────
+    await page.getByRole("button", { name: "Game Maker", exact: true }).click();
     await page.waitForSelector("#lp-session-name", { timeout: 5000 });
     record(
-      "Admin form opens",
+      "Game Maker form opens",
       await page.locator("#lp-session-name").isVisible(),
     );
     await page.screenshot({
@@ -87,18 +87,24 @@ const main = async () => {
       fullPage: true,
     });
 
-    // ── Invite URL prefill (/join/:sessionId) ───────────────────────────
-    await page.goto(`${BASE}/join/sess_mmt2026`, {
+    // ── Invite URL prefill (/join/:sessionId?t=) ─────────────────────────
+    await page.goto(`${BASE}/join/sess_mmt2026?t=invite_sofia_mmt2026`, {
       waitUntil: "networkidle",
     });
     await page.waitForSelector('[data-testid="landing-page"]');
     await page.getByRole("button", { name: "Employee", exact: true }).click();
     await page.waitForSelector("#lp-session-code", { timeout: 5000 });
     const prefilled = await page.inputValue("#lp-session-code");
+    const tokenPrefilled = await page.inputValue("#lp-invite-token");
     record(
       "Invite link prefills session code",
       prefilled === "sess_mmt2026",
       `value="${prefilled}"`,
+    );
+    record(
+      "Invite link prefills token",
+      tokenPrefilled === "invite_sofia_mmt2026",
+      `token="${tokenPrefilled}"`,
     );
     await page.screenshot({
       path: join(SMOKE_OUT_DIR, "04-landing-join-prefill.png"),
@@ -136,6 +142,27 @@ const main = async () => {
       page.url().includes("/gamemaker/"),
       page.url(),
     );
+    record(
+      "GM home has player cards",
+      await page.locator('[data-testid="gm-player-card"]').count() >= 2,
+    );
+
+    await page.getByTestId("gm-home-tab-library").click();
+    await page.waitForSelector('[data-testid="resource-library-tab"]', {
+      timeout: 10000,
+    });
+    const libCards = await page.locator('[data-testid="library-resource-card"]')
+      .count();
+    record(
+      "Resource library tab lists catalog",
+      libCards >= 7,
+      `cards=${libCards}`,
+    );
+    await page.screenshot({
+      path: join(SMOKE_OUT_DIR, "07-gamemaker-library.png"),
+      fullPage: true,
+    });
+
     await page.screenshot({
       path: join(SMOKE_OUT_DIR, "06-gamemaker-home.png"),
       fullPage: true,

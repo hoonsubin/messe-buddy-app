@@ -330,6 +330,60 @@
   color: hsl(var(--color-destructive));
 }
 
+/* ── Freeform tag input (library resources) ──────────────────────────────── */
+.freeform-tag-input {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.freeform-tag-input__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.freeform-tag-input__chip-btn {
+  cursor: pointer;
+}
+
+.freeform-tag-input__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.freeform-tag-input__field {
+  flex: 1;
+}
+
+.freeform-tag-input__hint {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: hsl(var(--color-muted-fg));
+}
+
+.freeform-tag-input__suggestion-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.freeform-tag-input__suggestion {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px dashed hsl(var(--color-border));
+  background: transparent;
+  color: hsl(var(--color-muted-fg));
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.freeform-tag-input__suggestion:hover {
+  color: hsl(var(--color-primary));
+  border-color: hsl(var(--color-primary));
+}
+
 /* ── XP badge ────────────────────────────────────────────────────────────── */
 .xp-badge {
   display: inline-flex;

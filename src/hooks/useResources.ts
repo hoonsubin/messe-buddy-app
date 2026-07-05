@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Resource } from "../types/index.ts";
 import type { ResourceType } from "../types/index.ts";
+import type { AppAdapter } from "../adapters/interface.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
+import {
+  ensureUniqueResourceKey,
+  generateResourceKey,
+} from "../utils/resourceKey.ts";
 
 export interface AddResourceInput {
   readonly title: string;
@@ -44,9 +49,14 @@ type UseResourcesOptions = {
   readonly milestoneId?: string;
 };
 
-const slugKey = (title: string): string =>
-  title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40) ||
-  "resource";
+const slugKey = async (
+  adapter: AppAdapter,
+  title: string,
+): Promise<string> => {
+  const existing = await adapter.listLibraryResources();
+  const keys = new Set(existing.map((r) => r.resourceKey));
+  return ensureUniqueResourceKey(generateResourceKey(title), keys);
+};
 
 export function useResources(
   sessionId: string,
@@ -108,7 +118,7 @@ export function useResources(
     async (data: AddResourceInput) => {
       if (!playerId) throw new Error("playerId required to attach resources");
       const lib = await adapter.createLibraryResource({
-        resourceKey: slugKey(data.title),
+        resourceKey: await slugKey(adapter, data.title),
         title: data.title,
         type: data.type,
         url: data.url,
