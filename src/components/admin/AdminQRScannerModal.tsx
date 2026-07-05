@@ -19,12 +19,16 @@ type ScanState = "idle" | "scanning" | "success" | "invalid" | "error";
 interface AdminQRScannerModalProps {
   readonly isOpen: boolean;
   readonly sessionId: string;
+  readonly playerId?: string;
   readonly onClose: () => void;
 }
 
 const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
   const navigate = useNavigate();
-  const scanContext = useQRScanContext(props.sessionId);
+  const scanContext = useQRScanContext({
+    sessionId: props.sessionId,
+    playerId: props.playerId,
+  });
   const [cameraReady, setCameraReady] = useState(false);
   const [validationState, setValidationState] = useState<ScanState>("scanning");
   const [errorMessage, setErrorMessage] = useState("");

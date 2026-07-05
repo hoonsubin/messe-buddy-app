@@ -45,6 +45,7 @@ const HireDetailOverlays = ({ vm }: HireDetailOverlaysProps) => (
     <AdminQRScannerModal
       isOpen={vm.scannerOpen}
       sessionId={vm.homeSid}
+      playerId={vm.playerId}
       onClose={() => vm.setScannerOpen(false)}
     />
 

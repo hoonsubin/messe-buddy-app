@@ -75,7 +75,7 @@ export const useFormMission = (
 
   // ── Profile form pre-population (PLR-1) ────────────────────────────────────
   // When the player opens the profile mission, pre-fill from their Player record.
-  // Admin-seeded fields (name, role, department) surface here so the player just
+  // Game Maker-seeded fields (name, job title, department) surface here so the
   // confirms and augments rather than typing everything from scratch.
   const initialValues = useMemo<Record<string, string>>(() => {
     if (missionId !== PROFILE_MISSION_ID || !player) {

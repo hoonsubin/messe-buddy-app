@@ -142,7 +142,7 @@ export const useProgressAdmin = (
   );
 
   return {
-    mode: "admin",
+    mode: "gamemaker",
     players,
     selectedPlayerId,
     selectedPlayer,

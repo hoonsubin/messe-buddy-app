@@ -133,19 +133,20 @@ export function useResources(
       resourceId: string,
       patch: Partial<Omit<Resource, "id" | "created" | "updated">>,
     ) => {
-      const libPatch: Partial<
+      const libFields: Array<
+        keyof Pick<Resource, "title" | "type" | "url" | "description" | "resourceKey">
+      > = ["title", "type", "url", "description", "resourceKey"];
+      const libPatch = Object.fromEntries(
+        libFields
+          .filter((key) => patch[key] !== undefined)
+          .map((key) => [key, patch[key]]),
+      ) as Partial<
         Pick<Resource, "title" | "type" | "url" | "description" | "resourceKey">
-      > = {};
-      if (patch.title !== undefined) libPatch.title = patch.title;
-      if (patch.type !== undefined) libPatch.type = patch.type;
-      if (patch.url !== undefined) libPatch.url = patch.url;
-      if (patch.description !== undefined) libPatch.description = patch.description;
-      if (patch.resourceKey !== undefined) {
-        libPatch.resourceKey = patch.resourceKey;
-      }
+      >;
       if (Object.keys(libPatch).length > 0) {
         await adapter.updateLibraryResource(resourceId, libPatch);
       }
+      const { isVisibleToPlayer } = patch;
       if (isVisibleToPlayer !== undefined && playerId) {
         const attachments = await adapter.listMilestoneResources(playerId);
         const match = attachments.find((mr) =>

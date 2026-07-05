@@ -11,7 +11,7 @@ export interface UseSessionExistsResult {
 /**
  * Confirms a sessionId still resolves against the backend via a direct
  * getSession() call. This is deliberately separate from list-and-filter
- * hooks like useGmHires: a filtered list query returns zero rows for both
+ * hooks like useGmPlayers: a filtered list query returns zero rows for both
  * "session was deleted/reset" and "legitimately no data yet", which are
  * indistinguishable to the caller. A direct get 404s only in the first case,
  * so this is the only way to tell a stale/orphaned identity apart from a

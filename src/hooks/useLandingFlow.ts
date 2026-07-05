@@ -36,7 +36,7 @@ export const DEMO_PROFILES: readonly CachedIdentity[] = [
 export type LandingStatus = "idle" | "loading" | "error";
 
 // Which inline form is expanded
-export type ActiveForm = "employee" | "admin" | null;
+export type ActiveForm = "employee" | "gamemaker" | null;
 
 // Employee join: verify invite token → name (claim)
 export type EmployeeStep = "code" | "name";
@@ -255,7 +255,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     setActiveForm,
   ]);
 
-  // ── Admin: create session ─────────────────────────────────────────────────
+  // ── Game Maker: create workspace session ──────────────────────────────────
   const handleCreateAdmin = useCallback(async () => {
     const name = adminName.trim();
     const sName = sessionName.trim();

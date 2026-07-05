@@ -9,7 +9,7 @@ import RecoverySection from "./landing/RecoverySection.tsx";
 const LandingPage = () => {
   const flow = useLandingFlow();
 
-  const handleToggleForm = (form: "employee" | "admin") => {
+  const handleToggleForm = (form: "employee" | "gamemaker") => {
     flow.setActiveForm(flow.activeForm === form ? null : form);
   };
 
@@ -46,7 +46,7 @@ const LandingPage = () => {
           />
         )}
 
-        {flow.activeForm === "admin" && (
+        {flow.activeForm === "gamemaker" && (
           <AdminForm
             sessionName={flow.sessionName}
             adminName={flow.adminName}

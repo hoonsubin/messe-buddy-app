@@ -14,9 +14,16 @@ export interface UseQRScanContextResult {
   readonly buildSimulateScanUrl: () => Promise<string | null>;
 }
 
-export const useQRScanContext = (
-  sessionId: string,
-): UseQRScanContextResult => {
+export interface UseQRScanContextOptions {
+  readonly sessionId: string;
+  /** When set, simulate scan targets this player's QR missions only. */
+  readonly playerId?: string;
+}
+
+export const useQRScanContext = ({
+  sessionId,
+  playerId,
+}: UseQRScanContextOptions): UseQRScanContextResult => {
   const adapter = useAdapter();
   const [session, setSession] = useState<Session | null>(null);
   const [players, setPlayers] = useState<ReadonlyArray<Player>>([]);
@@ -36,10 +43,11 @@ export const useQRScanContext = (
       setLoading(true);
       setError(null);
       try {
+        const listOpts = playerId ? { playerId } : undefined;
         const [s, p, m] = await Promise.all([
           adapter.getSession(sessionId),
           adapter.listPlayers(sessionId),
-          adapter.listMissions(sessionId),
+          adapter.listMissions(sessionId, listOpts),
         ]);
         if (!cancelled) {
           setSession(s);
@@ -59,10 +67,12 @@ export const useQRScanContext = (
     return () => {
       cancelled = true;
     };
-  }, [adapter, sessionId, refreshKey]);
+  }, [adapter, sessionId, playerId, refreshKey]);
 
   const buildSimulateScanUrl = useCallback(async () => {
-    const player = players[0];
+    const player = playerId
+      ? players.find((p) => p.id === playerId) ?? players[0]
+      : players[0];
     const mission = missions.find((m) => m.validationMethod === "qr");
     if (!player || !mission || !session) return null;
 
@@ -78,7 +88,7 @@ export const useQRScanContext = (
       secret,
     );
     return buildValidationUrl(sessionId, encoded);
-  }, [missions, players, session, sessionId]);
+  }, [missions, playerId, players, session, sessionId]);
 
   return {
     session,

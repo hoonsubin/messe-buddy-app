@@ -22,7 +22,7 @@ const AdminForm = ({
   onCreate,
   onClose,
 }: AdminFormProps) => (
-  <div className="landing-form-panel" data-role="admin">
+  <div className="landing-form-panel" data-role="gamemaker">
     <div className="landing-form-panel__header">
       <span className="landing-form-panel__title">Create admin session</span>
       <IconButton type="button" aria-label="Close" onClick={onClose}>
