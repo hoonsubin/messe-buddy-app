@@ -15,9 +15,13 @@ const rt = (typeof window !== "undefined" && window.__MB_CONFIG__) || {};
 const env = import.meta.env;
 
 // Base URL of the LLM endpoint (no trailing slash). In production this is the
-// same-origin proxy path "/llm"; in dev it falls back to the proxy URL.
+// same-origin proxy path "/llm" (nginx). In plain `deno task dev`, vite.config.ts
+// proxies the same "/llm" path to a local LiteLLM instance, so the browser
+// always talks same-origin here too - no CORS, whether or not LiteLLM is
+// actually running locally. VITE_LITELLM_URL remains a dev/escape hatch for
+// pointing directly at a non-default LLM endpoint.
 export const LLM_BASE_URL: string =
-  (rt.llmBaseUrl ?? env.VITE_LITELLM_URL ?? "http://localhost:4000").replace(
+  (rt.llmBaseUrl ?? env.VITE_LITELLM_URL ?? "/llm").replace(
     /\/+$/,
     "",
   );

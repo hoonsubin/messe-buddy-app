@@ -1394,6 +1394,12 @@
   gap: var(--space-4);
 }
 
+.buddy-assignment-fields__hint {
+  font-size: var(--text-sm);
+  color: hsl(var(--color-fg) / 0.6);
+  margin: 0;
+}
+
 .oj-buddy-picker {
   display: flex;
   flex-direction: column;

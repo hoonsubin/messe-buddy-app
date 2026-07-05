@@ -77,7 +77,7 @@ export const useProgressPlayer = (
   const markSelfComplete = useCallback(
     async (missionId: string) => {
       const event = await adapter.upsertProgressEvent(playerId, missionId, {
-        status: "completed",
+        status: "autoApproved",
       });
       applyEvent(event);
     },

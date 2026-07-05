@@ -49,12 +49,6 @@ for player · G-05 profile field display · G-06–G-09 · G-16–G-17 tutorial 
 
 ## Production testing
 
-### Prerequisites
-
-1. `docker compose build app && docker compose up app` → **`http://localhost:8700/`**
-2. Mock vs PB: `DemoAwareAdapterProvider` — `isDemo: true` → mock; else PocketBase. Demo `sess_mmt2026` always mock.
-3. Wait for user confirmation after compose rebuild before smoke tests.
-
 ### Smoke checklist
 
 **Dev mock (`:5173`) — verified 2026-07-05:**
@@ -64,7 +58,7 @@ for player · G-05 profile field display · G-06–G-09 · G-16–G-17 tutorial 
 - [x] Invite URL `?t=` prefill on landing
 - [x] Player cockpit loads; `deno task build` · `deno task lint` green
 
-**Target model on `:8700` (ARCH-13 — run after compose rebuild):**
+**Target model (ARCH-13 — run after compose rebuild):**
 
 - [ ] GM workspace → player list (no phantom workspace row)
 - [ ] Add player → `inviteToken`; URL `/join/:sessionId?t=`
@@ -173,7 +167,7 @@ Append-only history. Do not duplicate this material in sections above.
 | P-17 | Landing orphaned profile detection, badge, confirm-remove. |
 | P-18 | `RootRedirect` + `mb_active_uid`; logout/leave clears active pointer. |
 
-Full-stack smoke on `:8700` validated P-01, P-16, P-17, P-18, P-07, and core GM/player loops.
+Full-stack smoke validated P-01, P-16, P-17, P-18, P-07, and core GM/player loops.
 
 ### 2026-07-05 — Architecture decision (not yet in code)
 
@@ -186,7 +180,7 @@ Full-stack smoke on `:8700` validated P-01, P-16, P-17, P-18, P-07, and core GM/
 - Dead active pointer → bounce to picker with P-17 orphan badge.
 - Switch-profile link scoped (TopBar has no settings yet — P-06).
 
-### 2026-07-03 — Live smoke (`:8700`) + Phase 1
+### 2026-07-03 — Live smoke + Phase 1
 
 **Surfaced:** P-15 (home session as hire #1), P-16 (GM 0/0 XP before join), P-17 (silent orphaned profiles). P-05 flagged for re-verification (may already be fixed on empty hire).
 

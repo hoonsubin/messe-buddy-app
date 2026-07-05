@@ -31,9 +31,11 @@
   transform: translateY(100%);
   transition: transform var(--duration-slow) var(--ease-out);
   will-change: transform;
+  pointer-events: none;
 }
 .bottom-sheet--open {
   transform: translateY(0);
+  pointer-events: auto;
 }
 .bottom-sheet--dragging {
   transition: none;

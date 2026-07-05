@@ -5,13 +5,7 @@
     "dev:full": "VITE_USE_MOCK_PB=false deno run -A npm:concurrently -n web,pb -c blue,green \"deno task dev\" \"deno task dev:pb\"",
     "build": "deno run -A npm:typescript/bin/tsc -b && deno run -A npm:vite build",
     "lint": "deno run -A npm:eslint .",
-    "preview": "deno run -A npm:vite preview -- --host",
-    "smoke-landing": "deno run -A --node-modules-dir=auto scripts/smoke-landing.ts",
-    "smoke-onboarding-journey": "deno run -A --node-modules-dir=auto scripts/smoke-onboarding-journey.ts",
-    "smoke-e2e": "deno run -A --node-modules-dir=auto scripts/smoke-e2e.ts",
-    "smoke-pb-phase1": "deno run -A --node-modules-dir=auto scripts/smoke-pb-phase1.ts",
-    "smoke-pb-phase2": "deno run -A --node-modules-dir=auto scripts/smoke-pb-phase2.ts",
-    "smoke-pb-oj-full": "deno run -A --node-modules-dir=auto scripts/smoke-pb-oj-full.ts"
+    "preview": "deno run -A npm:vite preview -- --host"
   },
   "nodeModulesDir": "auto",
   "compilerOptions": {

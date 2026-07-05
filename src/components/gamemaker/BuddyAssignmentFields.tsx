@@ -1,4 +1,5 @@
 import type { BuddyProfileDraft } from "../../types/index.ts";
+import { cn } from "../../utils/cn.ts";
 
 interface BuddyAssignmentFieldsProps {
   readonly draft: BuddyProfileDraft;
@@ -18,10 +19,15 @@ const BuddyAssignmentFields = ({
   const tid = (suffix: string) =>
     testIdPrefix !== undefined ? `${testIdPrefix}-${suffix}` : undefined;
 
+  const requiredLabel = cn("form-label", "form-label--required");
+
   return (
     <div className="buddy-assignment-fields">
+      <p className="buddy-assignment-fields__hint">
+        Fields marked <span aria-hidden="true">*</span> are required.
+      </p>
       <div className="form-field">
-        <label className="form-label" htmlFor={`${idPrefix}-name`}>
+        <label className={requiredLabel} htmlFor={`${idPrefix}-name`}>
           Buddy name
         </label>
         <input
@@ -32,11 +38,13 @@ const BuddyAssignmentFields = ({
           onChange={(e) => onDraftChange({ ...draft, name: e.target.value })}
           placeholder="e.g. Marcus Weber"
           autoFocus={autoFocus}
+          required
+          aria-required="true"
           {...(tid("name") !== undefined && { "data-testid": tid("name") })}
         />
       </div>
       <div className="form-field">
-        <label className="form-label" htmlFor={`${idPrefix}-role`}>
+        <label className={requiredLabel} htmlFor={`${idPrefix}-role`}>
           Role
         </label>
         <input
@@ -46,11 +54,13 @@ const BuddyAssignmentFields = ({
           value={draft.role}
           onChange={(e) => onDraftChange({ ...draft, role: e.target.value })}
           placeholder="e.g. Senior Product Manager"
+          required
+          aria-required="true"
           {...(tid("role") !== undefined && { "data-testid": tid("role") })}
         />
       </div>
       <div className="form-field">
-        <label className="form-label" htmlFor={`${idPrefix}-email`}>
+        <label className={requiredLabel} htmlFor={`${idPrefix}-email`}>
           Email
         </label>
         <input
@@ -60,11 +70,13 @@ const BuddyAssignmentFields = ({
           value={draft.email ?? ""}
           onChange={(e) => onDraftChange({ ...draft, email: e.target.value })}
           placeholder="marcus.weber@messe.de"
+          required
+          aria-required="true"
           {...(tid("email") !== undefined && { "data-testid": tid("email") })}
         />
       </div>
       <div className="form-field">
-        <label className="form-label" htmlFor={`${idPrefix}-phone`}>
+        <label className={requiredLabel} htmlFor={`${idPrefix}-phone`}>
           Telephone
         </label>
         <input
@@ -74,6 +86,8 @@ const BuddyAssignmentFields = ({
           value={draft.phone ?? ""}
           onChange={(e) => onDraftChange({ ...draft, phone: e.target.value })}
           placeholder="+49 89 1234 5678"
+          required
+          aria-required="true"
           {...(tid("phone") !== undefined && { "data-testid": tid("phone") })}
         />
       </div>

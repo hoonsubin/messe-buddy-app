@@ -18,6 +18,20 @@ const apiProxy = {
   changeOrigin: true,
 } as const;
 
+// Mirrors docker/nginx.conf's same-origin /llm proxy for the plain Vite dev
+// server. Without this, useAssistantAvailability's readiness poll hits
+// LLM_BASE_URL's http://localhost:4000 fallback directly, cross-origin, and
+// logs a CORS error on every player-cockpit page load even though the
+// failure is already handled gracefully in the UI. Proxying same-origin
+// turns that into an ordinary (silently caught) fetch failure when no
+// LiteLLM instance is running locally, matching prod topology instead of
+// diverging from it.
+const llmProxy = {
+  target: "http://127.0.0.1:4000",
+  changeOrigin: true,
+  rewrite: (path: string) => path.replace(/^\/llm/, ""),
+} as const;
+
 // `public/config.js` is a static, committed file hardcoding
 // `{ useMockPb: true }` — the safe default for `deno task dev` / GitHub Pages.
 // In production it's overwritten at container boot by docker/entrypoint.sh.
@@ -45,6 +59,6 @@ const devLiveConfigPlugin = (): Plugin => ({
 export default defineConfig({
   base,
   plugins: [react(), devLiveConfigPlugin()],
-  server: { proxy: { "/api": apiProxy } },
-  preview: { proxy: { "/api": apiProxy } },
+  server: { proxy: { "/api": apiProxy, "/llm": llmProxy } },
+  preview: { proxy: { "/api": apiProxy, "/llm": llmProxy } },
 });

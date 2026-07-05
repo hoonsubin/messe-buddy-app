@@ -110,6 +110,8 @@ export function BottomSheet({
         style={{ transform: sheetTransform }}
         role="dialog"
         aria-label={ariaLabel}
+        aria-hidden={!open}
+        inert={!open}
         data-testid={testId}
       >
         <div
