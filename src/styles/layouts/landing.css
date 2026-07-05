@@ -392,32 +392,22 @@
   letter-spacing: 0.06em;
 }
 
-/* ── Role toggle buttons ─────────────────────────────────────────────────── */
-.landing-role-toggles {
-  display: flex;
-  gap: var(--space-2);
+/* ── New onboarding journey CTA ─────────────────────────────────────────── */
+.landing-new-journey {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid hsl(var(--color-border));
 }
 
-.landing-role-toggles--spaced {
-  margin-top: var(--space-1);
+.landing-new-journey__btn {
+  width: 100%;
 }
 
-.landing-role-toggle {
-  flex: 1;
-  gap: var(--space-1);
-  border-style: dashed;
-}
-
-.landing-role-toggle--active[data-role="player"] {
-  border-style: solid;
-  border-color: hsl(var(--color-role-player));
-  color: hsl(var(--color-role-player));
-}
-
-.landing-role-toggle--active[data-role="gamemaker"] {
-  border-style: solid;
-  border-color: hsl(var(--color-role-gamemaker));
-  color: hsl(var(--color-role-gamemaker));
+.landing-new-journey__hint {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  color: hsl(var(--color-muted-fg));
+  text-align: center;
 }
 
 /* ── Inline join / create forms ──────────────────────────────────────────── */
@@ -462,20 +452,4 @@
 .landing-form-panel[data-role="gamemaker"] .btn--primary {
   background: hsl(var(--color-role-gamemaker));
   border-color: hsl(var(--color-role-gamemaker));
-}
-
-/* ── Recovery row ────────────────────────────────────────────────────────── */
-.landing-recovery-row {
-  display: flex;
-  gap: var(--space-2);
-  align-items: flex-end;
-}
-
-.landing-recovery-row__field {
-  flex: 1;
-}
-
-.landing-recovery-row__btn {
-  gap: var(--space-1);
-  flex-shrink: 0;
 }

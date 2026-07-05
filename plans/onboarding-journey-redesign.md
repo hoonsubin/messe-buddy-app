@@ -1,7 +1,7 @@
 # Implementation Plan — Onboarding Journey UI Redesign
 
 **ID:** OJ-01  
-**Status:** Planned  
+**Status:** In progress (Phase 1 complete)  
 **Last updated:** 2026-07-05  
 **Wireframe:** Cursor canvas [`onboarding-journey-redesign.canvas.tsx`](../../.cursor/projects/Users-hoonkim-Projects-messe-buddy-app/canvases/onboarding-journey-redesign.canvas.tsx) (open beside chat in IDE)
 
@@ -183,37 +183,102 @@ sequenceDiagram
 
 ### Phase 1 — Landing simplification
 
-| Task | Files |
-| ---- | ----- |
-| Remove Employee / Game Maker toggles; add bottom CTA | `ProfileList.tsx`, `landing.css` |
-| Remove `EmployeeForm`, `RecoverySection` from page | `LandingPage.tsx` |
-| Remove recovery key UI from profile cards | `ProfileCard.tsx` |
-| Trim `useLandingFlow`: drop employee/recovery handlers; `activeForm` → workspace panel only | `useLandingFlow.ts` |
-| Delete or orphan `EmployeeForm.tsx`, `RecoverySection.tsx` | — |
+**Status:** Done (2026-07-05)
 
-**Exit:** Landing smoke updated; no Employee/Recovery UI.
+| Task | Files | Done |
+| ---- | ----- | ---- |
+| Remove Employee / Game Maker toggles; add bottom CTA | `ProfileList.tsx`, `landing.css` | x |
+| Remove `EmployeeForm`, `RecoverySection` from `/` landing | `LandingPage.tsx` | x |
+| Keep `/join/:sessionId` claim UI (`EmployeeForm` on join route only) | `LandingPage.tsx` | x |
+| Remove recovery key UI from profile cards | `ProfileCard.tsx` | x |
+| Trim `useLandingFlow` (workspace panel + join route only) | `useLandingFlow.ts` | x |
+| Delete `RecoverySection.tsx` | — | x |
+| Rewrite `smoke-landing.ts` | `scripts/smoke-landing.ts` | x |
+
+**Exit:** Landing smoke updated; no Employee/Recovery UI on `/`.
 
 ### Phase 2 — Backend / use-case layer
 
-| Task | Files |
-| ---- | ----- |
-| Add `listBuddyProfiles(sessionId)` to `AppAdapter` | `interface.ts`, `mockAdapter.ts`, `pbAdapter.ts` |
-| Add `BuddyPickerDraft` type | `src/types/` or colocate with `BuddyPicker.tsx` |
-| New `createOnboardingJourney(sessionId, input)` | `src/use-cases/createOnboardingJourney.ts` |
-| Remove auto template from `invitePlayer` | `invitePlayer.ts`, `gmPlayers.ts` |
-| Optional: `listBuddyProfiles` dedupe by normalized name in use case | — |
+**Status:** Done (2026-07-05)
 
-`createOnboardingJourney` contract:
+#### Pre-flight audit (hooks, use-cases, schema)
+
+| Finding | Severity | Action in Phase 2 |
+| ------- | -------- | ----------------- |
+| **Use-case `invitePlayer` vs `adapter.invitePlayer`** — same name; use-case silently auto-applies first template via `pickStarterTemplate` | Drift risk | Slim use-case to player-row only; template moves to `createOnboardingJourney` |
+| **`pickStarterTemplate` / `generateUniqueInviteToken`** — only used by old invite flow; latter unused anywhere | Dead | Remove exports |
+| **`recoverIdentity`** — UI removed in Phase 1; no remaining imports | Orphaned | Keep use-case (SPECS still documents recovery); no UI wire |
+| **`verifySession`** in `joinSession.ts` — never imported | Dead | Remove |
+| **`applyTemplateToSession.ts`** — file name says session; exports `applyTemplateToPlayer` (thin `importTemplate` wrapper) | Misleading | Rename file → `applyTemplateToPlayer.ts` |
+| **`playerDetailStorage`** — param named `sessionId` but callers pass **`playerId`**; key is `mb_player_template_${playerId}` | Misleading | Rename param to `playerId` |
+| **`buddy_profiles` schema** — one row per **player** (`assignedToPlayerId` unique); not a global buddy catalog | Schema truth | `listBuddyProfiles(sessionId)` lists session rows; picker dedupes by name in use-case |
+| Plan `existingBuddyId` | Misleading | Use `buddyProfileId` (PB record `id`) — copy fields to new player, not FK link |
+| **`BuddyPickerDraft.telephone`** vs domain **`BuddyProfile.phone`** | Naming | Explicit mapper `buddyPickerDraftToProfileFields` |
+| **`useBuddyProfile` / `BuddyAssignmentForm`** — draft uses `tenure`, `contactUrl`; wireframe uses `email`, `telephone` | UI drift (Phase 3/4) | Phase 2 types only; align GM buddy tab in Phase 4 |
+| **`gmPlayers.invitePlayer`** — hook method name implies invite-only; will become wizard entry in Phase 3 | Misleading | Phase 2: call slim `invitePlayer`; Phase 3: add `createOnboardingJourney` to hook |
+
+**Layering (locked for OJ-01):**
+
+```
+OnboardingJourneyModal (Phase 3)
+  → useGmPlayers.createOnboardingJourney (Phase 3)
+    → createOnboardingJourney use-case (Phase 2)
+      → invitePlayer use-case → adapter.invitePlayer
+      → adapter.upsertBuddyProfile
+      → importTemplate (when templateName set)
+```
+
+`joinSession` / `claimPlayer` — unchanged; `/join` route only.
+
+#### Corrected contracts
 
 ```ts
+// src/types/buddyPicker.ts
+interface BuddyPickerDraft {
+  readonly name: string;
+  readonly email: string;
+  readonly telephone: string; // UI label; maps to BuddyProfile.phone
+  readonly role: string;
+}
+
+type BuddySelection =
+  | { readonly kind: "new"; readonly draft: BuddyPickerDraft }
+  | { readonly kind: "existing"; readonly buddyProfileId: string };
+
 interface CreateOnboardingJourneyInput {
   readonly playerName: string;
-  readonly buddy: BuddyPickerDraft | { readonly existingBuddyId: string };
+  readonly buddy: BuddySelection;
   readonly templateName: string | null; // null = start from scratch
+}
+
+interface CreateOnboardingJourneyResult {
+  readonly playerId: string;
+  readonly inviteToken: string;
+  readonly appliedTemplateName: string | null;
 }
 ```
 
-Returns `{ playerId, inviteToken }`.
+`listDistinctBuddyProfilesForPicker(sessionId, adapter)` — use-case helper; dedupes
+`listBuddyProfiles` by normalized `name` for wizard step 2.
+
+#### Implementation tasks
+
+| Task | Files | Done |
+| ---- | ----- | ---- |
+| Add `listBuddyProfiles(sessionId)` | `interface.ts`, `mockAdapter.ts`, `pbAdapter.ts` | x |
+| Add `buddyPicker.ts` types + field mapper | `src/types/buddyPicker.ts`, `types/index.ts` | x |
+| New `createOnboardingJourney` + distinct-buddy helper | `src/use-cases/createOnboardingJourney.ts` | x |
+| Slim `invitePlayer` use-case (adapter only, returns `Player`) | `invitePlayer.ts`, `gmPlayers.ts` | x |
+| Remove dead exports; rename storage params; rename template file | see audit table | x |
+| Seed mock buddies with `email` / `phone` for picker | `mockData.ts` | x |
+
+**Exit:** `deno task build` green; `invitePlayer` no longer applies templates; `createOnboardingJourney` callable from tests/hooks.
+
+#### Deprecated (do not extend)
+
+- `InvitePlayerResult.appliedTemplateName` — replaced by `CreateOnboardingJourneyResult`
+- Auto-template on add-player — superseded by explicit wizard step 3
+- `existingBuddyId` naming in early plan drafts — use `buddyProfileId`
 
 ### Phase 3 — Wizard modal + GM home
 

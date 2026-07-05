@@ -1,8 +1,8 @@
 /**
  * Landing smoke test — Firefox + iPhone 15 (matches Playwright MCP config).
  *
- * Covers the profile-list landing (inline Employee/Admin forms, demo profiles).
- * Uses the mock adapter — no Docker required.
+ * Covers the profile-list landing (workspace form, demo profiles) and
+ * /join invite claim. Uses the mock adapter — no Docker required.
  *
  * Run:
  *   deno task smoke-landing
@@ -57,57 +57,62 @@ const main = async () => {
         .isVisible(),
     );
 
-    // ── Inline Employee form ──────────────────────────────────────────────
-    await page.getByRole("button", { name: "Employee", exact: true }).click();
-    await page.waitForSelector("#lp-session-code", { timeout: 5000 });
     record(
-      "Employee form opens",
-      await page.locator("#lp-session-code").isVisible(),
+      "Legacy Employee toggle absent",
+      await page.getByRole("button", { name: "Employee", exact: true }).count() ===
+        0,
+    );
+    record(
+      "Legacy Game Maker toggle absent",
+      await page.getByRole("button", { name: "Game Maker", exact: true }).count() ===
+        0,
+    );
+
+    // ── New onboarding journey → workspace form ─────────────────────────
+    await page.getByTestId("landing-new-journey-btn").click();
+    await page.waitForSelector('[data-testid="landing-workspace-form"]', {
+      timeout: 5000,
+    });
+    record(
+      "Workspace form opens",
+      await page.locator("#lp-session-name").isVisible(),
     );
     await page.screenshot({
-      path: join(SMOKE_OUT_DIR, "02-landing-employee-form.png"),
+      path: join(SMOKE_OUT_DIR, "02-landing-workspace-form.png"),
       fullPage: true,
     });
 
     await page.getByRole("button", { name: "Close", exact: true }).click();
     record(
-      "Employee form closes",
-      !(await page.locator("#lp-session-code").isVisible()),
+      "Workspace form closes",
+      !(await page.locator('[data-testid="landing-workspace-form"]').isVisible()),
     );
 
-    // ── Inline Game Maker form ────────────────────────────────────────────
-    await page.getByRole("button", { name: "Game Maker", exact: true }).click();
-    await page.waitForSelector("#lp-session-name", { timeout: 5000 });
-    record(
-      "Game Maker form opens",
-      await page.locator("#lp-session-name").isVisible(),
-    );
-    await page.screenshot({
-      path: join(SMOKE_OUT_DIR, "03-landing-admin-form.png"),
-      fullPage: true,
-    });
-
-    // ── Invite URL prefill (/join/:sessionId?t=) ─────────────────────────
+    // ── Invite URL claim (/join/:sessionId?t=) ────────────────────────────
     await page.goto(`${BASE}/join/sess_mmt2026?t=invite_sofia_mmt2026`, {
       waitUntil: "networkidle",
     });
-    await page.waitForSelector('[data-testid="landing-page"]');
-    await page.getByRole("button", { name: "Employee", exact: true }).click();
-    await page.waitForSelector("#lp-session-code", { timeout: 5000 });
-    const prefilled = await page.inputValue("#lp-session-code");
-    const tokenPrefilled = await page.inputValue("#lp-invite-token");
+    await page.waitForSelector('[data-testid="join-page"]');
+    await page.waitForSelector('[data-testid="join-claim-form"]', {
+      timeout: 10000,
+    });
     record(
-      "Invite link prefills session code",
-      prefilled === "sess_mmt2026",
-      `value="${prefilled}"`,
+      "Join page shows claim form without landing CTA",
+      await page.getByTestId("landing-new-journey-btn").count() === 0,
     );
     record(
-      "Invite link prefills token",
-      tokenPrefilled === "invite_sofia_mmt2026",
-      `token="${tokenPrefilled}"`,
+      "Invite link advances to name step",
+      await page.locator("#lp-player-name").isVisible(),
+    );
+    const verified = await page.locator(".landing-form-panel__verified")
+      .textContent();
+    record(
+      "Invite verified for session",
+      verified?.includes("sess_mmt2026") ?? false,
+      verified ?? "",
     );
     await page.screenshot({
-      path: join(SMOKE_OUT_DIR, "04-landing-join-prefill.png"),
+      path: join(SMOKE_OUT_DIR, "03-join-claim-form.png"),
       fullPage: true,
     });
 
@@ -126,7 +131,7 @@ const main = async () => {
       page.url(),
     );
     await page.screenshot({
-      path: join(SMOKE_OUT_DIR, "05-player-cockpit.png"),
+      path: join(SMOKE_OUT_DIR, "04-player-cockpit.png"),
       fullPage: true,
     });
 
@@ -159,12 +164,12 @@ const main = async () => {
       `cards=${libCards}`,
     );
     await page.screenshot({
-      path: join(SMOKE_OUT_DIR, "07-gamemaker-library.png"),
+      path: join(SMOKE_OUT_DIR, "06-gamemaker-library.png"),
       fullPage: true,
     });
 
     await page.screenshot({
-      path: join(SMOKE_OUT_DIR, "06-gamemaker-home.png"),
+      path: join(SMOKE_OUT_DIR, "05-gamemaker-home.png"),
       fullPage: true,
     });
 

@@ -1,39 +1,30 @@
-import { MdAdd, MdPersonAdd } from "react-icons/md";
 import type { CachedIdentity } from "../../types/index.ts";
 import { Button } from "../../components/ui/index.ts";
-import { cn } from "../../utils/cn.ts";
-import type { ActiveForm } from "../../hooks/useLandingFlow.ts";
 import ProfileCard from "./ProfileCard.tsx";
 
 interface ProfileListProps {
   readonly profiles: ReadonlyArray<CachedIdentity>;
   readonly orphanedUids: ReadonlySet<string>;
-  readonly keyPopupUid: string | null;
-  readonly activeForm: ActiveForm;
+  readonly workspacePanelOpen: boolean;
   readonly onResume: (identity: CachedIdentity) => void;
   readonly onRemove: (uid: string) => void;
-  readonly onShowKey: (uid: string) => void;
-  readonly onHideKey: () => void;
-  readonly onToggleForm: (form: "employee" | "gamemaker") => void;
+  readonly onToggleWorkspacePanel: () => void;
 }
 
 const ProfileList = ({
   profiles,
   orphanedUids,
-  keyPopupUid,
-  activeForm,
+  workspacePanelOpen,
   onResume,
   onRemove,
-  onShowKey,
-  onHideKey,
-  onToggleForm,
+  onToggleWorkspacePanel,
 }: ProfileListProps) => (
   <>
     <p className="landing__section-label">Your profiles</p>
 
     {profiles.length === 0 && (
       <p className="landing__empty-profiles">
-        No saved profiles. Add one below.
+        No saved profiles. Create a workspace below.
       </p>
     )}
 
@@ -42,46 +33,26 @@ const ProfileList = ({
         key={identity.uid}
         identity={identity}
         isOrphaned={orphanedUids.has(identity.uid)}
-        isKeyOpen={keyPopupUid === identity.uid}
         onResume={onResume}
         onRemove={onRemove}
-        onShowKey={onShowKey}
-        onHideKey={onHideKey}
       />
     ))}
 
-    <div
-      className={cn(
-        "landing-role-toggles",
-        profiles.length > 0 && "landing-role-toggles--spaced",
-      )}
-    >
+    <div className="landing-new-journey">
       <Button
         type="button"
-        variant="secondary"
-        className={cn(
-          "landing-role-toggle",
-          activeForm === "employee" && "landing-role-toggle--active",
-        )}
-        data-role="player"
-        onClick={() => onToggleForm("employee")}
+        variant="primary"
+        fullWidth
+        className="landing-new-journey__btn"
+        data-testid="landing-new-journey-btn"
+        aria-expanded={workspacePanelOpen}
+        onClick={onToggleWorkspacePanel}
       >
-        <MdPersonAdd size={16} />
-        Employee
+        New onboarding journey
       </Button>
-      <Button
-        type="button"
-        variant="secondary"
-        className={cn(
-          "landing-role-toggle",
-          activeForm === "gamemaker" && "landing-role-toggle--active",
-        )}
-        data-role="gamemaker"
-        onClick={() => onToggleForm("gamemaker")}
-      >
-        <MdAdd size={16} />
-        Game Maker
-      </Button>
+      <p className="landing-new-journey__hint">
+        Players join only via invitation link
+      </p>
     </div>
   </>
 );

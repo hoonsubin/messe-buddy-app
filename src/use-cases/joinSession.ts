@@ -4,13 +4,6 @@ import { USER_ROLE } from "../types/index.ts";
 import { generateRecoveryKey } from "../utils/recoveryKey.ts";
 import { claimPlayer } from "./claimPlayer.ts";
 
-export const verifySession = async (
-  sessionId: string,
-  adapter: AppAdapter,
-): Promise<void> => {
-  await adapter.getSession(sessionId);
-};
-
 export interface JoinSessionResult {
   readonly identity: CachedIdentity;
 }

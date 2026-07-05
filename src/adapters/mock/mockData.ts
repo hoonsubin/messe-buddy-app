@@ -826,6 +826,8 @@ export const MOCK_BUDDY_PROFILES: ReadonlyArray<BuddyProfile> = [
     name: "Marcus Weber",
     role: "Senior Event Manager",
     tenure: "5 years at Messe München",
+    email: "marcus.weber@messe-muenchen.de",
+    phone: "+49 89 949-21340",
     contactUrl: "https://teams.microsoft.com/",
     quote: "Don't hesitate to ask — there are no stupid questions on day one.",
   },

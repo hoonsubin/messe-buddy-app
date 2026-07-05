@@ -425,6 +425,16 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     }
   };
 
+  const listBuddyProfiles = async (
+    sessionId: string,
+  ): Promise<ReadonlyArray<BuddyProfile>> => {
+    const records = await pb.collection("buddy_profiles").getFullList({
+      filter: pb.filter("sessionId = {:sessionId}", { sessionId }),
+      sort: "name",
+    });
+    return records.map((r) => marshalBuddyProfile(pb, r));
+  };
+
   const upsertBuddyProfile = async (
     playerId: string,
     data: Omit<
@@ -603,6 +613,7 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     listProgressEvents,
     subscribeProgressEvent,
     getBuddyProfile,
+    listBuddyProfiles,
     upsertBuddyProfile,
     listLibraryResources,
     createLibraryResource,

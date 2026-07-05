@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { MdClose, MdVpnKey } from "react-icons/md";
+import { MdClose } from "react-icons/md";
 import { DEMO_PROFILES } from "../../hooks/useLandingFlow.ts";
 import type { CachedIdentity } from "../../types/index.ts";
 import { IconButton } from "../../components/ui/index.ts";
@@ -12,21 +12,15 @@ const isDemoProfile = (uid: string) => DEMO_PROFILES.some((d) => d.uid === uid);
 interface ProfileCardProps {
   readonly identity: CachedIdentity;
   readonly isOrphaned: boolean;
-  readonly isKeyOpen: boolean;
   readonly onResume: (identity: CachedIdentity) => void;
   readonly onRemove: (uid: string) => void;
-  readonly onShowKey: (uid: string) => void;
-  readonly onHideKey: () => void;
 }
 
 const ProfileCard = ({
   identity,
   isOrphaned,
-  isKeyOpen,
   onResume,
   onRemove,
-  onShowKey,
-  onHideKey,
 }: ProfileCardProps) => {
   const demo = isDemoProfile(identity.uid);
   const role = landingRoleFor(identity.role);
@@ -55,7 +49,6 @@ const ProfileCard = ({
           : `Resume as ${identity.name ?? "unnamed"}`}
         className={cn(
           "landing-profile__card",
-          isKeyOpen && "landing-profile__card--key-open",
           isOrphaned && "landing-profile__card--orphaned",
         )}
         data-role={role}
@@ -81,23 +74,12 @@ const ProfileCard = ({
           </p>
         </div>
 
-        <div
-          className="landing-profile__actions"
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          <IconButton
-            type="button"
-            aria-label={isKeyOpen ? "Hide recovery key" : "Show recovery key"}
-            className={cn(
-              isKeyOpen && "landing-profile__key-btn--active",
-            )}
-            data-role={role}
-            onClick={() => (isKeyOpen ? onHideKey() : onShowKey(identity.uid))}
+        {!demo && (
+          <div
+            className="landing-profile__actions"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           >
-            <MdVpnKey size={18} />
-          </IconButton>
-          {!demo && (
             <IconButton
               type="button"
               aria-label="Remove profile"
@@ -105,20 +87,9 @@ const ProfileCard = ({
             >
               <MdClose size={18} />
             </IconButton>
-          )}
-        </div>
+          </div>
+        )}
       </div>
-
-      {isKeyOpen && (
-        <div className="landing-profile__key-reveal">
-          <p className="landing-profile__key-label">
-            Recovery key:{" "}
-            <span className="landing-profile__key-value">
-              {identity.recoveryKey}
-            </span>
-          </p>
-        </div>
-      )}
 
       <ConfirmDialog
         isOpen={confirmOpen}

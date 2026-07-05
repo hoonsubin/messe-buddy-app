@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useAdapter } from "../../adapters/useAdapter.ts";
 import { computeProgress } from "../../use-cases/computeProgress.ts";
 import { invitePlayer as invitePlayerUseCase } from "../../use-cases/invitePlayer.ts";
-import { writeAppliedTemplate } from "../../pages/player-detail/playerDetailStorage.ts";
 import type { ClaimStatus } from "../../types/index.ts";
 
 export interface GmPlayerRow {
@@ -41,14 +40,7 @@ export const useGmPlayers = (
 
   const invitePlayerFn = useCallback(
     async (name: string): Promise<string> => {
-      const { player, appliedTemplateName } = await invitePlayerUseCase(
-        sessionId,
-        adapter,
-        { name },
-      );
-      if (appliedTemplateName) {
-        writeAppliedTemplate(player.id, appliedTemplateName);
-      }
+      const player = await invitePlayerUseCase(sessionId, adapter, { name });
       setRefreshKey((k) => k + 1);
       return player.id;
     },

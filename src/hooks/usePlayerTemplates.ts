@@ -8,7 +8,7 @@ import type {
 } from "../types/index.ts";
 import { MISSION_TYPE } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
-import { applyTemplateToPlayer } from "../use-cases/applyTemplateToSession.ts";
+import { applyTemplateToPlayer } from "../use-cases/applyTemplateToPlayer.ts";
 import { exportTemplate } from "../use-cases/exportTemplate.ts";
 
 export interface SaveAsTemplateInput {
