@@ -1,38 +1,42 @@
 import type PocketBase from "pocketbase";
 import type { RecordModel } from "pocketbase";
-import type { AppAdapter } from "../interface.ts";
+import type {
+  AppAdapter,
+  ListMilestonesOptions,
+  ListMissionsOptions,
+} from "../interface.ts";
 import type {
   BuddyProfile,
   FieldSchema,
   FormSchema,
+  LibraryResource,
   Milestone,
+  MilestoneResource,
   Mission,
-  PBRecord,
   Player,
   ProgressEvent,
   Resource,
   Session,
   TemplateExport,
 } from "../../types/index.ts";
+import { generateInviteToken } from "../../utils/inviteToken.ts";
 import {
   marshalBuddyProfile,
   marshalFormSchema,
+  marshalLibraryResource,
   marshalMilestone,
+  marshalMilestoneResource,
   marshalMission,
   marshalPlayer,
   marshalProgressEvent,
-  marshalResource,
   marshalSession,
   marshalTemplate,
+  resolveResource,
 } from "./parsers.ts";
 
 type SessionPatch =
-  & Partial<
-    Omit<Session, keyof PBRecord | "bgImageUrl">
-  >
-  & {
-    readonly bgImageUrl?: string | File;
-  };
+  & Partial<Omit<Session, "id" | "created" | "updated" | "bgImageUrl">>
+  & { readonly bgImageUrl?: string | File };
 
 const isUploadFile = (value: unknown): value is File =>
   typeof File !== "undefined" && value instanceof File;
@@ -55,33 +59,52 @@ const toSessionBody = (
     const body: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(patch)) {
       if (value === undefined) continue;
-      if (key === "preBoardingChecks") {
-        body[key] = value;
-      } else {
-        body[key] = value;
-      }
+      body[key] = key === "preBoardingChecks" ? value : value;
     }
     return body;
   }
-
   const formData = new FormData();
   for (const [key, value] of Object.entries(patch)) {
     if (value === undefined) continue;
-    if (isUploadFile(value)) {
-      formData.append(key, value);
-    } else if (key === "preBoardingChecks") {
+    if (isUploadFile(value)) formData.append(key, value);
+    else if (key === "preBoardingChecks") {
       formData.append(key, JSON.stringify(value));
-    } else {
-      formData.append(key, String(value));
-    }
+    } else formData.append(key, String(value));
   }
   return formData;
+};
+
+const scopeFilter = (
+  pb: PocketBase,
+  sessionId: string,
+  playerId?: string,
+): string => {
+  if (playerId) {
+    return pb.filter(
+      "sessionId = {:sessionId} && playerId = {:playerId}",
+      { sessionId, playerId },
+    );
+  }
+  return pb.filter("sessionId = {:sessionId}", { sessionId });
 };
 
 export const createPBAdapter = (pb: PocketBase): AppAdapter => {
   const getSession = async (sessionId: string): Promise<Session> => {
     const record = await pb.collection("sessions").getOne(sessionId);
     return marshalSession(pb, record);
+  };
+
+  const getSessionByGmRecoveryKey = async (
+    recoveryKey: string,
+  ): Promise<Session | null> => {
+    try {
+      const record = await pb.collection("sessions").getFirstListItem(
+        pb.filter("gmRecoveryKey = {:recoveryKey}", { recoveryKey }),
+      );
+      return marshalSession(pb, record);
+    } catch {
+      return null;
+    }
   };
 
   const listSessions = async (): Promise<ReadonlyArray<Session>> => {
@@ -94,10 +117,12 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
   const createSession = async (
     name: string,
     gameMakerUid: string,
+    gmRecoveryKey: string,
   ): Promise<Session> => {
     let record = await pb.collection("sessions").create({
       name,
       gameMakerId: gameMakerUid,
+      gmRecoveryKey,
       mapNodeScale: 0.33,
       preBoardingChecks: [],
     });
@@ -119,6 +144,7 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
   };
 
   const getPlayer = async (uid: string): Promise<Player | null> => {
+    if (!uid) return null;
     try {
       const record = await pb.collection("players").getFirstListItem(
         pb.filter("uid = {:uid}", { uid }),
@@ -138,30 +164,17 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     }
   };
 
-  const createPlayer = async (
-    data: Omit<Player, keyof PBRecord>,
-  ): Promise<Player> => {
-    const record = await pb.collection("players").create({
-      ...data,
-      tutorialComplete: data.tutorialComplete ?? false,
-      profileComplete: data.profileComplete ?? false,
-      skillsConfident: data.skillsConfident ?? [],
-      skillsDevelop: data.skillsDevelop ?? [],
-      languages: data.languages ?? [],
-      energizers: data.energizers ?? [],
-      drainers: data.drainers ?? [],
-    });
-    return marshalPlayer(pb, record);
-  };
-
-  const updatePlayer = async (
-    playerId: string,
-    patch: Partial<Omit<Player, keyof PBRecord>>,
-  ): Promise<Player> => {
-    const record = await pb.collection("players").update(playerId, {
-      ...patch,
-    });
-    return marshalPlayer(pb, record);
+  const getPlayerByInviteToken = async (
+    inviteToken: string,
+  ): Promise<Player | null> => {
+    try {
+      const record = await pb.collection("players").getFirstListItem(
+        pb.filter("inviteToken = {:inviteToken}", { inviteToken }),
+      );
+      return marshalPlayer(pb, record);
+    } catch {
+      return null;
+    }
   };
 
   const getPlayerByRecoveryKey = async (
@@ -177,6 +190,39 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     }
   };
 
+  const invitePlayer = async (
+    sessionId: string,
+    data: { readonly name?: string; readonly jobTitle?: string },
+  ): Promise<Player> => {
+    const inviteToken = generateInviteToken();
+    const today = new Date().toISOString().split("T")[0] ?? "";
+    const record = await pb.collection("players").create({
+      sessionId,
+      inviteToken,
+      claimStatus: "invited",
+      name: data.name?.trim() || "New player",
+      jobTitle: data.jobTitle?.trim() || "",
+      team: "",
+      startDate: today,
+      location: "",
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      tutorialComplete: false,
+      profileComplete: false,
+      skillsConfident: [],
+      skillsDevelop: [],
+      languages: [],
+    });
+    return marshalPlayer(pb, record);
+  };
+
+  const updatePlayer = async (
+    playerId: string,
+    patch: Partial<Omit<Player, "id" | "created" | "updated">>,
+  ): Promise<Player> => {
+    const record = await pb.collection("players").update(playerId, { ...patch });
+    return marshalPlayer(pb, record);
+  };
+
   const listPlayers = async (
     sessionId: string,
   ): Promise<ReadonlyArray<Player>> => {
@@ -189,16 +235,17 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
 
   const listMilestones = async (
     sessionId: string,
+    options?: ListMilestonesOptions,
   ): Promise<ReadonlyArray<Milestone>> => {
     const records = await pb.collection("milestones").getFullList({
-      filter: pb.filter("sessionId = {:sessionId}", { sessionId }),
+      filter: scopeFilter(pb, sessionId, options?.playerId),
       sort: "order",
     });
     return records.map(marshalMilestone);
   };
 
   const createMilestone = async (
-    data: Omit<Milestone, keyof PBRecord>,
+    data: Omit<Milestone, "id" | "created" | "updated"> & { readonly id?: string },
   ): Promise<Milestone> => {
     const record = await pb.collection("milestones").create({ ...data });
     return marshalMilestone(record);
@@ -206,7 +253,7 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
 
   const updateMilestone = async (
     milestoneId: string,
-    patch: Partial<Omit<Milestone, keyof PBRecord>>,
+    patch: Partial<Omit<Milestone, "id" | "created" | "updated">>,
   ): Promise<Milestone> => {
     const record = await pb.collection("milestones").update(milestoneId, {
       ...patch,
@@ -220,20 +267,20 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
 
   const listMissions = async (
     sessionId: string,
+    options?: ListMissionsOptions,
   ): Promise<ReadonlyArray<Mission>> => {
     const records = await pb.collection("missions").getFullList({
-      filter: pb.filter("sessionId = {:sessionId}", { sessionId }),
+      filter: scopeFilter(pb, sessionId, options?.playerId),
       sort: "order",
     });
     return records.map(marshalMission);
   };
 
   const createMission = async (
-    data: Omit<Mission, keyof PBRecord>,
+    data: Omit<Mission, "id" | "created" | "updated"> & { readonly id?: string },
   ): Promise<Mission> => {
     const record = await pb.collection("missions").create({
       ...data,
-      difficulty: 1, // legacy PB field; xpValue is authoritative (OD-02)
       tags: data.tags ?? [],
       isInCurrentMissions: data.isInCurrentMissions ?? false,
     });
@@ -242,7 +289,7 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
 
   const updateMission = async (
     missionId: string,
-    patch: Partial<Omit<Mission, keyof PBRecord>>,
+    patch: Partial<Omit<Mission, "id" | "created" | "updated">>,
   ): Promise<Mission> => {
     const record = await pb.collection("missions").update(missionId, {
       ...patch,
@@ -291,20 +338,15 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     patch: Partial<
       Omit<
         ProgressEvent,
-        keyof PBRecord | "playerId" | "missionId" | "sessionId"
+        "id" | "created" | "updated" | "playerId" | "missionId" | "sessionId"
       >
     >,
   ): Promise<ProgressEvent> => {
     const filter = progressKeyFilter(pb, playerId, missionId);
     const data: Record<string, unknown> = { ...patch };
-    if (patch.formResponse) {
-      data.formResponse = patch.formResponse;
-    }
-
     const existing = await pb.collection("progress_events").getFullList({
       filter,
     });
-
     if (existing.length > 0) {
       const record = await pb.collection("progress_events").update(
         existing[0].id,
@@ -312,30 +354,16 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
       );
       return marshalProgressEvent(record);
     }
-
     const player = await getPlayerById(playerId);
     if (!player) throw new Error("Player not found");
-
-    try {
-      const record = await pb.collection("progress_events").create({
-        playerId,
-        missionId,
-        sessionId: player.sessionId,
-        status: "pending",
-        ...data,
-      });
-      return marshalProgressEvent(record);
-    } catch (err) {
-      const retry = await pb.collection("progress_events").getFullList({
-        filter,
-      });
-      if (retry.length === 0) throw err;
-      const record = await pb.collection("progress_events").update(
-        retry[0].id,
-        data,
-      );
-      return marshalProgressEvent(record);
-    }
+    const record = await pb.collection("progress_events").create({
+      playerId,
+      missionId,
+      sessionId: player.sessionId,
+      status: "pending",
+      ...data,
+    });
+    return marshalProgressEvent(record);
   };
 
   const listProgressEvents = async (
@@ -354,14 +382,11 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
   ): () => void => {
     let unsubscribe: (() => Promise<void>) | null = null;
     let cancelled = false;
-
     void pb.collection("progress_events").subscribe(
       "*",
       (e) => {
         const record = e.record as RecordModel;
-        if (
-          record.playerId === playerId && record.missionId === missionId
-        ) {
+        if (record.playerId === playerId && record.missionId === missionId) {
           callback(marshalProgressEvent(record));
         }
       },
@@ -370,7 +395,6 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
       if (cancelled) void unsub();
       else unsubscribe = unsub;
     });
-
     return () => {
       cancelled = true;
       if (unsubscribe) void unsubscribe();
@@ -392,7 +416,7 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
 
   const upsertBuddyProfile = async (
     playerId: string,
-    data: Omit<BuddyProfile, keyof PBRecord | "assignedToPlayerId">,
+    data: Omit<BuddyProfile, "id" | "created" | "updated" | "assignedToPlayerId">,
   ): Promise<BuddyProfile> => {
     const existing = await getBuddyProfile(playerId);
     if (existing) {
@@ -409,35 +433,104 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     return marshalBuddyProfile(pb, record);
   };
 
+  const listLibraryResources = async (): Promise<
+    ReadonlyArray<LibraryResource>
+  > => {
+    const records = await pb.collection("library_resources").getFullList({
+      sort: "resourceKey",
+    });
+    return records.map(marshalLibraryResource);
+  };
+
+  const createLibraryResource = async (
+    data: Omit<LibraryResource, "id" | "created" | "updated">,
+  ): Promise<LibraryResource> => {
+    const record = await pb.collection("library_resources").create({ ...data });
+    return marshalLibraryResource(record);
+  };
+
+  const updateLibraryResource = async (
+    resourceId: string,
+    patch: Partial<Omit<LibraryResource, "id" | "created" | "updated">>,
+  ): Promise<LibraryResource> => {
+    const record = await pb.collection("library_resources").update(
+      resourceId,
+      { ...patch },
+    );
+    return marshalLibraryResource(record);
+  };
+
+  const deleteLibraryResource = async (resourceId: string): Promise<void> => {
+    await pb.collection("library_resources").delete(resourceId);
+  };
+
+  const listMilestoneResources = async (
+    playerId: string,
+    milestoneId?: string,
+  ): Promise<ReadonlyArray<MilestoneResource>> => {
+    const filter = milestoneId
+      ? pb.filter(
+        "playerId = {:playerId} && milestoneId = {:milestoneId}",
+        { playerId, milestoneId },
+      )
+      : pb.filter("playerId = {:playerId}", { playerId });
+    const records = await pb.collection("milestone_resources").getFullList({
+      filter,
+    });
+    return records.map(marshalMilestoneResource);
+  };
+
+  const attachMilestoneResource = async (
+    data: Omit<MilestoneResource, "id" | "created" | "updated">,
+  ): Promise<MilestoneResource> => {
+    const record = await pb.collection("milestone_resources").create({
+      ...data,
+    });
+    return marshalMilestoneResource(record);
+  };
+
+  const updateMilestoneResource = async (
+    attachmentId: string,
+    patch: Partial<Omit<MilestoneResource, "id" | "created" | "updated">>,
+  ): Promise<MilestoneResource> => {
+    const record = await pb.collection("milestone_resources").update(
+      attachmentId,
+      { ...patch },
+    );
+    return marshalMilestoneResource(record);
+  };
+
+  const detachMilestoneResource = async (attachmentId: string): Promise<void> => {
+    await pb.collection("milestone_resources").delete(attachmentId);
+  };
+
   const listResources = async (
     sessionId: string,
+    options?: { readonly playerId?: string; readonly milestoneId?: string },
   ): Promise<ReadonlyArray<Resource>> => {
-    const records = await pb.collection("resources").getFullList({
-      filter: pb.filter("sessionId = {:sessionId}", { sessionId }),
-      sort: "id",
+    const filter = options?.playerId
+      ? pb.filter(
+        "sessionId = {:sessionId} && playerId = {:playerId}",
+        { sessionId, playerId: options.playerId },
+      )
+      : pb.filter("sessionId = {:sessionId}", { sessionId });
+    const attachments = await pb.collection("milestone_resources").getFullList({
+      filter,
     });
-    return records.map(marshalResource);
-  };
-
-  const createResource = async (
-    data: Omit<Resource, keyof PBRecord>,
-  ): Promise<Resource> => {
-    const record = await pb.collection("resources").create({ ...data });
-    return marshalResource(record);
-  };
-
-  const updateResource = async (
-    resourceId: string,
-    patch: Partial<Omit<Resource, keyof PBRecord>>,
-  ): Promise<Resource> => {
-    const record = await pb.collection("resources").update(resourceId, {
-      ...patch,
-    });
-    return marshalResource(record);
-  };
-
-  const deleteResource = async (resourceId: string): Promise<void> => {
-    await pb.collection("resources").delete(resourceId);
+    const libRecords = await pb.collection("library_resources").getFullList();
+    const libById = new Map(
+      libRecords.map((r) => [r.id, marshalLibraryResource(r)]),
+    );
+    return attachments
+      .map((raw) => {
+        const mr = marshalMilestoneResource(raw);
+        if (options?.milestoneId && mr.milestoneId !== options.milestoneId) {
+          return null;
+        }
+        const lib = libById.get(mr.libraryResourceId);
+        return lib ? resolveResource(lib, mr) : null;
+      })
+      .filter((r): r is Resource => r !== null);
   };
 
   const listTemplates = async (): Promise<ReadonlyArray<TemplateExport>> => {
@@ -469,14 +562,16 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
 
   return {
     getSession,
+    getSessionByGmRecoveryKey,
     listSessions,
     createSession,
     updateSession,
     getPlayer,
     getPlayerById,
-    createPlayer,
-    updatePlayer,
+    getPlayerByInviteToken,
     getPlayerByRecoveryKey,
+    invitePlayer,
+    updatePlayer,
     listPlayers,
     listMilestones,
     createMilestone,
@@ -493,10 +588,15 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     subscribeProgressEvent,
     getBuddyProfile,
     upsertBuddyProfile,
+    listLibraryResources,
+    createLibraryResource,
+    updateLibraryResource,
+    deleteLibraryResource,
+    listMilestoneResources,
+    attachMilestoneResource,
+    updateMilestoneResource,
+    detachMilestoneResource,
     listResources,
-    createResource,
-    updateResource,
-    deleteResource,
     listTemplates,
     saveTemplate,
     deleteTemplate,

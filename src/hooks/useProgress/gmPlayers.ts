@@ -1,84 +1,69 @@
 import { useCallback, useEffect, useState } from "react";
-import { generateRecoveryKey } from "../../utils/recoveryKey.ts";
 import { useAdapter } from "../../adapters/useAdapter.ts";
 import { computeProgress } from "../../use-cases/computeProgress.ts";
+import type { ClaimStatus } from "../../types/index.ts";
 
-/** One new hire = one onboarding session owned by the Game Maker. */
-export interface GmHireRow {
-  readonly sessionId: string;
-  readonly sessionName: string;
-  readonly playerId: string | null;
+export interface GmPlayerRow {
+  readonly playerId: string;
   readonly name: string;
+  readonly jobTitle: string;
+  readonly claimStatus: ClaimStatus;
   readonly joined: boolean;
   readonly progressPercent: number;
   readonly daysSinceLastActivity: number | null;
   readonly isStalled: boolean;
 }
 
-export interface UseGmHiresResult {
-  readonly hires: ReadonlyArray<GmHireRow>;
+export interface UseGmPlayersResult {
+  readonly players: ReadonlyArray<GmPlayerRow>;
   readonly loading: boolean;
   readonly error: Error | null;
   readonly refresh: () => void;
-  /** Create a new hire (a session owned by this GM). Returns the new sessionId. */
-  readonly createHire: (name: string) => Promise<string>;
+  /** Invite a new player into this workspace session. Returns playerId. */
+  readonly invitePlayer: (name: string) => Promise<string>;
 }
 
 const STALL_DAYS = 3;
 
-/**
- * Lists the Game Maker's hires — one row per session they own — with the
- * primary player's name and progress. Sessions with no player yet show as
- * "not joined". Refresh after creating a hire.
- */
-export const useGmHires = (
-  gmUid: string | undefined,
+export const useGmPlayers = (
+  sessionId: string,
   active: boolean,
-): UseGmHiresResult => {
+): UseGmPlayersResult => {
   const adapter = useAdapter();
-  const [hires, setHires] = useState<ReadonlyArray<GmHireRow>>([]);
+  const [players, setPlayers] = useState<ReadonlyArray<GmPlayerRow>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
-  const createHire = useCallback(
+  const invitePlayerFn = useCallback(
     async (name: string): Promise<string> => {
-      if (!gmUid) throw new Error("No Game Maker identity");
-      const session = await adapter.createSession(name, gmUid, generateRecoveryKey());
+      const player = await adapter.invitePlayer(sessionId, { name });
       setRefreshKey((k) => k + 1);
-      return session.id;
+      return player.id;
     },
-    [adapter, gmUid],
+    [adapter, sessionId],
   );
 
   useEffect(() => {
-    if (!active || !gmUid) return;
+    if (!active || !sessionId) return;
     let cancelled = false;
 
     const fetch = async () => {
       setLoading(true);
       setError(null);
       try {
-        const sessions = await adapter.listSessions();
-        const owned = sessions.filter((s) => s.gameMakerId === gmUid);
-
+        const sessionPlayers = await adapter.listPlayers(sessionId);
         const rows = await Promise.all(
-          owned.map(async (s): Promise<GmHireRow> => {
-            const [players, milestones, missions] = await Promise.all([
-              adapter.listPlayers(s.id),
-              adapter.listMilestones(s.id),
-              adapter.listMissions(s.id),
-            ]);
-            const player = players[0] ?? null;
-
-            if (!player) {
+          sessionPlayers.map(async (p): Promise<GmPlayerRow> => {
+            const joined = p.claimStatus === "claimed";
+            if (!joined) {
               return {
-                sessionId: s.id,
-                sessionName: s.name,
-                playerId: null,
-                name: s.name,
+                playerId: p.id,
+                name: p.name,
+                jobTitle: p.jobTitle,
+                claimStatus: p.claimStatus,
                 joined: false,
                 progressPercent: 0,
                 daysSinceLastActivity: null,
@@ -86,13 +71,12 @@ export const useGmHires = (
               };
             }
 
-            const events = await adapter.listProgressEvents(player.id);
-            const progress = computeProgress(
-              player.id,
-              missions,
-              milestones,
-              events,
-            );
+            const [milestones, missions, events] = await Promise.all([
+              adapter.listMilestones(sessionId, { playerId: p.id }),
+              adapter.listMissions(sessionId, { playerId: p.id }),
+              adapter.listProgressEvents(p.id),
+            ]);
+            const progress = computeProgress(p.id, missions, milestones, events);
             const { milestoneProgress } = progress;
             const progressPercent = milestoneProgress.length === 0
               ? 0
@@ -111,10 +95,10 @@ export const useGmHires = (
               : null;
 
             return {
-              sessionId: s.id,
-              sessionName: s.name,
-              playerId: player.id,
-              name: player.name || s.name,
+              playerId: p.id,
+              name: p.name,
+              jobTitle: p.jobTitle,
+              claimStatus: p.claimStatus,
               joined: true,
               progressPercent,
               daysSinceLastActivity: days,
@@ -123,7 +107,7 @@ export const useGmHires = (
           }),
         );
 
-        if (!cancelled) setHires(rows);
+        if (!cancelled) setPlayers(rows);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e : new Error(String(e)));
       } finally {
@@ -135,7 +119,13 @@ export const useGmHires = (
     return () => {
       cancelled = true;
     };
-  }, [adapter, gmUid, active, refreshKey]);
+  }, [adapter, sessionId, active, refreshKey]);
 
-  return { hires, loading, error, refresh, createHire };
+  return {
+    players,
+    loading,
+    error,
+    refresh,
+    invitePlayer: invitePlayerFn,
+  };
 };

@@ -52,7 +52,8 @@ const HireDetailPage = () => {
           draftMilestones={vm.draftMilestonesAsMilestones}
           milestoneProgress={vm.milestoneProgress}
           hasMilestones={vm.hasMilestones}
-          sessionId={vm.sid}
+          sessionId={vm.homeSid}
+          inviteToken={vm.adminProgress.selectedPlayer?.inviteToken ?? ""}
           onApprove={(playerId, missionId) =>
             void vm.adminProgress.handleApprove(playerId, missionId)}
           onReject={(playerId, missionId) =>
@@ -64,7 +65,8 @@ const HireDetailPage = () => {
       {vm.tab === "customize" && (
         <HireCustomizeTab
           hireFirstName={vm.hireFirstName}
-          sessionId={vm.sid}
+          sessionId={vm.homeSid}
+          inviteToken={vm.adminProgress.selectedPlayer?.inviteToken ?? ""}
           templates={vm.templates}
           appliedTemplate={vm.appliedTemplate}
           applyingTemplate={vm.applyingTemplate}

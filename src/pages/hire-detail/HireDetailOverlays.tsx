@@ -19,7 +19,7 @@ const HireDetailOverlays = ({ vm }: HireDetailOverlaysProps) => (
       draft={vm.missionEditor.activeDraftMission}
       isDirty={vm.isDirty}
       isSaving={vm.isSaving}
-      sessionId={vm.sid}
+      sessionId={vm.homeSid}
       onMissionSelect={vm.missionEditor.handleMissionSelect}
       onDraftChange={vm.missionEditor.handleDraftChange}
       onRename={(newName) =>
@@ -44,7 +44,7 @@ const HireDetailOverlays = ({ vm }: HireDetailOverlaysProps) => (
 
     <AdminQRScannerModal
       isOpen={vm.scannerOpen}
-      sessionId={vm.sid}
+      sessionId={vm.homeSid}
       onClose={() => vm.setScannerOpen(false)}
     />
 

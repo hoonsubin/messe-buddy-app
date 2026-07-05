@@ -12,31 +12,36 @@ func init() {
 		sessions := core.NewBaseCollection("sessions")
 		sessions.Fields.Add(
 			&core.TextField{Name: "name", Required: true},
-			&core.TextField{Name: "bgImageUrl"},
+			&core.FileField{Name: "bgImageUrl", MaxSize: 10 * 1024 * 1024},
+			&core.NumberField{Name: "mapNodeScale"},
 			&core.TextField{Name: "gameMakerId", Required: true},
+			&core.TextField{Name: "gmRecoveryKey", Required: true},
 			&core.JSONField{Name: "preBoardingChecks"},
 			&core.TextField{Name: "qrSecret"},
 			&core.AutodateField{Name: "created", OnCreate: true},
 			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
 		)
+		sessions.AddIndex("idx_gmRecoveryKey", true, "gmRecoveryKey", "")
 		setPublicRules(sessions)
 		if err := app.Save(sessions); err != nil {
 			return err
 		}
 
-		// ── players ───────────────────────────────────────────────────────────
+		// ── players (onboarding identities — no GM rows) ──────────────────────
 		players := core.NewBaseCollection("players")
 		players.Fields.Add(
-			&core.TextField{Name: "uid", Required: true},
-			&core.TextField{Name: "recoveryKey", Required: true},
+			&core.TextField{Name: "uid"},
+			&core.TextField{Name: "recoveryKey"},
+			&core.TextField{Name: "inviteToken", Required: true},
 			&core.TextField{Name: "sessionId", Required: true},
+			&core.TextField{Name: "claimStatus", Required: true},
 			&core.BoolField{Name: "tutorialComplete"},
 			&core.BoolField{Name: "profileComplete"},
 			&core.TextField{Name: "name"},
 			&core.TextField{Name: "preferredName"},
 			&core.TextField{Name: "pronouns"},
 			&core.FileField{Name: "avatarUrl", MaxSize: 5 * 1024 * 1024},
-			&core.TextField{Name: "role"},
+			&core.TextField{Name: "jobTitle"},
 			&core.TextField{Name: "team"},
 			&core.TextField{Name: "startDate"},
 			&core.TextField{Name: "location"},
@@ -52,6 +57,7 @@ func init() {
 		)
 		players.AddIndex("idx_uid", true, "uid", "")
 		players.AddIndex("idx_recoveryKey", true, "recoveryKey", "")
+		players.AddIndex("idx_inviteToken", true, "inviteToken", "")
 		setPublicRules(players)
 		if err := app.Save(players); err != nil {
 			return err
@@ -61,6 +67,7 @@ func init() {
 		milestones := core.NewBaseCollection("milestones")
 		milestones.Fields.Add(
 			&core.TextField{Name: "sessionId", Required: true},
+			&core.TextField{Name: "playerId", Required: true},
 			&core.TextField{Name: "name", Required: true},
 			&core.NumberField{Name: "xPercent", Required: true},
 			&core.NumberField{Name: "yPercent", Required: true},
@@ -69,6 +76,7 @@ func init() {
 			&core.AutodateField{Name: "created", OnCreate: true},
 			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
 		)
+		milestones.AddIndex("idx_playerId", false, "playerId", "")
 		setPublicRules(milestones)
 		if err := app.Save(milestones); err != nil {
 			return err
@@ -78,28 +86,29 @@ func init() {
 		missions := core.NewBaseCollection("missions")
 		missions.Fields.Add(
 			&core.TextField{Name: "sessionId", Required: true},
+			&core.TextField{Name: "playerId", Required: true},
 			&core.TextField{Name: "milestoneId", Required: true},
 			&core.TextField{Name: "title", Required: true},
 			&core.EditorField{Name: "body"},
 			&core.TextField{Name: "type", Required: true},
 			&core.TextField{Name: "externalUrl"},
-			&core.NumberField{Name: "difficulty", Required: true},
 			&core.NumberField{Name: "xpValue", Required: true},
 			&core.JSONField{Name: "tags"},
 			&core.TextField{Name: "suggestedDueDate"},
 			&core.NumberField{Name: "order", Required: true},
 			&core.BoolField{Name: "isInCurrentMissions"},
 			&core.TextField{Name: "validationMethod", Required: true},
+			&core.NumberField{Name: "peerScanTarget"},
 			&core.AutodateField{Name: "created", OnCreate: true},
 			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
 		)
+		missions.AddIndex("idx_playerId", false, "playerId", "")
 		setPublicRules(missions)
 		if err := app.Save(missions); err != nil {
 			return err
 		}
 
 		// ── form_schemas ──────────────────────────────────────────────────────
-		// C-13: fields is a JSON-stringified FieldSchema[]. Parsed by parsers.ts.
 		formSchemas := core.NewBaseCollection("form_schemas")
 		formSchemas.Fields.Add(
 			&core.TextField{Name: "missionId", Required: true},
@@ -114,8 +123,6 @@ func init() {
 		}
 
 		// ── progress_events ───────────────────────────────────────────────────
-		// C-05: Single write path via upsertProgressEvent.
-		// C-13: formResponse is JSON-stringified.
 		progressEvents := core.NewBaseCollection("progress_events")
 		progressEvents.Fields.Add(
 			&core.TextField{Name: "sessionId", Required: true},
@@ -127,6 +134,9 @@ func init() {
 			&core.JSONField{Name: "formResponse"},
 			&core.AutodateField{Name: "created", OnCreate: true},
 			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
+		)
+		progressEvents.AddIndex(
+			"idx_player_mission", true, "playerId, missionId", "",
 		)
 		setPublicRules(progressEvents)
 		if err := app.Save(progressEvents); err != nil {
@@ -157,32 +167,48 @@ func init() {
 			return err
 		}
 
-		// ── resources ─────────────────────────────────────────────────────────
-		resources := core.NewBaseCollection("resources")
-		resources.Fields.Add(
-			&core.TextField{Name: "sessionId", Required: true},
+		// ── library_resources (company-wide catalog) ────────────────────────
+		libraryResources := core.NewBaseCollection("library_resources")
+		libraryResources.Fields.Add(
+			&core.TextField{Name: "resourceKey", Required: true},
 			&core.TextField{Name: "title", Required: true},
 			&core.TextField{Name: "description"},
 			&core.TextField{Name: "type", Required: true},
 			&core.URLField{Name: "url", Required: true},
+			&core.TextField{Name: "tags"},
+			&core.AutodateField{Name: "created", OnCreate: true},
+			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
+		)
+		libraryResources.AddIndex("idx_resourceKey", true, "resourceKey", "")
+		setPublicRules(libraryResources)
+		if err := app.Save(libraryResources); err != nil {
+			return err
+		}
+
+		// ── milestone_resources (per-player milestone attachments) ────────────
+		milestoneResources := core.NewBaseCollection("milestone_resources")
+		milestoneResources.Fields.Add(
+			&core.TextField{Name: "sessionId", Required: true},
+			&core.TextField{Name: "playerId", Required: true},
+			&core.TextField{Name: "milestoneId", Required: true},
+			&core.TextField{Name: "libraryResourceId", Required: true},
 			&core.BoolField{Name: "isVisibleToPlayer"},
 			&core.AutodateField{Name: "created", OnCreate: true},
 			&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
 		)
-		setPublicRules(resources)
-		if err := app.Save(resources); err != nil {
+		milestoneResources.AddIndex("idx_milestoneId", false, "milestoneId", "")
+		setPublicRules(milestoneResources)
+		if err := app.Save(milestoneResources); err != nil {
 			return err
 		}
 
 		return nil
 	}, func(app core.App) error {
-		// Down: nothing to undo (collections are dropped on fresh start)
 		return nil
 	})
 }
 
 // setPublicRules opens all API rules — C-03: no auth system.
-// PB v0.39: nil = deny; "" = allow public access.
 func setPublicRules(c *core.Collection) {
 	open := types.Pointer("")
 	c.ListRule = open

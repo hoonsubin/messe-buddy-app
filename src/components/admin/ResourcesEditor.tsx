@@ -12,7 +12,12 @@ import { Modal } from "../patterns/Modal.tsx";
 
 interface ResourcesEditorProps {
   readonly resources: ReadonlyArray<Resource>;
-  readonly onAdd: (data: Omit<Resource, keyof PBRecord>) => void;
+  readonly onAdd: (data: {
+    readonly title: string;
+    readonly type: ResourceType;
+    readonly url: string;
+    readonly isVisibleToPlayer: boolean;
+  }) => void;
   readonly onUpdate: (
     resourceId: string,
     patch: Partial<Omit<Resource, keyof PBRecord>>,
@@ -58,7 +63,7 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
 
   const submit = () => {
     if (editing === "new") {
-      props.onAdd({ sessionId: props.sessionId, ...draft });
+      props.onAdd({ ...draft });
     } else if (editing) {
       props.onUpdate(editing.id, draft);
     }

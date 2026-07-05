@@ -49,7 +49,7 @@ const PlayerProfileCard = (props: PlayerProfileCardProps) => {
               margin: "var(--space-1) 0 0",
             }}
           >
-            {props.player.role} · {props.player.team}
+            {props.player.jobTitle} · {props.player.team}
           </p>
           <p
             style={{

@@ -4,39 +4,33 @@ import type {
   Milestone,
   Mission,
   Resource,
-  Session,
   TemplateExport,
 } from "../types/index.ts";
 import { MISSION_TYPE } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
-import { applyTemplateToSession } from "../use-cases/applyTemplateToSession.ts";
+import { applyTemplateToPlayer } from "../use-cases/applyTemplateToSession.ts";
 import { exportTemplate } from "../use-cases/exportTemplate.ts";
 
 export interface SaveAsTemplateInput {
-  readonly session: Session;
   readonly milestones: ReadonlyArray<Milestone>;
   readonly missions: ReadonlyArray<Mission>;
   readonly resources: ReadonlyArray<Resource>;
 }
 
-export interface UseHireTemplatesResult {
+export interface UsePlayerTemplatesResult {
   readonly templates: ReadonlyArray<TemplateExport>;
   readonly applying: boolean;
-  /** Apply a saved template (by name) into this hire's session. */
   readonly applyTemplate: (templateName: string) => Promise<void>;
-  /** Overwrite a saved template with the hire's current content. */
   readonly saveAsTemplate: (
     name: string,
     input: SaveAsTemplateInput,
   ) => Promise<void>;
 }
 
-/**
- * Loads the saved onboarding templates and applies one into a specific hire's
- * session (replacing its milestones/missions/resources). Keeps adapter access
- * out of the page (C-18).
- */
-export const useHireTemplates = (sid: string): UseHireTemplatesResult => {
+export const usePlayerTemplates = (
+  _sessionId: string,
+  playerId: string,
+): UsePlayerTemplatesResult => {
   const adapter = useAdapter();
   const [templates, setTemplates] = useState<ReadonlyArray<TemplateExport>>([]);
   const [applying, setApplying] = useState(false);
@@ -51,12 +45,12 @@ export const useHireTemplates = (sid: string): UseHireTemplatesResult => {
       if (!t) return;
       setApplying(true);
       try {
-        await applyTemplateToSession(sid, t, adapter);
+        await applyTemplateToPlayer(playerId, t, adapter);
       } finally {
         setApplying(false);
       }
     },
-    [templates, sid, adapter],
+    [templates, playerId, adapter],
   );
 
   const saveAsTemplate = useCallback(
@@ -70,19 +64,33 @@ export const useHireTemplates = (sid: string): UseHireTemplatesResult => {
       const schemas = schemaResults.filter(
         (s): s is FormSchema => s !== null,
       );
+      const [library, attachments] = await Promise.all([
+        adapter.listLibraryResources(),
+        adapter.listMilestoneResources(playerId),
+      ]);
+      const visibilityByLib = new Map(
+        input.resources.map((r) => [r.id, r.isVisibleToPlayer]),
+      );
+      const milestoneResources = attachments.map((mr) => ({
+        ...mr,
+        isVisibleToPlayer: visibilityByLib.get(mr.libraryResourceId) ??
+          mr.isVisibleToPlayer,
+      }));
       const tpl = exportTemplate(
         name,
-        input.session,
         input.milestones,
         input.missions,
         schemas,
-        input.resources,
+        milestoneResources,
+        library,
       );
       await adapter.saveTemplate(tpl);
       setTemplates((prev) => [...prev.filter((t) => t.name !== name), tpl]);
     },
-    [adapter],
+    [adapter, playerId],
   );
 
   return { templates, applying, applyTemplate, saveAsTemplate };
 };
+
+export const useHireTemplates = usePlayerTemplates;

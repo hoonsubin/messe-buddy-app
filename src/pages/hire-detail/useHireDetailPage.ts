@@ -19,12 +19,12 @@ import {
 } from "./hireDetailStorage.ts";
 
 export const useHireDetailPage = () => {
-  const { sessionId, hireId } = useParams<{
+  const { sessionId, playerId: routePlayerId } = useParams<{
     sessionId: string;
-    hireId: string;
+    playerId: string;
   }>();
   const homeSid = sessionId ?? "";
-  const sid = hireId ?? "";
+  const playerId = routePlayerId ?? "";
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const identity = useActiveProfile(homeSid, USER_ROLE.GAMEMAKER);
@@ -42,33 +42,40 @@ export const useHireDetailPage = () => {
     refresh: refreshSession,
     uploadBackground,
     updateMapNodeScale,
-  } = useSession(sid, { role: "gamemaker" });
+  } = useSession(homeSid, { role: "gamemaker", playerId });
 
   const [scannerOpen, setScannerOpen] = useState(false);
   const milestoneEditor = useAdminMilestoneEditor(milestones);
   const missionEditor = useAdminMissionEditor(missions);
 
   const adminProgress = useProgressAdmin({
-    sid,
+    sid: homeSid,
     milestones,
     missions,
     validatorUid: identity?.uid,
   });
 
-  const buddyProfile = useBuddyProfile(sid, adminProgress.selectedPlayerId, {
+  useEffect(() => {
+    if (playerId) adminProgress.handlePlayerSelect(playerId);
+  }, [playerId, adminProgress.handlePlayerSelect]);
+
+  const buddyProfile = useBuddyProfile(homeSid, playerId, {
     role: "gamemaker",
   });
-  const adminResources = useResources(sid, { role: "gamemaker" });
-  const preBoardingChecklist = usePreBoardingChecklist(sid, session);
+  const adminResources = useResources(homeSid, {
+    role: "gamemaker",
+    playerId,
+  });
+  const preBoardingChecklist = usePreBoardingChecklist(homeSid, session);
   const {
     templates,
     applying: applyingTemplate,
     applyTemplate,
     saveAsTemplate,
-  } = useHireTemplates(sid);
+  } = useHireTemplates(homeSid, playerId);
 
   const [appliedTemplate, setAppliedTemplate] = useState<string | null>(() =>
-    readAppliedTemplate(sid)
+    readAppliedTemplate(playerId)
   );
   const [showTemplateSavePrompt, setShowTemplateSavePrompt] = useState(false);
   const [showAddTemplate, setShowAddTemplate] = useState(false);
@@ -86,13 +93,13 @@ export const useHireDetailPage = () => {
       void applyTemplate(templateName)
         .then(() => {
           refreshSession();
-          writeAppliedTemplate(sid, templateName);
+          writeAppliedTemplate(playerId, templateName);
           setAppliedTemplate(templateName);
           showToast("Template applied");
         })
         .catch(() => showToast("Could not apply template"));
     },
-    [applyTemplate, refreshSession, showToast, sid],
+    [applyTemplate, refreshSession, showToast, playerId],
   );
 
   const handleAddTemplate = useCallback(
@@ -100,13 +107,12 @@ export const useHireDetailPage = () => {
       if (!session) return;
       setCreatingTemplate(true);
       void saveAsTemplate(name, {
-        session,
         milestones,
         missions,
         resources: adminResources.resources,
       })
         .then(() => {
-          writeAppliedTemplate(sid, name);
+          writeAppliedTemplate(playerId, name);
           setAppliedTemplate(name);
           setShowAddTemplate(false);
           showToast(`Created "${name}" template`);
@@ -120,15 +126,15 @@ export const useHireDetailPage = () => {
       missions,
       adminResources.resources,
       saveAsTemplate,
-      sid,
+      playerId,
       showToast,
     ],
   );
 
   const handleBuddySave = useCallback(() => {
-    if (!adminProgress.selectedPlayerId) return;
+    if (!playerId) return;
     void buddyProfile.upsertBuddy().then(() => showToast("Buddy assigned"));
-  }, [adminProgress.selectedPlayerId, buddyProfile, showToast]);
+  }, [playerId, buddyProfile, showToast]);
 
   // Wrap the editors' raw delete handlers so a failed server-side delete
   // surfaces as a toast instead of an unhandled rejection — the raw
@@ -166,8 +172,8 @@ export const useHireDetailPage = () => {
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
-      await milestoneEditor.saveMilestones(sid, milestones);
-      await missionEditor.saveMissions(sid, missions, milestones);
+      await milestoneEditor.saveMilestones(homeSid, milestones, playerId);
+      await missionEditor.saveMissions(homeSid, missions, milestones, playerId);
       milestoneEditor.clearDirtyMilestones();
       missionEditor.clearDirtyMissions();
       missionEditor.clearOrderChanges();
@@ -180,7 +186,8 @@ export const useHireDetailPage = () => {
       setIsSaving(false);
     }
   }, [
-    sid,
+    homeSid,
+    playerId,
     milestones,
     missions,
     milestoneEditor,
@@ -194,7 +201,6 @@ export const useHireDetailPage = () => {
     setShowTemplateSavePrompt(false);
     if (!appliedTemplate || !session) return;
     void saveAsTemplate(appliedTemplate, {
-      session,
       milestones,
       missions,
       resources: adminResources.resources,
@@ -203,7 +209,6 @@ export const useHireDetailPage = () => {
       .catch(() => showToast("Could not update template"));
   }, [
     appliedTemplate,
-    session,
     milestones,
     missions,
     adminResources.resources,
@@ -226,13 +231,14 @@ export const useHireDetailPage = () => {
           xPercent: dm.xPercent,
           yPercent: dm.yPercent,
           order: real?.order ?? 0,
-          sessionId: real?.sessionId ?? sid,
+          sessionId: real?.sessionId ?? homeSid,
+          playerId: real?.playerId ?? playerId,
           xpThreshold: real?.xpThreshold ?? 100,
           created: real?.created ?? new Date().toISOString(),
           updated: real?.updated ?? new Date().toISOString(),
         } satisfies Milestone;
       }),
-    [milestoneEditor.draftMilestones, milestones, sid],
+    [milestoneEditor.draftMilestones, milestones, homeSid, playerId],
   );
 
   useEffect(() => {
@@ -304,7 +310,7 @@ export const useHireDetailPage = () => {
 
   return {
     homeSid,
-    sid,
+    playerId,
     identity,
     tab,
     setTab,

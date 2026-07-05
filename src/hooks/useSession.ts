@@ -36,15 +36,16 @@ export interface UseSessionGamemakerResult extends UseSessionBaseResult {
 
 type UseSessionOptions = {
   readonly role?: "player" | "gamemaker";
+  readonly playerId?: string;
 };
 
 export function useSession(
   sessionId: string,
-  options: { role: "gamemaker" },
+  options: { role: "gamemaker"; playerId?: string },
 ): UseSessionGamemakerResult;
 export function useSession(
   sessionId: string,
-  options?: UseSessionOptions,
+  options?: { role?: "player"; playerId?: string },
 ): UseSessionBaseResult;
 export function useSession(
   sessionId: string,
@@ -60,6 +61,8 @@ export function useSession(
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
+  const playerId = options?.playerId;
+
   useEffect(() => {
     let cancelled = false;
 
@@ -67,10 +70,11 @@ export function useSession(
       setLoading(true);
       setError(null);
       try {
+        const listOpts = playerId ? { playerId } : undefined;
         const [s, ms, mi] = await Promise.all([
           adapter.getSession(sessionId),
-          adapter.listMilestones(sessionId),
-          adapter.listMissions(sessionId),
+          adapter.listMilestones(sessionId, listOpts),
+          adapter.listMissions(sessionId, listOpts),
         ]);
         if (!cancelled) {
           setSession(s);
@@ -97,7 +101,7 @@ export function useSession(
     return () => {
       cancelled = true;
     };
-  }, [adapter, sessionId, refreshKey]);
+  }, [adapter, sessionId, playerId, refreshKey]);
 
   const updateSession = useCallback(
     async (

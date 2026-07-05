@@ -7,7 +7,8 @@ import type {
   Player,
   PreBoardingCheckItem,
   ProgressEvent,
-  Resource,
+  LibraryResource,
+  MilestoneResource,
   Session,
 } from "../../types/index.ts";
 
@@ -59,6 +60,7 @@ export const MOCK_SESSION: Session = {
   bgImageUrl: mapBackground,
   mapNodeScale: 0.55,
   gameMakerId: "uid_gamemaker_peter",
+  gmRecoveryKey: "DEMO1234",
   qrSecret: "sess_mmt2026",
   preBoardingChecks: MOCK_PRE_BOARDING_CHECKS,
 };
@@ -71,6 +73,7 @@ export const MOCK_MILESTONES: ReadonlyArray<Milestone> = [
   {
     ...pb("ms_arrive"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     name: "Arrive & Get Set Up",
     xPercent: 13,
     yPercent: 33,
@@ -80,6 +83,7 @@ export const MOCK_MILESTONES: ReadonlyArray<Milestone> = [
   {
     ...pb("ms_compliance"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     name: "Rules & Compliance",
     xPercent: 38,
     yPercent: 33,
@@ -89,6 +93,7 @@ export const MOCK_MILESTONES: ReadonlyArray<Milestone> = [
   {
     ...pb("ms_connect"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     name: "Meet & Connect",
     xPercent: 63,
     yPercent: 33,
@@ -98,6 +103,7 @@ export const MOCK_MILESTONES: ReadonlyArray<Milestone> = [
   {
     ...pb("ms_role"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     name: "Learn the Role",
     xPercent: 88,
     yPercent: 33,
@@ -107,6 +113,7 @@ export const MOCK_MILESTONES: ReadonlyArray<Milestone> = [
   {
     ...pb("ms_culture"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     name: "Culture & Benefits",
     xPercent: 13,
     yPercent: 67,
@@ -116,6 +123,7 @@ export const MOCK_MILESTONES: ReadonlyArray<Milestone> = [
   {
     ...pb("ms_contribute"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     name: "First Contributions",
     xPercent: 38,
     yPercent: 67,
@@ -135,6 +143,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m1_profile"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_arrive",
     title: "Complete Your Profile",
     body:
@@ -149,6 +158,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m1_ceo_video"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_arrive",
     title: "Watch the CEO Welcome Video",
     body:
@@ -164,6 +174,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m1_laptop"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_arrive",
     title: "Collect Laptop & Equipment",
     body:
@@ -178,6 +189,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m1_workstation"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_arrive",
     title: "Get Familiar with Your Workstation",
     body:
@@ -192,6 +204,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m1_safety"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_arrive",
     title: "Know Your Safety Contacts",
     body:
@@ -206,6 +219,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m1_access"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_arrive",
     title: "Know the Access Rules",
     body:
@@ -220,6 +234,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m1_absences"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_arrive",
     title: "Learn How to Report Absences",
     body:
@@ -237,6 +252,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m2_safety_briefing"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_compliance",
     title: "Complete Safety Briefing",
     body:
@@ -254,6 +270,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m3_org_chart"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_connect",
     title: "Explore the Org Chart",
     body:
@@ -269,6 +286,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m3_learn_names"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_connect",
     title: "Learn Names & Roles of All Colleagues",
     body:
@@ -283,6 +301,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m3_meet_manager"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_connect",
     title: "Meet Your Manager",
     body:
@@ -297,6 +316,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m3_meet_team"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_connect",
     title: "Meet Your Team Colleagues",
     body:
@@ -311,6 +331,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m3_meet_it"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_connect",
     title: "Meet the IT Systems Specialist",
     body:
@@ -325,6 +346,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m3_welcome_lunch"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_connect",
     title: "Attend Welcome Lunch",
     body:
@@ -339,6 +361,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m3_dept_tour"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_connect",
     title: "Department Orientation Tour",
     body:
@@ -353,6 +376,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m3_dept_head"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_connect",
     title: "Meet the Head of Department",
     body:
@@ -367,6 +391,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m3_campus_tour"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_connect",
     title: "Campus Orientation Tour",
     body:
@@ -381,6 +406,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m3_other_depts"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_connect",
     title: "Understand Working with Other Departments",
     body:
@@ -395,6 +421,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m3_meet_3"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_connect",
     title: "Meet 3 Colleagues from Other Departments",
     body:
@@ -412,6 +439,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m4_role_desc"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_role",
     title: "Read Role Description & Quality Policy",
     body:
@@ -426,6 +454,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m4_wenet"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_role",
     title: "Explore Department Info on WeNet",
     body:
@@ -441,6 +470,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m4_processes"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_role",
     title: "Understand Key Department & Business Processes",
     body:
@@ -456,6 +486,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m4_strategy"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_role",
     title: "Learn Company Goals & Strategy",
     body:
@@ -471,6 +502,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m4_dress"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_role",
     title: "Dress Code & Work Materials",
     body:
@@ -485,6 +517,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m4_shadow"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_role",
     title: "Shadow a Colleague for Half a Day",
     body:
@@ -499,6 +532,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m4_elearning"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_role",
     title: "Complete Core E-Learnings",
     body:
@@ -517,6 +551,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m5_benefits"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_culture",
     title: "Explore Social Benefits",
     body:
@@ -532,6 +567,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m5_event"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_culture",
     title: "Attend a Messe Event",
     body:
@@ -546,6 +582,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m5_checkin"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_culture",
     title: "Month Check-In with Supervisor",
     body:
@@ -563,6 +600,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m6_first_tasks"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_contribute",
     title: "Learn Your First Tasks",
     body:
@@ -577,6 +615,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m6_meeting"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_contribute",
     title: "Attend a Client or Cross-Team Meeting",
     body:
@@ -591,6 +630,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m6_day1_review"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_contribute",
     title: "Day 1 Progress Conversation",
     body:
@@ -605,6 +645,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
   {
     ...pb("mission_m6_30day"),
     sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
     milestoneId: "ms_contribute",
     title: "30-Day Progress Conversation",
     body:
@@ -723,15 +764,15 @@ export const MOCK_FORM_SCHEMAS: ReadonlyArray<FormSchema> = [
 export const MOCK_PLAYERS: ReadonlyArray<Player> = [
   {
     ...pb("player_alex"),
-    uid: "uid_alex_001",
-    recoveryKey: "ALEX2026",
     sessionId: "sess_mmt2026",
+    inviteToken: "invite_alex_mmt2026",
+    claimStatus: "invited",
     tutorialComplete: false,
     profileComplete: false,
     name: "Alex Johnson",
     preferredName: "Alex",
     pronouns: "they/them",
-    role: "Digital Content Manager",
+    jobTitle: "Digital Content Manager",
     team: "Marketing & Communications",
     startDate: "2026-06-16",
     location: "Building A, Floor 2",
@@ -756,12 +797,14 @@ export const MOCK_PLAYERS: ReadonlyArray<Player> = [
     uid: "uid_sofia_002",
     recoveryKey: "SOFIA026",
     sessionId: "sess_mmt2026",
+    inviteToken: "invite_sofia_mmt2026",
+    claimStatus: "claimed",
     tutorialComplete: false,
     profileComplete: false,
     name: "Sofia Chen",
     preferredName: undefined,
     pronouns: undefined,
-    role: "Junior Engineer",
+    jobTitle: "Junior Engineer",
     team: "Platform",
     startDate: "2026-05-01",
     location: "Munich",
@@ -808,15 +851,7 @@ export const MOCK_PROGRESS_EVENTS: ReadonlyArray<ProgressEvent> = [];
 
 // ── Second session (stub — kept for adapter compatibility) ────────────────────
 
-export const MOCK_SESSION_2: Session = {
-  ...pb("sess_eng_2026"),
-  name: "Engineering Onboarding - June 2026",
-  bgImageUrl: "",
-  mapNodeScale: 0.33,
-  gameMakerId: "uid_gamemaker_peter",
-  qrSecret: "sess_eng_2026",
-  preBoardingChecks: [],
-};
+
 
 export const MOCK_MILESTONES_2: ReadonlyArray<Milestone> = [];
 export const MOCK_MISSIONS_2: ReadonlyArray<Mission> = [];
@@ -824,68 +859,80 @@ export const MOCK_PROGRESS_EVENTS_2: ReadonlyArray<ProgressEvent> = [];
 
 // ── Resources ─────────────────────────────────────────────────────────────────
 
-export const MOCK_RESOURCES: ReadonlyArray<Resource> = [
+export const MOCK_LIBRARY_RESOURCES: ReadonlyArray<LibraryResource> = [
   {
-    ...pb("res_campus_map"),
-    sessionId: "sess_mmt2026",
+    ...pb("lib_campus_map"),
+    resourceKey: "campus_map",
     title: "Campus Map",
     description: "Find your way around the Messe München grounds",
     type: "guide",
     url: "https://www.messe-muenchen.de/en/trade-fair-venue/fair-grounds/",
-    isVisibleToPlayer: true,
   },
   {
-    ...pb("res_wenet"),
-    sessionId: "sess_mmt2026",
+    ...pb("lib_wenet"),
+    resourceKey: "wenet",
     title: "WeNet (Intranet)",
     description: "Policies, news, and department-specific info",
     type: "link",
     url: "https://www.messe-muenchen.de/en/company/about-us/",
-    isVisibleToPlayer: true,
   },
   {
-    ...pb("res_benefits"),
-    sessionId: "sess_mmt2026",
+    ...pb("lib_benefits"),
+    resourceKey: "benefits",
     title: "Employee Benefits Overview",
     description: "Transport, sports, canteen, and social perks",
     type: "document",
     url: "https://www.messe-muenchen.de/en/company/career/benefits/",
-    isVisibleToPlayer: true,
   },
   {
-    ...pb("res_it_help"),
-    sessionId: "sess_mmt2026",
+    ...pb("lib_it_help"),
+    resourceKey: "it_help",
     title: "IT Help Desk",
     description: "Technical support — Building A, Ground Floor, 08:00–18:00",
     type: "link",
     url: "https://www.messe-muenchen.de/en/company/about-us/",
-    isVisibleToPlayer: true,
   },
   {
-    ...pb("res_welcome_video"),
-    sessionId: "sess_mmt2026",
+    ...pb("lib_welcome_video"),
+    resourceKey: "welcome_video",
     title: "CEO Welcome Video",
     description: "A message from the management board",
     type: "video",
     url: "https://www.messe-muenchen.de/en/company/about-us/",
-    isVisibleToPlayer: true,
   },
   {
-    ...pb("res_absence"),
-    sessionId: "sess_mmt2026",
+    ...pb("lib_absence"),
+    resourceKey: "absence",
     title: "Absence & Time-Off Policy",
     description: "How to report absences and request leave",
     type: "document",
     url: "https://www.messe-muenchen.de/en/company/about-us/",
-    isVisibleToPlayer: true,
   },
   {
-    ...pb("res_org_chart"),
-    sessionId: "sess_mmt2026",
+    ...pb("lib_org_chart"),
+    resourceKey: "org_chart",
     title: "Organisation Chart",
     description: "Full org structure and reporting lines (GM only)",
     type: "document",
     url: "https://www.messe-muenchen.de/en/company/about-us/",
-    isVisibleToPlayer: false,
+  },
+];
+
+export const MOCK_MILESTONE_RESOURCES: ReadonlyArray<MilestoneResource> = [
+  {
+    ...pb("mr_campus"),
+    sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
+    milestoneId: "ms_arrive",
+    libraryResourceId: "lib_campus_map",
+    isVisibleToPlayer: true,
+  },
+  {
+    ...pb("mr_wenet"),
+    sessionId: "sess_mmt2026",
+    playerId: "player_sofia",
+    milestoneId: "ms_arrive",
+    libraryResourceId: "lib_wenet",
+    isVisibleToPlayer: true,
   },
 ];

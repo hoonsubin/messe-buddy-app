@@ -85,7 +85,7 @@ export const useFormMission = (
       name: player.name ?? "",
       preferredName: player.preferredName ?? "",
       pronouns: player.pronouns ?? "",
-      role: player.role ?? "",
+      role: player.jobTitle ?? "",
       department: player.department ?? "",
       team: player.team ?? "",
       location: player.location ?? "",
@@ -118,7 +118,7 @@ export const useFormMission = (
         if (values.pronouns !== undefined) {
           patch["pronouns"] = values.pronouns || undefined;
         }
-        if (values.role) patch["role"] = values.role;
+        if (values.role) patch["jobTitle"] = values.role;
         // department fix (PLR-1): was silently dropped before
         if (values.department !== undefined) {
           patch["department"] = values.department || undefined;

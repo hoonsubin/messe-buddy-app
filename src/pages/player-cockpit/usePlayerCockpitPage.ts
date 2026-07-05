@@ -87,7 +87,7 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     missions,
     loading: sessionLoading,
     error: sessionError,
-  } = useSession(sessionId);
+  } = useSession(sessionId, { playerId: playerId || undefined });
 
   const { checking: checkingSession, missing: sessionMissing } =
     useSessionExists(sessionId);
@@ -103,7 +103,10 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
   const progress = useProgressPlayer({ playerId, milestones, missions });
 
   const { buddy } = useBuddyProfile(sessionId, playerId, { role: "player" });
-  const { resources } = useResources(sessionId, { role: "player" });
+  const { resources } = useResources(sessionId, {
+    role: "player",
+    playerId: playerId || undefined,
+  });
 
   const tutorialPlayer = useMemo(() => {
     if (!player) return null;

@@ -5,11 +5,13 @@ import SessionInviteCard from "../../components/admin/SessionInviteCard.tsx";
 interface HireInviteAccordionProps {
   readonly hireFirstName: string;
   readonly sessionId: string;
+  readonly inviteToken: string;
 }
 
 const HireInviteAccordion = ({
   hireFirstName,
   sessionId,
+  inviteToken,
 }: HireInviteAccordionProps) => {
   const [open, setOpen] = useState(false);
 
@@ -54,7 +56,12 @@ const HireInviteAccordion = ({
       </button>
       {open && (
         <div className="hire-invite__body">
-          <SessionInviteCard sessionId={sessionId} compact bare />
+          <SessionInviteCard
+            sessionId={sessionId}
+            inviteToken={inviteToken}
+            compact
+            bare
+          />
         </div>
       )}
     </div>

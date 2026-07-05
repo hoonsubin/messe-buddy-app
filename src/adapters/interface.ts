@@ -2,7 +2,9 @@ import type {
   BuddyProfile,
   FieldSchema,
   FormSchema,
+  LibraryResource,
   Milestone,
+  MilestoneResource,
   Mission,
   PBRecord,
   Player,
@@ -12,14 +14,25 @@ import type {
   TemplateExport,
 } from "../types/index.ts";
 
+export interface ListMilestonesOptions {
+  readonly playerId?: string;
+}
+
+export interface ListMissionsOptions {
+  readonly playerId?: string;
+}
+
 // The single contract both mock and PocketBase adapters must satisfy.
-// Components and use cases consume this interface via AdapterContext.
-// Swapping implementations is a one-line change in the context provider.
 export interface AppAdapter {
   // Sessions
   getSession(sessionId: string): Promise<Session>;
+  getSessionByGmRecoveryKey(recoveryKey: string): Promise<Session | null>;
   listSessions(): Promise<ReadonlyArray<Session>>;
-  createSession(name: string, gameMakerUid: string): Promise<Session>;
+  createSession(
+    name: string,
+    gameMakerUid: string,
+    gmRecoveryKey: string,
+  ): Promise<Session>;
   updateSession(
     sessionId: string,
     patch: Partial<Omit<Session, keyof PBRecord | "bgImageUrl">> & {
@@ -30,8 +43,12 @@ export interface AppAdapter {
   // Players
   getPlayer(uid: string): Promise<Player | null>;
   getPlayerById(playerId: string): Promise<Player | null>;
+  getPlayerByInviteToken(inviteToken: string): Promise<Player | null>;
   getPlayerByRecoveryKey(recoveryKey: string): Promise<Player | null>;
-  createPlayer(data: Omit<Player, keyof PBRecord>): Promise<Player>;
+  invitePlayer(
+    sessionId: string,
+    data: { readonly name?: string; readonly jobTitle?: string },
+  ): Promise<Player>;
   updatePlayer(
     playerId: string,
     patch: Partial<Omit<Player, keyof PBRecord>>,
@@ -39,7 +56,10 @@ export interface AppAdapter {
   listPlayers(sessionId: string): Promise<ReadonlyArray<Player>>;
 
   // Milestones
-  listMilestones(sessionId: string): Promise<ReadonlyArray<Milestone>>;
+  listMilestones(
+    sessionId: string,
+    options?: ListMilestonesOptions,
+  ): Promise<ReadonlyArray<Milestone>>;
   createMilestone(
     data: Omit<Milestone, keyof PBRecord> & { readonly id?: string },
   ): Promise<Milestone>;
@@ -50,7 +70,10 @@ export interface AppAdapter {
   deleteMilestone(milestoneId: string): Promise<void>;
 
   // Missions
-  listMissions(sessionId: string): Promise<ReadonlyArray<Mission>>;
+  listMissions(
+    sessionId: string,
+    options?: ListMissionsOptions,
+  ): Promise<ReadonlyArray<Mission>>;
   createMission(
     data: Omit<Mission, keyof PBRecord> & { readonly id?: string },
   ): Promise<Mission>;
@@ -67,7 +90,7 @@ export interface AppAdapter {
     fields: ReadonlyArray<FieldSchema>,
   ): Promise<FormSchema>;
 
-  // ProgressEvents - all writes go through upsertProgressEvent (C-05, C-14)
+  // ProgressEvents
   upsertProgressEvent(
     playerId: string,
     missionId: string,
@@ -79,7 +102,6 @@ export interface AppAdapter {
     >,
   ): Promise<ProgressEvent>;
   listProgressEvents(playerId: string): Promise<ReadonlyArray<ProgressEvent>>;
-  // Returns an unsubscribe function. Consumed via useWatchMission (C-20).
   subscribeProgressEvent(
     playerId: string,
     missionId: string,
@@ -93,14 +115,36 @@ export interface AppAdapter {
     data: Omit<BuddyProfile, keyof PBRecord | "assignedToPlayerId">,
   ): Promise<BuddyProfile>;
 
-  // Resources
-  listResources(sessionId: string): Promise<ReadonlyArray<Resource>>;
-  createResource(data: Omit<Resource, keyof PBRecord>): Promise<Resource>;
-  updateResource(
+  // Library resources (company-wide)
+  listLibraryResources(): Promise<ReadonlyArray<LibraryResource>>;
+  createLibraryResource(
+    data: Omit<LibraryResource, keyof PBRecord>,
+  ): Promise<LibraryResource>;
+  updateLibraryResource(
     resourceId: string,
-    patch: Partial<Omit<Resource, keyof PBRecord>>,
-  ): Promise<Resource>;
-  deleteResource(resourceId: string): Promise<void>;
+    patch: Partial<Omit<LibraryResource, keyof PBRecord>>,
+  ): Promise<LibraryResource>;
+  deleteLibraryResource(resourceId: string): Promise<void>;
+
+  // Milestone resource attachments
+  listMilestoneResources(
+    playerId: string,
+    milestoneId?: string,
+  ): Promise<ReadonlyArray<MilestoneResource>>;
+  attachMilestoneResource(
+    data: Omit<MilestoneResource, keyof PBRecord>,
+  ): Promise<MilestoneResource>;
+  updateMilestoneResource(
+    attachmentId: string,
+    patch: Partial<Omit<MilestoneResource, keyof PBRecord>>,
+  ): Promise<MilestoneResource>;
+  detachMilestoneResource(attachmentId: string): Promise<void>;
+
+  /** Resolved library rows for UI (player sidebar / admin lists). */
+  listResources(
+    sessionId: string,
+    options?: { readonly playerId?: string; readonly milestoneId?: string },
+  ): Promise<ReadonlyArray<Resource>>;
 
   // Templates
   listTemplates(): Promise<ReadonlyArray<TemplateExport>>;

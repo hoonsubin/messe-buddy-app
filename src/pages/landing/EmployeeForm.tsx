@@ -4,11 +4,13 @@ import { Button, IconButton, Input } from "../../components/ui/index.ts";
 interface EmployeeFormProps {
   readonly step: "code" | "name";
   readonly sessionCode: string;
+  readonly inviteToken: string;
   readonly playerName: string;
   readonly verifiedSessionId: string;
   readonly status: "idle" | "loading" | "error";
   readonly errorMessage: string;
-  readonly onCodeChange: (v: string) => void;
+  readonly onSessionChange: (v: string) => void;
+  readonly onTokenChange: (v: string) => void;
   readonly onNameChange: (v: string) => void;
   readonly onVerify: () => void;
   readonly onJoin: () => void;
@@ -18,11 +20,13 @@ interface EmployeeFormProps {
 const EmployeeForm = ({
   step,
   sessionCode,
+  inviteToken,
   playerName,
   verifiedSessionId,
   status,
   errorMessage,
-  onCodeChange,
+  onSessionChange,
+  onTokenChange,
   onNameChange,
   onVerify,
   onJoin,
@@ -32,7 +36,7 @@ const EmployeeForm = ({
     <div className="landing-form-panel__header">
       <span className="landing-form-panel__title">
         {step === "code"
-          ? "Step 1 of 2 — session code"
+          ? "Step 1 of 2 — invite link"
           : "Step 2 of 2 — your name"}
       </span>
       <IconButton type="button" aria-label="Close" onClick={onClose}>
@@ -45,16 +49,28 @@ const EmployeeForm = ({
         <>
           <div className="landing__form-field--compact">
             <label htmlFor="lp-session-code" className="form-label">
-              Session code
+              Workspace ID
             </label>
             <Input
               id="lp-session-code"
               type="text"
               value={sessionCode}
-              onChange={(e) => onCodeChange(e.target.value)}
+              onChange={(e) => onSessionChange(e.target.value)}
+              placeholder="From your invite link"
+            />
+          </div>
+          <div className="landing__form-field--compact">
+            <label htmlFor="lp-invite-token" className="form-label">
+              Invite token
+            </label>
+            <Input
+              id="lp-invite-token"
+              type="text"
+              value={inviteToken}
+              onChange={(e) => onTokenChange(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onVerify()}
-              placeholder="Code from your invite link"
-              autoFocus
+              placeholder="Token from your invite link"
+              autoFocus={!sessionCode}
             />
           </div>
           {status === "error" && <p className="form-error">{errorMessage}</p>}
@@ -63,10 +79,12 @@ const EmployeeForm = ({
             variant="primary"
             fullWidth
             className="landing__btn-full"
-            disabled={status === "loading" || !sessionCode.trim()}
+            disabled={status === "loading" ||
+              !sessionCode.trim() ||
+              !inviteToken.trim()}
             onClick={onVerify}
           >
-            {status === "loading" ? "Verifying…" : "Verify session"}
+            {status === "loading" ? "Verifying…" : "Verify invite"}
           </Button>
         </>
       )
@@ -74,7 +92,7 @@ const EmployeeForm = ({
         <>
           <p className="landing-form-panel__verified">
             <MdCheck size={14} />
-            Session found · {verifiedSessionId}
+            Invite verified · {verifiedSessionId}
           </p>
           <div className="landing__form-field--compact">
             <label htmlFor="lp-player-name" className="form-label">

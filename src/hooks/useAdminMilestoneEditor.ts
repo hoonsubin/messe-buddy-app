@@ -45,6 +45,7 @@ interface UseAdminMilestoneEditorResult {
   readonly saveMilestones: (
     sid: string,
     milestones: ReadonlyArray<Milestone>,
+    playerId: string,
   ) => Promise<void>;
   readonly discardMilestones: (milestones: ReadonlyArray<Milestone>) => void;
   /** Clears dirty flags after a successful save. */
@@ -114,6 +115,7 @@ export const useAdminMilestoneEditor = (
       yPercent: draft.yPercent,
       order: real?.order ?? 0,
       sessionId: real?.sessionId ?? "",
+      playerId: real?.playerId ?? "",
       xpThreshold: real?.xpThreshold ?? 100,
       created: real?.created ?? now,
       updated: real?.updated ?? now,
@@ -186,6 +188,7 @@ export const useAdminMilestoneEditor = (
     async (
       sid: string,
       serverMilestones: ReadonlyArray<Milestone>,
+      playerId: string,
     ): Promise<void> => {
       for (const dm of draftMilestones) {
         const real = serverMilestones.find((m) => m.id === dm.id);
@@ -207,6 +210,7 @@ export const useAdminMilestoneEditor = (
           await adapter.createMilestone({
             id: dm.id,
             sessionId: sid,
+            playerId,
             name: dm.name,
             xPercent: dm.xPercent,
             yPercent: dm.yPercent,

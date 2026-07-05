@@ -108,7 +108,7 @@ const PlayerCockpitPage = () => {
       <TopBar
         playerName={m.player.name ?? ""}
         totalXP={m.progress.playerProgress?.totalXP ?? 0}
-        role={m.player.role ?? ""}
+        role={m.player.jobTitle ?? ""}
       />
 
       <PlayerCockpitToolbar

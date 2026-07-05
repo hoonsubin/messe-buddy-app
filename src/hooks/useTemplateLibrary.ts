@@ -77,14 +77,29 @@ export const useTemplateLibrary = ({
           (s): s is FormSchema => s !== null,
         );
 
+        const [library, attachments] = await Promise.all([
+          adapter.listLibraryResources(),
+          adapter.listMilestoneResources(
+            milestones[0]?.playerId ?? missions[0]?.playerId ?? "",
+          ),
+        ]);
+        const visibilityByLib = new Map(
+          resources.map((r) => [r.id, r.isVisibleToPlayer]),
+        );
+        const milestoneResources = attachments.map((mr) => ({
+          ...mr,
+          isVisibleToPlayer: visibilityByLib.get(mr.libraryResourceId) ??
+            mr.isVisibleToPlayer,
+        }));
+
         const name = replaceTarget ?? (templateName.trim() || session.name);
         const template = exportTemplate(
           name,
-          session,
           milestones,
           missions,
           formSchemas,
-          resources,
+          milestoneResources,
+          library,
         );
 
         await adapter.saveTemplate(template);

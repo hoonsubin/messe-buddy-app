@@ -39,6 +39,7 @@ interface UseAdminMissionEditorResult {
     sid: string,
     missions: ReadonlyArray<Mission>,
     milestones: ReadonlyArray<Milestone>,
+    playerId: string,
   ) => Promise<void>;
   readonly discardMissions: () => void;
   readonly clearDirtyMissions: () => void;
@@ -205,6 +206,7 @@ export const useAdminMissionEditor = (
       sid: string,
       serverMissions: ReadonlyArray<Mission>,
       milestones: ReadonlyArray<Milestone>,
+      playerId: string,
     ) => {
       const drafts = draftMissionsRef.current;
       const deleted = deletedMissionIdsRef.current;
@@ -242,6 +244,7 @@ export const useAdminMissionEditor = (
         } else {
           const created = await adapter.createMission({
             sessionId: sid,
+            playerId,
             milestoneId: draft.milestoneId,
             title: draft.title ?? "New mission",
             body: draft.body ?? "",

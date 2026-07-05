@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { useIdentity, writeActiveUid } from "./useIdentity.ts";
 import {
   createGameMakerSession,
   joinSession,
-  verifySession,
 } from "../use-cases/joinSession.ts";
 import { recoverIdentity } from "../use-cases/recoverIdentity.ts";
 import type { CachedIdentity } from "../types/index.ts";
@@ -39,7 +38,7 @@ export type LandingStatus = "idle" | "loading" | "error";
 // Which inline form is expanded
 export type ActiveForm = "employee" | "admin" | null;
 
-// Employee join: 2-step (verify → name)
+// Employee join: verify invite token → name (claim)
 export type EmployeeStep = "code" | "name";
 
 export interface UseLandingFlowResult {
@@ -50,6 +49,7 @@ export interface UseLandingFlowResult {
   readonly employeeStep: EmployeeStep;
   readonly verifiedSessionId: string;
   readonly sessionCode: string;
+  readonly inviteToken: string;
   readonly playerName: string;
   readonly sessionName: string;
   readonly adminName: string;
@@ -60,6 +60,7 @@ export interface UseLandingFlowResult {
   readonly toast: string | null;
   readonly setActiveForm: (form: ActiveForm) => void;
   readonly setSessionCode: (v: string) => void;
+  readonly setInviteToken: (v: string) => void;
   readonly setPlayerName: (v: string) => void;
   readonly setSessionName: (v: string) => void;
   readonly setAdminName: (v: string) => void;
@@ -81,9 +82,10 @@ export const useLandingFlow = (): UseLandingFlowResult => {
   const navigate = useNavigate();
   const adapter = useAdapter();
   const { profiles, setIdentity, removeProfile } = useIdentity();
+  const [searchParams] = useSearchParams();
 
-  // ── Route params — present when rendered at /join/:sessionId ─────────────
   const { sessionId: routeSessionId } = useParams<{ sessionId: string }>();
+  const inviteTokenFromUrl = searchParams.get("t") ?? "";
 
   // ── Seed demo profiles once on mount ──────────────────────────────────────
   const seeded = useRef(false);
@@ -135,8 +137,9 @@ export const useLandingFlow = (): UseLandingFlowResult => {
   const [activeForm, setActiveFormState] = useState<ActiveForm>(null);
   const [employeeStep, setEmployeeStep] = useState<EmployeeStep>("code");
   const [verifiedSessionId, setVerifiedSessionId] = useState("");
-  // Pre-fill session code from route param when arriving via /join/:sessionId
+  const [verifiedInviteToken, setVerifiedInviteToken] = useState("");
   const [sessionCode, setSessionCode] = useState(routeSessionId ?? "");
+  const [inviteToken, setInviteToken] = useState(inviteTokenFromUrl);
   const [playerName, setPlayerName] = useState("");
   const [sessionName, setSessionName] = useState("");
   const [adminName, setAdminName] = useState("");
@@ -168,39 +171,73 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     setActiveFormState(form);
     setEmployeeStep("code");
     setVerifiedSessionId("");
-    // Keep /join/:sessionId prefill when opening the employee form
+    setVerifiedInviteToken("");
     setSessionCode(form === "employee" && routeSessionId ? routeSessionId : "");
+    setInviteToken(form === "employee" && inviteTokenFromUrl
+      ? inviteTokenFromUrl
+      : "");
     setPlayerName("");
     setSessionName("");
     setAdminName("");
     resetError();
-  }, [resetError, routeSessionId]);
+  }, [resetError, routeSessionId, inviteTokenFromUrl]);
 
-  // ── Employee join: step 1 — verify session exists ─────────────────────────
+  useEffect(() => {
+    if (!routeSessionId || !inviteTokenFromUrl) return;
+    let cancelled = false;
+    const verifyFromLink = async () => {
+      try {
+        const player = await adapter.getPlayerByInviteToken(inviteTokenFromUrl);
+        if (cancelled || !player || player.sessionId !== routeSessionId) return;
+        setVerifiedSessionId(routeSessionId);
+        setVerifiedInviteToken(inviteTokenFromUrl);
+        setSessionCode(routeSessionId);
+        setInviteToken(inviteTokenFromUrl);
+        setEmployeeStep("name");
+      } catch {
+        /* invalid link — user can retry manually */
+      }
+    };
+    void verifyFromLink();
+    return () => {
+      cancelled = true;
+    };
+  }, [adapter, routeSessionId, inviteTokenFromUrl]);
+
   const handleVerifySession = useCallback(async () => {
-    const code = sessionCode.trim();
-    if (!code) return;
+    const sid = (sessionCode.trim() || routeSessionId || "").trim();
+    const token = inviteToken.trim();
+    if (!sid || !token) return;
     setStatus("loading");
     setErrorMessage("");
     try {
-      await verifySession(code, adapter);
-      setVerifiedSessionId(code);
+      const player = await adapter.getPlayerByInviteToken(token);
+      if (!player || player.sessionId !== sid) {
+        throw new Error("Invite not found for this session");
+      }
+      setVerifiedSessionId(sid);
+      setVerifiedInviteToken(token);
       setEmployeeStep("name");
       setStatus("idle");
     } catch {
       setStatus("error");
-      setErrorMessage("Session not found. Check the code and try again.");
+      setErrorMessage(
+        "Invite not found. Check the link from your Game Master and try again.",
+      );
     }
-  }, [adapter, sessionCode]);
+  }, [adapter, sessionCode, inviteToken, routeSessionId]);
 
-  // ── Employee join: step 2 — create player with name ───────────────────────
   const handleJoinSession = useCallback(async () => {
     const name = playerName.trim();
-    if (!name || !verifiedSessionId) return;
+    if (!name || !verifiedInviteToken) return;
     setStatus("loading");
     setErrorMessage("");
     try {
-      const { identity } = await joinSession(verifiedSessionId, name, adapter);
+      const { identity } = await joinSession(
+        verifiedInviteToken,
+        name,
+        adapter,
+      );
       setIdentity(identity);
       writeActiveUid(identity.uid);
       setActiveForm(null);
@@ -212,7 +249,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
   }, [
     adapter,
     playerName,
-    verifiedSessionId,
+    verifiedInviteToken,
     setIdentity,
     navigate,
     setActiveForm,
@@ -290,6 +327,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     employeeStep,
     verifiedSessionId,
     sessionCode,
+    inviteToken,
     playerName,
     sessionName,
     adminName,
@@ -300,6 +338,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     toast,
     setActiveForm,
     setSessionCode,
+    setInviteToken,
     setPlayerName,
     setSessionName,
     setAdminName,

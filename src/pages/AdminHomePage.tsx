@@ -5,35 +5,35 @@ import { USER_ROLE } from "../types/index.ts";
 import { useActiveProfile } from "../hooks/useActiveProfile.ts";
 import { clearActiveUid, useIdentity } from "../hooks/useIdentity.ts";
 import { useSessionExists } from "../hooks/useSessionExists.ts";
-import { useGmHires } from "../hooks/useProgress/gmHires.ts";
-import type { GmHireRow } from "../hooks/useProgress/gmHires.ts";
+import { useGmPlayers } from "../hooks/useProgress/gmPlayers.ts";
+import type { GmPlayerRow } from "../hooks/useProgress/gmPlayers.ts";
 import TopBar from "../components/shared/TopBar.tsx";
 import NameCaptureModal from "../components/shared/NameCaptureModal.tsx";
 
-const statusOf = (h: GmHireRow): { label: string; colorVar: string } => {
-  if (!h.joined) {
+const statusOf = (p: GmPlayerRow): { label: string; colorVar: string } => {
+  if (!p.joined) {
     return { label: "Not joined yet", colorVar: "--color-muted-fg" };
   }
-  if (h.isStalled) return { label: "Stalled", colorVar: "--color-destructive" };
-  if (h.progressPercent < 20) {
+  if (p.isStalled) return { label: "Stalled", colorVar: "--color-destructive" };
+  if (p.progressPercent < 20) {
     return { label: "Just started", colorVar: "--color-muted-fg" };
   }
-  if (h.progressPercent >= 100) {
+  if (p.progressPercent >= 100) {
     return { label: "Complete", colorVar: "--color-status-complete" };
   }
   return { label: "On track", colorVar: "--color-status-complete" };
 };
 
-const HireCard = (
-  { hire, onOpen }: { readonly hire: GmHireRow; readonly onOpen: () => void },
+const PlayerCard = (
+  { player, onOpen }: { readonly player: GmPlayerRow; readonly onOpen: () => void },
 ) => {
-  const status = statusOf(hire);
+  const status = statusOf(player);
   return (
     <li
       className="card"
       role="button"
       tabIndex={0}
-      data-testid="gm-hire-card"
+      data-testid="gm-player-card"
       onClick={onOpen}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -69,7 +69,7 @@ const HireCard = (
               whiteSpace: "nowrap",
             }}
           >
-            {hire.name}
+            {player.name}
           </span>
           <span
             style={{
@@ -92,10 +92,10 @@ const HireCard = (
         >
           <div
             role="progressbar"
-            aria-valuenow={hire.progressPercent}
+            aria-valuenow={player.progressPercent}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label={`${hire.progressPercent}% complete`}
+            aria-label={`${player.progressPercent}% complete`}
             style={{
               flex: 1,
               height: "0.5rem",
@@ -106,10 +106,10 @@ const HireCard = (
           >
             <div
               style={{
-                width: `${hire.progressPercent}%`,
+                width: `${player.progressPercent}%`,
                 height: "100%",
                 borderRadius: "var(--radius-full)",
-                background: hire.isStalled
+                background: player.isStalled
                   ? "hsl(var(--color-destructive))"
                   : "hsl(var(--color-status-progress))",
               }}
@@ -125,7 +125,7 @@ const HireCard = (
               fontVariantNumeric: "tabular-nums",
             }}
           >
-            {hire.progressPercent}%
+            {player.progressPercent}%
           </span>
         </div>
       </div>
@@ -145,14 +145,12 @@ const AdminHomePage = () => {
   const { removeProfile } = useIdentity();
   const identity = useActiveProfile(sid, USER_ROLE.GAMEMAKER);
 
-  const { hires, loading, createHire } = useGmHires(identity?.uid, true);
+  const { players, loading, invitePlayer } = useGmPlayers(sid, true);
 
   const [adding, setAdding] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  // useGmHires lists sessions and filters by gameMakerId — a stale/deleted
-  // GM identity never 404s there, it just yields zero rows, indistinguishable
-  // from a genuinely new account with no hires yet. useSessionExists checks
+  // useGmPlayers lists players in this workspace — a stale/deleted
   // the GM's own home session directly, which is the only way to tell the
   // two apart.
   const { checking: checkingSession, missing: sessionMissing } =
@@ -167,28 +165,26 @@ const AdminHomePage = () => {
   const handleCreate = useCallback(
     (name: string) => {
       setCreating(true);
-      void createHire(name)
-        .then((newSessionId) => {
+      void invitePlayer(name)
+        .then((newPlayerId) => {
           setAdding(false);
           setCreating(false);
-          // New hire → land on Customize (the dashboard is empty until joined).
-          navigate(`/admin/${sid}/hire/${newSessionId}?new=1`);
+          navigate(`/admin/${sid}/player/${newPlayerId}?new=1`);
         })
         .catch(() => setCreating(false));
     },
-    [createHire, navigate, sid],
+    [invitePlayer, navigate, sid],
   );
 
-  // Show all hire sessions — pending (not yet joined) and active alike (C-24).
-  const visibleHires = hires;
-  const joinedCount = hires.filter((h) => h.joined).length;
-  const joinedHires = hires.filter((h) => h.joined);
+  const visiblePlayers = players;
+  const joinedCount = players.filter((p) => p.joined).length;
+  const joinedPlayers = players.filter((p) => p.joined);
   const avgProgress = joinedCount > 0
     ? Math.round(
-      joinedHires.reduce((s, h) => s + h.progressPercent, 0) / joinedCount,
+      joinedPlayers.reduce((s, p) => s + p.progressPercent, 0) / joinedCount,
     )
     : 0;
-  const stalledCount = joinedHires.filter((h) => h.isStalled).length;
+  const stalledCount = joinedPlayers.filter((p) => p.isStalled).length;
 
   return (
     <div
@@ -274,16 +270,16 @@ const AdminHomePage = () => {
             >
               {joinedCount} active · {avgProgress}% avg progress
               {stalledCount > 0 ? ` · ${stalledCount} stalled` : ""}
-              {visibleHires.length > joinedCount
-                ? ` · ${visibleHires.length - joinedCount} pending`
+              {visiblePlayers.length > joinedCount
+                ? ` · ${visiblePlayers.length - joinedCount} pending`
                 : ""}
             </p>
           </div>
-          {visibleHires.length > 0 && (
+          {visiblePlayers.length > 0 && (
             <button
               type="button"
               className="btn btn--primary"
-              data-testid="add-hire-btn"
+              data-testid="add-player-btn"
               style={{ gap: "var(--space-1)", flexShrink: 0 }}
               onClick={() => setAdding(true)}
             >
@@ -321,7 +317,7 @@ const AdminHomePage = () => {
               </button>
             </div>
           )
-          : loading && hires.length === 0
+          : loading && players.length === 0
           ? (
             <p
               style={{
@@ -334,7 +330,7 @@ const AdminHomePage = () => {
               Loading new hires…
             </p>
           )
-          : visibleHires.length === 0
+          : visiblePlayers.length === 0
           ? (
             <div
               className="card"
@@ -374,12 +370,12 @@ const AdminHomePage = () => {
                 gap: "var(--space-3)",
               }}
             >
-              {visibleHires.map((hire) => (
-                <HireCard
-                  key={hire.sessionId}
-                  hire={hire}
+              {visiblePlayers.map((player) => (
+                <PlayerCard
+                  key={player.playerId}
+                  player={player}
                   onOpen={() =>
-                    navigate(`/admin/${sid}/hire/${hire.sessionId}`)}
+                    navigate(`/admin/${sid}/player/${player.playerId}`)}
                 />
               ))}
             </ul>

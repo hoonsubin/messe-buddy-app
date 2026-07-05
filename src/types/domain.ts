@@ -19,32 +19,29 @@ export interface PBRecord {
 export interface Session extends PBRecord {
   readonly name: string;
   readonly bgImageUrl: string;
-  /** Fraction of the background image covered by the node canvas (0–1).
-   *  1    = node canvas fills the background exactly.
-   *  0.5  = canvas covers 50% of background width/height (25% of area).
-   *  0.33 = nodes occupy the center 1/9 of the background — typical for a
-   *         venue floor plan where milestones cluster in one wing.
-   *  CSS transform applied to the background: scale(1 / mapNodeScale).
-   *  Single source of truth: changing this value propagates to both the admin
-   *  editor and the player map view. */
   readonly mapNodeScale: number;
-  readonly gameMakerId: string; // raw UID string, not a PB relation
-  readonly qrSecret?: string; // HMAC key for QR signing (C-16); GM verify only
+  readonly gameMakerId: string;
+  readonly gmRecoveryKey: string;
+  readonly qrSecret?: string;
   readonly preBoardingChecks: ReadonlyArray<PreBoardingCheckItem>;
 }
 
+export type ClaimStatus = "invited" | "claimed";
+
 export interface Player extends PBRecord {
-  readonly uid: string; // client-generated UUID, unique index
-  readonly recoveryKey: string; // 8-char alphanumeric, unique index
-  readonly sessionId: string; // relation → sessions
+  readonly uid?: string;
+  readonly recoveryKey?: string;
+  readonly sessionId: string;
+  readonly inviteToken: string;
+  readonly claimStatus: ClaimStatus;
   readonly tutorialComplete: boolean;
   readonly profileComplete: boolean;
   readonly name: string;
   readonly preferredName?: string;
   readonly pronouns?: string;
-  readonly avatarUrl?: string; // PB file ref
-  readonly role: string; // job title, e.g. "Senior Engineer"
-  readonly department?: string; // organisational unit, e.g. "Marketing"
+  readonly avatarUrl?: string;
+  readonly jobTitle: string;
+  readonly department?: string;
   readonly team: string;
   readonly startDate: string;
   readonly location: string;
@@ -72,15 +69,17 @@ export interface BuddyProfile extends PBRecord {
 
 export interface Milestone extends PBRecord {
   readonly sessionId: string;
+  readonly playerId: string;
   readonly name: string;
-  readonly xPercent: number; // 0–100, percentage of canvas width (C-08)
-  readonly yPercent: number; // 0–100, percentage of canvas height (C-08)
-  readonly xpThreshold: number; // always 100; stored for clarity
+  readonly xPercent: number;
+  readonly yPercent: number;
+  readonly xpThreshold: number;
   readonly order: number;
 }
 
 export interface Mission extends PBRecord {
   readonly sessionId: string;
+  readonly playerId: string;
   readonly milestoneId: string;
   readonly title: string;
   readonly body: string; // markdown
@@ -109,13 +108,28 @@ export interface ProgressEvent extends PBRecord {
   readonly formResponse?: Readonly<Record<string, string>>; // parsed by adapter
 }
 
-export interface Resource extends PBRecord {
-  readonly sessionId: string;
+export interface LibraryResource extends PBRecord {
+  readonly resourceKey: string;
   readonly title: string;
   readonly description?: string;
   readonly type: ResourceType;
   readonly url: string;
+  readonly tags?: string;
+}
+
+export interface MilestoneResource extends PBRecord {
+  readonly sessionId: string;
+  readonly playerId: string;
+  readonly milestoneId: string;
+  readonly libraryResourceId: string;
   readonly isVisibleToPlayer: boolean;
+}
+
+/** Resolved row for UI — library fields plus attachment visibility. */
+export interface Resource extends LibraryResource {
+  readonly isVisibleToPlayer: boolean;
+  readonly milestoneId?: string;
+  readonly playerId?: string;
 }
 
 // Adapter-boundary raw types - only used inside src/adapters/pocketbase/.

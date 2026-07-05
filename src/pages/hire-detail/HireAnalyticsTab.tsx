@@ -23,6 +23,7 @@ interface HireAnalyticsTabProps {
   readonly milestoneProgress: ReadonlyArray<MilestoneProgress>;
   readonly hasMilestones: boolean;
   readonly sessionId: string;
+  readonly inviteToken: string;
   readonly onApprove: (playerId: string, missionId: string) => void;
   readonly onReject: (playerId: string, missionId: string) => void;
   readonly onMilestoneClick: (id: string) => void;
@@ -40,6 +41,7 @@ const HireAnalyticsTab = ({
   milestoneProgress,
   hasMilestones,
   sessionId,
+  inviteToken,
   onApprove,
   onReject,
   onMilestoneClick,
@@ -94,6 +96,7 @@ const HireAnalyticsTab = ({
     <HireInviteAccordion
       hireFirstName={hireFirstName}
       sessionId={sessionId}
+      inviteToken={inviteToken}
     />
   </main>
 );

@@ -32,11 +32,13 @@ const LandingPage = () => {
           <EmployeeForm
             step={flow.employeeStep}
             sessionCode={flow.sessionCode}
+            inviteToken={flow.inviteToken}
             playerName={flow.playerName}
             verifiedSessionId={flow.verifiedSessionId}
             status={flow.status}
             errorMessage={flow.errorMessage}
-            onCodeChange={flow.setSessionCode}
+            onSessionChange={flow.setSessionCode}
+            onTokenChange={flow.setInviteToken}
             onNameChange={flow.setPlayerName}
             onVerify={() => void flow.handleVerifySession()}
             onJoin={() => void flow.handleJoinSession()}

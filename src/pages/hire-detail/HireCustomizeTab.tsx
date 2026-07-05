@@ -1,8 +1,8 @@
 import { useMemo } from "react";
+import type { AddResourceInput } from "../../hooks/useResources.ts";
 import type {
   Milestone,
   Mission,
-  PBRecord,
   Resource,
 } from "../../types/index.ts";
 import type { TemplateExport } from "../../types/exports.ts";
@@ -16,6 +16,7 @@ import HireInviteAccordion from "./HireInviteAccordion.tsx";
 interface HireCustomizeTabProps {
   readonly hireFirstName: string;
   readonly sessionId: string;
+  readonly inviteToken: string;
   readonly templates: ReadonlyArray<TemplateExport>;
   readonly appliedTemplate: string | null;
   readonly applyingTemplate: boolean;
@@ -35,10 +36,10 @@ interface HireCustomizeTabProps {
   readonly onUploadBackground: (file: File) => void;
   readonly onMapNodeScaleChange: (scale: number) => void;
   readonly onOpenScanner: () => void;
-  readonly onAddResource: (data: Omit<Resource, keyof PBRecord>) => void;
+  readonly onAddResource: (data: AddResourceInput) => void;
   readonly onUpdateResource: (
     id: string,
-    patch: Partial<Omit<Resource, keyof PBRecord>>,
+    patch: Partial<Pick<Resource, "title" | "type" | "url" | "isVisibleToPlayer">>,
   ) => void;
   readonly onDeleteResource: (id: string) => void;
   readonly onToggleVisibility: (id: string, visible: boolean) => void;
@@ -47,6 +48,7 @@ interface HireCustomizeTabProps {
 const HireCustomizeTab = ({
   hireFirstName,
   sessionId,
+  inviteToken,
   templates,
   appliedTemplate,
   applyingTemplate,
@@ -134,6 +136,7 @@ const HireCustomizeTab = ({
       <HireInviteAccordion
         hireFirstName={hireFirstName}
         sessionId={sessionId}
+        inviteToken={inviteToken}
       />
     </main>
   );

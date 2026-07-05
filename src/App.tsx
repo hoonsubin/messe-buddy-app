@@ -36,7 +36,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/admin/:sessionId/hire/:hireId",
+    path: "/admin/:sessionId/player/:playerId",
     element: (
       <RequireRole role={USER_ROLE.GAMEMAKER}>
         <DemoAwareAdapterProvider>

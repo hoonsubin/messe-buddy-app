@@ -3,6 +3,7 @@ import { MdCheck, MdContentCopy, MdPersonAdd } from "react-icons/md";
 
 interface SessionInviteCardProps {
   readonly sessionId: string;
+  readonly inviteToken: string;
   /** Smaller QR + tighter padding for use at the bottom of a tab. */
   readonly compact?: boolean;
   /** Render QR + link only (no card wrapper / header) for embedding. */
@@ -51,12 +52,13 @@ function renderQRCode(
 }
 
 const SessionInviteCard = (
-  { sessionId, compact, bare }: SessionInviteCardProps,
+  { sessionId, inviteToken, compact, bare }: SessionInviteCardProps,
 ) => {
   const [copied, setCopied] = useState(false);
   const qrContainerRef = useRef<HTMLDivElement>(null);
 
-  const joinUrl = `${globalThis.location.origin}/join/${sessionId}`;
+  const joinUrl =
+    `${globalThis.location.origin}/join/${sessionId}?t=${encodeURIComponent(inviteToken)}`;
   const qrSize = compact ? 104 : 160;
 
   // Render QR code into the container div
