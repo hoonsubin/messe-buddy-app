@@ -86,7 +86,7 @@ const PlayerDetailPage = () => {
           onUploadBackground={(file) => void vm.uploadBackground(file)}
           onMapNodeScaleChange={(scale) => void vm.updateMapNodeScale(scale)}
           onOpenScanner={() => vm.setScannerOpen(true)}
-          onAddResource={(data) => void vm.gmResources.addResource(data)}
+          onAddResource={vm.handleAddResource}
           onUpdateResource={(id, patch) =>
             void vm.gmResources.updateResource(id, patch)}
           onDeleteResource={(id) => void vm.gmResources.deleteResource(id)}

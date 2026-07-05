@@ -120,7 +120,7 @@ const GameMakerHomePage = () => {
           onSubmit={handleCreate}
           loading={creating}
           title="Add a player"
-          description="Give this onboarding a name (the player's name works well). You'll pick a template and send them an invite next."
+          description="Give this onboarding a name (the player's name works well). A starter template is applied when one exists — then send the invite from the player page."
           placeholder="e.g. Sofia Chen"
           submitLabel="Create"
           inputLabel="Player name"

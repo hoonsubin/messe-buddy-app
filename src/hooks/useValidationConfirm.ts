@@ -31,7 +31,7 @@ export interface UseValidationConfirmResult {
   readonly confirming: boolean;
   readonly refresh: () => void;
   readonly retry: () => void;
-  readonly confirm: () => Promise<void>;
+  readonly confirm: (overrideValidatorUid?: string) => Promise<void>;
 }
 
 export const useValidationConfirm = (
@@ -135,7 +135,7 @@ export const useValidationConfirm = (
     };
   }, [adapter, decodeKey, session, sessionId, token]);
 
-  const confirm = useCallback(async () => {
+  const confirm = useCallback(async (overrideValidatorUid?: string) => {
     if (!payload || alreadyCompleted || confirming) return;
     setConfirming(true);
     setErrorKind(null);
@@ -143,7 +143,7 @@ export const useValidationConfirm = (
     try {
       await adapter.upsertProgressEvent(payload.playerId, payload.missionId, {
         status: "completed",
-        validatedBy: validatorUid ?? "gm",
+        validatedBy: overrideValidatorUid ?? validatorUid ?? "gm",
         validatedAt: new Date().toISOString(),
       });
     } catch {

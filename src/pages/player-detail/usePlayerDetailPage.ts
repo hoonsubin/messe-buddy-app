@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { Milestone, MilestoneProgress } from "../../types/index.ts";
 import { USER_ROLE } from "../../types/index.ts";
+import { useAdapter } from "../../adapters/useAdapter.ts";
 import { computeProgress } from "../../use-cases/computeProgress.ts";
 import { useActiveProfile } from "../../hooks/useActiveProfile.ts";
 import { useSession } from "../../hooks/useSession.ts";
@@ -9,7 +10,10 @@ import { useGmMilestoneEditor } from "../../hooks/useGmMilestoneEditor.ts";
 import { useGmMissionEditor } from "../../hooks/useGmMissionEditor.ts";
 import { useProgressGamemaker } from "../../hooks/useProgress/index.ts";
 import { useBuddyProfile } from "../../hooks/useBuddyProfile.ts";
-import { useResources } from "../../hooks/useResources.ts";
+import {
+  type AddResourceInput,
+  useResources,
+} from "../../hooks/useResources.ts";
 import { usePreBoardingChecklist } from "../../hooks/usePreBoardingChecklist.ts";
 import { usePlayerTemplates } from "../../hooks/usePlayerTemplates.ts";
 import type { PlayerDetailTabKey } from "./constants.ts";
@@ -28,6 +32,7 @@ export const usePlayerDetailPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const identity = useActiveProfile(homeSid, USER_ROLE.GAMEMAKER);
+  const adapter = useAdapter();
 
   const [tab, setTab] = useState<PlayerDetailTabKey>(
     searchParams.get("new") === "1" ? "customize" : "analytics",
@@ -58,6 +63,10 @@ export const usePlayerDetailPage = () => {
   useEffect(() => {
     if (playerId) gmProgress.handlePlayerSelect(playerId);
   }, [playerId, gmProgress.handlePlayerSelect]);
+
+  useEffect(() => {
+    if (playerId) gmProgress.refresh();
+  }, [playerId, gmProgress.refresh]);
 
   const buddyProfile = useBuddyProfile(homeSid, playerId, {
     role: "gamemaker",
@@ -155,6 +164,36 @@ export const usePlayerDetailPage = () => {
         .catch(() => showToast("Could not delete mission"));
     },
     [missionEditor, showToast],
+  );
+
+  const handleAddResource = useCallback(
+    (data: AddResourceInput) => {
+      void (async () => {
+        let milestoneId = milestoneEditor.selectedMilestone?.id ??
+          milestones[0]?.id ??
+          milestoneEditor.draftMilestones[0]?.id;
+        if (!milestoneId) {
+          const live = await adapter.listMilestones(homeSid, { playerId });
+          milestoneId = live[0]?.id;
+        }
+        if (!milestoneId) {
+          showToast("Add a milestone before attaching resources");
+          return;
+        }
+        await gmResources.addResource({ ...data, milestoneId });
+        showToast("Resource attached");
+      })().catch(() => showToast("Could not attach resource"));
+    },
+    [
+      adapter,
+      gmResources,
+      homeSid,
+      milestoneEditor.draftMilestones,
+      milestoneEditor.selectedMilestone,
+      milestones,
+      playerId,
+      showToast,
+    ],
   );
 
   const isDirty = useMemo(
@@ -351,6 +390,7 @@ export const usePlayerDetailPage = () => {
     handleBuddySave,
     handleDeleteMilestone,
     handleDeleteMission,
+    handleAddResource,
     handleSave,
     handleSaveToTemplate,
     handleDiscard,

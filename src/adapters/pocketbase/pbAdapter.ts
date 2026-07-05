@@ -196,9 +196,14 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
   ): Promise<Player> => {
     const inviteToken = generateInviteToken();
     const today = new Date().toISOString().split("T")[0] ?? "";
+    // Unique indexes on uid / recoveryKey — invited rows get placeholders until
+    // claimPlayer assigns real identity fields (SPECS: no uid until claim).
+    const pendingId = `pending_${inviteToken}`;
     const record = await pb.collection("players").create({
       sessionId,
       inviteToken,
+      uid: pendingId,
+      recoveryKey: pendingId,
       claimStatus: "invited",
       name: data.name?.trim() || "New player",
       jobTitle: data.jobTitle?.trim() || "",

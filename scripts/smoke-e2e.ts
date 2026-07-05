@@ -1,7 +1,7 @@
 /**
  * PocketBase E2E smoke — Firefox + iPhone 15 against Docker app.
  *
- * GM creates a session via inline Game Maker form → player joins via Employee form.
+ * GM creates a session → invites a player via link → player claims.
  *
  * Run:
  *   SMOKE_BASE_URL=https://localhost deno task smoke-e2e
@@ -93,14 +93,18 @@ const main = async () => {
       fullPage: true,
     });
 
-    // ── SMOKE-01: Player joins (2-step employee form) ──────────────────────
-    await playerPage.goto(`${BASE}/`, { waitUntil: "networkidle" });
-    await playerPage.getByRole("button", { name: "Employee", exact: true })
-      .click();
-    await playerPage.waitForSelector("#lp-session-code", { timeout: 5000 });
-    await playerPage.locator("#lp-session-code").fill(sessionId);
-    await playerPage.getByRole("button", { name: "Verify session" }).click();
-    await playerPage.waitForSelector("#lp-player-name", { timeout: 10000 });
+    // ── SMOKE-01: GM adds player → player joins via invite link ───────────
+    await gmPage.getByRole("button", { name: "Add player" }).click();
+    await gmPage.getByLabel("Player name").fill("Smoke Player");
+    await gmPage.getByRole("button", { name: "Create" }).click();
+    await gmPage.waitForURL(/\/player\//, { timeout: 20000 });
+    await gmPage.getByRole("tab", { name: "Analytics" }).click();
+    await gmPage.getByTestId("invite-toggle").click();
+    const joinUrl = (await gmPage.locator('[aria-label="Session join URL"]')
+      .textContent())?.trim() ?? "";
+
+    await playerPage.goto(joinUrl, { waitUntil: "domcontentloaded" });
+    await playerPage.waitForSelector("#lp-player-name", { timeout: 15000 });
     await playerPage.locator("#lp-player-name").fill("Smoke Player");
     await playerPage.getByRole("button", { name: "Join & save profile" })
       .click();

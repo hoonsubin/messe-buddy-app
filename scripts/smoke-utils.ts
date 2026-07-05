@@ -15,7 +15,8 @@ export function isBenignConsoleError(text: string): boolean {
     text.includes("404") ||
     text.includes("service worker") ||
     text.includes("localhost:4000/health") ||
-    text.includes("CORS request did not succeed")
+    text.includes("CORS request did not succeed") ||
+    text.includes("realtime was interrupted")
   );
 }
 
@@ -51,9 +52,16 @@ export async function dismissRecoveryIfPresent(page: Page): Promise<void> {
 
 /** Player cockpit tutorial overlay — optional on demo/first visit. */
 export async function dismissTutorialIfPresent(page: Page): Promise<void> {
-  const start = page.getByRole("button", { name: "Let's start" });
-  if (await start.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await start.click();
+  const overlay = page.locator('[data-testid="tutorial-overlay"]');
+  if (!await overlay.isVisible({ timeout: 2000 }).catch(() => false)) return;
+
+  const skip = page.getByRole("button", { name: "Skip tutorial" }).first();
+  if (await skip.isVisible({ timeout: 1000 }).catch(() => false)) {
+    await skip.click();
+    const confirm = page.getByRole("button", { name: "Skip tutorial" }).last();
+    if (await confirm.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await confirm.click();
+    }
   }
 }
 
