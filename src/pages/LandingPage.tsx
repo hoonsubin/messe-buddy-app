@@ -1,6 +1,6 @@
 import { useLandingFlow } from "../hooks/useLandingFlow.ts";
 import Toast from "../components/shared/Toast.tsx";
-import AdminForm from "./landing/AdminForm.tsx";
+import GameMakerForm from "./landing/GameMakerForm.tsx";
 import EmployeeForm from "./landing/EmployeeForm.tsx";
 import LandingShell from "./landing/LandingShell.tsx";
 import ProfileList from "./landing/ProfileList.tsx";
@@ -9,7 +9,7 @@ import RecoverySection from "./landing/RecoverySection.tsx";
 const LandingPage = () => {
   const flow = useLandingFlow();
 
-  const handleToggleForm = (form: "employee" | "admin") => {
+  const handleToggleForm = (form: "employee" | "gamemaker") => {
     flow.setActiveForm(flow.activeForm === form ? null : form);
   };
 
@@ -18,6 +18,7 @@ const LandingPage = () => {
       <div className="landing__card landing__card--wide">
         <ProfileList
           profiles={flow.profiles}
+          orphanedUids={flow.orphanedUids}
           keyPopupUid={flow.keyPopupUid}
           activeForm={flow.activeForm}
           onResume={flow.handleResume}
@@ -31,11 +32,13 @@ const LandingPage = () => {
           <EmployeeForm
             step={flow.employeeStep}
             sessionCode={flow.sessionCode}
+            inviteToken={flow.inviteToken}
             playerName={flow.playerName}
             verifiedSessionId={flow.verifiedSessionId}
             status={flow.status}
             errorMessage={flow.errorMessage}
-            onCodeChange={flow.setSessionCode}
+            onSessionChange={flow.setSessionCode}
+            onTokenChange={flow.setInviteToken}
             onNameChange={flow.setPlayerName}
             onVerify={() => void flow.handleVerifySession()}
             onJoin={() => void flow.handleJoinSession()}
@@ -43,15 +46,15 @@ const LandingPage = () => {
           />
         )}
 
-        {flow.activeForm === "admin" && (
-          <AdminForm
+        {flow.activeForm === "gamemaker" && (
+          <GameMakerForm
             sessionName={flow.sessionName}
-            adminName={flow.adminName}
+            gmName={flow.gmName}
             status={flow.status}
             errorMessage={flow.errorMessage}
             onSessionNameChange={flow.setSessionName}
-            onAdminNameChange={flow.setAdminName}
-            onCreate={() => void flow.handleCreateAdmin()}
+            onGmNameChange={flow.setGmName}
+            onCreate={() => void flow.handleCreateGamemaker()}
             onClose={() => flow.setActiveForm(null)}
           />
         )}

@@ -1,7 +1,6 @@
-// Fibonacci XP chip selector — replaces the 1-5 pip DifficultySelector.
-// The GM picks a direct XP value from the Fibonacci sequence.
+// GM picks the XP value awarded when this mission is validated.
 
-const FIBONACCI_XP = [1, 2, 3, 5, 8, 13, 21, 34] as const;
+const XP_OPTIONS = [5, 10, 15, 20] as const;
 
 interface XpSelectorProps {
   readonly value: number;
@@ -10,7 +9,7 @@ interface XpSelectorProps {
 
 const XpSelector = (props: XpSelectorProps) => (
   <div className="xp-selector" role="group" aria-label="XP value">
-    {FIBONACCI_XP.map((xp) => (
+    {XP_OPTIONS.map((xp) => (
       <button
         key={xp}
         type="button"

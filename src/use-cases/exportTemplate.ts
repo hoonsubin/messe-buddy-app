@@ -1,52 +1,69 @@
 import type {
   FormSchema,
+  LibraryResource,
   Milestone,
+  MilestoneResource,
   Mission,
-  PBRecord,
-  Resource,
-  Session,
+  TemplateFormSchema,
+  TemplateMilestone,
+  TemplateMission,
 } from "../types/index.ts";
 import type { TemplateExport } from "../types/index.ts";
 
-// Pure function - strips PB IDs and returns a portable TemplateExport. (C-10)
-// No adapter calls; no side effects.
-//
-// _milestoneOrder and _missionOrder are added as import-remapping keys so that
-// importTemplate can reconstruct FK references after PB IDs are stripped.
+const omit = <T extends object, K extends keyof T>(
+  obj: T,
+  ...keys: K[]
+): Omit<T, K> => {
+  const copy = { ...obj };
+  for (const key of keys) delete copy[key];
+  return copy;
+};
+
 export const exportTemplate = (
   name: string,
-  _session: Session,
   milestones: ReadonlyArray<Milestone>,
   missions: ReadonlyArray<Mission>,
   formSchemas: ReadonlyArray<FormSchema>,
-  resources: ReadonlyArray<Resource>,
+  milestoneResources: ReadonlyArray<MilestoneResource>,
+  libraryResources: ReadonlyArray<LibraryResource>,
 ): TemplateExport => {
-  const stripRecord = <T extends PBRecord>(
-    record: T,
-  ): Omit<T, keyof PBRecord> => {
-    // todo: remove this after further implementation
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id: _id, created: _created, updated: _updated, ...rest } = record;
-    return rest as Omit<T, keyof PBRecord>;
-  };
-
-  // Build lookup maps before stripping IDs so FK remapping survives export.
   const milestoneOrderById = new Map(milestones.map((ms) => [ms.id, ms.order]));
   const missionOrderById = new Map(missions.map((m) => [m.id, m.order]));
+  const resourceKeyByLibId = new Map(
+    libraryResources.map((r) => [r.id, r.resourceKey]),
+  );
+
+  const resourceBindings = milestoneResources
+    .map((mr) => ({
+      milestoneOrder: milestoneOrderById.get(mr.milestoneId) ?? 0,
+      resourceKey: resourceKeyByLibId.get(mr.libraryResourceId) ?? "",
+    }))
+    .filter((b) => b.resourceKey !== "");
 
   return {
     exportType: "template",
     exportedAt: new Date().toISOString(),
     name,
-    milestones: milestones.map(stripRecord),
-    missions: missions.map((m) => ({
-      ...stripRecord(m),
+    milestones: milestones.map((ms): TemplateMilestone =>
+      omit(
+        omit(ms, "id", "created", "updated"),
+        "sessionId",
+        "playerId",
+      )
+    ),
+    missions: missions.map((m): TemplateMission => ({
+      ...omit(
+        omit(m, "id", "created", "updated"),
+        "sessionId",
+        "playerId",
+        "milestoneId",
+      ),
       _milestoneOrder: milestoneOrderById.get(m.milestoneId) ?? 0,
     })),
-    formSchemas: formSchemas.map((s) => ({
-      ...stripRecord(s),
+    formSchemas: formSchemas.map((s): TemplateFormSchema => ({
+      ...omit(omit(s, "id", "created", "updated"), "missionId"),
       _missionOrder: missionOrderById.get(s.missionId) ?? 0,
     })),
-    resources: resources.map(stripRecord),
+    resourceBindings,
   };
 };

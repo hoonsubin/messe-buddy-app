@@ -1,6 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
+import { ClientResponseError } from "pocketbase";
 import type { Milestone, Mission, PBRecord, Session } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
+
+// A cancelled/aborted request (PocketBase auto-cancellation, or a plain
+// fetch AbortError) is not evidence the session failed to load — it means
+// some other in-flight request pre-empted this one. Treating it as a real
+// error trips the "session not found, bounce to Game Maker home" effect in
+// usePlayerDetailPage.ts on a request that was never actually resolved either
+// way. See plans/production-implementation-plans.md (hire creation race / P0 history).
+const isAbortError = (e: unknown): boolean => {
+  if (e instanceof ClientResponseError && e.isAbort) return true;
+  if (e instanceof DOMException && e.name === "AbortError") return true;
+  return false;
+};
 
 export interface UseSessionBaseResult {
   readonly session: Session | null;
@@ -23,15 +36,16 @@ export interface UseSessionGamemakerResult extends UseSessionBaseResult {
 
 type UseSessionOptions = {
   readonly role?: "player" | "gamemaker";
+  readonly playerId?: string;
 };
 
 export function useSession(
   sessionId: string,
-  options: { role: "gamemaker" },
+  options: { role: "gamemaker"; playerId?: string },
 ): UseSessionGamemakerResult;
 export function useSession(
   sessionId: string,
-  options?: UseSessionOptions,
+  options?: { role?: "player"; playerId?: string },
 ): UseSessionBaseResult;
 export function useSession(
   sessionId: string,
@@ -47,6 +61,8 @@ export function useSession(
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
+  const playerId = options?.playerId;
+
   useEffect(() => {
     let cancelled = false;
 
@@ -54,10 +70,11 @@ export function useSession(
       setLoading(true);
       setError(null);
       try {
+        const listOpts = playerId ? { playerId } : undefined;
         const [s, ms, mi] = await Promise.all([
           adapter.getSession(sessionId),
-          adapter.listMilestones(sessionId),
-          adapter.listMissions(sessionId),
+          adapter.listMilestones(sessionId, listOpts),
+          adapter.listMissions(sessionId, listOpts),
         ]);
         if (!cancelled) {
           setSession(s);
@@ -65,7 +82,11 @@ export function useSession(
           setMissions(mi);
         }
       } catch (e) {
-        if (!cancelled) {
+        // A cancelled request isn't a real failure — some other in-flight
+        // call pre-empted it. Don't surface it as a session error (that
+        // would bounce the user out via usePlayerDetailPage's error effect)
+        // and don't clear already-loaded data; just stop quietly.
+        if (!cancelled && !isAbortError(e)) {
           setError(e instanceof Error ? e : new Error(String(e)));
         }
       } finally {
@@ -80,7 +101,7 @@ export function useSession(
     return () => {
       cancelled = true;
     };
-  }, [adapter, sessionId, refreshKey]);
+  }, [adapter, sessionId, playerId, refreshKey]);
 
   const updateSession = useCallback(
     async (

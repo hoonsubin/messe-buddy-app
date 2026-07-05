@@ -3,6 +3,13 @@
 
 title Layer 3 Component Diagram
 
+note as N1
+  **UI names below are historical.** Target admin shell:
+  AdminHomePage (Players + Resource library tabs),
+  PlayerDetailPage (/admin/:sessionId/player/:playerId).
+  Data model: docs/ts-data-model.puml · docs/pb-schema.md
+end note
+
 Container_Boundary(pwa, "React PWA") {
     Component(landing, "LandingPage", "React Page", "Entry point. Routes user to Join (New Employee / Admin role selector), or Recover Progress flows.")
     Component(welcomePage, "WelcomePage", "React Page", "Post-login greeting. Shows employee name, role, team, and start date. CTA to set up profile or skip to dashboard.")
@@ -31,12 +38,12 @@ Container_Boundary(pwa, "React PWA") {
     Component(chatPanel, "ChatPanel", "Component", "Chat UI: scrollable message list, text input, send button. Calls useChatStream on submit. Renders streaming tokens incrementally via ChatMessage.")
     Component(useChatStream, "useChatStream", "React Hook", "Sends POST /chat/completions to LiteLLM proxy with stream:true. Reads SSE chunks and appends tokens to message state. Auth header sourced from session context. No client-side model logic — provider selection, RAG retrieval, and prompt augmentation all happen at the proxy layer.")
 
-    Component(useCases, "Use Cases", "Pure TS modules", "deriveXP, computeProgress, upsertProgressEvent, validateMission, completeForm, joinSession, recoverIdentity, exportTemplate, importTemplate")
+    Component(useCases, "Use Cases", "Pure TS modules", "computeProgress, upsertProgressEvent, validateMission, completeForm, invitePlayer, claimPlayer, recoverIdentity, exportTemplate, importTemplate")
     Component(pbAdapter, "PocketBase Adapter", "TS module", "Single boundary for all PB SDK calls. Parses raw JSON fields into typed app-layer interfaces.")
     Component(localStorage, "LocalStorage", "Browser API", "Stores LocalIdentity: uid, recoveryKey, sessionId, role.")
 }
 
-ContainerDb(app_pb, "App (PWA + PocketBase)", "nginx + PocketBase Go binary", "Single container serving the PWA and providing REST/SSE API. SQLite backend for sessions, players, milestones, missions, progress_events, buddy_profiles, resources, form_schemas.")
+ContainerDb(app_pb, "App (PWA + PocketBase)", "nginx + PocketBase Go binary", "SQLite: sessions, players, milestones, missions, progress_events, library_resources, milestone_resources, templates, form_schemas, buddy_profiles.")
 Container(litellm_proxy, "LiteLLM Proxy", "Python / LiteLLM", "Abstraction layer between PWA and AI providers. Receives standard OpenAI-shaped requests from useChatStream. Delegates RAG retrieval to the pgvector connector service, augments the prompt, then forwards to the configured upstream provider.")
 Container(litellm_pgvector, "PG Vector Store Connector", "Python / uvicorn", "OpenAI-compatible /v1/vector_stores/* endpoints backed by PostgreSQL + pgvector. Handles document upload, embedding generation via LiteLLM proxy, and semantic search for RAG retrieval.")
 ContainerDb(vector_db, "Vector DB", "PostgreSQL + pgvector extension", "Stores vector_stores and embeddings tables for the pgvector connector. Holds embedded company documents (policies, onboarding guides, FAQs).")

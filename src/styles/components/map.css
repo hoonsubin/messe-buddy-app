@@ -11,7 +11,7 @@
   touch-action: none;   /* hand off all touch to JS - required for non-passive pan */
   user-select: none;
   /* Suppress iOS callout menu on long-press so pointercancel doesn't fire
-     before the admin editor's 500 ms long-press timer completes. */
+     before the GM editor's 500 ms long-press timer completes. */
   -webkit-touch-callout: none;
   cursor: grab;
 }
@@ -320,7 +320,7 @@
 }
 
 /* Keep the map-viewport's 16:9 aspect-ratio intact — this is intentional.
- * Both admin editor and player viewer must share the same canvas shape so that
+ * Both GM editor and player viewer must share the same canvas shape so that
  * node xPercent/yPercent coordinates map to the same pixel on the background
  * image in both views. Only remove the border-radius for a flush fit. */
 .milestone-map-editor__canvas-wrap .map-viewport {

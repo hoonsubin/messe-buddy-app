@@ -183,6 +183,7 @@ To use HuggingFace-hosted reranking instead:
 |----------|-------------|
 | [`SPECS.md`](SPECS.md) | Authoritative project specification — data model, constraints, use cases |
 | [`AGENTS.md`](AGENTS.md) | Agent-focused guide — commands, code style, architecture details |
-| [`docs/pb-schema.md`](docs/pb-schema.md) | PocketBase schema reference — all 9 collections |
+| [`docs/pb-schema.md`](docs/pb-schema.md) | PocketBase schema reference (target architecture) |
+| [`docs/README.md`](docs/README.md) | PlantUML diagram index |
 | [`design/design-tokens.md`](design/design-tokens.md) | Design tokens — colors, typography, spacing |
 | [`docker/litellm.yaml`](docker/litellm.yaml) | LiteLLM proxy configuration — models, providers, RAG settings |

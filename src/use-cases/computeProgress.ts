@@ -5,8 +5,7 @@ import { MILESTONE_STATUS, PROGRESS_STATUS } from "../types/index.ts";
 // Derives PlayerProgress from ProgressEvents and Missions at read time.
 // Pure function - no side effects, no adapter calls. (C-11)
 //
-// Retroactive difficulty changes affect earned XP because we re-derive here
-// rather than snapshotting xpValue at validation time (OD-02 resolution).
+// Player XP is read from mission.xpValue at validation time (C-11, OD-02).
 //
 // xpThreshold is now read from each Milestone record (not a global constant),
 // allowing milestones to have different XP totals (e.g. 50, 15, 125, 85…).

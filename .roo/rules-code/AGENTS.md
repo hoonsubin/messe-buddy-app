@@ -45,7 +45,7 @@ When an effect iterates over many items with async operations:
 
 - **Keep components lean.** If a single component file exceeds ~200 lines, extract reusable pieces (types, UI sub-components, hooks) into separate files. A component file should express orchestration logic, not inline hundreds of lines of markup.
 - **Prefer extraction over nesting.** When a component has clearly separable concerns — e.g., list view vs. editor view, drag-to-dismiss logic, draft persistence — extract them into dedicated modules under [`src/components/`](src/components/) or [`src/utils/`](src/utils/) as appropriate.
-- **Small components are preferred.** Each file should have one clear responsibility. Reference canonical patterns like [`ConfirmSheet`](src/components/admin/ConfirmSheet.tsx) (uses `Button` from `ui/`), [`DraftRestoreBanner`](src/components/admin/DraftRestoreBanner.tsx), and [`MissionListView`](src/components/admin/MissionListView.tsx) (extracted from [`MissionBottomSheet`](src/components/admin/MissionBottomSheet.tsx)).
+- **Small components are preferred.** Each file should have one clear responsibility. Reference canonical patterns like [`ConfirmSheet`](src/components/gamemaker/ConfirmSheet.tsx) (uses `Button` from `ui/`), [`DraftRestoreBanner`](src/components/gamemaker/DraftRestoreBanner.tsx), and [`MissionListView`](src/components/gamemaker/MissionListView.tsx) (extracted from [`MissionBottomSheet`](src/components/gamemaker/MissionBottomSheet.tsx)).
 
 ---
 

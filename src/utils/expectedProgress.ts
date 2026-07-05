@@ -1,5 +1,5 @@
 // Expected onboarding progress plan, used by the analytics dashboard to compare
-// a hire's actual completion against where they "should" be by now.
+// a player's actual completion against where they "should" be by now.
 //
 // Targets: 20% by week 1, 40% by week 2, 50% by week 3, 70% by week 4,
 // 80% by week 5, 100% by week 12. Interpolated linearly between the points.

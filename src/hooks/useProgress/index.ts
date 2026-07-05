@@ -1,12 +1,9 @@
 export { useProgressPlayer } from "./player.ts";
-export { useProgressAdmin } from "./admin.ts";
-export { useProgressCrossHire } from "./crossHire.ts";
+export { useProgressGamemaker } from "./gamemaker.ts";
+export { useGmPlayers } from "./gmPlayers.ts";
 export { useWatchMission } from "./watchMission.ts";
 export type {
-  HireProgressRow,
-  UseProgressAdminResult,
-  UseProgressCrossHireResult,
+  UseProgressGamemakerResult,
   UseProgressOptions,
   UseProgressPlayerResult,
-  UseProgressResult,
 } from "./types.ts";

@@ -1,4 +1,7 @@
+import { MdArrowBack } from "react-icons/md";
 import { usePlayerCockpitPage } from "./player-cockpit/usePlayerCockpitPage.ts";
+import { Button } from "../components/ui/index.ts";
+import { BUTTON_VARIANT } from "../components/ui/types.ts";
 import ConfirmDialog from "../components/shared/ConfirmDialog.tsx";
 import RouteTabBar from "../components/shared/RouteTabBar.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
@@ -41,6 +44,33 @@ const PlayerCockpitPage = () => {
     );
   }
 
+  if (result.status === "session-missing") {
+    return (
+      <div
+        className="page-state-center"
+        data-testid="player-cockpit-page"
+        data-page="player-cockpit"
+      >
+        <div
+          className="card"
+          style={{ maxWidth: "24rem", textAlign: "center" }}
+        >
+          <p className="session-missing__message">
+            This session could not be found. It may have been reset or removed —
+            this profile is no longer valid.
+          </p>
+          <Button
+            variant={BUTTON_VARIANT.DESTRUCTIVE}
+            onClick={result.onRemove}
+          >
+            <MdArrowBack size={16} aria-hidden="true" />
+            Remove this profile
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (result.status === "session-redirect") return null;
 
   const m = result.model;
@@ -69,7 +99,7 @@ const PlayerCockpitPage = () => {
       <ConfirmDialog
         isOpen={m.showSkipConfirm}
         title="Skip tutorial?"
-        body="You can always complete the tutorial later from settings."
+        body="You won't see this again, but your buddy and the Resources tab are there if you need a hand later."
         confirmLabel="Skip tutorial"
         onConfirm={m.handleSkipConfirm}
         onCancel={m.handleSkipCancel}
@@ -78,7 +108,7 @@ const PlayerCockpitPage = () => {
       <TopBar
         playerName={m.player.name ?? ""}
         totalXP={m.progress.playerProgress?.totalXP ?? 0}
-        role={m.player.role ?? ""}
+        role={m.player.jobTitle ?? ""}
       />
 
       <PlayerCockpitToolbar
@@ -90,7 +120,7 @@ const PlayerCockpitPage = () => {
         tabs={PLAYER_TABS}
         activeKey={m.tab}
         onChange={(key) => m.setTab(key as PlayerTabKey)}
-        ariaLabel="New hire views"
+        ariaLabel="Player views"
       />
 
       {m.popupMission !== null && (

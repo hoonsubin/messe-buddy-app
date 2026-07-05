@@ -18,6 +18,13 @@ export interface UseValidationConfirmResult {
   readonly milestoneName: string;
   readonly xpValue: number;
   readonly alreadyCompleted: boolean;
+  /**
+   * The player session's owning Game Maker uid, once the session has loaded.
+   * Callers use this to resolve which locally-cached identity (if any) is
+   * authorized to confirm — the player's sessionId never matches a GM's own
+   * cached identity, which is scoped to their home session instead.
+   */
+  readonly gameMakerId: string | null;
   readonly loading: boolean;
   readonly errorKind: ValidationConfirmErrorKind;
   readonly errorMessage: string | null;
@@ -163,6 +170,7 @@ export const useValidationConfirm = (
     milestoneName,
     xpValue,
     alreadyCompleted,
+    gameMakerId: session?.gameMakerId ?? null,
     loading,
     errorKind: sessionError ? "decode" : errorKind,
     errorMessage: sessionError ? "Could not load session data." : errorMessage,

@@ -7,17 +7,19 @@ import ProfileCard from "./ProfileCard.tsx";
 
 interface ProfileListProps {
   readonly profiles: ReadonlyArray<CachedIdentity>;
+  readonly orphanedUids: ReadonlySet<string>;
   readonly keyPopupUid: string | null;
   readonly activeForm: ActiveForm;
   readonly onResume: (identity: CachedIdentity) => void;
   readonly onRemove: (uid: string) => void;
   readonly onShowKey: (uid: string) => void;
   readonly onHideKey: () => void;
-  readonly onToggleForm: (form: "employee" | "admin") => void;
+  readonly onToggleForm: (form: "employee" | "gamemaker") => void;
 }
 
 const ProfileList = ({
   profiles,
+  orphanedUids,
   keyPopupUid,
   activeForm,
   onResume,
@@ -39,6 +41,7 @@ const ProfileList = ({
       <ProfileCard
         key={identity.uid}
         identity={identity}
+        isOrphaned={orphanedUids.has(identity.uid)}
         isKeyOpen={keyPopupUid === identity.uid}
         onResume={onResume}
         onRemove={onRemove}
@@ -71,13 +74,13 @@ const ProfileList = ({
         variant="secondary"
         className={cn(
           "landing-role-toggle",
-          activeForm === "admin" && "landing-role-toggle--active",
+          activeForm === "gamemaker" && "landing-role-toggle--active",
         )}
-        data-role="admin"
-        onClick={() => onToggleForm("admin")}
+        data-role="gamemaker"
+        onClick={() => onToggleForm("gamemaker")}
       >
         <MdAdd size={16} />
-        Admin
+        Game Maker
       </Button>
     </div>
   </>

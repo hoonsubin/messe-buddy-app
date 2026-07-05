@@ -124,7 +124,7 @@ const QRScannerView = () => {
           <button
             type="button"
             className="btn btn--ghost"
-            onClick={() => navigate(`/admin/${sid}`)}
+            onClick={() => navigate(`/gamemaker/${sid}`)}
           >
             Back to cockpit
           </button>

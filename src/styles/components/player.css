@@ -400,7 +400,7 @@
   border-block-end-color: hsl(var(--color-primary));
 }
 
-/* Centered scrollable tab row (player + hire detail pages) */
+/* Centered scrollable tab row (player + player detail pages) */
 .route-tab-bar {
   display: flex;
   flex-shrink: 0;
@@ -500,5 +500,12 @@
   align-items: center;
   justify-content: center;
   min-height: 100dvh;
+  padding: var(--space-4);
+  color: hsl(var(--color-muted-fg));
+}
+
+.session-missing__message {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
   color: hsl(var(--color-muted-fg));
 }

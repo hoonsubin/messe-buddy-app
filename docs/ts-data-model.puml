@@ -1,291 +1,240 @@
 @startuml diagram_06_class_data_model
-title TypeScript Data Model
+title TypeScript Data Model (target architecture — D-ARCH-2)
 
-' ── ENUMERATIONS ───────────────────────────────────────────────
+' ── UNION TYPES (const object + keyof — C-12) ─────────────────
 enum MissionType {
-    text
-    link
-    form
-}
-enum MissionTag {
-    mandatory
-    needsApproval
-    urgent
-    overdue
-}
-enum ProgressStatus {
-    pending
-    pendingApproval
-    completed
-    autoApproved
+  text
+  link
+  form
 }
 enum ValidationMethod {
-    gmApprove
-    selfApprove
-    qr
+  gmApprove
+  selfApprove
+  qr
+  peerScan
+}
+enum ProgressStatus {
+  pending
+  pendingApproval
+  completed
+  autoApproved
 }
 enum MilestoneStatus {
-    upcoming
-    inProgress
-    completed
+  upcoming
+  inProgress
+  completed
 }
 enum ResourceType {
-    guide
-    video
-    link
-    document
-}
-enum FieldType {
-    text
-    textarea
-    select
-    multiSelect
+  guide
+  video
+  link
+  document
 }
 enum UserRole {
-    player
-    gamemaker
+  player
+  gamemaker
+  ' CachedIdentity only — not stored on Player rows
 }
 
-' ── VALUE OBJECTS ──────────────────────────────────────────────
+' ── VALUE OBJECTS ─────────────────────────────────────────────
 interface FieldSchema {
-    +id: string
-    +label: string
-    +type: FieldType
-    +required: boolean
-    +placeholder: string
-    +options: List~string~
+  +id: string
+  +label: string
+  +type: FieldType
+  +required: boolean
 }
 interface QRPayload {
-    +playerId: string
-    +missionId: string
-    +sessionId: string
-    +xpValue: number
-    +issuedAt: number
-    +hmac: string
-    ' HMAC-SHA256 of (playerId+missionId+sessionId+issuedAt)
-    ' keyed with session token. Verified client-side at scan time.
-    ' No server call required for validation.
+  +playerId: string
+  +missionId: string
+  +sessionId: string
+  +xpValue: number
+  +issuedAt: number
+  +hmac: string
 }
-interface ChatMessage {
-    +role: string
-    +content: string
-    +streaming: boolean
-    ' role: "user" | "assistant"
-    ' streaming: true while SSE chunks are still arriving
+interface PeerScanPayload {
+  +playerId: string
+  +missionId: string
+  +sessionId: string
+  +issuedAt: number
+  +hmac: string
 }
-interface LiteLLMRequest {
-    +model: string
-    +messages: List~ChatMessage~
-    +stream: boolean
-    ' POST to VITE_LITELLM_URL/chat/completions
-    ' Proxy handles model auth and policy context injection.
-}
-interface LegendItem {
-    +label: string
-    +color: string
-    +status: MilestoneStatus
-}
-interface ScanData {
-    +playerId: string
-    +missionId: string
-    +sessionId: string
-    +xpValue: number
-    +playerName: string
-    +missionTitle: string
-    +decodedAt: string
-}
-interface SessionRole {
-    +userId: string
-    +sessionId: string
-    +role: UserRole
-    +joinedAt: string
+interface CachedIdentity {
+  +uid: string
+  +recoveryKey: string
+  +sessionId: string
+  +role: UserRole
+  +name: string
+  +isDemo: boolean
 }
 
-' ── POCKETBASE BASE ────────────────────────────────────────────
+' ── PERSISTENT TYPES ─────────────────────────────────────────
 abstract class PBRecord {
-    +id: string
-    +created: string
-    +updated: string
+  +id: string
+  +created: string
+  +updated: string
 }
 
-' ── PERSISTENT TYPES ───────────────────────────────────────────
 class Session <<persistent>> {
-    +name: string
-    +bgImageUrl: string
-    +gameMakerId: string
+  +name: string
+  +bgImageUrl: string
+  +gameMakerId: string
+  +gmRecoveryKey: string
+  +qrSecret: string
+  +preBoardingChecks: JSON
+  ' GM identity — not a players row
 }
+
 class Player <<persistent>> {
-    +sessionId: string
-    +uid: string
-    +name: string
-    +preferredName: string
-    +pronouns: string
-    +avatarUrl: string
-    +role: string
-    +team: string
-    +startDate: string
-    +location: string
-    +timezone: string
-    +skillsConfident: List~string~
-    +skillsDevelop: List~string~
-    +languages: List~string~
-    +workStyle: string
-    +energizers: List~string~
-    +drainers: List~string~
-    +profileComplete: boolean
+  +sessionId: string
+  +inviteToken: string
+  +claimStatus: invited | claimed
+  +uid: string
+  +recoveryKey: string
+  +name: string
+  +jobTitle: string
+  +profileComplete: boolean
+  +tutorialComplete: boolean
+  ' no role field — collection = player identities
 }
-class BuddyProfile <<persistent>> {
-    +sessionId: string
-    +assignedToPlayerId: string
-    +name: string
-    +role: string
-    +tenure: string
-    +avatarUrl: string
-    +contactUrl: string
-}
+
 class Milestone <<persistent>> {
-    +sessionId: string
-    +name: string
-    +xPercent: number
-    +yPercent: number
-    +xpThreshold: number
-    +order: number
+  +sessionId: string
+  +playerId: string
+  +name: string
+  +xPercent: number
+  +yPercent: number
+  +xpThreshold: number
+  +order: number
 }
+
 class Mission <<persistent>> {
-    +sessionId: string
-    +milestoneId: string
-    +title: string
-    +body: string
-    +type: MissionType
-    +validationMethod: ValidationMethod
-    +externalUrl: string
-    +difficulty: number
-    +xpValue: number
-    +tags: List~MissionTag~
-    +suggestedDueDate: string
-    +order: number
-    +isInCurrentMissions: boolean
+  +sessionId: string
+  +playerId: string
+  +milestoneId: string
+  +title: string
+  +body: string
+  +type: MissionType
+  +xpValue: number
+  +validationMethod: ValidationMethod
+  +peerScanTarget: number
+  +order: number
+  +isInCurrentMissions: boolean
 }
-class FormSchema <<persistent>> {
-    +missionId: string
-    +fields: List~FieldSchema~
-}
+
 class ProgressEvent <<persistent>> {
-    +sessionId: string
-    +playerId: string
-    +missionId: string
-    +status: ProgressStatus
-    +validatedBy: string
-    +validatedAt: string
-    +formResponse: string
-}
-class Resource <<persistent>> {
-    +sessionId: string
-    +title: string
-    +type: ResourceType
-    +url: string
-    +isVisibleToPlayer: boolean
+  +sessionId: string
+  +playerId: string
+  +missionId: string
+  +status: ProgressStatus
+  +validatedBy: string
+  +validatedAt: string
+  +formResponse: Record
 }
 
-' ── EPHEMERAL TYPES ────────────────────────────────────────────
-class MilestoneProgress <<ephemeral>> {
-    +milestoneId: string
-    +earnedXP: number
-    +xpThreshold: number
-    +percentComplete: number
-    +status: MilestoneStatus
-    +completedMissionIds: List~string~
+class PeerScan <<persistent>> {
+  +sessionId: string
+  +missionId: string
+  +playerId: string
+  +scannerDeviceId: string
+  +scannerName: string
+  +formResponse: Record
 }
-class PlayerProgress <<ephemeral>> {
-    +playerId: string
-    +totalXP: number
-    +milestoneProgress: List~MilestoneProgress~
-    +completedMissionIds: List~string~
+
+class LibraryResource <<persistent>> {
+  +resourceKey: string
+  +title: string
+  +description: string
+  +type: ResourceType
+  +url: string
+  +tags: string
+  ' company-wide catalog
 }
-class ChatThread <<ephemeral>> {
-    +messages: List~ChatMessage~
-    +isStreaming: boolean
-    ' Client-only. Never persisted to PocketBase.
-    ' Reset on page navigation.
+
+class MilestoneResource <<persistent>> {
+  +sessionId: string
+  +playerId: string
+  +milestoneId: string
+  +libraryResourceId: string
+  +isVisibleToPlayer: boolean
 }
+
+class FormSchema <<persistent>> {
+  +missionId: string
+  +fields: List~FieldSchema~
+}
+
+class TemplateRecord <<persistent>> {
+  +name: string
+  +data: TemplateExport
+  ' global — no sessionId
+}
+
+class TemplateExport <<ephemeral export>> {
+  +milestones: List
+  +missions: List
+  +formSchemas: List
+  +resourceBindings: List
+  ' milestoneOrder + resourceKey
+}
+
+' ── EPHEMERAL (client-only) ────────────────────────────────────
+class DraftMilestone <<ephemeral>> {
+  +id: string
+  +name: string
+  +xPercent: number
+  +yPercent: number
+  +isDirty: boolean
+}
+
 class DraftMission <<ephemeral>> {
-    +milestoneId: string
-    +isDirty: boolean
-    +title: string
-    +body: string
-    +type: MissionType
-    +externalUrl: string
-    +difficulty: number
-    +tags: List~MissionTag~
-    +suggestedDueDate: string
-}
-class TemplateRecord <<ephemeral>> {
-    +name: string
-    +exportedAt: string
-    +milestones: List~Milestone~
-    +missions: List~Mission~
-    +resources: List~Resource~
+  +milestoneId: string
+  +xpValue: number
+  +isDirty: boolean
 }
 
-' ── PБRECORD INHERITANCE ───────────────────────────────────────
+class MilestoneProgress <<ephemeral>> {
+  +milestoneId: string
+  +earnedXP: number
+  +xpThreshold: number
+  +percentComplete: number
+  +status: MilestoneStatus
+}
+
+class PlayerProgress <<ephemeral>> {
+  +playerId: string
+  +totalXP: number
+  +milestoneProgress: List~MilestoneProgress~
+}
+
+' ── RELATIONSHIPS ──────────────────────────────────────────────
 PBRecord <|-- Session
 PBRecord <|-- Player
-PBRecord <|-- BuddyProfile
 PBRecord <|-- Milestone
 PBRecord <|-- Mission
-PBRecord <|-- FormSchema
 PBRecord <|-- ProgressEvent
-PBRecord <|-- Resource
+PBRecord <|-- PeerScan
+PBRecord <|-- LibraryResource
+PBRecord <|-- MilestoneResource
+PBRecord <|-- FormSchema
+PBRecord <|-- TemplateRecord
 
-' ── ENUM USAGE ─────────────────────────────────────────────────
-FieldSchema ..> FieldType : type
-LegendItem ..> MilestoneStatus : status
-Mission ..> MissionType : type
-Mission ..> ValidationMethod : validationMethod
-ProgressEvent ..> ProgressStatus : status
-Resource ..> ResourceType : type
-SessionRole ..> UserRole : role
-MilestoneProgress ..> MilestoneStatus : status
+Session "1" --> "0..*" Player : onboarding identities
+Session "1" --> "0..*" Milestone : via player journeys
+Player "1" --> "0..*" Milestone
+Milestone "1" --> "0..*" Mission
+Mission "1" --> "0..1" FormSchema
+Mission "1" --> "0..*" PeerScan
+Milestone "1" --> "0..*" MilestoneResource
+LibraryResource "1" --> "0..*" MilestoneResource
+ProgressEvent --> Mission
+PlayerProgress ..> ProgressEvent : derived (C-11)
+TemplateExport ..> LibraryResource : resourceKey bindings
+TemplateRecord --> TemplateExport : data JSON
 
-' ── PERSISTENT STRUCTURAL RELATIONSHIPS ───────────────────────
-Session "1" --> "0..*" Milestone : owns
-Session "1" --> "0..*" Player : has
-Session "1" --> "0..*" Resource : includes
-Session "1" --> "0..*" SessionRole : has
-Session "1" --> "1" TemplateRecord : template for
-
-Milestone "1" --> "0..*" Mission : contains
-Milestone "1" --> "0..*" MilestoneProgress : tracks
-Milestone "1" --> "0..*" DraftMission : drafts
-
-Mission "1" --> "0..1" FormSchema : defines
-Mission "1" --> "0..*" MissionTag : contains
-FormSchema "1" *-- "1..*" FieldSchema : fields
-
-ProgressEvent --> Player : by
-ProgressEvent --> Mission : for
-ProgressEvent --> Session : belongs to
-
-BuddyProfile --> Player : assignedTo
-BuddyProfile --> Session : belongs to
-
-' ── EPHEMERAL STRUCTURAL RELATIONSHIPS ────────────────────────
-PlayerProgress "1" *-- "0..*" MilestoneProgress : contains
-PlayerProgress ..> ProgressEvent : derived from
-PlayerProgress ..> Player : tracks
-
-ScanData ..> QRPayload : decoded from
-ScanData --> Player : for
-ScanData --> ProgressEvent : creates
-
-ChatThread "1" *-- "0..*" ChatMessage : contains
-ChatThread ..> LiteLLMRequest : serialised into
-LiteLLMRequest ..> ChatMessage : messages[]
-
-DraftMission ..> Milestone : drafts of
-
-TemplateRecord "1" *-- "0..*" Milestone : contains
-TemplateRecord "1" *-- "0..*" Mission : contains
-TemplateRecord "1" *-- "0..*" Resource : contains
+note bottom of Player
+  invitePlayer → invited row
+  claimPlayer → uid + recoveryKey
+  UserRole.player only in CachedIdentity
+end note
 
 @enduml

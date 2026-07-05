@@ -40,7 +40,7 @@ flowchart TB
 
   subgraph L3 [Layer 3 — Domain]
     Player[player/*]
-    Admin[admin/*]
+    Gm[gamemaker/*]
     Form[form/*]
   end
 
@@ -59,7 +59,7 @@ flowchart TB
 | 0 | `src/styles/` | Tokens, reset, utilities, BEM blocks |
 | 1 | `src/components/ui/` | Thin typed wrappers over BEM classes |
 | 2 | `src/components/patterns/` | Cross-route UX (modals, chrome, toasts) |
-| 3 | `src/components/{admin,player,form,qr,tutorial}/` | Feature-specific UI |
+| 3 | `src/components/{gamemaker,player,form,qr,tutorial}/` | Feature-specific UI |
 | 4 | `src/pages/` | Data wiring + layout composition (< 200 lines) |
 
 ---
@@ -90,7 +90,7 @@ flowchart TB
 @import "./styles/components/qr.css";
 @import "./styles/components/shared.css";
 @import "./styles/components/player.css";
-@import "./styles/components/admin.css";
+@import "./styles/components/gamemaker.css";
 @import "./styles/components/tutorial.css";
 ```
 
@@ -195,7 +195,7 @@ Role and mission-type colors live in `tokens.css` — never hardcode HSL in TSX.
 | Token | Use |
 |-------|-----|
 | `--color-role-player` / `--color-role-player-bg` | Landing employee profile |
-| `--color-role-admin` / `--color-role-admin-bg` | Landing admin profile |
+| `--color-role-gamemaker` / `--color-role-gamemaker-bg` | Landing Game Maker profile |
 | `--color-mission-text` / `link` / `form` | Admin mission type badges |
 
 Apply via `data-role` or `data-mission-type` attributes in CSS.
@@ -224,7 +224,7 @@ Apply via `data-role` or `data-mission-type` attributes in CSS.
 | `components/button.css` … `avatar.css` | UI primitives |
 | `components/topbar.css`, `modal.css`, `bottom-sheet.css` | Patterns |
 | `components/chat.css`, `map.css`, `sidebar.css`, `qr.css` | Chat, map, sidebar, scanner |
-| `components/shared.css`, `player.css`, `admin.css`, `tutorial.css` | Domain |
+| `components/shared.css`, `player.css`, `gamemaker.css`, `tutorial.css` | Domain |
 
 ### Page modules
 
@@ -232,13 +232,13 @@ Apply via `data-role` or `data-mission-type` attributes in CSS.
 |-------|----------|--------------|
 | Landing | `LandingPage.tsx` (~75 lines) | `src/pages/landing/*` |
 | Player cockpit | `PlayerCockpitPage.tsx` (~160 lines) | `usePlayerCockpitPage.ts` + `src/pages/player-cockpit/*` |
-| Hire detail | `HireDetailPage.tsx` (~110 lines) | `useHireDetailPage.ts`, `HireDetailOverlays.tsx` + `src/pages/hire-detail/*` |
+| Player detail | `PlayerDetailPage.tsx` (~110 lines) | `usePlayerDetailPage.ts`, `PlayerDetailOverlays.tsx` + `src/pages/player-detail/*` |
 
 Landing uses `data-role` + `--color-role-*` tokens (no inline HSL in TSX).
 
 ### Patterns in use
 
-`Modal`, `BottomSheet`, and `Toast` back: `ConfirmDialog`, `RecoveryKeyModal`, `NameCaptureModal`, `SaveTemplateModal`, `MissionDetailPopup`, `AdminQRScannerModal`, `ResourcesEditor`, `MissionBottomSheet` (chrome). Shared `RouteTabBar` uses `.tab-bar__*` classes on player and hire-detail routes.
+`Modal`, `BottomSheet`, and `Toast` back: `ConfirmDialog`, `RecoveryKeyModal`, `NameCaptureModal`, `SaveTemplateModal`, `MissionDetailPopup`, `GmQRScannerModal`, `ResourcesEditor`, `MissionBottomSheet` (chrome). Shared `RouteTabBar` uses `.tab-bar__*` classes on player and player-detail routes.
 
 ---
 

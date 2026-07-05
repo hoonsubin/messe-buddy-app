@@ -42,10 +42,10 @@
   /* Role accents (landing profile cards) */
   --color-role-player:      212 72% 37%;
   --color-role-player-bg:   212 72% 93%;
-  --color-role-admin:       160 73% 28%;
-  --color-role-admin-bg:    160 73% 91%;
+  --color-role-gamemaker:       160 73% 28%;
+  --color-role-gamemaker-bg:    160 73% 91%;
 
-  /* Mission type badges (admin) */
+  /* Mission type badges (gamemaker) */
   --color-mission-text:     200 70% 45%;
   --color-mission-link:     270 60% 50%;
   --color-mission-form:     150 55% 42%;

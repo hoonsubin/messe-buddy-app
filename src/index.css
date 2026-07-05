@@ -27,5 +27,5 @@
 /* Domain + page component styles */
 @import "./styles/components/shared.css";
 @import "./styles/components/player.css";
-@import "./styles/components/admin.css";
+@import "./styles/components/gamemaker.css";
 @import "./styles/components/tutorial.css";

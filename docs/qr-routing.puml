@@ -1,0 +1,92 @@
+@startuml diagram_qr_routing
+title QR & Deep-Link Routing Matrix
+
+skinparam defaultTextAlignment center
+
+package "URL types (all plain HTTPS URIs — any QR scanner)" {
+
+  class PlayerInviteUrl {
+    **Pattern**
+    {origin}/join/{sessionId}?t={inviteToken}
+    --
+    **Purpose**
+    Claim or re-open player identity
+  }
+
+  class GmValidationUrl {
+    **Pattern**
+    {origin}/validate/{sessionId}?t={signedPayload}
+    --
+    **Purpose**
+    GM confirms player mission completion
+    (validationMethod = qr)
+  }
+
+  class PeerScanUrl {
+    **Pattern**
+    {origin}/peer/{sessionId}?t={signedPayload}
+    --
+    **Purpose**
+    Third party attests player progress
+    (validationMethod = peerScan)
+  }
+}
+
+actor Scanner
+participant Router as "React Router"
+participant Identity as "useIdentity()"
+participant InvalidPage as "InvalidIdentityPage"
+participant Landing as "LandingPage\n(claim flow)"
+participant ValidationPage as "ValidationPage"
+participant PeerPage as "PeerScanPage"
+
+== Player invite ==
+
+Scanner -> Router : GET /join/:sessionId?t=inviteToken
+Router -> Identity : resolve local identity
+
+alt No local identity (or demo only)
+  Identity --> Router : null / unclaimed
+  Router -> Landing : getPlayerByInviteToken\n→ claimPlayer or hydrate\n→ Player cockpit
+else Player or GM identity already on device
+  Identity --> Router : CachedIdentity present
+  Router -> InvalidPage : "This link is for claiming\na player identity"
+end
+
+== GM mission validation QR ==
+
+Scanner -> Router : GET /validate/:sessionId?t=...
+Router -> Identity : resolve identity
+
+alt Game Maker authorized for workspace
+  Identity --> Router : gameMakerId matches session
+  Router -> ValidationPage : Decode HMAC → confirm card\n→ upsertProgressEvent(completed)
+else Player identity OR no identity
+  Identity --> Router : not authorized
+  Router -> InvalidPage : "Only your Game Maker\ncan confirm this mission"
+end
+
+== Peer / crowd mission QR ==
+
+Scanner -> Router : GET /peer/:sessionId?t=...
+note right of Router
+  Public route — no RequireRole.
+  Payload binds: sessionId, missionId,
+  playerId (mission owner), peerScanTarget.
+end note
+
+Router -> PeerPage : Render attestation form\n(name + optional custom fields)
+
+PeerPage -> PeerPage : scannerDeviceId from\nlocalStorage mb_scan_device_id\n(generate once per browser)
+
+alt deviceId already recorded for (missionId, playerId)
+  PeerPage -> Scanner : "You already confirmed\nthis mission"
+else new device
+  PeerPage -> Scanner : Submit name / form
+  PeerPage -> PeerPage : insert peer_scan record\nSSE → GM player analytics
+  alt peer_scan count >= peerScanTarget
+    PeerPage -> PeerPage : upsertProgressEvent(completed)
+  end
+end
+
+@enduml

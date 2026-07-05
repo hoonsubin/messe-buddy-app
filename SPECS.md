@@ -1,10 +1,10 @@
 # MesseBuddy - Project Specification
 
-> **Status:** Active implementation reference · Sprint 3 **Last updated:**
-> 2026-06-17 **Authors:** Group 3 - Alisa Diakova · Hoon Kim ·
-> Kseniya Tsiabus · Luis Müller **External PO:** Peter Tubak (Messe München)
-> **Course:** Management & Digital Technologies II · LMU Munich School of
-> Management · Summer Term 2026
+> **Status:** Active implementation reference  
+> **Last updated:** 2026-07-05  
+> **Authors:** Group 3 - Alisa Diakova · Hoon Kim · Kseniya Tsiabus · Luis Müller  
+> **External PO:** Peter Tubak (Messe München)  
+> **Course:** Management & Digital Technologies II · LMU Munich School of Management · Summer Term 2026
 
 ---
 
@@ -23,30 +23,60 @@ implementation questions. All terminology, data shapes, component names, and
 constraints are defined here. Do not infer from external knowledge - use this
 document.
 
-**Append-only sections** are marked `[APPEND-ONLY]`. Add new entries; never
-delete or edit existing ones.
+**Append-only sections** are marked `[APPEND-ONLY]`. Add new entries to the
+Decision Log; never delete or edit existing log rows.
+
+**Implementation status** (code gaps, phased plan, smoke tests) lives in
+[`plans/production-implementation-plans.md`](plans/production-implementation-plans.md)
+only — not in this document.
 
 ---
 
 ## Product Overview
 
-[![](https://img.plantuml.biz/plantuml/dsvg/RLHDZzCm4BtdLmnxQgMqoqfxH6X3jLgAMWXD4TmgnvusPXCxs4wxuSIFu1VoInWx7ssblTaUUzwRDs_yO1qphgbA498T3AjsR-zs_7x7jNBuug8tKl6o4GZl5lUtY_lTeZj_7qLEkX9XnLeqS0TPQnrMq8UZA4LZjPhKfO_7S9E6nGsjFkC9iAfBtI82rxH29zK1c0AjSisCyBkVkZ4AMpXA1gv0IBydDzCXwu5Lk6RF8V4JhI5iVF94L5B1gT2KMUtbeJ5emQArKYiRGoM75LC2ZgoKWZcwCT2W44o4DCXTsO8s0Vxh1YndQahuKLVcfAAC-A4HeYNCzRZn3DOwboNEzj9OvraJU-Q06Ckz34YcreP0BugTmzOm_coXDlf0X6s0_P76On4i9wbxkaGIAkG5Kz9MVIMaNRA4MfUIjq0XbsitXsNNEkl3alfY52lBTYOmY2zWjLe3owqZy90rj0WcA-cGGjEEkT6DLyZWhmQji-1qwCSehmZ8HX-beCU1J7EeKFch1JdY95r1_SvH2BhhXMQg1Q5vqrsQR9AdwVoixUxnnKsOJFkClgTB67PUu6yrCKPM1Vf9kfp3bnfLiemXKQumkfQSbh-9sXZGdbZRRsU1WvDUKbIYrYJD738igUae-Wg8kdAIit3YGiMzBBxMbxRNwj-VluCxGU6HJZX972e_QpBuAHIvmN8SYYiNVI8UerNZmP6a_DcpjiahIP9T665e2zd0UWDr3WXdmSpUIAIVjuJNxkDscsPmsq-Jvt8nIbTq5YInkveT51wx8dDRfnNQsu5ODwD-fFqBObBxqg-dAeQ6JCV4I74qmEkqBhcCVqXMw9FFofzhwSPX7gSc3YEJ-qTazxtkHgEldfIoDH7109XbZmItUSosh-1TcM_JsJ-akFmbVCtNZl16dlNUHp6zhAi7YXx8R_JLHly1)](https://editor.plantuml.com/uml/RLHDZzCm4BtdLmnxQgMqoqfxH6X3jLgAMWXD4TmgnvusPXCxs4wxuSIFu1VoInWx7ssblTaUUzwRDs_yO1qphgbA498T3AjsR-zs_7x7jNBuug8tKl6o4GZl5lUtY_lTeZj_7qLEkX9XnLeqS0TPQnrMq8UZA4LZjPhKfO_7S9E6nGsjFkC9iAfBtI82rxH29zK1c0AjSisCyBkVkZ4AMpXA1gv0IBydDzCXwu5Lk6RF8V4JhI5iVF94L5B1gT2KMUtbeJ5emQArKYiRGoM75LC2ZgoKWZcwCT2W44o4DCXTsO8s0Vxh1YndQahuKLVcfAAC-A4HeYNCzRZn3DOwboNEzj9OvraJU-Q06Ckz34YcreP0BugTmzOm_coXDlf0X6s0_P76On4i9wbxkaGIAkG5Kz9MVIMaNRA4MfUIjq0XbsitXsNNEkl3alfY52lBTYOmY2zWjLe3owqZy90rj0WcA-cGGjEEkT6DLyZWhmQji-1qwCSehmZ8HX-beCU1J7EeKFch1JdY95r1_SvH2BhhXMQg1Q5vqrsQR9AdwVoixUxnnKsOJFkClgTB67PUu6yrCKPM1Vf9kfp3bnfLiemXKQumkfQSbh-9sXZGdbZRRsU1WvDUKbIYrYJD738igUae-Wg8kdAIit3YGiMzBBxMbxRNwj-VluCxGU6HJZX972e_QpBuAHIvmN8SYYiNVI8UerNZmP6a_DcpjiahIP9T665e2zd0UWDr3WXdmSpUIAIVjuJNxkDscsPmsq-Jvt8nIbTq5YInkveT51wx8dDRfnNQsu5ODwD-fFqBObBxqg-dAeQ6JCV4I74qmEkqBhcCVqXMw9FFofzhwSPX7gSc3YEJ-qTazxtkHgEldfIoDH7109XbZmItUSosh-1TcM_JsJ-akFmbVCtNZl16dlNUHp6zhAi7YXx8R_JLHly1)
 
 ### What MesseBuddy Is
 
 MesseBuddy is a **mobile-first Progressive Web App (PWA)** that gamifies the
 corporate onboarding experience. It represents an onboarding journey as an
 interactive map of office spaces (Milestones), each containing a set of
-activities (Missions) a new employee must complete. Progress is tracked via XP
-points, and completion is validated through a configurable validation mechanism
-chosen per Mission by the Game Maker.
+activities (Missions) a new employee must complete. Progress is tracked via **XP
+earned per Mission**; the Game Maker sets each Mission's `xpValue` directly.
 
 **Core value propositions:**
 
-- Customization by the Game Maker with no developer involvement
+- Customization by the Game Maker with no developer involvement (templates make
+  reuse easy)
 - Gamified progression that is non-linear and autonomy-preserving
-- Simple offline-first interaction that promotes real human contact over digital
-  automation
+- Simple identity model — no account signup; players claim an identity via invite QR
+- Validation flows that promote real human contact (GM approval, GM scan, crowd
+  attestation) over opaque automation
+
+### Core Product Journey
+
+The app exists to support one primary loop:
+
+1. **Game Maker** creates a **workspace** (`Session`) — one per GM; **session ≈
+   department** by convention — and adds **players** to it. Each player gets a
+   tailored milestone/mission journey; the GM may **copy from a Template** to
+   bootstrap a player's map. **Library resources** attach to milestones on each
+   player's journey. Templates copy milestone/mission structure (and resource
+   bindings) into a **specific player**.
+2. **Game Maker** shares a **per-player invite link**
+   (`/join/:sessionId?t=:inviteToken`) generated when the player identity is
+   created.
+3. **New player** opens the invite link → **claims** that `players` row (first
+   device binds `uid` + `recoveryKey`) → enters the **Player Cockpit**. The same
+   link on another device re-opens the same identity (see § Invite claim).
+4. **Player** completes **their** Missions on the map → earns **XP** when
+   validation succeeds.
+5. **Game Maker** monitors the **player list** (aggregate progress) and drills
+   into **per-player detail** to customize milestones/missions, approve
+   requests, scan completion QRs, and review form submissions.
+
+Everything else (buddy card, resources, AI chat, tutorial, pre-boarding checklist,
+background image, templates) is **quality-of-life** around this loop — not a
+separate product surface.
 
 ### What MesseBuddy Is Not
 
@@ -63,20 +93,32 @@ This glossary is authoritative.
 
 | Term                   | Definition                                                                                                                                                                                                                                                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Session**            | One onboarding journey instance. Has a unique ID, a Game Maker, and a set of Players.                                                                                                                                                                                                                                    |
-| **Milestone**          | A top-level grouping on the map - analogous to a hall or room. Contains Missions. Represented as a node on the Milestone Map.                                                                                                                                                                                            |
-| **Mission**            | An individual task item within a Milestone. The atomic unit of work for a Player.                                                                                                                                                                                                                                        |
-| **Player**             | A new employee going through an onboarding journey. Has read-only access to the cockpit.                                                                                                                                                                                                                                 |
-| **Game Maker**         | The admin who configures the session - sets up Milestones, Missions, and validates completions.                                                                                                                                                                                                                          |
-| **XP**                 | Experience points earned by completing Missions. Each Milestone has an `xpThreshold` of 100.                                                                                                                                                                                                                             |
-| **Validation Method**  | The mechanism by which a Mission completion is confirmed. One of: `gmApprove` (Game Maker approves in admin cockpit), `selfApprove` (Player self-marks, immediately approved), or `qr` (Player shows a URL-encoded QR code; Game Maker scans and confirms on `ValidationPage`). Set per Mission by the Game Maker; default is `gmApprove`. |
-| **Validation URL**     | QR transport format: `{origin}/validate/{sessionId}?t={base64-encoded signed QRPayload}`. Parsed by `qrUrl.ts`; HMAC verified on `ValidationPage` before any `ProgressEvent` write. |
-| **Validation Request** | The transient state after a Player marks a non-`selfApprove` Mission complete. For `gmApprove`, the Mission enters `pendingApproval` and `PendingApprovalDisplay` is shown. For `qr`, no `ProgressEvent` is written until the GM confirms on `ValidationPage`. |
-| **Validation**         | An app mechanism that allows the game maker or another player to verify that a mission as been completed. Need for XP distribution.                                                                                                                                                                                      |
-| **Current Missions**   | A curated list of Missions the Game Maker has surfaced to the Player's main view - not all Missions are in this list by default.                                                                                                                                                                                         |
-| **Buddy**              | A company-assigned mentor figure displayed on the Player's cockpit. Not a system user - their info is manually entered by the Game Maker.                                                                                                                                                                                |
-| **Template**           | A named, portable snapshot of a Session's structure (Milestones, Missions, Resources) with no player data. Used to bootstrap new sessions.                                                                                                                                                                               |
-| **Recovery Key**       | An 8-character alphanumeric token shown to a user on first join, used to restore their identity if localStorage is cleared.                                                                                                                                                                                              |
+| **Workspace / Session** | The Game Maker's single onboarding container (`/gamemaker/:sessionId`). Holds map settings (`bgImageUrl`, `mapNodeScale`, `qrSecret`), GM identity (`gameMakerId`, `gmRecoveryKey`), pre-boarding, and all managed players. **One session ≈ one department** by convention — no department entity in the system. |
+| **Player**             | A claimable onboarding identity — one PocketBase `players` row per person the GM onboards. Has its own Milestones, Missions, milestone resource attachments, ProgressEvents, and BuddyProfile. `claimStatus = invited` until first claim; then `claimed`. The GM is **not** a `players` row. |
+| **Invite / pending player** | A `players` row created by the GM (`invitePlayer`) with a unique `inviteToken`. Listed on the Players tab as "Not joined yet" until claimed. |
+| **Player invite URL** | `{origin}/join/{sessionId}?t={inviteToken}` — permanent capability URL to one `players` row. First visit: claim flow. Revisit (any device): hydrate identity from PB → cockpit. Progress always from server. |
+| **User type**          | `UserRole` in `CachedIdentity`: `gamemaker` \| `player`. Drives route guards. **Not** stored on `players` rows — collection membership implies player user type. |
+| **Device identity** | `localStorage.mb_identity` cache — profile picker and route guards. Authoritative state lives in PocketBase (`sessions` for GM, `players` for claimed players). |
+| **Session**            | Synonym for **Workspace / Session**. |
+| **Milestone**          | A top-level grouping on **one player's** map. Scoped by `playerId`. Contains that player's Missions and milestone resource attachments. |
+| **Mission**            | An individual task within a Milestone. Scoped by `playerId`. Atomic unit of work. Carries a GM-set `xpValue` and a `validationMethod`. |
+| **Game Maker**         | Session owner (`sessions.gameMakerId`). Configures per-player journeys, manages the company template/resource libraries, validates completions, and monitors progress. |
+| **`jobTitle` (field)** | Human-readable job label on `players` for UI only (e.g. "Senior Engineer"). No access-control meaning. |
+| **Manager** *(future)* | Planned `UserRole` extension — may validate missions on behalf of the GM but **cannot** edit milestones or missions. Not in prototype scope. |
+| **Buddy**              | QoL — mentor metadata (`buddy_profiles`), not a user type. |
+| **XP**                 | Experience points awarded when a Mission is validated. **The Game Maker sets `missions.xpValue` directly.** Milestone `xpThreshold` = sum of `xpValue` for Missions in that Milestone (recomputed on save). Session total XP = sum of earned Mission XP across Milestones.                                              |
+| **Validation Method**  | How completion is confirmed. One of: `gmApprove` (player requests → GM approves in UI), `selfApprove` (player self-marks → immediate), `qr` (player shows signed URL QR → **GM scans** on `ValidationPage`), `peerScan` (player shows signed URL QR → **N unique third parties** scan on `PeerScanPage` — no app identity required). `form` **type** always `autoApproved` regardless of method. Default: `gmApprove`. |
+| **Players list**       | All `players` rows in the workspace — invited and claimed — with aggregate progress % when claimed. |
+| **Player detail**      | GM drill-down for one player: customize milestones/missions, attach library resources, analytics, buddy, invite link. Route: `/gamemaker/:sessionId/player/:playerId`. |
+| **Library resource**   | Company-wide catalog entry in `library_resources` — visible to all GMs. Referenced by templates and attached to player milestones via `milestone_resources`. |
+| **Template**           | Global portable journey blueprint in `templates` — Milestones, Missions, FormSchemas, and resource bindings by `resourceKey`. GM copies onto a **specific player** via `importTemplate`. Any GM may edit. |
+| **GM Validation URL**  | `{origin}/validate/{sessionId}?t={signed}` — player completion QR (`validationMethod = qr`). **GM-only** confirm path. Player or anonymous scanner → `InvalidIdentityPage`. HMAC via `sessions.qrSecret` (C-16).                                                                                                        |
+| **Peer Scan URL**      | `{origin}/peer/{sessionId}?t={signed}` — crowd attestation QR (`validationMethod = peerScan`). Public: scanner enters name (or mission-specific form). One attestation per `scannerDeviceId` per `(missionId, playerId)`. GM sees live feed.                                                                            |
+| **Validation Request** | Transient state after player marks complete on `gmApprove` (`pendingApproval`) or while waiting for GM scan (`qr`) or peer target (`peerScan`).                                                                                                                                                                          |
+| **Current Missions**   | Missions the GM surfaced to the player's dashboard (`isInCurrentMissions`).                                                                                                                                                                                                                                            |
+| **Milestone resource** | Attachment linking a `library_resources` row to a player's milestone (`milestone_resources`). Shown in the player milestone sidebar when `isVisibleToPlayer`. **No `missionId` FK.** |
+| **Recovery Key**       | 8-character token shown once on identity claim; restores `localStorage` identity.                                                                                                                                                                                                                                        |
+| **Scanner Device ID**  | Client-generated UUID in `localStorage` (`mb_scan_device_id`) — dedupes peer-scan attestations per mission.                                                                                                                                                                                                            |
 | **Shared Hook**         | A React hook that serves both Player and GameMaker roles from a single implementation. Accepts a `role` parameter (or infers it from context) to return role-appropriate data and callbacks. Examples: `useProgress`, `useBuddyProfile`, `useResources`. Components never call [`AppAdapter`](src/adapters/interface.ts:18) directly — they consume data exclusively through shared hooks. |
 | **Canonical Domain Type** | The single authoritative TypeScript interface for a PocketBase-persisted entity, defined in [`domain.ts`](src/types/domain.ts:1). All views, hooks, and adapter methods derive from these types. Never forked — variations are created via `Omit<>`, `Pick<>`, or `Readonly<>` utility types. |
 | **View Type**            | A role-scoped projection of a canonical domain type. Player components receive `Player*View` types (e.g., `PlayerSessionView` omits `qrSecret` and `gameMakerId`). Admin components receive full domain types. Created via TypeScript utility types — zero runtime cost. Defined in `src/types/views.ts`. |
@@ -85,10 +127,8 @@ This glossary is authoritative.
 
 ## Tech Stack
 
-[![](https://img.plantuml.biz/plantuml/dsvg/ZLPDRnit4BthLqnzab5P2e8Scg0eeZXEui9sPCjfZW9tToInuP8RaYjPBGhqH_GNzfVq3VT3wpY7wY9oPtOuy-RDuxuEKVbObuOAhJPUbQjdprVvYrNkR5JQiX_ze6rkweBfv_CNi_CNg_FEyije57KqJ5Vgm9wUKs-XjqsiqMZ1FZWxheouJEXaaHOdMDtmdhYiZ3imdvnsZXjLyhNwadpVOqrf8_xpejIMPlJX3jwZvI54BbSN3t6izCAxdIxIE_DBwdRoqgSgHC-gfAkhQvelBkdVl_-XZnNR-UM4vZPklQjqZkKVjUVUu3mfUsYtPxahAnLrXaBP5fNJDaxft7F1Dcfb0dmBAbt1XW8RpgDsbXJ2bSgg3HU4j8sER4mvFQZIJ0Vvlt6rBPG_Z0kNDqM_JGj0MLOkC2tPxtJEuUIK_XmHVZt6usglu7_7Ae-q-3m_wJS_qcyu3d_tXugNkTTL5EEroxJXixNs8Gf86yyXw1tJPyveNbNJT1ZoLO50YgXph0B7CAKFAD4mAZM6FbtI6W0rZKor7_j4ti5jIfSDOmAX7PKpEZzGlbKnSv76JKEqtPocbzrwRL0EtTxHJXbTA85F87fSRDYZWXOC-knyImfPPUu1jDYXvBFAr1jjpu2C6CzLlkLlQacvTsVMWINNo3xd2ZRBSO-0vFbhpG65FqcZoeJ3qgBuHWMMKzuxohH53sNJSY_GtSNoNWWteUNoWgewR2Uq1lp8ndcm0izlhwHBA5Xb23L9Q2Wm9_4SA8D5htvwzlBPaopUPkFmLHWbaAGeSlH5cN5HD7HxdE4IHmeEqcvdmuIQQSIYH4P8o79Qz-QM6olUWU9uaDL5SLZXiLI0FOok1cPO0ivo5O1pgPx2XKJNpGbUSdqdzI-R-ayUuTYDoY3R6igWf9nCvLysNkQ4T0cdPjwgbduxmEU_qwXsu11Fy97fHsiUcXuTujQ9ahIM92uPQAcQqMqYP-02iwMuPPckT6ZTgOdGkbKPiFtYGKOLUL40hGr_HpXcGl-PF30iXuI1b7J3rKW8Aes8CkaF85N7RSEEa4H3B6KLqUVV6x6PqhpUbDAgdhcqrt6BNVIQPQGXBxLuaCWwFs0Cx-RlCJEAgiqEKPm_dGfwQxqvApn4mRwYi5VLiSmM0D0LCjXHhGiRA3iG5reoVwHrAGzKHD7L-LQiWcMEIhz7bYuNDAHRDZm94OG4rQ5fdO5G1LjXx80qdIdbXzC2HfrI6o3dnsJ7IPEqyDVPp2allhIfPN8dz6v-6u36RSq0hv3AEWgfs05CKKFpekiXniBmJWqGZkWuwT2sASqb_8LERVyonl2mJD2-pQ2r3zWbAFqr6jsnwQ_GHlO_WN1I-8Vx-yKINCwysmTeucdo7ToY_ySz-II5lMwlh2nDofl6ItHiw9b4i1Cuod4f13H6T2xKMKZtJTiMEMxsw_BZJPB1OOpZV2u-8j3J-KW4RiRjLVGrT-6G_35K7sN0d2Mao8hW1rO-toR1xvjpd8DjRRyaI8HMioEjvZSttmP_z87nhcaNvg6PEO3LzXFTozC4uLEYw3iuH5qmwq00Xhs8uzf6m1djFVOfAIsNabLcu3rKqfRkCzI86piqjc_U6xs6nE2xRlGV)](https://editor.plantuml.com/uml/ZLPDRnit4BthLqnzab5P2e8Scg0eeZXEui9sPCjfZW9tToInuP8RaYjPBGhqH_GNzfVq3VT3wpY7wY9oPtOuy-RDuxuEKVbObuOAhJPUbQjdprVvYrNkR5JQiX_ze6rkweBfv_CNi_CNg_FEyije57KqJ5Vgm9wUKs-XjqsiqMZ1FZWxheouJEXaaHOdMDtmdhYiZ3imdvnsZXjLyhNwadpVOqrf8_xpejIMPlJX3jwZvI54BbSN3t6izCAxdIxIE_DBwdRoqgSgHC-gfAkhQvelBkdVl_-XZnNR-UM4vZPklQjqZkKVjUVUu3mfUsYtPxahAnLrXaBP5fNJDaxft7F1Dcfb0dmBAbt1XW8RpgDsbXJ2bSgg3HU4j8sER4mvFQZIJ0Vvlt6rBPG_Z0kNDqM_JGj0MLOkC2tPxtJEuUIK_XmHVZt6usglu7_7Ae-q-3m_wJS_qcyu3d_tXugNkTTL5EEroxJXixNs8Gf86yyXw1tJPyveNbNJT1ZoLO50YgXph0B7CAKFAD4mAZM6FbtI6W0rZKor7_j4ti5jIfSDOmAX7PKpEZzGlbKnSv76JKEqtPocbzrwRL0EtTxHJXbTA85F87fSRDYZWXOC-knyImfPPUu1jDYXvBFAr1jjpu2C6CzLlkLlQacvTsVMWINNo3xd2ZRBSO-0vFbhpG65FqcZoeJ3qgBuHWMMKzuxohH53sNJSY_GtSNoNWWteUNoWgewR2Uq1lp8ndcm0izlhwHBA5Xb23L9Q2Wm9_4SA8D5htvwzlBPaopUPkFmLHWbaAGeSlH5cN5HD7HxdE4IHmeEqcvdmuIQQSIYH4P8o79Qz-QM6olUWU9uaDL5SLZXiLI0FOok1cPO0ivo5O1pgPx2XKJNpGbUSdqdzI-R-ayUuTYDoY3R6igWf9nCvLysNkQ4T0cdPjwgbduxmEU_qwXsu11Fy97fHsiUcXuTujQ9ahIM92uPQAcQqMqYP-02iwMuPPckT6ZTgOdGkbKPiFtYGKOLUL40hGr_HpXcGl-PF30iXuI1b7J3rKW8Aes8CkaF85N7RSEEa4H3B6KLqUVV6x6PqhpUbDAgdhcqrt6BNVIQPQGXBxLuaCWwFs0Cx-RlCJEAgiqEKPm_dGfwQxqvApn4mRwYi5VLiSmM0D0LCjXHhGiRA3iG5reoVwHrAGzKHD7L-LQiWcMEIhz7bYuNDAHRDZm94OG4rQ5fdO5G1LjXx80qdIdbXzC2HfrI6o3dnsJ7IPEqyDVPp2allhIfPN8dz6v-6u36RSq0hv3AEWgfs05CKKFpekiXniBmJWqGZkWuwT2sASqb_8LERVyonl2mJD2-pQ2r3zWbAFqr6jsnwQ_GHlO_WN1I-8Vx-yKINCwysmTeucdo7ToY_ySz-II5lMwlh2nDofl6ItHiw9b4i1Cuod4f13H6T2xKMKZtJTiMEMxsw_BZJPB1OOpZV2u-8j3J-KW4RiRjLVGrT-6G_35K7sN0d2Mao8hW1rO-toR1xvjpd8DjRRyaI8HMioEjvZSttmP_z87nhcaNvg6PEO3LzXFTozC4uLEYw3iuH5qmwq00Xhs8uzf6m1djFVOfAIsNabLcu3rKqfRkCzI86piqjc_U6xs6nE2xRlGV)
-
-All decisions below are **locked**. Do not re-open without a Decision Log entry.
-Rationale for each choice is in the Decision Log (Section 13).
+All stack choices below are **locked**. Do not re-open without a new Decision
+Log entry. Rationale is recorded in [Decision Log](#decision-log-append-only).
 
 | Layer      | Choice                                                                                                                       |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -216,64 +256,61 @@ Replace the placeholder text with actual Messe München onboarding context.
 
 ## User Roles & Identity Model
 
-### Roles
+### Roles (UI user types)
+
+Two user types only: **`gamemaker`** and **`player`**. Encoded in
+`CachedIdentity.role` and `RequireRole` — not as a field on `players` rows.
 
 **Player (new employee)**
 
-- Read-only cockpit; marks Missions complete and submits validation requests
+- Read-only cockpit; marks **their** Missions complete and submits validation requests
 - Fills in form-type Missions (profile form, structured data)
-- One Player record = one Session
+- One `players` row per workspace; journey data scoped by `playerId`
 
 **Game Maker (admin)**
 
-- Full read-write cockpit; creates and edits Milestones and Missions
-- Approves Mission completions (directly via admin cockpit, or other methods)
+- Full read-write cockpit; creates and edits **per-player** Milestones and Missions
+- Manages the company **template** and **library resource** catalogs (global)
+- Attaches library resources to player milestones; approves Mission completions
 - Configures the `validationMethod` per Mission
-- Manages Buddy profiles, session templates, and background images
+- Manages Buddy profiles and workspace background images
 
 ### No SSO in Prototype
 
-There is no authentication system. Identity is UID-based.
+There is no PocketBase auth collection login. Identity is UID-based, backed by
+PocketBase rows and cached in `localStorage`.
 
-- **Player UID:** client-generated UUID on first join, stored in `localStorage`
-  and in the `players` PocketBase collection
-- **Game Maker UID:** client-generated UUID on session creation, stored in
-  `localStorage` and in `sessions.gameMakerId`
-- **No Pocketbase auth collections are used**
+- **Player UID:** client-generated UUID on claim, stored in `players.uid` and
+  `localStorage.mb_identity`
+- **Game Maker UID:** client-generated UUID on workspace creation, stored in
+  `sessions.gameMakerId` and `sessions.gmRecoveryKey` (not a `players` row)
+- **No Pocketbase auth collections are used** (C-03)
 
-### Unified Identity Model
+### Identity model
 
-The [`Player`](src/types/domain.ts:36) domain type is the canonical identity
-record. Every participant — Player or Game Maker — corresponds to a single
-`players` row in PocketBase. The `Player` type carries both identity fields
-(`uid`, `recoveryKey`, `role`) and profile fields (`name`, `team`,
-`skillsConfident`, etc.).
+**Game Makers** are identified by the workspace session (`gameMakerId`,
+`gmRecoveryKey`). **Players** are claimable identities in the `players`
+collection — profile metadata and journey ownership live on that row.
+**`players.jobTitle`** is display-only.
 
 **`localStorage` caches an identity subset for offline resolution.** The
 `mb_identity` key stores only the fields needed to re-establish identity without
 a network call:
 
 ```ts
-// Subset of Player stored in localStorage under key mb_identity
 interface CachedIdentity {
-  uid: string;            // client-generated UUID — matches players.uid
-  recoveryKey: string;    // 8-char alphanumeric — matches players.recoveryKey
-  sessionId: string;      // PB record ID of the session — matches players.sessionId
-  role: UserRole;         // 'player' | 'gamemaker'
-  name?: string;          // display name cached for offline rendering
-  isDemo?: boolean;       // true for pre-seeded demo identities
+  uid: string;            // matches sessions.gameMakerId or players.uid
+  recoveryKey: string;    // matches sessions.gmRecoveryKey or players.recoveryKey
+  sessionId: string;      // workspace session id
+  role: UserRole;         // gamemaker | player — UI user type
+  name?: string;
+  isDemo?: boolean;
 }
 ```
 
-The [`useIdentity()`](src/hooks/useIdentity.ts:41) hook resolves identity from
-this cache and returns the full `Player` record (fetched from PB when online).
-All route guards, data hooks, and components consume `Player`, never
-`CachedIdentity`.
-
-> **[NEED-UPDATE — UX / data storage]** _Reason: `role` is client-stored only
-> today; route guards read `Player.role` without server verification.
-> Future: persist roles in a `SessionRole` (or equivalent) collection and
-> validate on every mutation. See `SessionRole` type and OD-14._
+The [`useIdentity()`](src/hooks/useIdentity.ts:41) hook resolves from cache and
+hydrates from PocketBase when online. **`CachedIdentity.role` mirrors the user
+type** for route guards; device cache is not authoritative over PB row data.
 
 ### Identity storage and resolution
 
@@ -282,8 +319,19 @@ The app does **not** use PocketBase auth. Identity is resolved client-side via
 
 | Source | Storage | Written by | Cleared by |
 | ------ | ------- | ---------- | ---------- |
-| **Persisted** | `localStorage` key `mb_identity` (stores `CachedIdentity` — a `Player` subset) | `joinSession`, `recoverIdentity`, `createGameMakerSession`, `setIdentity` | `clearIdentity`, browser data wipe |
+| **Persisted** | `localStorage` key `mb_identity` (stores `CachedIdentity`) | `claimPlayer`, `recoverIdentity`, `createGameMakerSession`, `setIdentity` | **`removeProfile(uid)`** — explicit user action (landing profile card, stale-session banner). **Not** on logout. |
+| **Scanner device** | `localStorage` key `mb_scan_device_id` | First peer-scan page visit | Browser data wipe |
 | **Ephemeral demo** | In-memory `ephemeralIdentityStore` (module singleton) | Landing page demo buttons via `setEphemeralIdentity` | `clearEphemeralIdentity` (e.g. ephemeral admin "back to landing") |
+
+**Identity lifecycle (normative):**
+
+| User action | Behavior |
+| ----------- | -------- |
+| **Log out / Back to landing** | `navigate("/")` only. Profile remains in `mb_identity`. |
+| **Remove profile** | `removeProfile(uid)` — landing UI or stale-session card when workspace missing. |
+| **Claim player invite** | No existing identity → open `/join/:sessionId?t=:inviteToken` → claim flow → `/session/:sessionId`. |
+| **Re-open invite on new device** | Lookup by `inviteToken` → hydrate `CachedIdentity` from PB → `/session/:sessionId`. |
+| **Scan wrong QR type** | Route to `InvalidIdentityPage` with reason (see [`docs/qr-routing.puml`](docs/qr-routing.puml)). |
 
 **Resolution order:** `readEphemeralIdentity()` first; if absent, parse
 `localStorage.mb_identity`. Cross-tab `localStorage` changes sync via the
@@ -293,8 +341,28 @@ Ephemeral identity lets demo flows skip `localStorage` writes while still
 passing `RequireRole` (which calls `useIdentity`). Production join/create flows
 always persist to `localStorage`.
 
-> **Trust boundary:** The `role` field is client-stored and not server-validated.
-> The prototype assumes a trusted demo context.
+> **Trust boundary:** `CachedIdentity.role` drives route guards. GM authority is
+> verified via `sessions.gameMakerId`; player authority via `players.uid` once
+> claimed.
+
+### Invite claim (per-player `inviteToken`)
+
+Each GM-invited player row receives a unique `inviteToken` at creation. The
+invite URL is `{origin}/join/{sessionId}?t={inviteToken}`.
+
+| Step | Behavior |
+| ---- | -------- |
+| **GM adds player** | `invitePlayer` → `players` row with `claimStatus=invited`, generated `inviteToken`, optional display `name`. No `uid`/`recoveryKey` until claim. |
+| **First claim** | Player opens invite URL → enters display name (if needed) → `claimPlayer` assigns `uid` + `recoveryKey` → `claimStatus=claimed` → write `CachedIdentity` (`role=player`) → `/session/:sessionId`. |
+| **Same link, new device** | `getPlayerByInviteToken`. If `claimed`, hydrate `CachedIdentity` from the PB row → `/session/:sessionId`. No separate recovery step when the invite link is used. |
+| **Profile picker only** | `mb_identity` caches profiles for convenience; optional if user always uses invite URL. |
+| **Wrong identity on device** | Existing cached GM/other player → `InvalidIdentityPage`. |
+
+**Multi-device:** All mission progress, form submissions, and profile fields live
+in PocketBase. The invite URL is a **capability link** in prototype scope — any
+device with the link can hydrate the player cache from PB. `recoveryKey` remains
+for manual recovery when the link is lost. Concurrent edits use
+**last-write-wins** with no merge UI in prototype scope.
 
 ### Route guards
 
@@ -306,17 +374,69 @@ Protected routes wrap children in `RequireRole`, which redirects to `/` when:
 
 This applies to Player Cockpit, Admin Cockpit, and `ValidationPage`.
 
+### Workspace & player model
+
+One Game Maker operates one **workspace session** (≈ one department). Each
+managed player is a `players` row with its own milestone, mission, and resource
+attachment journey.
+
+```mermaid
+flowchart TB
+    subgraph client ["Client — localStorage cache"]
+        GMI["GM CachedIdentity<br/>role=gamemaker"]
+        PI1["Player device A<br/>role=player"]
+        PI2["Player device B<br/>role=player"]
+    end
+
+    subgraph global ["PocketBase — company library"]
+        T["templates"]
+        LR["library_resources"]
+    end
+
+    subgraph workspace ["PocketBase — workspace"]
+        S["sessions<br/>gameMakerId · gmRecoveryKey"]
+        P1["players: Alice<br/>inviteToken · claimStatus"]
+    end
+
+    subgraph journey ["Alice journey — PB authoritative"]
+        MS1["milestones"]
+        MI1["missions"]
+        MR1["milestone_resources"]
+        E1["progress_events"]
+    end
+
+    S --> P1
+    P1 --> MS1 --> MI1
+    MS1 --> MR1
+    LR --> MR1
+    P1 --> E1
+    T -->|"importTemplate(playerId)"| MS1
+    GMI --> S
+    PI1 --> P1
+    PI2 --> P1
+```
+
+**Data scope:**
+
+| Entity | Scope | Notes |
+| ------ | ----- | ----- |
+| `sessions` | Workspace | One per GM; map background, `qrSecret`, `gameMakerId`, `gmRecoveryKey`, pre-boarding |
+| `players` | Workspace | One per onboarded person; **no GM rows**; `claimStatus`, `inviteToken`, profile fields |
+| `milestones`, `missions`, `form_schemas` | Per player | `playerId` FK |
+| `library_resources` | Company-wide | All GMs; optional user-only `tags` text (not interpreted in prototype) |
+| `milestone_resources` | Per player milestone | `playerId`, `milestoneId`, `libraryResourceId`; no `missionId` |
+| `templates` | Company-wide | Any GM may edit; `importTemplate` targets one `playerId` |
+| `progress_events`, `buddy_profiles` | Per player | Unchanged |
+
 ### Session constraint
 
-> A single user identity is exclusively tied to one session. This is to avoid
-> implementation complexity during early development.
+> A single `uid` may hold at most one identity per workspace session (one
+> `players` row per `uid` per `sessionId`).
 
-> **[NEED-UPDATE — UX / data storage]** _Reason: one identity per session limits
-> multi-session users and cross-hire scenarios. Future: `SessionRole` records
-> allowing one UID across sessions, or account picker on landing. See OD-14._
-
-Joining a new session requires generating a new UID and completing the tutorial
-flow from scratch (current behavior).
+Joining as a player **claims** an existing `players` row in the target workspace
+(via `inviteToken`). A device may cache multiple profiles (different workspaces
+or roles) in `mb_identity`; `mb_active_uid` selects the last-active profile on
+app boot.
 
 ### Identity Recovery
 
@@ -324,16 +444,19 @@ When `localStorage` is cleared (new device, browser reset):
 
 1. User opens Landing Page → clicks **"Recover my progress"**
 2. Enters their `recoveryKey` (8-char token)
-3. App queries Pocketbase:
-   `players WHERE recoveryKey = input AND sessionId = <from URL or manual input>`
-4. On match: `LocalIdentity` is reconstructed and written back to `localStorage`
-5. User is routed to their cockpit
+3. App queries PocketBase: `players WHERE recoveryKey = input` (player path), or
+   `sessions WHERE gmRecoveryKey = input` (GM path), optionally scoped by
+   `sessionId` when known from URL
+4. On match: `CachedIdentity` is reconstructed and written to `localStorage`
+5. User is routed to their cockpit (`/gamemaker/:sessionId` or `/session/:sessionId`
+   based on `role`)
 
-The `recoveryKey` is displayed **once** on first join with a copy button.
+The `recoveryKey` is displayed **once** on first claim with a copy button.
 
-**Game Maker recovery:** same flow but queries
-`players WHERE recoveryKey = input AND uid = sessions.gameMakerId`. Role is
-restored as `'gamemaker'`.
+**Game Maker recovery:** `sessions WHERE gmRecoveryKey = input`.
+
+**Player recovery:** `players WHERE recoveryKey = input` (invite link preferred
+on new devices).
 
 ### Returning User (identity valid)
 
@@ -342,10 +465,6 @@ On every app load, if `useIdentity` resolves a identity (ephemeral or
 is silently routed to their cockpit without interaction.
 
 ## Application Views & User Interaction
-
-### System Interaction
-
-[![](https://img.plantuml.biz/plantuml/dsvg/jLVTJYCt5BwVfpZYeYGIoQxKgqQYMdvIQ2KW9D3j1H8ouvF4YiSUR0yXMY7jLH-WwXFka_JOCvuaGmWiwdA1PZpdn-Sxt_d99-kOSKKcWGisCIox_VZphSNx0bMAjvcmLcXr-y2auCpHO-A4amXdvGVui_u0lqazXrPMI2SwrXdcSB9e9mbBdJOma6o1fdevOHcUiHczv-HRf29dogsOEXOs9_crhuN58sRH0hEmSsqHmjlEkankqRY1qHE3rlOVaCvMnNkR9DPD30uFECiTcg0uqEaCtI6fGdNSaAw_9qaP8NH-VHu8zE2CcPcjKKjrbajqUADQ3XyT42PIg1cuHOu4cT8EGJ-GjKscXiYuXIeptMLcpj1DDRzHJ74mkd24bTFaoXXC7SIC9Cd-FeogbnvCieCyD-GBMXp7Z9BNXltz97dkc0BRX6yFlkGXyj_vNhoKVoHQkSBsO3T7nOMQb6wOt7rADfaXwqleUq3qCml8Av5Rz38MFf_sXts8xk2dfRzagUmjBTFMWvF-rJD3Oo59D5cHwpGkW8_2Ehes47ZQS9yXp797y37fuc4GiWdGtyl-1mTNHwTHOoxSj8QcWKo2aXIKhcHVCtinkWA5SrZ3CI6JBoHl4vL6KohPdSzCX53752IhBhCJRka9ccifhOz_DEh3jw__WaM4Y-FEnr-8gNKbFxlV28b_CRIXxoVM7J62G2WOh0Tk1qoXNBTLbtiFAePZLJoj5P8jcJU9ojU2jvDQ-xsaZGNAT_Tg__nmyIRkbWblK6uBGOlSMuzPRt1oKzRAMwxeeNX0_lQiqvEF6Rxz_K_eHDGgOa2Dxc1HZcD_-7-x0YkShYppjxK4J_WFtuljt8WbjDlRwhc6apEW0UKRj2722lCUK4MM8KrIXtBn1e3l3RJqU4pD7qDjvTE55IcJfDQHEcLhboaxyvOeg6LKKyWAJjEEHhZcL0MNmm5RICquf58GOXt_cOHVo17MZuyv-IXm3-XhWVp0xS4qO-aJwPwU7HpHCN0qddqmDZgBgZHtPgXyfMUOQRFeaZp1gz3DjPa1nIUxT2clxXdMIRLoZ23Wu6SNXIR6Wjr9xFfs1ZxWx-XfGz8X12w7ySXdG2iAcvfPYGY7lCA3sN2FZ4tMv-wo5_NWWlgq5nkbJ2aq0vAzKJx8AGe3Ugu8WmUHOgCRhfeuecV3IAxCXs5pxvP6CdN1P6sZk3TLggwTa647gK-wDBXQ1HstTngkrfLwbPyMkRaqe-2adQpBR52YMr39_36wE8_elAxZ2olGkwJ3AWUkF0LUj-3rcS6b9Sg_ZHVeUhAL4pVO3vquS2JoCGnKuGad2M3QMCFKR7Xj9CFdyPWv1bzW8_zhqdUxNNWA1bzCR4Ms9G-7Q6c7ycEpB4H5mhNrFVXhq7vkSCkiYtTj3ZXluySDkM3z1onfspUQBOjQK7p7ikRrDkzhxztPQio2bGqRsxksjc1BbGQsz_TWFc2xQpUqF-gevnTNO8ixcnfnHzL4Fm5eSUj6rSfjN1vetKEgUw1sflmFaPGkcmi7eJb-WBoGikDqn-2OjARHohcFcD4NaI6C4VaTIsVrc0fxP1ngO_fHs8tnbQqyW5QE3rLMDCd7XeoFUPYxhvVnClY-CTgygKxHIvQRhPzEpR8jj-TFz9z-3oV_0G00)](https://editor.plantuml.com/uml/jLVTJYCt5BwVfpZYeYGIoQxKgqQYMdvIQ2KW9D3j1H8ouvF4YiSUR0yXMY7jLH-WwXFka_JOCvuaGmWiwdA1PZpdn-Sxt_d99-kOSKKcWGisCIox_VZphSNx0bMAjvcmLcXr-y2auCpHO-A4amXdvGVui_u0lqazXrPMI2SwrXdcSB9e9mbBdJOma6o1fdevOHcUiHczv-HRf29dogsOEXOs9_crhuN58sRH0hEmSsqHmjlEkankqRY1qHE3rlOVaCvMnNkR9DPD30uFECiTcg0uqEaCtI6fGdNSaAw_9qaP8NH-VHu8zE2CcPcjKKjrbajqUADQ3XyT42PIg1cuHOu4cT8EGJ-GjKscXiYuXIeptMLcpj1DDRzHJ74mkd24bTFaoXXC7SIC9Cd-FeogbnvCieCyD-GBMXp7Z9BNXltz97dkc0BRX6yFlkGXyj_vNhoKVoHQkSBsO3T7nOMQb6wOt7rADfaXwqleUq3qCml8Av5Rz38MFf_sXts8xk2dfRzagUmjBTFMWvF-rJD3Oo59D5cHwpGkW8_2Ehes47ZQS9yXp797y37fuc4GiWdGtyl-1mTNHwTHOoxSj8QcWKo2aXIKhcHVCtinkWA5SrZ3CI6JBoHl4vL6KohPdSzCX53752IhBhCJRka9ccifhOz_DEh3jw__WaM4Y-FEnr-8gNKbFxlV28b_CRIXxoVM7J62G2WOh0Tk1qoXNBTLbtiFAePZLJoj5P8jcJU9ojU2jvDQ-xsaZGNAT_Tg__nmyIRkbWblK6uBGOlSMuzPRt1oKzRAMwxeeNX0_lQiqvEF6Rxz_K_eHDGgOa2Dxc1HZcD_-7-x0YkShYppjxK4J_WFtuljt8WbjDlRwhc6apEW0UKRj2722lCUK4MM8KrIXtBn1e3l3RJqU4pD7qDjvTE55IcJfDQHEcLhboaxyvOeg6LKKyWAJjEEHhZcL0MNmm5RICquf58GOXt_cOHVo17MZuyv-IXm3-XhWVp0xS4qO-aJwPwU7HpHCN0qddqmDZgBgZHtPgXyfMUOQRFeaZp1gz3DjPa1nIUxT2clxXdMIRLoZ23Wu6SNXIR6Wjr9xFfs1ZxWx-XfGz8X12w7ySXdG2iAcvfPYGY7lCA3sN2FZ4tMv-wo5_NWWlgq5nkbJ2aq0vAzKJx8AGe3Ugu8WmUHOgCRhfeuecV3IAxCXs5pxvP6CdN1P6sZk3TLggwTa647gK-wDBXQ1HstTngkrfLwbPyMkRaqe-2adQpBR52YMr39_36wE8_elAxZ2olGkwJ3AWUkF0LUj-3rcS6b9Sg_ZHVeUhAL4pVO3vquS2JoCGnKuGad2M3QMCFKR7Xj9CFdyPWv1bzW8_zhqdUxNNWA1bzCR4Ms9G-7Q6c7ycEpB4H5mhNrFVXhq7vkSCkiYtTj3ZXluySDkM3z1onfspUQBOjQK7p7ikRrDkzhxztPQio2bGqRsxksjc1BbGQsz_TWFc2xQpUqF-gevnTNO8ixcnfnHzL4Fm5eSUj6rSfjN1vetKEgUw1sflmFaPGkcmi7eJb-WBoGikDqn-2OjARHohcFcD4NaI6C4VaTIsVrc0fxP1ngO_fHs8tnbQqyW5QE3rLMDCd7XeoFUPYxhvVnClY-CTgygKxHIvQRhPzEpR8jj-TFz9z-3oV_0G00)
 
 ### Entry Points (Landing Page)
 
@@ -364,16 +483,19 @@ import).
 
 | Path | Guard | Page | Notes |
 | ---- | ----- | ---- | ----- |
-| `/` | Public | `LandingPage` | Role select, join, create, recover, templates |
-| `/join/:sessionId` | Public | `LandingPage` | Invite link; session code pre-filled |
-| `/session/:sessionId` | `RequireRole` → `player` | `PlayerCockpitPage` | |
-| `/admin/:sessionId` | `RequireRole` → `gamemaker` | `AdminCockpitPage` | |
-| `/form/:missionId` | None | `FormPage` | Player identity read from `useIdentity` at runtime |
-| `/validate/:sessionId` | `RequireRole` → `gamemaker` | `ValidationPage` | QR confirm; query `?t=` = signed payload token |
-| `/admin/:sessionId/scan` | `RequireRole` → `gamemaker` | `QRScannerView` | Target GM scanner route (replaces legacy `/qr/:missionId`) |
+| `/` | Public | `RootRedirect` → dashboard or `LandingPage` | Auto-resume via `mb_active_uid` |
+| `/join/:sessionId` | Public | `LandingPage` | Reads `?t=inviteToken`; claim or recover player row |
+| `/session/:sessionId` | `RequireRole` → `player` | `PlayerCockpitPage` | Player cockpit (missions scoped to their `playerId`) |
+| `/gamemaker/:sessionId` | `RequireRole` → `gamemaker` | `GameMakerHomePage` | GM workspace — Players and Resources tabs |
+| `/gamemaker/:sessionId/player/:playerId` | `RequireRole` → `gamemaker` | `PlayerDetailPage` | Per-player customize, analytics, invite |
+| `/form/:sessionId/:missionId` | `RequireRole` → `player` | `FormPage` | Dynamic form missions |
+| `/validate/:sessionId` | GM auth on page | `ValidationPage` | GM scans player completion QR (`qr`) |
+| `/peer/:sessionId` | Public | `PeerScanPage` | Crowd attestation (`peerScan`) — **planned** |
+| `/gamemaker/:sessionId/scan` | `RequireRole` → `gamemaker` | `QRScannerView` | In-app URL scanner → routes by URL type |
+| `/invalid-identity` | Public | `InvalidIdentityPage` | Wrong scanner for URL type — **planned** |
 
-> **[NEED-UPDATE — routing]** Legacy `/qr/:missionId` (unguarded, mission-scoped
-> param) is deprecated; remove or redirect when `/admin/:sessionId/scan` ships.
+> `ValidationPage` authorizes by matching `session.gameMakerId` to the cached GM
+> `uid`.
 
 ### Player Cockpit
 
@@ -395,6 +517,22 @@ The Player's primary view - read-only. Components in render order:
 - Step 2 → explains the Milestone Map · Step 3 → Buddy Card · Step 4 → Resources
 - `tutorialComplete = true` → Player has free access
 
+### Quality-of-life features (supporting the core loop)
+
+These do not change validation or XP rules; they reduce friction for GMs and
+players:
+
+| Feature | Role | Scope |
+| ------- | ---- | ----- |
+| **Templates** | GM | Export/import Milestones, Missions, FormSchemas, Resources |
+| **Buddy card** | Both | GM assigns mentor info; player sees contact card |
+| **Resources** | Both | Per-milestone sidebar + Resources tab on admin home (C-26). No mission link. |
+| **AI chat** | Player | LiteLLM + RAG policy Q&A |
+| **Tutorial overlay** | Player | First-run guided tour |
+| **Pre-boarding checklist** | GM | Session-scoped tasks before day one |
+| **Background image / map scale** | GM | Shared map aesthetics for workspace session |
+| **Recovery key** | Both | Identity restore without accounts |
+
 ### Mission Type Routing
 
 | Type   | Behavior                                      | Completion Path                                                                                             |
@@ -405,95 +543,115 @@ The Player's primary view - read-only. Components in render order:
 
 ### Mission Validation
 
-When a Player marks a non-`form` Mission complete, `ValidationDisplay` mounts
-and routes to one of three strategies based on `mission.validationMethod`:
+All validation paths award **`mission.xpValue` XP** on successful completion
+(`computeProgress` sums completed missions at read time — C-11).
 
-**`gmApprove` (default)**
+Diagram: [`docs/mission-validation-flow.puml`](docs/mission-validation-flow.puml) ·
+QR routing: [`docs/qr-routing.puml`](docs/qr-routing.puml)
 
-1. Player marks Mission complete → `ValidationDisplay` mounts showing a "Waiting
-   for approval" state
-2. `upsertProgressEvent` called → `status: pendingApproval`
-3. `ValidationDisplay` polls `progress_events` for `(playerId, missionId)` (or
-   holds SSE subscription)
-4. Game Maker sees the pending request in `PendingApprovalsPanel` (Admin
-   Cockpit)
-5. Game Maker clicks Approve → `upsertProgressEvent` → `status: completed`
-6. `ValidationDisplay` receives update → dismisses → XP recalculates
+| Method | Player action | Who confirms | ProgressEvent write |
+| ------ | ------------- | ------------ | ------------------- |
+| **`gmApprove`** | Mark complete | GM in `PendingApprovalsPanel` | `pendingApproval` → `completed` |
+| **`selfApprove`** | Mark complete | Immediate | `autoApproved` |
+| **`qr`** | Mark complete → show QR | **GM scans** `/validate/...` | `completed` on GM confirm (no write before — C-07) |
+| **`peerScan`** | Show peer QR | **N unique scanners** on `/peer/...` | `completed` when `peer_scans` count ≥ `peerScanTarget` |
+| **`form` type** | Submit on `FormPage` | Automatic | `autoApproved` + `formResponse` (ignores `validationMethod` — C-06) |
 
-> **[NEED-UPDATE — UX / data storage]** OD-10: Player may see `pendingApproval`
-> inline on mission cards instead of full-screen `ValidationDisplay`. Affects
-> where progress state is surfaced and when subscriptions mount.
+**`gmApprove`**
+
+1. Player marks complete → `status: pendingApproval`
+2. `ValidationDisplay` — waiting state (poll/SSE per C-20)
+3. GM approves in player analytics → `status: completed`
+4. Player cockpit XP updates
 
 **`selfApprove`**
 
-1. Player marks Mission complete → `upsertProgressEvent` called immediately with
-   `status: autoApproved`
-2. No `ValidationDisplay` shown - cockpit updates inline
+1. Player marks complete → `status: autoApproved` immediately
+2. No `ValidationDisplay`
 
-**`qr` (physical co-location — URL-encoded QR + shared ValidationPage)**
+**`qr` (GM scans player QR)**
 
-1. Player marks Mission complete → `ValidationDisplay` mounts with `QRDisplay`
-   (no `ProgressEvent` write before GM confirms — C-07)
-2. `QRDisplay` calls `encodeQRPayload` in `qrPayload.ts`, wraps with
-   `buildValidationUrl` in `qrUrl.ts` → QR encodes full URL:
-   `{origin}/validate/{sessionId}?t={base64 signed QRPayload}`
-3. `QRDisplay` holds an adapter `subscribeProgressEvent` callback so the Player
-   is notified when status becomes `completed` (mock: in-memory notify; PB:
-   SSE). This is **player-side only** — the GM scan/confirm path does not hold
-   a PocketBase subscription.
-4. Game Maker scans the QR via any entry point:
-   - **External device camera** → browser opens `/validate/:sessionId?t=...`
-   - **Built-in scanner** → `AdminQRScannerModal` or `QRScannerView` parses URL
-     via `parseValidationToken` → `navigate` to the same `ValidationPage`
-5. `ValidationPage` (GM-only, `RequireRole`): fetch `session.qrSecret`,
-   `decodeQRPayload` from `?t=`, load player / mission / milestone names,
-   render confirmation card (milestone, mission, player, XP)
-6. Game Maker taps **Confirm** → `upsertProgressEvent` → `status: completed`,
-   `validatedBy` = GM `identity.uid`, `validatedAt` = now
-7. Player `QRDisplay` subscription fires → `onValidated` → cockpit XP
-   recalculates
+1. Player marks complete → `QRDisplay` with `/validate/{sessionId}?t=...`
+2. No `ProgressEvent` until GM confirms (C-07)
+3. GM scans via camera or `QRScannerView` → `ValidationPage`
+4. HMAC verify → confirm → `status: completed`
+5. Player SSE/poll dismisses wait state
 
-**QR signing key (`qrSecret`):** Stored on `sessions.qrSecret` (64-char hex,
-auto-generated on PocketBase session create). Used only on the GM device for
-HMAC verification on `ValidationPage`. Prototype mock sets `qrSecret = sessionId`
-so encode and decode stay aligned.
+**`peerScan` (crowd attestation — e.g. "Say hi to 5 people")**
 
-> **[NEED-UPDATE — UX / data storage]** _Reason: Player-side `encodeQRPayload`
-> currently needs the same secret as GM decode; production may move signing
-> server-side or issue short-lived player tokens. See OD-13._
+1. Player opens mission → `PeerQRDisplay` with `/peer/{sessionId}?t=...`
+2. Third party scans with any QR app → `PeerScanPage` (no identity)
+3. Scanner submits name / optional form fields → `peer_scans` record
+4. Dedup: one row per `(missionId, playerId, scannerDeviceId)`
+5. When count ≥ `mission.peerScanTarget` → `upsertProgressEvent(completed)`
+6. GM player analytics shows live attestations (SSE)
 
-> **Trust boundary (qr only):** `xpValue` in the QR payload is client-generated
-> and not server-verified at encode time. `ValidationPage` should prefer
-> `missions.xpValue` at confirm when available. Acceptable for prototype demo.
-> See OD-07.
+**QR identity rules (normative)**
 
-Real-time subscriptions: `ValidationDisplay` for `qr` uses adapter subscribe on
-the **player** device only. `gmApprove` may use polling or SSE while waiting for
-approval (see OD-09). The GM QR confirm path is offline until the explicit PB
-write on `ValidationPage` (C-07).
+| URL scanned | Scanner identity | Result |
+| ----------- | ---------------- | ------ |
+| `/join/:sessionId?t=:inviteToken` | None | Claim player row → player cockpit |
+| `/join/:sessionId?t=:inviteToken` | Player or GM exists | `InvalidIdentityPage` |
+| `/validate/...` | GM for this workspace | Validation confirm |
+| `/validate/...` | Player or none | `InvalidIdentityPage` |
+| `/peer/...` | Any (incl. none) | Peer attestation form |
 
-### Admin Cockpit
+**Signing:** `qrPayload.ts` / `peerPayload.ts` are single encode/decode points
+(C-16). All QR codes are **plain HTTPS URIs** — scannable by the device camera
+without the MesseBuddy app installed; the browser handles routing.
 
-The Game Maker's primary view - read-write. Components in render order:
+> **Trust boundary (`qr`):** Prefer server `missions.xpValue` at confirm over
+> payload value. See OD-07.
 
-- `TopBar`
-- `PlayerSelectorDropdown`
-- `PlayerProfileCard`
-- `MilestoneMapEditor`
-- `MilestoneSidebarEditor`
-- `CurrentMissionsList` (drag-to-reorder)
-- `BuddyAssignmentForm`
-- `ResourcesEditor`
-- `SaveActions`
-- `AdminQRScannerModal` (optional GM QoL — generic URL scanner → `ValidationPage`)
-- `PendingApprovalsPanel` / `useAdminPlayers` for approve/reject (`gmApprove` only)
+### Admin surfaces
 
-**Background Image:** Game Maker uploads JPEG/PNG/WEBP → stored in Pocketbase
-file storage → `session.bgImageUrl` updated → both Player and Admin
-`BackgroundCanvas` instances fetch the same URL.
+**GM Home (`GameMakerHomePage`)** — tabbed workspace shell
 
-**GridOverlay:** Toggleable snap-to-grid, visible in edit mode only. Aids
-Milestone node placement.
+| Tab | Purpose |
+| --- | ------- |
+| **Players** | All workspace players — invited + claimed; summary stats; **Add player** → `invitePlayer` → `inviteToken` + link |
+| **Resource library** | Global CRUD on `library_resources` — all GMs; attach entries to player milestones from player detail |
+
+- Navigate to player detail for per-player customize / analytics
+- Stale workspace session → "Remove this profile"
+- **Player display name (admin):** show `preferredName` when set, with `name` as
+  secondary label when they differ
+
+**Player Detail (`PlayerDetailPage`)** — per-player command center
+
+| Tab | Purpose |
+| --- | ------- |
+| **Analytics** | Map progress, pending approvals, peer-scan feed, form submissions |
+| **Customize** | This player's milestones, missions, map BG; attach library resources per milestone |
+| **Buddy** | Mentor card for this player |
+| **Pre-boarding** | Workspace checklist |
+
+- `MissionBottomSheet` — missions + resources for selected milestone
+- Per-player invite link (`SessionInviteCard`) — `/join/:sessionId?t=:inviteToken`
+- `AdminQRScannerModal` — scan any MesseBuddy URL
+
+Diagram: [`docs/player-lifecycle.puml`](docs/player-lifecycle.puml)
+
+### Admin draft architecture (normative)
+
+Player customization uses **draft layers** until explicit Save:
+
+| State | Location | Rule |
+| ----- | -------- | ---- |
+| `draftMilestones[]` | `useGmMilestoneEditor` | Source of truth for name, position |
+| `draftMissions` Map | `useGmMissionEditor` | Source of truth for mission fields incl. `xpValue` |
+| `missionOrderChanges` Map | `useGmMissionEditor` | Must be **merged into list props** for display before save |
+| `selectedMilestoneId` | player detail | **Store ID only** — derive `Milestone` from `draftMilestones` for UI |
+
+**Dirty guards:** Any exit from mission editor (back, close, overlay dismiss)
+must run the same confirm sheet when `isDirty`.
+
+**Mutations:** All adapter writes from admin UI must surface errors (toast) —
+no silent `void` on promises.
+
+**Background Image:** Game Maker uploads JPEG/PNG/WEBP → Pocketbase file storage
+→ `session.bgImageUrl` updated → both Player and Admin `BackgroundCanvas` fetch
+the same URL.
 
 ## Use Cases
 
@@ -506,15 +664,18 @@ flexible as possible for the users.
 
 | Use case              | Inputs                                | Output                | Side effects                |
 | --------------------- | ------------------------------------- | --------------------- | --------------------------- |
-| `deriveXP`            | `Mission[]`                           | `number[]` (xpValues) | None - pure function        |
+| `computeMilestoneThreshold` | `Mission[]` for one milestone | `number` | None — sum of xpValue |
 | `computeProgress`     | `ProgressEvent[]`, `Mission[]`        | `PlayerProgress`      | None - pure function        |
 | `upsertProgressEvent` | `playerId`, `missionId`, `patch`      | `ProgressEvent`       | PATCH or POST to PB         |
+| `recordPeerScan`      | `missionId`, `playerId`, attestation  | `PeerScan`            | POST to PB; may complete mission |
 | `validateMission`     | `ScanData`, `gameMakerUid`            | `ProgressEvent`       | Calls `upsertProgressEvent` |
 | `completeForm`        | `missionId`, `formResponse`           | `ProgressEvent`       | Calls `upsertProgressEvent` |
-| `joinSession`         | `sessionId`                           | `LocalIdentity`       | Writes `localStorage`       |
-| `recoverIdentity`     | `recoveryKey`, `sessionId`            | `LocalIdentity`       | Writes `localStorage`       |
-| `exportTemplate`      | `Session`, `Milestone[]`, `Mission[]` | `TemplateExport`      | None - pure function        |
-| `importTemplate`      | `TemplateExport`                      | `sessionId`           | POST chain to PB            |
+| `joinSession`         | `inviteToken`, `name`                 | `CachedIdentity`      | Orchestrates `claimPlayer`; writes `localStorage` |
+| `invitePlayer`        | `sessionId`, `name?`                  | `Player`              | Creates invited `players` row with `inviteToken` |
+| `claimPlayer`         | `inviteToken`, `name?`                | `CachedIdentity`      | Binds `uid`/`recoveryKey`; `claimStatus=claimed` |
+| `recoverIdentity`     | `recoveryKey`                         | `CachedIdentity`      | Writes `localStorage`       |
+| `exportTemplate`      | `playerId`, `name`                    | `TemplateExport`      | None - pure function; resolves resource bindings |
+| `importTemplate`      | `TemplateExport`, `playerId`          | `void`                | POST milestones/missions/attachments onto target player |
 
 > **`upsertProgressEvent` is the single write path for all ProgressEvent
 > mutations.** No component or page may PATCH or POST to `progress_events`
@@ -523,22 +684,24 @@ flexible as possible for the users.
 
 ## React Component Architecture
 
-[![](https://img.plantuml.biz/plantuml/dsvg/pLdRRkFM5NttL-pweVKWkXHedgONH2FBOsSaMoDgCWcAOd147akiUSiXQOrQ5CX7v0lp9LrxdtCeKfJJfs8I312HF9TzMsjV_4rPALFLQK9HhBP6fP_--FMd4F_ojCWpdLKNlukpCAaZJN-PVZsUVlrfwh_yxUAYYgj4qrmTjA4_KVE5hkrP5nVJFAjKd6dpwKrUPv4oXwjYhmPqkT8gh6ZvSNBvYlvzGVYlsNsLg2oAiorMpUslfThgo-CczpJBAdEW8e-pQaIhlAvqINK9IQgSliLRkhhNUvgbHP8VjAOnJQ8KRqqEaKkTwB3ApQi1vOPMEioViN5fygtHPKcFIRulHvUlJWJRwmHsqIm0xlzuVEeBjypBQfZaMro88tK5BKOKx70iQIzHfbASm_8CgD8g7H3K9N48HQhI8vgk9wnDgIkg2ofC_XX3U4XSFiK5VubKkTlaoaHzOTrg9-po-DGNzgPEakPqN8Qx7dEJqfMLCCb3LSLvDk1hawGSq3utJn3qaEXN8_fGml0tM1_iDCxP6rKKsepeNZt7MyLUWQ3NNb3ACohLipuZSC9nDCt3foAkMEJsytd15uWjiljQfd1sNa2RiiBPj535WAQrCHoRYxWieGoqU5D7qO6cs39029HvRK9TJdUgea9bEh7kMDS8arWbz808mKrzkHM7rL7iIUlnlDHlOLN8zDGL-ix2hAIbbg2dIG6NFAi4Rwmu7OLe5iMGZ2C7yGGp3oCJF-lCwzTyjrfEy7ARfP3NgjNewzRrrUArqDoYZstTVZxZ2l-PVa-9LYRZduNHZnfMvtiuelvNi6mGVuycJu_XqfSBlhtxYFXpOjss7ljIVMm2LRIkyZpvlmZ5vpY1RjpFlZ0hE5QRag83S1M75cEFiKuYlBFEsnpeXby4uKwdwk__6D4jv8RRII4ERKJeI7OEgqEXANNHt1VfHnE4AWFrukRtA_Vxl62J4BPW6qJwEGurXGXGeqPq3LxaY7o_0Y8EIQuYiMAXPB5HUvXMN0w0vu-F2OYU4B0no2jdy-MKwKgu8bImAu1LGWogubJWVyQ6uW1dHFdDuWKxPQ1qiz8gK9VMC-2kOHc2OpDhKEUzrxJEYpVAq3wkTZJFjpbzHG68XpPrLJ6PRLJu10uMaX9sasmsXiAXYGj7UDWmnB53HfYn_5nlqhWYs4_ipi4JiT-MRRvTTC73-zg1UWPj7jl2LPUBrkDtiTvhCxOuVTaUDhQG3E4wo0P5ZtoHmOsKWZGapIbHVMiu8yCpsRE26jT6RMsiWr8rxgAKDrsro2hFaiEhSw9B25eUlLmSdrwIzJekcRCHqrJ2H8dsd3MIYrc8lrQc1cGZ84Da2L57854AOEaeKbyO5tuupDs2-xuxVST2T2IwQGNHyGJYx2KtsbJKL1a8z_ShTnPTkSX7AU6OsnDt8m5EYDCKYl1vKLoonU033XpSukmtEbwyqDKkZyv0v4S0M73ueOeP9itpg2fP3tuTLmTsNPsu8ib2c2Cmwi4PgH9PeRGO0QPP3jWXBo3PxM8ofITzO16rdF9dGlJ48ApIViG7UwH07PKN1vSWtUWVwvZz3iYtxEc1_vBBa9JgfEfupBxgESoPbczuP61wze5gNYHR1BZYm1Oopj83-dx9OjLOjJRnTil0uI97YY1R0UvD35_1qKjaSbszWRFSLGZ5nzYa8jqP5nNT62XTxhvSddlVqyiApIRqnCvmF3cJIqG8fqAJbrv38BY5L6KJ1GWTNWYhv60Js0vfhsz_Nq3Cuur1WGufrjqtFIbRD-bZ4Iv8SM8Ji6GjH6yCLBBfrrRTWBs_aYI7GOBF5UfpUF09_sCMHravLtM6B5XwSh3yPqErslaI7X7G78R4FkIercSITDe-v4XJHrBjABW-gQcyLjhMIkJPrg-xiKaytCL9T0Hs8w6xR0rbHpQ_bwzjja4MogF3-CDgFfQSlgbn0gVixvV8HsgBAZK24N8tC6WZAMqOuhmlxIKjJUoBlg8GQLWMEWIiGrkBIBSHPsKSwQxf0POT619Ye1xEAgYmXjzykNbbud0dse08v_1aym7A8VKcQgCJVEBCtdngAY6vs2aFtmVmCdmlLcmRhmytqwxR9G-sdllggiq6fuQ-AmLHiIFn2YZhz1kZLeMCZEGM8XjzZajkvewV0ntQG9-KJpIvwwnc8GJeV1py8ATnx5Q0WqeuDVVEwVaqz8UmDlvtJpNfMpxSlKQ9XKIPI2PFmMIeDW2iik96uJCxjgZnkuI0hX12bmc-aTQPpmWg83ULy9L2vnZifNonvTwJ5cO2ohbDmFu3FSTAz5tOI_jwT2w0n9tdOr5wc-TFGeMu5gtFGx2cCPjWp2E9H4lLnSGy1q7FvmkcxCy7by7agDTSEx3O2lk3O0POrjcJJO5S6lAnJWCSusqad0edrZXdXwq83kkOo7AdouuIEp2afBmmYQ7OKA32rL92tF67zCjFFxDOpx6S8YmWQMSrUOlGGCci0MLR5M9PMe0IwwqOKi3DzByJIJb_ShnO7MqHqiS06nASmt17CKhoMsOGjT6q3bmr8AyW40YDoOMjYMB6Zpm6L1V8u9L_dZrBg-WeHozyvdHEq0pZ0VqJl1zezydOASfTX9qeGWR0If6RoZFG03LG-xdV_sycaIegQLXQMTUz5FW6hSeciANZnisL9FkmvPPlABX-9tK8ak9I6T-hV1iytFjs2-agb-GZ8J6qHOBKpeyCqdxmIdaGW0LjapTlFR8mDiaPcYplH3PymQsoojlZDTLnr5Zfy4uV1ZwexY8x1k9h_zCQcbrlO9IEDGGcCq3YAuviB6_MNg7mGx_4mFB8M7BKI20Sa2qof5RtHNg-3T1YcnWRMBH1hyO5yFBZH48JNEQ3k6GuXJhcai9obude0G4wkHkM25MOaKi-T1kbHKi7sxnPWfuT0JGy8tjGb8SrXxn7fsmhjiyobgChG0N9mi6Yz200L0RyMrgzFOGG2FD7gSgsDLCv0jboc9T-n9QGNmCBKmizdI8Ne5XeH055030SG_Oqd_qPpbakTk7I4XAhR2kwk2gNHtHxT5SG91srdS8ET2h1vFwddmy2QC5xpetj3zzP0vGSGHBJZPWCFPKTZkAE6Ww4wGsNvToNLjuLJRaT74hK1Pzcdwih5HzDSGa7-oTf7hpT-4G4CbrP3_FaDAjs9Yz0RVZzBwQLCUNGbdCrPm_R0Njfk4yKcle3_VBpJ_X7o_daXzcARkOF7zshtyw_YvLEZYFd5fUso0tgdh0RrEliwuw6isRqQNi6XQpYTdGMTcUqGNVCErrFpkuv6PC6F0hcGCdolLlVEROzLh6p4NQMMtaovFlLjTt1swykxGZGCYcFKvgUp2qw5oZJX-cxvTtwjn8hLgUktKy6DhxYGq6geg5CIhmjJlUrfoNDlECHBQ4-l-FSI2D5rWDVSNcip9FaASxAT9MXWPSncEyVNn3Zj6vsyhl59r_R5UYnodLhMnzFApp9mROJoYAt_6JDCMkzKEcrQZecgTlrUWaqskHtZ9icvQqUll_XY_ECfGQlMIi313f5xWEDbbePj4iCsvSoejGHI0_ZOrQStDzxtl67TmZznYT5PC-XovswgJ6HfLfPicWnFnirm4LSMNJC-dv53pStyxlxsHUtQTUuPp1nEXlJRlBb9zSE0SJLkWT5QqP-kjqFoxuw6Ne1ONwgVUQKCxCipmpIKScW_R5Et9JA7T3VrUBCCtNvcKbKnssJwyNTFVpvThAOqMBo3epwfHtM_IFPI-GP-I6qp7-zVK_tdYLG8OXpwryQo7KPhxkdFn8xdMkr1r_kYDwcqvbJuYTQRjnwCh_oARcxgpVHySQg-gCRhymBAhU2wgIlewjjwlwu1BnKEs_vuv-rMdlRBM0dx8BRoMfsJNVtDwj9i5vzcAu_h6PV8FAQF6C5RlULaf6ybOxlfSkIlcevMKzlnvoBnczdwu4a6iUGhGHc3pxf2JdpbsCP79-qVcobR-2JEaqk_Wi0)](https://editor.plantuml.com/uml/pLdRRkFM5NttL-pweVKWkXHedgONH2FBOsSaMoDgCWcAOd147akiUSiXQOrQ5CX7v0lp9LrxdtCeKfJJfs8I312HF9TzMsjV_4rPALFLQK9HhBP6fP_--FMd4F_ojCWpdLKNlukpCAaZJN-PVZsUVlrfwh_yxUAYYgj4qrmTjA4_KVE5hkrP5nVJFAjKd6dpwKrUPv4oXwjYhmPqkT8gh6ZvSNBvYlvzGVYlsNsLg2oAiorMpUslfThgo-CczpJBAdEW8e-pQaIhlAvqINK9IQgSliLRkhhNUvgbHP8VjAOnJQ8KRqqEaKkTwB3ApQi1vOPMEioViN5fygtHPKcFIRulHvUlJWJRwmHsqIm0xlzuVEeBjypBQfZaMro88tK5BKOKx70iQIzHfbASm_8CgD8g7H3K9N48HQhI8vgk9wnDgIkg2ofC_XX3U4XSFiK5VubKkTlaoaHzOTrg9-po-DGNzgPEakPqN8Qx7dEJqfMLCCb3LSLvDk1hawGSq3utJn3qaEXN8_fGml0tM1_iDCxP6rKKsepeNZt7MyLUWQ3NNb3ACohLipuZSC9nDCt3foAkMEJsytd15uWjiljQfd1sNa2RiiBPj535WAQrCHoRYxWieGoqU5D7qO6cs39029HvRK9TJdUgea9bEh7kMDS8arWbz808mKrzkHM7rL7iIUlnlDHlOLN8zDGL-ix2hAIbbg2dIG6NFAi4Rwmu7OLe5iMGZ2C7yGGp3oCJF-lCwzTyjrfEy7ARfP3NgjNewzRrrUArqDoYZstTVZxZ2l-PVa-9LYRZduNHZnfMvtiuelvNi6mGVuycJu_XqfSBlhtxYFXpOjss7ljIVMm2LRIkyZpvlmZ5vpY1RjpFlZ0hE5QRag83S1M75cEFiKuYlBFEsnpeXby4uKwdwk__6D4jv8RRII4ERKJeI7OEgqEXANNHt1VfHnE4AWFrukRtA_Vxl62J4BPW6qJwEGurXGXGeqPq3LxaY7o_0Y8EIQuYiMAXPB5HUvXMN0w0vu-F2OYU4B0no2jdy-MKwKgu8bImAu1LGWogubJWVyQ6uW1dHFdDuWKxPQ1qiz8gK9VMC-2kOHc2OpDhKEUzrxJEYpVAq3wkTZJFjpbzHG68XpPrLJ6PRLJu10uMaX9sasmsXiAXYGj7UDWmnB53HfYn_5nlqhWYs4_ipi4JiT-MRRvTTC73-zg1UWPj7jl2LPUBrkDtiTvhCxOuVTaUDhQG3E4wo0P5ZtoHmOsKWZGapIbHVMiu8yCpsRE26jT6RMsiWr8rxgAKDrsro2hFaiEhSw9B25eUlLmSdrwIzJekcRCHqrJ2H8dsd3MIYrc8lrQc1cGZ84Da2L57854AOEaeKbyO5tuupDs2-xuxVST2T2IwQGNHyGJYx2KtsbJKL1a8z_ShTnPTkSX7AU6OsnDt8m5EYDCKYl1vKLoonU033XpSukmtEbwyqDKkZyv0v4S0M73ueOeP9itpg2fP3tuTLmTsNPsu8ib2c2Cmwi4PgH9PeRGO0QPP3jWXBo3PxM8ofITzO16rdF9dGlJ48ApIViG7UwH07PKN1vSWtUWVwvZz3iYtxEc1_vBBa9JgfEfupBxgESoPbczuP61wze5gNYHR1BZYm1Oopj83-dx9OjLOjJRnTil0uI97YY1R0UvD35_1qKjaSbszWRFSLGZ5nzYa8jqP5nNT62XTxhvSddlVqyiApIRqnCvmF3cJIqG8fqAJbrv38BY5L6KJ1GWTNWYhv60Js0vfhsz_Nq3Cuur1WGufrjqtFIbRD-bZ4Iv8SM8Ji6GjH6yCLBBfrrRTWBs_aYI7GOBF5UfpUF09_sCMHravLtM6B5XwSh3yPqErslaI7X7G78R4FkIercSITDe-v4XJHrBjABW-gQcyLjhMIkJPrg-xiKaytCL9T0Hs8w6xR0rbHpQ_bwzjja4MogF3-CDgFfQSlgbn0gVixvV8HsgBAZK24N8tC6WZAMqOuhmlxIKjJUoBlg8GQLWMEWIiGrkBIBSHPsKSwQxf0POT619Ye1xEAgYmXjzykNbbud0dse08v_1aym7A8VKcQgCJVEBCtdngAY6vs2aFtmVmCdmlLcmRhmytqwxR9G-sdllggiq6fuQ-AmLHiIFn2YZhz1kZLeMCZEGM8XjzZajkvewV0ntQG9-KJpIvwwnc8GJeV1py8ATnx5Q0WqeuDVVEwVaqz8UmDlvtJpNfMpxSlKQ9XKIPI2PFmMIeDW2iik96uJCxjgZnkuI0hX12bmc-aTQPpmWg83ULy9L2vnZifNonvTwJ5cO2ohbDmFu3FSTAz5tOI_jwT2w0n9tdOr5wc-TFGeMu5gtFGx2cCPjWp2E9H4lLnSGy1q7FvmkcxCy7by7agDTSEx3O2lk3O0POrjcJJO5S6lAnJWCSusqad0edrZXdXwq83kkOo7AdouuIEp2afBmmYQ7OKA32rL92tF67zCjFFxDOpx6S8YmWQMSrUOlGGCci0MLR5M9PMe0IwwqOKi3DzByJIJb_ShnO7MqHqiS06nASmt17CKhoMsOGjT6q3bmr8AyW40YDoOMjYMB6Zpm6L1V8u9L_dZrBg-WeHozyvdHEq0pZ0VqJl1zezydOASfTX9qeGWR0If6RoZFG03LG-xdV_sycaIegQLXQMTUz5FW6hSeciANZnisL9FkmvPPlABX-9tK8ak9I6T-hV1iytFjs2-agb-GZ8J6qHOBKpeyCqdxmIdaGW0LjapTlFR8mDiaPcYplH3PymQsoojlZDTLnr5Zfy4uV1ZwexY8x1k9h_zCQcbrlO9IEDGGcCq3YAuviB6_MNg7mGx_4mFB8M7BKI20Sa2qof5RtHNg-3T1YcnWRMBH1hyO5yFBZH48JNEQ3k6GuXJhcai9obude0G4wkHkM25MOaKi-T1kbHKi7sxnPWfuT0JGy8tjGb8SrXxn7fsmhjiyobgChG0N9mi6Yz200L0RyMrgzFOGG2FD7gSgsDLCv0jboc9T-n9QGNmCBKmizdI8Ne5XeH055030SG_Oqd_qPpbakTk7I4XAhR2kwk2gNHtHxT5SG91srdS8ET2h1vFwddmy2QC5xpetj3zzP0vGSGHBJZPWCFPKTZkAE6Ww4wGsNvToNLjuLJRaT74hK1Pzcdwih5HzDSGa7-oTf7hpT-4G4CbrP3_FaDAjs9Yz0RVZzBwQLCUNGbdCrPm_R0Njfk4yKcle3_VBpJ_X7o_daXzcARkOF7zshtyw_YvLEZYFd5fUso0tgdh0RrEliwuw6isRqQNi6XQpYTdGMTcUqGNVCErrFpkuv6PC6F0hcGCdolLlVEROzLh6p4NQMMtaovFlLjTt1swykxGZGCYcFKvgUp2qw5oZJX-cxvTtwjn8hLgUktKy6DhxYGq6geg5CIhmjJlUrfoNDlECHBQ4-l-FSI2D5rWDVSNcip9FaASxAT9MXWPSncEyVNn3Zj6vsyhl59r_R5UYnodLhMnzFApp9mROJoYAt_6JDCMkzKEcrQZecgTlrUWaqskHtZ9icvQqUll_XY_ECfGQlMIi313f5xWEDbbePj4iCsvSoejGHI0_ZOrQStDzxtl67TmZznYT5PC-XovswgJ6HfLfPicWnFnirm4LSMNJC-dv53pStyxlxsHUtQTUuPp1nEXlJRlBb9zSE0SJLkWT5QqP-kjqFoxuw6Ne1ONwgVUQKCxCipmpIKScW_R5Et9JA7T3VrUBCCtNvcKbKnssJwyNTFVpvThAOqMBo3epwfHtM_IFPI-GP-I6qp7-zVK_tdYLG8OXpwryQo7KPhxkdFn8xdMkr1r_kYDwcqvbJuYTQRjnwCh_oARcxgpVHySQg-gCRhymBAhU2wgIlewjjwlwu1BnKEs_vuv-rMdlRBM0dx8BRoMfsJNVtDwj9i5vzcAu_h6PV8FAQF6C5RlULaf6ybOxlfSkIlcevMKzlnvoBnczdwu4a6iUGhGHc3pxf2JdpbsCP79-qVcobR-2JEaqk_Wi0)
 
 ### Component Class Diagram
 
-[![](https://img.plantuml.biz/plantuml/dsvg/pLfVRnit4d_VJq7u9RwBbTxBlHYuGsN9YTLAbY8fJel3mQ1sQMdFg-MMtBKZz0BqG_GJzfFSS9Vayg_iND0aHT5Qd5boE3ESFp_oUrvZLZVx0cKvtZAyl_tRts_J0dD-cz9zHKjIrhUOfRky9cdTC9BKULqGD594D1BCQDnzdIGlq1-__mR_ek5YWLPNbzEf7FZM_atQNQ9XLQ5V4mJ_l4mRnc17IzhKv1pnckNbjgDmmdbEoqbc3rS5FX3cZZQSi2Kj-Ya-ogMckCpWzm9lYLnoe2UUb5LJM_CCzZHpnA3bY15SanzemqfoEFtBENgWUQQ8Fz2yN7KJQf9Q-pqfm9x4M5jAVuttpYhCbBqTgGdUEmeHNZF6hfueh5ytrOBHkxmWhdoh-xpo19Eyfc2qlC3flVSrVl1dXB7Nb4r14ERHciq-hwtHGSx7EQiFvsX3OPEub4Q0MR8XQ5ziI0is0rUWpBRNdoEQMl6AFaxUKtR_nHO4zlrgHuf2hTQURTka6U4fowiQdCgrzUTBPci-RhYNl1sRuWqfl6ErfjK5PazvDNx0uBFlME6uDgrnyTFY79NDVaDOu0JePHhX3hYOFn06QwZrU4qgVgwfA_Zvht_humfHiY2rhP61Z3E2rLwt91zy8wtnzW9dlKSKbXBQeGSCIvUr9_9F2-lB1rmqHA_uqOZLgwlXydACPiC5MYmdiybwSdFvTSAsb5ourfRHfin6k7p0N6qXtyFPy8o8YzhnpSr_85kzpdsLp23My1eorpL4Lpsh4y43Alwm82mbGiUcmGx1qOhHBOCu72H2vAmRxfmnXhTRl15EPmOcuK15xf-nCR1Vbjdf1pNp6JgeFtllwQsxc0v_lboYqNpqusAo_bRIiOh_xNaTqVI-ocipydrApeKyMe31IQRDwpBWjCuVo2mFpJdWE_ge3d1l0izbPhYwoSaZqR5choXWJysbJlzcEmawAoqrQsVTtlkiAB6Z46X89lpKa5S9zJDjXenS0SSCi_jUf6VwgP5zMrUTaYqfCtqUQhA7BNM34_W1U_AqiSepii4ieX7NR9hWH-OFrNe7CkneaTbIopZfHkTzPyHMv-rVIkFgt5q-m5T0NfY_ZQ1SKExbA3bLp29gzwDE9CdDfpcl-wr_dbXFIA2umDewgyJbL9DXbZdoQV6agRcQBNE23ydo-lanQKstsu84ynrGBpCteKCK8o7E5NZScaerUxbGYZucDSwB1QsQwlZkOiOsbUWKY5trKODE_KXmWuiymw8K6kUyCeg0S2Em3qQRgAXoTfBP8ZteHMUatb6OxCOPKQBh2Np9tou_H-8FrOrLEXmN-1SckOqfNg05FXGKmyI_ggNFa5xk3EbeVuRaQcS8g8qe3y_GRe_JZtAYgzbmX7Y-BKc67lDwfpuTy9HMC7PF3g_GDKMhrMNxV-Z6892Y51V5Apd5l2mE21mi4m4MFUv8YLmjet-War_OIS3qIyARGfzwdk8IYbTyZbRohxxsA-zojdTzRqb4QMADla1B9Slc0AOICvM4jSaGtq7HZ7YJfh3BkwP0zEwko4lIgI4ZAQG7jIsv8WArRxU4STHKiFdQYZVeaK5qHpL52qYvfBx07BxNwO2q7Ihqn8o2HXoVaUPQ-qr2r1To_Xxdzc7w91DizvqifBV4HPDb1pEmbS_gOCk6FQyZI6bPGxLWZgkbmVJGUOCbHZkiFO2fmNDDbq5T5Xrhl77E0em0zud-yWJz5vrWVZ_0-Ods2D0yaE13N6QuWCpPBxy23m8reRpqooTVMCNzjBoS2AJdRKFOmIwGe4ElXQ6MqM_Rq2s-Flt5_DmDu1sFtQwbHAH-mdme8JvVvrm2Cx5ZZRjvqqy2pMrzg9oH9c1sOUq5BebgamTxE4sWQj228CswNqg90QbKQgaPmNllCCYiTrf3znUjE_frj1qz9nUUIqgd5UB-echIXXCnRoTMNtQ3A94DMg7ic19UHZSBYM2-MdCHW6ucwylRAVndEftTlbjElqjXdk_IBY-BIaf-qEtW7C9QGz0Vl_qEOGDdNCHtbEwQyfx3EO3ff3pYmBGeJj__l9ulPsWnVFELMjhdTa82ZJ4Re72T44xSSJ16HV_dm6Dt846NpBe6MZbk23GxNYc9lRpEIP7rUN97zZ1nExXgVrYWXBaPmXZreW4uMRabfnPxgDbzkqIhqV3w6XhUhsxOgAbrZXVTKm_rYK6Pn9r4AebTyU0cMTvIH5NYL272I6ATe8b6a3OPVar8rWimRkk9KoOd2yLSFcoJckCDEopG3ksn_Lh6VS1uDhd-ra28tYJ338BLis483JWi_ZyumZjJaGgCctddPTKHdsWaPSLqwaOAezwED9UoDls43vNOIjubWNJDQpFjnW3PU3KPQJVKleuNr1yjN6dL6eAoCQDLHXzBMoYXm_OFUGcXTAZCvqVPRhuZZRSrdwy6Py4WnYIQPVf5C2RW4_2IK8x10HtO4M1H6IFhdTktY2Z9hHdD6ZsC0qHGC5xYQatViDo19mOjPWhS4Noi1v0x3LMY-UnnAWajnRJNiPyA4ucKLH1BfegH1uZRxdTmgBlllAAd5LRS6_ZdNUpCkL40xMqA3uv9QT7i1RfaNrGySlUOT4XC03gnSRk8bqKG0H_LYa0hhL_OLv2MdHKnwf1BGXaO2XWqIEuKdYv85F4SWL_1c0_vweiL0fKcr8hJVCCmEnXfk3taYdpQDGbodZNyi7ltoxA6ZoiAHIY20Wgz0LT7CommMQayb8fRM_X3DUfJt9HG0cayIzf2eXbTx46rN1-1kmrQxyrUkK2OQyHGmQZcMRlRCAj4rrWZNAQaiCkCWgQu63DyL_ieMrUSkG9uLrbIbBO8r7SwddwxuQnRgLqml5o0mpRDJNSl9gxdeBUIBD1hJ_FollybQbLpWHTe1PO0-sG8w8PShz2FX5IkybDnHWtBO7OlCerjca2LUwJpFLxhflB1nTrTdaAPTb0vBdpD9pFgeejPRh2mLtAlaFG5fBk4SjB-X6f89Iz4z89lk4lKgzKMCOBn2eL7TXPKbjdAkrEwW6batY2kQdXt17wrVUugpp9ITeYMF0-lX6m2pHBzrOdL8zbUSjUU2wj9CigwB6l7mt6r8trML6sda7jj9R442SNMbXo8hBhx2smlq09g3HzVrRypi2318HUWy1uoWbZUIVGjntd7g6elfTVskzEDps4N8Z5ih6kMkFsfSM6cCJDR6N4OhhFrgMBewPzIEEb2u2RdEHp88oMhYF_35YBihzb3BV-Hrnr3hhEbGvr2ul9evigAEACPBleShD3p8uLZA4UfP6Ur6sONkfo_Mq-kttn3_MUW8nLlqWQ3VveFnlIOyP1BZnblgFIOzNn9ZvfFZFhFFGnPKTocM1CKLgK7B4J3qFVy-c8-N8w5obiORZIVBUQhoNeol_xJRP2ORyl-EXZqxvqI-t6NJREUOTcaw9kABxcjTcVUgmaXQFSIAaQqtoz5kFp73aynMky08io1Q_FejEuDRuJHkujD_DjPmQTlFYFqy9LNP55zznIXMnT4IMBV5raCyb8cmA9l6vB-ta6DIvJTeLWuVf84tgkqiZjFgc9yrWkf69Fx_2J6PxylCMIpNuyObc-r6tfcuVAOJnnQ_vRlv3o2V0MN-AuL_CwbgyyJxq9DKFM5LfXitaCbYKRuLLHfAvqaiU7WrjWQd0qGtRleACZwXQDIcxfS6DM8Iq5Q6ASxnck0Qn6s48QQX95LmHy0ByCJ-oZT4tmMrXBc3ON686EWo0qpEWLdcCae-ko88QlK9oD6aC_2scBi1kGLOx5ZKCIfRFWcSU6SjWYoElLpL4ZWnOj3rjfcZ7cAJUeuiLSovUl0ZW23ZHG46FmMFxHCtvs7rl2RwG1Nh3yEiFPDQnVE79BHzILku-F5GxFnK3vfjGD9yZqSscPV_0y0)](https://editor.plantuml.com/uml/pLfVRnit4d_VJq7u9RwBbTxBlHYuGsN9YTLAbY8fJel3mQ1sQMdFg-MMtBKZz0BqG_GJzfFSS9Vayg_iND0aHT5Qd5boE3ESFp_oUrvZLZVx0cKvtZAyl_tRts_J0dD-cz9zHKjIrhUOfRky9cdTC9BKULqGD594D1BCQDnzdIGlq1-__mR_ek5YWLPNbzEf7FZM_atQNQ9XLQ5V4mJ_l4mRnc17IzhKv1pnckNbjgDmmdbEoqbc3rS5FX3cZZQSi2Kj-Ya-ogMckCpWzm9lYLnoe2UUb5LJM_CCzZHpnA3bY15SanzemqfoEFtBENgWUQQ8Fz2yN7KJQf9Q-pqfm9x4M5jAVuttpYhCbBqTgGdUEmeHNZF6hfueh5ytrOBHkxmWhdoh-xpo19Eyfc2qlC3flVSrVl1dXB7Nb4r14ERHciq-hwtHGSx7EQiFvsX3OPEub4Q0MR8XQ5ziI0is0rUWpBRNdoEQMl6AFaxUKtR_nHO4zlrgHuf2hTQURTka6U4fowiQdCgrzUTBPci-RhYNl1sRuWqfl6ErfjK5PazvDNx0uBFlME6uDgrnyTFY79NDVaDOu0JePHhX3hYOFn06QwZrU4qgVgwfA_Zvht_humfHiY2rhP61Z3E2rLwt91zy8wtnzW9dlKSKbXBQeGSCIvUr9_9F2-lB1rmqHA_uqOZLgwlXydACPiC5MYmdiybwSdFvTSAsb5ourfRHfin6k7p0N6qXtyFPy8o8YzhnpSr_85kzpdsLp23My1eorpL4Lpsh4y43Alwm82mbGiUcmGx1qOhHBOCu72H2vAmRxfmnXhTRl15EPmOcuK15xf-nCR1Vbjdf1pNp6JgeFtllwQsxc0v_lboYqNpqusAo_bRIiOh_xNaTqVI-ocipydrApeKyMe31IQRDwpBWjCuVo2mFpJdWE_ge3d1l0izbPhYwoSaZqR5choXWJysbJlzcEmawAoqrQsVTtlkiAB6Z46X89lpKa5S9zJDjXenS0SSCi_jUf6VwgP5zMrUTaYqfCtqUQhA7BNM34_W1U_AqiSepii4ieX7NR9hWH-OFrNe7CkneaTbIopZfHkTzPyHMv-rVIkFgt5q-m5T0NfY_ZQ1SKExbA3bLp29gzwDE9CdDfpcl-wr_dbXFIA2umDewgyJbL9DXbZdoQV6agRcQBNE23ydo-lanQKstsu84ynrGBpCteKCK8o7E5NZScaerUxbGYZucDSwB1QsQwlZkOiOsbUWKY5trKODE_KXmWuiymw8K6kUyCeg0S2Em3qQRgAXoTfBP8ZteHMUatb6OxCOPKQBh2Np9tou_H-8FrOrLEXmN-1SckOqfNg05FXGKmyI_ggNFa5xk3EbeVuRaQcS8g8qe3y_GRe_JZtAYgzbmX7Y-BKc67lDwfpuTy9HMC7PF3g_GDKMhrMNxV-Z6892Y51V5Apd5l2mE21mi4m4MFUv8YLmjet-War_OIS3qIyARGfzwdk8IYbTyZbRohxxsA-zojdTzRqb4QMADla1B9Slc0AOICvM4jSaGtq7HZ7YJfh3BkwP0zEwko4lIgI4ZAQG7jIsv8WArRxU4STHKiFdQYZVeaK5qHpL52qYvfBx07BxNwO2q7Ihqn8o2HXoVaUPQ-qr2r1To_Xxdzc7w91DizvqifBV4HPDb1pEmbS_gOCk6FQyZI6bPGxLWZgkbmVJGUOCbHZkiFO2fmNDDbq5T5Xrhl77E0em0zud-yWJz5vrWVZ_0-Ods2D0yaE13N6QuWCpPBxy23m8reRpqooTVMCNzjBoS2AJdRKFOmIwGe4ElXQ6MqM_Rq2s-Flt5_DmDu1sFtQwbHAH-mdme8JvVvrm2Cx5ZZRjvqqy2pMrzg9oH9c1sOUq5BebgamTxE4sWQj228CswNqg90QbKQgaPmNllCCYiTrf3znUjE_frj1qz9nUUIqgd5UB-echIXXCnRoTMNtQ3A94DMg7ic19UHZSBYM2-MdCHW6ucwylRAVndEftTlbjElqjXdk_IBY-BIaf-qEtW7C9QGz0Vl_qEOGDdNCHtbEwQyfx3EO3ff3pYmBGeJj__l9ulPsWnVFELMjhdTa82ZJ4Re72T44xSSJ16HV_dm6Dt846NpBe6MZbk23GxNYc9lRpEIP7rUN97zZ1nExXgVrYWXBaPmXZreW4uMRabfnPxgDbzkqIhqV3w6XhUhsxOgAbrZXVTKm_rYK6Pn9r4AebTyU0cMTvIH5NYL272I6ATe8b6a3OPVar8rWimRkk9KoOd2yLSFcoJckCDEopG3ksn_Lh6VS1uDhd-ra28tYJ338BLis483JWi_ZyumZjJaGgCctddPTKHdsWaPSLqwaOAezwED9UoDls43vNOIjubWNJDQpFjnW3PU3KPQJVKleuNr1yjN6dL6eAoCQDLHXzBMoYXm_OFUGcXTAZCvqVPRhuZZRSrdwy6Py4WnYIQPVf5C2RW4_2IK8x10HtO4M1H6IFhdTktY2Z9hHdD6ZsC0qHGC5xYQatViDo19mOjPWhS4Noi1v0x3LMY-UnnAWajnRJNiPyA4ucKLH1BfegH1uZRxdTmgBlllAAd5LRS6_ZdNUpCkL40xMqA3uv9QT7i1RfaNrGySlUOT4XC03gnSRk8bqKG0H_LYa0hhL_OLv2MdHKnwf1BGXaO2XWqIEuKdYv85F4SWL_1c0_vweiL0fKcr8hJVCCmEnXfk3taYdpQDGbodZNyi7ltoxA6ZoiAHIY20Wgz0LT7CommMQayb8fRM_X3DUfJt9HG0cayIzf2eXbTx46rN1-1kmrQxyrUkK2OQyHGmQZcMRlRCAj4rrWZNAQaiCkCWgQu63DyL_ieMrUSkG9uLrbIbBO8r7SwddwxuQnRgLqml5o0mpRDJNSl9gxdeBUIBD1hJ_FollybQbLpWHTe1PO0-sG8w8PShz2FX5IkybDnHWtBO7OlCerjca2LUwJpFLxhflB1nTrTdaAPTb0vBdpD9pFgeejPRh2mLtAlaFG5fBk4SjB-X6f89Iz4z89lk4lKgzKMCOBn2eL7TXPKbjdAkrEwW6batY2kQdXt17wrVUugpp9ITeYMF0-lX6m2pHBzrOdL8zbUSjUU2wj9CigwB6l7mt6r8trML6sda7jj9R442SNMbXo8hBhx2smlq09g3HzVrRypi2318HUWy1uoWbZUIVGjntd7g6elfTVskzEDps4N8Z5ih6kMkFsfSM6cCJDR6N4OhhFrgMBewPzIEEb2u2RdEHp88oMhYF_35YBihzb3BV-Hrnr3hhEbGvr2ul9evigAEACPBleShD3p8uLZA4UfP6Ur6sONkfo_Mq-kttn3_MUW8nLlqWQ3VveFnlIOyP1BZnblgFIOzNn9ZvfFZFhFFGnPKTocM1CKLgK7B4J3qFVy-c8-N8w5obiORZIVBUQhoNeol_xJRP2ORyl-EXZqxvqI-t6NJREUOTcaw9kABxcjTcVUgmaXQFSIAaQqtoz5kFp73aynMky08io1Q_FejEuDRuJHkujD_DjPmQTlFYFqy9LNP55zznIXMnT4IMBV5raCyb8cmA9l6vB-ta6DIvJTeLWuVf84tgkqiZjFgc9yrWkf69Fx_2J6PxylCMIpNuyObc-r6tfcuVAOJnnQ_vRlv3o2V0MN-AuL_CwbgyyJxq9DKFM5LfXitaCbYKRuLLHfAvqaiU7WrjWQd0qGtRleACZwXQDIcxfS6DM8Iq5Q6ASxnck0Qn6s48QQX95LmHy0ByCJ-oZT4tmMrXBc3ON686EWo0qpEWLdcCae-ko88QlK9oD6aC_2scBi1kGLOx5ZKCIfRFWcSU6SjWYoElLpL4ZWnOj3rjfcZ7cAJUeuiLSovUl0ZW23ZHG46FmMFxHCtvs7rl2RwG1Nh3yEiFPDQnVE79BHzILku-F5GxFnK3vfjGD9yZqSscPV_0y0)
 
 ### Pages (top-level routes)
 
 ```
 App
-├── LandingPage                       [/ , /join/:sessionId]
+├── RootRedirect                      [/]  auto-resume or LandingPage
+├── LandingPage                       [/join/:sessionId]
 ├── PlayerCockpitPage                 [/session/:sessionId]
-├── AdminCockpitPage                  [/admin/:sessionId]
-├── FormPage                          [/form/:missionId]
+├── GameMakerHomePage                     [/gamemaker/:sessionId]  Players + Resources tabs
+├── PlayerDetailPage                  [/gamemaker/:sessionId/player/:playerId]
+├── FormPage                          [/form/:sessionId/:missionId]
 ├── ValidationPage                    [/validate/:sessionId]  GM QR confirm
-└── QRScannerView                     [/admin/:sessionId/scan]  GM camera scanner
+├── PeerScanPage                      [/peer/:sessionId]  crowd attestation (planned)
+├── InvalidIdentityPage               [/invalid-identity]  wrong QR for identity (planned)
+└── QRScannerView                     [/gamemaker/:sessionId/scan]  GM camera scanner
 ```
 
 ### Shared Component Contracts
@@ -548,8 +711,8 @@ behavior.
 
 | Component          | Shared via                  | Key prop              | Trade-off                                                                             |
 | ------------------ | --------------------------- | --------------------- | ------------------------------------------------------------------------------------- |
-| `MilestoneNode`    | Both map views              | `draggable: boolean`  | Single component; two actors. Acceptable for prototype. Split if edit behavior grows. |
-| `MissionCard`      | Both cockpits + sidebars    | `editable: boolean`   | Same trade-off as above.                                                              |
+| `MilestoneNode`    | Both map views              | `draggable: boolean`  | Single component; split if edit behavior grows (D-007). |
+| `MissionCard`      | Both cockpits + sidebars    | `editable: boolean`   | Same trade-off as above (D-007).                        |
 | `BackgroundCanvas` | Both map views              | `imageUrl: string`    | Pure rendering; no role-specific logic.                                               |
 | `TagBadge`         | Mission cards, detail popup | `variant: MissionTag` | -                                                                                     |
 | `XpBadge`          | Mission cards               | `value: number`       | -                                                                                     |
@@ -572,6 +735,7 @@ PlayerCockpitPage
 ├── MissionDetailPopup                [on mission click, text/link types]
 ├── ValidationDisplay                 [full-screen, mounts on Mark Complete]
 │   ├── QRDisplay                     [validationMethod = 'qr'; URL QR + player subscribe]
+│   ├── PeerQRDisplay                 [validationMethod = 'peerScan'; crowd QR]
 │   └── PendingApprovalDisplay        [validationMethod = 'gmApprove']
 ├── BuddyCard
 └── ResourcesSection
@@ -621,14 +785,13 @@ ValidationPage                        [GM-only; RequireRole gamemaker]
 ├── Confirmation card                 [milestone, mission, player names, XP]
 └── Confirm / Cancel                  [Confirm → upsertProgressEvent completed]
 
-QRScannerView                         [/admin/:sessionId/scan]
+QRScannerView                         [/gamemaker/:sessionId/scan]
 ├── CameraFeed                        [device camera API]
 └── ValidationResult                  [scan status only; confirm on ValidationPage]
 ```
 
 ## TypeScript Data Model
 
-[![](https://img.plantuml.biz/plantuml/dsvg/pLdlRYEt4V--Jq7eoxKnx2G5cW_2uH1PLcgragrAij6YA0nwToGnsbrkk5oTbQH6Nw507wpFq2VfS4dkajoLSsuRn0V39v73uVpzpGpzTIcfa5MMaeJHhQ3PmnTVFSGfBSk7X4hwaF44qaWocG9P7mjOnO8LabpX7fdNUz4xykz__Xr_oEJcRZvPZjRJsvkLMNiZFn7aLKRch2mPpvKQv8U8u3y9JxB-aB9yNt_OS955V_FfwTQGPpH7et1nhB_b04avAWh13pIjLognXLmpv0SGIGMMrKBmhO2oN4aggzAmAo1FMBvrFtliOfuLAKX8wc-qabnluu9XUqzJXXAXa7EGEvuOnjlC4DRVIaWtxlVlHAjW2gNaENXYLGLURELYkHKz4CcmM4B9An63OzHjnH9zqm4_SD--2O-hJ1d9dF-6GPhqUKHze0AeLG5YlPvLgMGh_Ttmk2j1B7bgMHGfFOBGej0CChe7fN4Rf_UZsTs4t5x-VZ9UlwL0ZLWkGMne3DeigtY7qXkjpbWo9AKKrZ5dANs4r5-IQCTXQrAzAE2xYWd0quySZKHplOnMYc77qmI4puGNAfxA8PcnKZxhdMUqNolS7vSBUamvjU5sfYq-3GJCTFg4ooNqBZyL6CmLYeyUVJJkEqCE5IGZwQ_kCXfxXz-Hw_beVBww7ltcjryHlY6_iXArGhJtDbn_RGxluGW9-SZaZXWY8laUyWjo3u9j66x6ASEWFIyne0cLf8mfqh0CBWoB6uv71UOyYMcQ4cjp1IVaq2JfXMV6yOxAETv7jpPopmGwo3TBp94-bu499IQ6Ib7Vf--8FZ-eK9O1-P4C4CRHYJIN0qFWd9IY0l9nXn10Lgi9YNTLlYy9fXmICTI12i4EwafNvXcJC9lDbwWV8eSLkouIWVErOZQC75sVNHr21HQtgpKQdznFrvE76Vx2onxkbhFFOsJmkK4V5PwMNl2d8zaXBYEIaLeE1PGxWYkau2cBZwGsuPD4AFiMGQFZXXaWQ2TJ2PbLfoUpOfvo4Jf1OUOm156FzmhZf2wLFtUYQCOt27UzhDUgVlix2SHehJgtpB8dkBxRGTKp5LIVAA8EGmlBUkrRplBWkXQH5xVZFqpMboECm_hNBmx52etf8qfAOqdgTeWiBfTeCf6SmkCOurb2i5WLYRVeAJrPhgQhzUHcJTP_NapUG2MAjAR6-UJz-mA40X04e0yVhDvv9yWUjzCC4_jE14cZgkzSLT-fQm1ZpJfWJrnn8gogqEHTKGe16n28lDrKm0OevvKgREugFM1wYexeNI2MDLe5020aPdT0cFAu1llWE1QBxn4a0XPxHDfopFCD5XQ5ybxDTKYku00fB_e8KfflAmTglSsFNEnNyXWg0pc8BViUJTztA14KSxL_3wsuGS0RcpwmnM_hsCigIOuBJVKwzwfYjKMCMFD5BqnslTtdfRmIy4akLcK1izjTjpeqaFuw1Re2FYq0U-Cyw5-ElQjFnNg7VRPgoVmDn1pLevcbLiQNalI4X9bLBDoGtGBno9DZNtlfJ55w-H0C8SFEM6A2xWchIqxJZYSIjjcm6FlwOsYHdaedwTO6PZkVsLofjfW7YBTN5NGJqxUZnl1oceyhn8jS6cPbDwA_mP7GjEBznZvHlpUg3xUoEWtzSmk2PhIQ793Vwppvkax2j2h-5Efv3vBBmDlDnYZeFjM8Z6DVWSQ2JkhOUV1rslI4dmusTxmqHI2C7bRUiv8zfc1nm_MWypYnk9werudPMocsRRrjuCRw1uq71OOA29gwONOYUO4AXCq_BJuHJmgDFYs4kvkdkbe3cMRwdziuwuw9Rdb_MP_-49PSqZJK9Gijr210iFxyMa7LOABiXCDilz5_QevXc4qdfh6n7XfvdXulo0sewT3cHAA6d0MFzo0lQTcCaHZk80cYUg66mfmUsBOP7BMyLu9kP8lzhmaJLbuneJ3MUmVuNv3_rOZ-Nu6tLNqDw5JSC6ruh_BT4WnF1HSzADQOgHDBpnwM1l8-sqSLZKjsr-BKiz_X_-iVoyduTdb5fZVNa-LqFReP_qB3JTICB-z_F3-tBNwmghCsM7GRkc2hCLbdlOzxMqV3Qzqo6EnPmmRFpEHkDVhTsvWJGqExJtSN5n-S5yuXKNaKEGyEQZzyX5LXMaEkpN9Dr3vT6pRkTkSTU4Z2hYpocmrrAdYKRYvkQhWYyXvupTNkwu2YQHvWX_KBLDGjQ2ygsZiIhzRBk_7wJXNivMIc_wXmFLtydmgtLO4ClXoGy_CFPF35nSLd0wVp7nB-CIzFqPdnTKXsz2HDOyOXONcSLWcS97KDUe8d_Xy083h3BAXdngYrUbSfpMjOFuNXR5U-H1kwJhqKqdZ_mXcl9Wr9ehwMKHEWBZL-TDfff8KDZffbBsqhkVeBZ2Eymq7HVuOmCVYofdTpRqXq0nu5aQ_OD-vxFFRijgeektRthM_mE0xb-RR4OXv5tk3hNT8EjbsYVbuzNUlFcmzrXV1xjiQqfmEZyKXmr0KNRJRbQS4EwaLSyAoNtbhBH5lKl9sgtVPF3efJ_NAfEJLKdiMLt_oTG1hzM8UtEFrVeB3xFE-ewXnGWWKFuaFrPm26q5kYW2n7NmO4wepFsNQOV_bh57cPv65carU4Rw8eG89JhdBb_gaZ7OXu-O03Ris9w6kiQrMM_WS0)](https://editor.plantuml.com/uml/pLdlRYEt4V--Jq7eoxKnx2G5cW_2uH1PLcgragrAij6YA0nwToGnsbrkk5oTbQH6Nw507wpFq2VfS4dkajoLSsuRn0V39v73uVpzpGpzTIcfa5MMaeJHhQ3PmnTVFSGfBSk7X4hwaF44qaWocG9P7mjOnO8LabpX7fdNUz4xykz__Xr_oEJcRZvPZjRJsvkLMNiZFn7aLKRch2mPpvKQv8U8u3y9JxB-aB9yNt_OS955V_FfwTQGPpH7et1nhB_b04avAWh13pIjLognXLmpv0SGIGMMrKBmhO2oN4aggzAmAo1FMBvrFtliOfuLAKX8wc-qabnluu9XUqzJXXAXa7EGEvuOnjlC4DRVIaWtxlVlHAjW2gNaENXYLGLURELYkHKz4CcmM4B9An63OzHjnH9zqm4_SD--2O-hJ1d9dF-6GPhqUKHze0AeLG5YlPvLgMGh_Ttmk2j1B7bgMHGfFOBGej0CChe7fN4Rf_UZsTs4t5x-VZ9UlwL0ZLWkGMne3DeigtY7qXkjpbWo9AKKrZ5dANs4r5-IQCTXQrAzAE2xYWd0quySZKHplOnMYc77qmI4puGNAfxA8PcnKZxhdMUqNolS7vSBUamvjU5sfYq-3GJCTFg4ooNqBZyL6CmLYeyUVJJkEqCE5IGZwQ_kCXfxXz-Hw_beVBww7ltcjryHlY6_iXArGhJtDbn_RGxluGW9-SZaZXWY8laUyWjo3u9j66x6ASEWFIyne0cLf8mfqh0CBWoB6uv71UOyYMcQ4cjp1IVaq2JfXMV6yOxAETv7jpPopmGwo3TBp94-bu499IQ6Ib7Vf--8FZ-eK9O1-P4C4CRHYJIN0qFWd9IY0l9nXn10Lgi9YNTLlYy9fXmICTI12i4EwafNvXcJC9lDbwWV8eSLkouIWVErOZQC75sVNHr21HQtgpKQdznFrvE76Vx2onxkbhFFOsJmkK4V5PwMNl2d8zaXBYEIaLeE1PGxWYkau2cBZwGsuPD4AFiMGQFZXXaWQ2TJ2PbLfoUpOfvo4Jf1OUOm156FzmhZf2wLFtUYQCOt27UzhDUgVlix2SHehJgtpB8dkBxRGTKp5LIVAA8EGmlBUkrRplBWkXQH5xVZFqpMboECm_hNBmx52etf8qfAOqdgTeWiBfTeCf6SmkCOurb2i5WLYRVeAJrPhgQhzUHcJTP_NapUG2MAjAR6-UJz-mA40X04e0yVhDvv9yWUjzCC4_jE14cZgkzSLT-fQm1ZpJfWJrnn8gogqEHTKGe16n28lDrKm0OevvKgREugFM1wYexeNI2MDLe5020aPdT0cFAu1llWE1QBxn4a0XPxHDfopFCD5XQ5ybxDTKYku00fB_e8KfflAmTglSsFNEnNyXWg0pc8BViUJTztA14KSxL_3wsuGS0RcpwmnM_hsCigIOuBJVKwzwfYjKMCMFD5BqnslTtdfRmIy4akLcK1izjTjpeqaFuw1Re2FYq0U-Cyw5-ElQjFnNg7VRPgoVmDn1pLevcbLiQNalI4X9bLBDoGtGBno9DZNtlfJ55w-H0C8SFEM6A2xWchIqxJZYSIjjcm6FlwOsYHdaedwTO6PZkVsLofjfW7YBTN5NGJqxUZnl1oceyhn8jS6cPbDwA_mP7GjEBznZvHlpUg3xUoEWtzSmk2PhIQ793Vwppvkax2j2h-5Efv3vBBmDlDnYZeFjM8Z6DVWSQ2JkhOUV1rslI4dmusTxmqHI2C7bRUiv8zfc1nm_MWypYnk9werudPMocsRRrjuCRw1uq71OOA29gwONOYUO4AXCq_BJuHJmgDFYs4kvkdkbe3cMRwdziuwuw9Rdb_MP_-49PSqZJK9Gijr210iFxyMa7LOABiXCDilz5_QevXc4qdfh6n7XfvdXulo0sewT3cHAA6d0MFzo0lQTcCaHZk80cYUg66mfmUsBOP7BMyLu9kP8lzhmaJLbuneJ3MUmVuNv3_rOZ-Nu6tLNqDw5JSC6ruh_BT4WnF1HSzADQOgHDBpnwM1l8-sqSLZKjsr-BKiz_X_-iVoyduTdb5fZVNa-LqFReP_qB3JTICB-z_F3-tBNwmghCsM7GRkc2hCLbdlOzxMqV3Qzqo6EnPmmRFpEHkDVhTsvWJGqExJtSN5n-S5yuXKNaKEGyEQZzyX5LXMaEkpN9Dr3vT6pRkTkSTU4Z2hYpocmrrAdYKRYvkQhWYyXvupTNkwu2YQHvWX_KBLDGjQ2ygsZiIhzRBk_7wJXNivMIc_wXmFLtydmgtLO4ClXoGy_CFPF35nSLd0wVp7nB-CIzFqPdnTKXsz2HDOyOXONcSLWcS97KDUe8d_Xy083h3BAXdngYrUbSfpMjOFuNXR5U-H1kwJhqKqdZ_mXcl9Wr9ehwMKHEWBZL-TDfff8KDZffbBsqhkVeBZ2Eymq7HVuOmCVYofdTpRqXq0nu5aQ_OD-vxFFRijgeektRthM_mE0xb-RR4OXv5tk3hNT8EjbsYVbuzNUlFcmzrXV1xjiQqfmEZyKXmr0KNRJRbQS4EwaLSyAoNtbhBH5lKl9sgtVPF3efJ_NAfEJLKdiMLt_oTG1hzM8UtEFrVeB3xFE-ewXnGWWKFuaFrPm26q5kYW2n7NmO4wepFsNQOV_bh57cPv65carU4Rw8eG89JhdBb_gaZ7OXu-O03Ris9w6kiQrMM_WS0)
 
 ### Conventions
 
@@ -657,7 +820,7 @@ QRScannerView                         [/admin/:sessionId/scan]
 ```ts
 type MissionType = "text" | "link" | "form";
 type MissionTag = "mandatory" | "needsApproval" | "urgent" | "overdue";
-type ValidationMethod = "gmApprove" | "selfApprove" | "qr"; // per-mission; form missions ignore this
+type ValidationMethod = "gmApprove" | "selfApprove" | "qr" | "peerScan"; // per-mission; form missions ignore this
 type ProgressStatus =
   | "pending"
   | "pendingApproval"
@@ -708,16 +871,6 @@ interface ScanData {
   readonly missionTitle: string;
   readonly decodedAt: string;
 }
-
-// **[NEED-UPDATE — UX / data storage]** Planned server-side role binding.
-// Not used by adapters yet; identity is LocalIdentity (localStorage or ephemeral).
-// Future: verify role on mutations instead of client-only LocalIdentity.role.
-interface SessionRole {
-  readonly userId: string;
-  readonly sessionId: string;
-  readonly role: UserRole;
-  readonly joinedAt: string;
-}
 ```
 
 ### Pocketbase Base
@@ -764,21 +917,24 @@ interface Session extends PBRecord {
   readonly name: string;
   readonly bgImageUrl: string;
   readonly gameMakerId: string; // raw UID string, not a PB relation
+  readonly gmRecoveryKey: string; // GM recovery; shown once on workspace create
   readonly qrSecret?: string; // 64-char hex HMAC key (C-16); GM verify only; PB auto-generates
   readonly preBoardingChecks: ReadonlyArray<PreBoardingCheckItem>; // session-scoped checklist JSON
 }
 
 interface Player extends PBRecord {
-  readonly uid: string; // client-generated UUID, unique index
-  readonly recoveryKey: string; // 8-char alphanumeric, unique index
-  readonly sessionId: string; // relation → sessions
+  readonly uid?: string; // set on claim; unique index when present
+  readonly recoveryKey?: string; // set on claim; unique index when present
+  readonly sessionId: string; // FK → workspace sessions
+  readonly claimStatus: "invited" | "claimed";
+  readonly inviteToken: string; // unique; permanent invite permalink key
   readonly tutorialComplete: boolean;
   readonly profileComplete: boolean;
   readonly name: string;
   readonly preferredName?: string;
   readonly pronouns?: string;
-  readonly avatarUrl?: string; // PB file ref
-  readonly role: string; // job title, e.g. "Senior Engineer" - not an access control role; see SessionRole for UserRole
+  readonly avatarUrl?: string;
+  readonly jobTitle: string; // UI label only — no access-control meaning
   readonly team: string;
   readonly startDate: string;
   readonly location: string;
@@ -802,28 +958,30 @@ interface BuddyProfile extends PBRecord {
 }
 
 interface Milestone extends PBRecord {
-  readonly sessionId: string;
+  readonly sessionId: string; // workspace FK (denormalized for queries)
+  readonly playerId: string; // FK → players — journey owner
   readonly name: string;
   readonly xPercent: number; // 0–100, percentage of canvas width
   readonly yPercent: number; // 0–100, percentage of canvas height
-  readonly xpThreshold: number; // always 100; stored for clarity
+  readonly xpThreshold: number; // sum of missions.xpValue in this milestone; synced on save
   readonly order: number;
 }
 
 interface Mission extends PBRecord {
-  readonly sessionId: string;
+  readonly sessionId: string; // workspace FK (denormalized)
+  readonly playerId: string; // FK → players — journey owner
   readonly milestoneId: string;
   readonly title: string;
   readonly body: string; // markdown
   readonly type: MissionType;
   readonly externalUrl?: string; // only when type = 'link'
-  readonly difficulty: number; // 1–5, set by Game Maker
-  readonly xpValue: number; // derived by deriveXP, written on save
+  readonly xpValue: number; // set directly by Game Maker (XP awarded on validation)
   readonly tags: ReadonlyArray<MissionTag>;
   readonly suggestedDueDate?: string;
   readonly order: number;
   readonly isInCurrentMissions: boolean;
   readonly validationMethod: ValidationMethod; // default: 'gmApprove'; ignored when type = 'form'
+  readonly peerScanTarget?: number; // required when validationMethod = 'peerScan'; min unique scanners
 }
 
 interface FormSchema extends PBRecord {
@@ -836,18 +994,34 @@ interface ProgressEvent extends PBRecord {
   readonly playerId: string;
   readonly missionId: string;
   readonly status: ProgressStatus;
-  readonly validatedBy?: string; // Game Maker UID
+  readonly validatedBy?: string; // Game Maker UID or 'peerScan' system marker
   readonly validatedAt?: string;
   readonly formResponse?: Readonly<Record<string, string>>; // parsed by adapter
-  // **[NEED-UPDATE — UX / data storage]** OD-02: snapshot validatedXp at
-  // confirm time instead of re-deriving from mission difficulty changes.
 }
 
-interface Resource extends PBRecord {
+interface PeerScan extends PBRecord {
   readonly sessionId: string;
+  readonly missionId: string;
+  readonly playerId: string; // mission owner
+  readonly scannerDeviceId: string; // from mb_scan_device_id
+  readonly scannerName: string;
+  readonly formResponse?: Readonly<Record<string, string>>;
+}
+
+interface LibraryResource extends PBRecord {
+  readonly resourceKey: string; // unique slug; referenced by templates
   readonly title: string;
+  readonly description?: string;
   readonly type: ResourceType;
   readonly url: string;
+  readonly tags?: string; // optional user-only text; not interpreted in prototype
+}
+
+interface MilestoneResource extends PBRecord {
+  readonly sessionId: string; // denormalized workspace FK
+  readonly playerId: string; // denormalized journey owner
+  readonly milestoneId: string; // FK → milestones
+  readonly libraryResourceId: string; // FK → library_resources
   readonly isVisibleToPlayer: boolean;
 }
 ```
@@ -859,7 +1033,7 @@ interface Resource extends PBRecord {
 interface MilestoneProgress {
   readonly milestoneId: string;
   readonly earnedXP: number;
-  readonly xpThreshold: number; // always 100
+  readonly xpThreshold: number; // sum of mission xpValues in milestone
   readonly percentComplete: number; // earnedXP / xpThreshold
   readonly status: MilestoneStatus;
   readonly completedMissionIds: ReadonlyArray<string>;
@@ -880,9 +1054,11 @@ interface DraftMission {
   readonly body?: string;
   readonly type?: MissionType;
   readonly externalUrl?: string;
-  readonly difficulty?: number;
+  readonly xpValue?: number;
   readonly tags?: ReadonlyArray<MissionTag>;
   readonly suggestedDueDate?: string;
+  readonly validationMethod?: ValidationMethod;
+  readonly peerScanTarget?: number;
 }
 
 // IDs stripped on export; used for template JSON
@@ -892,7 +1068,10 @@ interface TemplateRecord {
   readonly milestones: ReadonlyArray<Omit<Milestone, keyof PBRecord>>;
   readonly missions: ReadonlyArray<Omit<Mission, keyof PBRecord>>;
   readonly formSchemas: ReadonlyArray<Omit<FormSchema, keyof PBRecord>>;
-  readonly resources: ReadonlyArray<Omit<Resource, keyof PBRecord>>;
+  readonly resourceBindings: ReadonlyArray<{
+    readonly milestoneOrder: number;
+    readonly resourceKey: string;
+  }>;
 }
 ```
 
@@ -902,14 +1081,17 @@ interface TemplateRecord {
 
 | Collection        | Key indexes                                         | Constraints                                    |
 | ----------------- | --------------------------------------------------- | ---------------------------------------------- |
-| `sessions`        | `gameMakerId`                                       | -                                              |
-| `players`         | `uid` (unique), `recoveryKey` (unique), `sessionId` | -                                              |
-| `milestones`      | `sessionId`, `order`                                | -                                              |
-| `missions`        | `milestoneId`, `sessionId`, `order`                 | -                                              |
+| `sessions`        | `gameMakerId`, `gmRecoveryKey` (unique, sparse)   | One workspace per GM (app-enforced)            |
+| `players`         | `uid` (unique, sparse), `recoveryKey` (unique, sparse), `inviteToken` (unique), `sessionId` | Player identities only; `claimStatus`; `uid`/`recoveryKey` null until claim |
+| `milestones`      | `playerId`, `order`                                 | Per-player journey                             |
+| `missions`        | `playerId`, `milestoneId`, `order`                  | Per-player journey                             |
 | `form_schemas`    | `missionId` (unique)                                | One schema per mission                         |
-| `progress_events` | `(playerId, missionId)` composite                   | App-layer uniqueness via `upsertProgressEvent` |
+| `progress_events` | `(playerId, missionId)` composite                   | App-layer uniqueness via `upsertProgressEvent` (C-05) |
+| `peer_scans`      | `(missionId, playerId, scannerDeviceId)` composite  | C-25                                           |
 | `buddy_profiles`  | `assignedToPlayerId`                                | -                                              |
-| `resources`       | `sessionId`                                         | -                                              |
+| `library_resources` | `resourceKey` (unique)                            | Company-wide catalog; any GM may edit          |
+| `milestone_resources` | `playerId`, `milestoneId`, `libraryResourceId`    | Per-milestone attachment; no `missionId` (C-26)  |
+| `templates`       | `name` (unique)                                     | Company-wide; any GM may edit                  |
 
 ### Field Type Notes
 
@@ -936,81 +1118,36 @@ upsertProgressEvent(playerId, missionId, patch):
 PB does not natively support composite unique indexes. The upsert function is
 the single enforcement point for C-05.
 
-## XP Derivation Algorithm
+## XP Model
 
-### Governing Constraints
+### Governing rules
 
-- `xpThreshold` = **100 per Milestone**, fixed constant
-- `xpValue` per Mission is derived at **save time** by `deriveXP` and stored in
-  `missions.xpValue`
-- `PlayerProgress.earnedXP` is computed at **read time** by `computeProgress` -
-  retroactive difficulty changes affect earned XP
-- Rounding remainder distributed to highest-difficulty Missions first (then
-  `mission.order` as tiebreaker)
+- **`missions.xpValue`** is set **directly by the Game Maker** in the mission
+  editor. There is **no `difficulty` field** and no normalization algorithm.
+- **`milestones.xpThreshold`** = sum of `xpValue` for all Missions in that
+  Milestone. Recomputed and persisted when missions are saved.
+- **`PlayerProgress.earnedXP`** is computed at read time by `computeProgress`
+  (C-11) — sums `xpValue` of completed missions.
+- **Session `totalXP`** = sum of `earnedXP` across milestones.
+- Changing `xpValue` after a player completed a mission affects displayed
+  progress retroactively unless OD-24 (snapshot) is implemented.
 
-### Difficulty Weight Mapping
+### Editor UX
 
-Linear 1:1 mapping. Transparent, explainable, appropriate for prototype scale.
+- GM picks XP from a constrained chip set (e.g. 5, 10, 15, 20) or numeric input.
+- Player and GM lists display the same `xpValue` the GM saved.
+- Validation confirm screens show `mission.xpValue` from server record.
 
-```
-difficulty 1 → weight 1  ·  difficulty 2 → weight 2  ·  difficulty 3 → weight 3
-difficulty 4 → weight 4  ·  difficulty 5 → weight 5
-```
+### Worked example
 
-### Algorithm (pseudocode)
-
-```
-CONSTANTS:
-  XP_THRESHOLD = 100
-  WEIGHT_MAP   = { 1:1, 2:2, 3:3, 4:4, 5:5 }
-
-FUNCTION deriveXP(missions: Mission[]) → xpValues: number[]
-
-  IF missions.length === 0 → RETURN []
-
-  weights     = missions.map(m → WEIGHT_MAP[m.difficulty])
-  totalWeight = sum(weights)
-
-  xpValues = weights.map(w → floor(XP_THRESHOLD × w / totalWeight))
-
-  remainder = XP_THRESHOLD − sum(xpValues)
-  sortedIdx = indices sorted by (weights[i] DESC, missions[i].order ASC)
-  FOR i = 0 TO remainder − 1
-    xpValues[sortedIdx[i]] += 1
-
-  RETURN xpValues   // invariant: sum(xpValues) === XP_THRESHOLD
-```
-
-### Recomputation Triggers
-
-Recompute all `xpValue` fields for a Milestone and batch-PATCH to Pocketbase
-whenever:
-
-- A Mission's `difficulty` changes
-- A Mission is added to or deleted from a Milestone
-
-Recomputation runs on **Game Maker save**, not live while editing.
-
-### Worked Example
-
-20 Missions: 1× difficulty-5, 19× difficulty-1:
+Milestone "Arrive & Get Set Up" with missions worth 10, 5, 10, 5, 10, 5, 5 XP:
 
 ```
-totalWeight = 5 + 19 = 24
-hard:  floor(100 × 5/24) = 20 → +1 from remainder = 21
-easy:  floor(100 × 1/24) = 4  → 3 get +1 from remainder = 5; 16 remain at 4
-sum: 21 + 3×5 + 16×4 = 100 ✓
+xpThreshold = 50
+Player completes first three → earnedXP = 25 → percentComplete = 50%
 ```
 
-### Session-Level XP
-
-```
-totalXP        = sum of earnedXP across all Milestones
-maxPossibleXP  = numberOfMilestones × 100
-overallPercent = totalXP / maxPossibleXP
-```
-
-Used in `TopBar` and Game Maker's player overview.
+Used in `TopBar` and Game Maker player analytics.
 
 ## Session Export / Import
 
@@ -1021,20 +1158,39 @@ interface TemplateExport {
   exportType: "template";
   exportedAt: string;
   name: string;
+  tags?: string; // optional user-only text; not interpreted in prototype
   milestones: Array<Omit<Milestone, keyof PBRecord>>;
-  missions: Array<Omit<Mission, keyof PBRecord>>;
-  formSchemas: Array<Omit<FormSchema, keyof PBRecord>>;
-  resources: Array<Omit<Resource, keyof PBRecord>>;
+  missions: Array<
+    Omit<Mission, keyof PBRecord> & { readonly _milestoneOrder: number }
+  >;
+  formSchemas: Array<
+    Omit<FormSchema, keyof PBRecord> & { readonly _missionOrder: number }
+  >;
+  resourceBindings: Array<{
+    readonly milestoneOrder: number;
+    readonly resourceKey: string;
+  }>;
 }
 ```
 
-**Import process:**
+**Import process (template → player):**
 
-1. Create new `Session` record → get new `sessionId`
-2. Insert Milestones in `order` sequence → collect `oldId → newId` map
-3. Insert Missions, remapping `milestoneId` via the id map
-4. Insert FormSchemas, remapping `missionId` via the id map
-5. Insert Resources with new `sessionId`
+1. Target `playerId` must already exist (invited or claimed)
+2. Insert Milestones for **that player** in `order` sequence → collect `order → newId` map
+3. Insert Missions for **that player**, remapping `milestoneId` via the map
+4. Insert FormSchemas, remapping `missionId` via the map
+5. For each `resourceBinding`, resolve `resourceKey` in `library_resources` and
+   create `milestone_resources` on the remapped milestone
+
+**Export process (player → template):** `exportTemplate(playerId, name)` strips
+PB ids, embeds `_milestoneOrder` / `_missionOrder`, and emits `resourceBindings`
+from existing `milestone_resources` → `library_resources.resourceKey`.
+
+**Import does not create a session.** `bootstrapFromTemplate` at GM signup is
+removed; templates apply only to existing players.
+
+**Import process (full session export):** same as template per player, plus Players,
+ProgressEvents, BuddyProfiles with id remapping.
 
 ### Full Session Export (includes player runtime data)
 
@@ -1046,7 +1202,7 @@ interface FullSessionExport {
   milestones: Array<Omit<Milestone, keyof PBRecord>>;
   missions: Array<Omit<Mission, keyof PBRecord>>;
   formSchemas: Array<Omit<FormSchema, keyof PBRecord>>;
-  resources: Array<Omit<Resource, keyof PBRecord>>;
+  resources: Array<Omit<LibraryResource, keyof PBRecord>>;
   players: Array<Omit<Player, keyof PBRecord>>; // uid + recoveryKey preserved
   progressEvents: Array<Omit<ProgressEvent, keyof PBRecord>>;
   buddyProfiles: Array<Omit<BuddyProfile, keyof PBRecord>>;
@@ -1064,45 +1220,77 @@ interface FullSessionExport {
 
 ## Design Constraints & Invariants
 
-| #    | Constraint                                                                                                                                                                                                                              | Enforcement                                                                                           |
-| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| C-01 | One user identity per session                                                                                                                                                                                                           | `players.uid` unique globally                                                                         |
-| C-02 | Progress is always recoverable                                                                                                                                                                                                          | `recoveryKey` stored in PB, shown once on first join                                                  |
-| C-03 | No auth system required                                                                                                                                                                                                                 | Pocketbase auth collections unused; identity via unified `Player` type + `RequireRole` (client-trusted role). `localStorage.mb_identity` caches a `CachedIdentity` subset of `Player` fields for offline resolution. |
-| C-04 | `xpThreshold` is always 100 per Milestone                                                                                                                                                                                               | Constant; not stored as a variable field                                                              |
-| C-05 | One `ProgressEvent` per `(playerId, missionId)`                                                                                                                                                                                         | Enforced at `upsertProgressEvent` - the single write path                                             |
-| C-06 | Form missions always `autoApproved`, regardless of `validationMethod`                                                                                                                                                                   | `autoApproved` status set on submit; `ValidationDisplay` never mounts for `form` type                 |
-| C-07 | The GM `qr` path holds no PocketBase SSE subscription during scan or confirm — offline HMAC verify on `ValidationPage` → GM confirm → `upsertProgressEvent`. Player `QRDisplay` may use adapter subscribe to detect completion after the write. `gmApprove` may use polling or SSE in `ValidationDisplay` (see OD-09). | `ValidationPage` + `qrPayload.ts`; no `pb.collection().subscribe()` on GM QR confirm path |
-| C-08 | Milestone positions are percentage-based                                                                                                                                                                                                | `xPercent`/`yPercent` 0–100, never pixels                                                             |
-| C-09 | `MilestoneNode` and `MissionCard` are shared components                                                                                                                                                                                 | `draggable` and `editable` boolean props; see D-007 for trade-off                                     |
-| C-10 | Templates strip all PBRecord IDs on export                                                                                                                                                                                              | Import creates fresh records; never reuse IDs across sessions                                         |
-| C-11 | `PlayerProgress` and `MilestoneProgress` are never persisted                                                                                                                                                                            | Derived at read time by `computeProgress`                                                             |
-| C-12 | No TypeScript enums                                                                                                                                                                                                                     | Use `const` object + `keyof` union pattern throughout                                                 |
-| C-13 | No component calls `JSON.parse` on a PB record field                                                                                                                                                                                    | All parsing happens inside the PB adapter module                                                      |
-| C-14 | No component writes directly to `progress_events`                                                                                                                                                                                       | All mutations go through `upsertProgressEvent`                                                        |
-| C-15 | `validationMethod` defaults to `'gmApprove'` for all new Missions                                                                                                                                                                       | Set in `MissionEditor` default state; form missions ignore this field                                 |
-| C-16 | QR payloads must include HMAC-SHA256 keyed with `sessions.qrSecret`. `qrPayload.ts` is the single encode/decode point; `qrUrl.ts` wraps payloads in validation URLs. No component calls `JSON.stringify`/`JSON.parse` on QR strings directly. | `qrPayload.ts`, `qrUrl.ts`; `QRDisplay`, scanners, `ValidationPage` |
-| C-17 | `ChatThread` and `ChatMessage` are ephemeral client-only state. Chat history is never written to PocketBase and is reset on page navigation                                                                                             | `useChatStream` hook holds state in React; no PB adapter call for chat data                           |
-| C-18 | All domain data access flows through shared hooks. No component or page calls [`AppAdapter`](src/adapters/interface.ts:18) methods directly.                                                                                            | `useProgress`, `useBuddyProfile`, `useResources` are the sole consumers of `AppAdapter` for their respective domains. Pages and components consume data exclusively through these hooks. |
-| C-19 | Role-scoped view types enforce compile-time field access. Player components receive `Player*View` types that omit admin-only fields (e.g., `PlayerSessionView` omits `qrSecret`, `gameMakerId`). Admin components receive full domain types. TypeScript enforces this at build time. | `src/types/views.ts`; `SharedDataProvider` returns typed views via `useSharedData(entity, role)`. |
-| C-20 | Shared hooks may maintain real-time subscriptions (SSE, polling) as an implementation detail. The subscription strategy is opaque to components — they consume reactive data without knowing how updates arrive.                          | Internal to shared hooks; not a component concern. Hook authors choose SSE or polling per data freshness requirements. |
-| C-21 | [`PreBoardingCheckItem`](src/types/ephemeral.ts:11) is a separate PocketBase collection, not embedded in `Session.preBoardingChecks` JSON. Both roles can read; only GameMaker can write.                                       | `pre_boarding_checks` collection with `sessionId`, `label`, `checked`, `dueDate?`; `listPreBoardingChecks` / `upsertPreBoardingCheck` adapter methods. |
+| # | Constraint | Enforcement |
+| --- | ---------- | ----------- |
+| C-01 | One `players` row per person per workspace; `uid` unique globally once claimed | `players.uid` unique index |
+| C-02 | Progress is always recoverable | `recoveryKey` on `players`; `gmRecoveryKey` on `sessions` |
+| C-03 | No PocketBase auth login | GM via `sessions.gameMakerId` + `gmRecoveryKey`; players via `players` rows (`uid`, `recoveryKey`, `inviteToken`). `localStorage.mb_identity` caches `UserRole`. |
+| C-04 | `xpThreshold` = sum of `missions.xpValue` in the Milestone | Recomputed on mission save; stored on `milestones` |
+| C-05 | One `ProgressEvent` per `(playerId, missionId)` | `upsertProgressEvent` only |
+| C-06 | Form missions always `autoApproved`, regardless of `validationMethod` | `ValidationDisplay` never mounts for `form` type |
+| C-07 | GM `qr` path: offline HMAC verify → GM confirm → `upsertProgressEvent`; no PB SSE on confirm path | `ValidationPage` + `qrPayload.ts` |
+| C-08 | Milestone positions are percentage-based | `xPercent`/`yPercent` 0–100 |
+| C-09 | `MilestoneNode` and `MissionCard` are shared components | `draggable` / `editable` props (D-007) |
+| C-10 | Templates strip all PBRecord IDs on export | Import creates fresh records |
+| C-11 | `PlayerProgress` and `MilestoneProgress` are never persisted | `computeProgress` at read time |
+| C-12 | No TypeScript enums | `const` object + `keyof` union |
+| C-13 | No component calls `JSON.parse` on PB fields | Adapter parses once |
+| C-14 | No component writes directly to `progress_events` | `upsertProgressEvent` only |
+| C-15 | `validationMethod` defaults to `gmApprove` | `MissionEditor` default; ignored for `form` type |
+| C-16 | QR payloads include HMAC-SHA256 via `sessions.qrSecret` | `qrPayload.ts` single encode/decode point |
+| C-17 | Chat is ephemeral client-only | `useChatStream`; no PB persistence |
+| C-18 | Domain data access through shared hooks only | `useProgress`, `useBuddyProfile`, `useResources` |
+| C-19 | Role-scoped view types omit admin-only fields | `src/types/views.ts` |
+| C-20 | Real-time subscriptions are hook-internal | Opaque to components (OD-09) |
+| C-21 | Pre-boarding checks in dedicated collection | `pre_boarding_checks` collection |
+| C-22 | Admin lists project pending draft edits | `usePlayerDetailPage`, `MissionBottomSheet` |
+| C-23 | Logout navigates to landing only; `removeProfile` is explicit | `GameMakerHomePage`, `usePlayerCockpitPage` |
+| C-24 | Players list shows all workspace `players` (invited + claimed) | `GameMakerHomePage` Players tab |
+| C-25 | `peerScan` attestations unique per `(missionId, playerId, scannerDeviceId)` | `peer_scans` unique index |
+| C-26 | Milestones and Missions per `playerId`; player-visible resources via `milestone_resources` → `library_resources`; no mission–resource link | Schema FKs |
+| C-27 | Per-player invite via `inviteToken` on `players`; URL `/join/:sessionId?t=` | `invitePlayer`, `claimPlayer`, `SessionInviteCard` |
+| C-28 | `templates` and `library_resources` are company-wide; any GM may edit | No `sessionId` on library collections |
 
-## Open Decisions [APPEND-ONLY]
+---
 
-| #     | Question                                                                                                                                                                                                    | Impact                                                                     | Target Sprint  |
-| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | -------------- |
-| OD-01 | Should `link`-type Missions auto-complete on click, or require "Mark as Visited" + QR flow?                                                                                                                 | Determines if link missions need `QRDisplay`                               | Sprint 2       |
-| OD-02 | Should difficulty changes retroactively affect earned XP, or should `ProgressEvent` snapshot `xpValue` at validation time?                                                                                  | Data model + fairness UX                                                   | Sprint 2       |
-| OD-03 | Should `MilestoneNode` fill color use a gradient (0–100%) or step thresholds (0%, 25%, 50%, 75%, 100%)?                                                                                                     | Visual design only                                                         | Sprint 2       |
-| OD-04 | Does the `ResourcesSection` support metadata filtering (type, tags) or free-text search only?                                                                                                               | `SearchBar` complexity                                                     | Sprint 2       |
-| OD-05 | Should the Game Maker be able to create multiple Buddy profiles per session (a pool), or one per player only?                                                                                               | `BuddyProfile` schema impact                                               | Sprint 3       |
-| OD-06 | What is the offline behavior for form submission - queue and sync, or block until online?                                                                                                                   | Service Worker strategy                                                    | Sprint 3       |
-| OD-07 | In production, should `xpValue` be re-derived from `missions.xpValue` at scan time rather than trusted from the QR payload?                                                                                 | Security; out of scope for prototype; applies only to `qr` method          | Post-prototype |
-| OD-08 | Should `validationMethod` be configurable at session level (all missions inherit a session-wide default), or per-mission only?                                                                              | Game Maker UX and template design complexity                               | Sprint 3       |
-| OD-09 | For `gmApprove` missions, should `ValidationDisplay` use polling or SSE to detect approval? SSE keeps the existing real-time pattern but extends the subscription scope.                                    | Real-time UX vs. infrastructure simplicity                                 | Sprint 3 — Partially resolved by C-20: the subscription strategy is now an implementation detail of the shared `useProgress` hook, not a component-level decision. The `ValidationDisplay` delegates to the hook; the hook author chooses SSE or polling. |
-| OD-10 | Should the Player see the `pendingApproval` state inline (e.g., greyed-out mission card with "Waiting for approval") rather than a full-screen `ValidationDisplay`?                                         | Player UX feedback loop; affects when `ValidationDisplay` dismisses        | Sprint 3       |
-| OD-11 | What is the auth mechanism for the LiteLLM proxy? Options: (a) Bearer token hardcoded in env var at build time, (b) session token passed from `Player`, (c) unauthenticated (internal network only).         | Security posture of the AI gateway; affects `useChatStream` implementation | Sprint 3       |
-| OD-12 | Should the QR payload's `issuedAt` expiry tolerance be configurable per session, or a fixed constant (e.g., 5 minutes)?                                                                                     | UX for slow QR scans; security for replayed tokens                         | Sprint 3       |
-| OD-13 | How should player-side QR signing obtain the HMAC key in production? Options: server-signed token endpoint, short-lived player signing key, or accept prototype `sessionId` stand-in in mock only.          | Security of `qr` path; `qrSecret` must not leak to untrusted clients       | Post-prototype |
-| OD-14 | Should identity move from `localStorage` + ephemeral demo to persisted `SessionRole` records with server-validated roles?                                                                                  | Multi-session UX, route guard trust, recovery flows                        | Post-prototype — Simplified by the unified `Player`/identity model. Identity is already a canonical `players` PB row; the remaining step is server-validating the `role` field on mutations. |
+## Decision Log [APPEND-ONLY]
+
+Single register of product and architecture decisions. **Add new rows; never edit
+or delete existing rows.** Open questions use `Status: open`; settled items use
+`Status: decided`.
+
+| ID | Date | Status | Decision | Rationale |
+| --- | ---- | ------ | -------- | --------- |
+| D-007 | 2026-06 | decided | `MilestoneNode` and `MissionCard` are shared across Player and GM views with `draggable` / `editable` boolean props | Acceptable prototype trade-off; split components if role-specific behavior grows |
+| OD-02 | 2026-07-03 | decided | XP is GM-set `missions.xpValue` only — no `difficulty`, no `deriveXP` | Simpler editor; GM controls reward directly (C-04) |
+| OD-08 | 2026-07-03 | decided | `validationMethod` is per-mission | Mixed validation strategies within one player journey |
+| OD-09 | 2026-07-03 | decided | SSE/polling strategy is internal to shared hooks | Components stay unaware of transport (C-20) |
+| D-C04 | 2026-07-03 | decided | `milestones.xpThreshold` = sum of mission `xpValue` in that milestone | Progress % reflects configured content, not a fixed 100 |
+| OD-14 | 2026-07-05 | decided | `players.role` stores user type in PocketBase; `localStorage` is cache only | GM and Player both have `players` rows; `role` is not job title |
+| D-ARCH | 2026-07-05 | decided | **Workspace model:** one `sessions` row per GM; each hire is a `players` row with per-player milestones/missions; resources linked per `milestoneId`; `role` = user type, `jobTitle` = UI label | Replaces prior one-session-per-hire model; matches multi-player GM workflow |
+| OD-22 | 2026-07-05 | decided | Resources attach to milestones via `milestoneId`; no `missionId` FK | GM links resources like missions; player sees them in milestone sidebar |
+| OD-25 | 2026-07-05 | decided | Per-player `inviteToken`; invite URL `/join/:sessionId?t=`; capability link hydrates cache on any device | Same link reopens same PB row; progress always server-authoritative |
+| OD-26 | 2026-07-05 | decided | Resources editor: dedicated **Resources** tab on `GameMakerHomePage` plus inline CRUD in milestone editor | Central list + contextual edit at milestone |
+| OD-27 | 2026-07-05 | decided | Multi-device concurrent edits use last-write-wins; no merge UI in prototype | Keeps backend simple; conflict resolution deferred |
+| OD-01 | — | open | Should `link`-type missions auto-complete on click, or require explicit mark + validation? | Affects whether link missions mount `ValidationDisplay` |
+| OD-03 | — | open | `MilestoneNode` fill: gradient vs step thresholds (0/25/50/75/100%) | Visual design only |
+| OD-04 | — | open | `ResourcesSection`: metadata filters vs free-text search only | `SearchBar` complexity |
+| OD-05 | — | open | Multiple buddy profiles per session (pool) vs one per player | `BuddyProfile` schema |
+| OD-06 | — | open | Offline form submission: queue-and-sync vs block until online | Service Worker strategy |
+| OD-07 | — | open | Re-derive `xpValue` from server at QR confirm vs trust payload | `qr` validation security |
+| OD-10 | — | open | Inline `pendingApproval` on mission card vs full-screen `ValidationDisplay` | Player feedback UX |
+| OD-12 | — | open | QR `issuedAt` expiry: per-session config vs fixed constant | Scan UX vs replay security |
+| OD-13 | — | open | How player-side QR signing obtains HMAC key in production | `qr` / `peerScan` security |
+| OD-20 | — | open | Auto-apply starter template when GM adds a player vs empty until manual import | Onboarding empty-state |
+| OD-21 | — | open | `peerScan` scanner input: mission `FormSchema` vs fixed name-only form | `PeerScanPage` + analytics |
+| OD-24 | — | open | Snapshot `validatedXp` on confirm vs re-derive from live `missions.xpValue` | Fairness vs C-11 simplicity |
+| OD-28 | — | open | Harden invite tokens (expiry, PIN, or one-time claim) | Prototype uses permanent capability URLs (OD-25) |
+| OD-29 | — | open | `UserRole` extension for manager: validate missions, no milestone/mission edit | Future system role |
+| D-ARCH-2 | 2026-07-05 | decided | **Workspace model (final):** one `sessions` row per GM (`gameMakerId`, `gmRecoveryKey`); claimable identities = `players` only (no GM row); `inviteToken` + `claimStatus`; per-player `playerId` journeys. **Supersedes D-ARCH and OD-14** where they require GM `players` rows or `players.role`. | Separates user types from player entities; fixes phantom workspace-as-hire |
+| D-ARCH-3 | 2026-07-05 | decided | **Company library:** global `templates` + `library_resources`; per-player `milestone_resources` attachments; `importTemplate(template, playerId)`; templates reference resources by `resourceKey`. **Supersedes OD-22 and OD-26** resource-session scoping. | Shared onboarding across GMs/sessions; independent journeys per player |
+| D-ARCH-4 | 2026-07-05 | decided | **Session ≈ department** by convention; no department entity, enum, or app logic. Optional user-only `tags` text on library rows for future filtering only. | Prototype simplicity; architecture allows later scalability |
+| D-ARCH-5 | 2026-07-05 | decided | Any GM may create, edit, and delete `templates` and `library_resources` | Shared company onboarding ops; no ACL in prototype (C-03) |
+| D-NAMING-1 | 2026-07-05 | decided | UI user types = `gamemaker` \| `player` (`UserRole`); PB onboarding entity = `players` / domain `Player`; **no `role` field on `players` rows** | Aligns code with product language; removes legacy hire/role overload |
+| D-NAMING-2 | 2026-07-05 | decided | Purge **hire** from routes, hooks, filenames, and docs. Use **player** consistently (`useGmPlayers`, `/player/:playerId`, `PlayerDetailPage`). Adapter: `invitePlayer`, `claimPlayer`. | Cleans up legacy one-session-per-hire implementation naming |
+
+Diagram index: [`docs/README.md`](docs/README.md)

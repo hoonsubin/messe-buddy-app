@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Resource } from "../types/index.ts";
+import type { ResourceType } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
+
+export interface AddResourceInput {
+  readonly title: string;
+  readonly type: ResourceType;
+  readonly url: string;
+  readonly isVisibleToPlayer: boolean;
+  readonly milestoneId?: string;
+  readonly description?: string;
+}
 
 export interface UseResourcesPlayerResult {
   readonly role: "player";
@@ -10,15 +20,13 @@ export interface UseResourcesPlayerResult {
   readonly refresh: () => void;
 }
 
-export interface UseResourcesAdminResult {
+export interface UseResourcesGmResult {
   readonly role: "gamemaker";
   readonly resources: ReadonlyArray<Resource>;
   readonly loading: boolean;
   readonly error: Error | null;
   readonly refresh: () => void;
-  readonly addResource: (
-    data: Omit<Resource, "id" | "created" | "updated">,
-  ) => Promise<void>;
+  readonly addResource: (data: AddResourceInput) => Promise<void>;
   readonly updateResource: (
     resourceId: string,
     patch: Partial<Omit<Resource, "id" | "created" | "updated">>,
@@ -32,21 +40,28 @@ export interface UseResourcesAdminResult {
 
 type UseResourcesOptions = {
   readonly role: "player" | "gamemaker";
+  readonly playerId?: string;
+  readonly milestoneId?: string;
 };
+
+const slugKey = (title: string): string =>
+  title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40) ||
+  "resource";
 
 export function useResources(
   sessionId: string,
-  options: { role: "player" },
+  options: { role: "player"; playerId?: string },
 ): UseResourcesPlayerResult;
 export function useResources(
   sessionId: string,
-  options: { role: "gamemaker" },
-): UseResourcesAdminResult;
+  options: { role: "gamemaker"; playerId?: string; milestoneId?: string },
+): UseResourcesGmResult;
 export function useResources(
   sessionId: string,
   options: UseResourcesOptions,
-): UseResourcesPlayerResult | UseResourcesAdminResult {
+): UseResourcesPlayerResult | UseResourcesGmResult {
   const adapter = useAdapter();
+  const { playerId, milestoneId } = options;
   const [resources, setResources] = useState<ReadonlyArray<Resource>>([]);
   const [loading, setLoading] = useState(!!sessionId);
   const [error, setError] = useState<Error | null>(null);
@@ -63,7 +78,10 @@ export function useResources(
       setLoading(true);
       setError(null);
       try {
-        const all = await adapter.listResources(sessionId);
+        const all = await adapter.listResources(sessionId, {
+          playerId,
+          milestoneId,
+        });
         if (!cancelled) {
           setResources(
             options.role === "player"
@@ -84,14 +102,30 @@ export function useResources(
     return () => {
       cancelled = true;
     };
-  }, [adapter, options.role, sessionId, refreshKey]);
+  }, [adapter, options.role, sessionId, playerId, milestoneId, refreshKey]);
 
   const addResource = useCallback(
-    async (data: Omit<Resource, "id" | "created" | "updated">) => {
-      const created = await adapter.createResource(data);
-      setResources((prev) => [...prev, created]);
+    async (data: AddResourceInput) => {
+      if (!playerId) throw new Error("playerId required to attach resources");
+      const lib = await adapter.createLibraryResource({
+        resourceKey: slugKey(data.title),
+        title: data.title,
+        type: data.type,
+        url: data.url,
+        description: data.description,
+      });
+      const msId = data.milestoneId ?? milestoneId;
+      if (!msId) throw new Error("milestoneId required to attach resources");
+      await adapter.attachMilestoneResource({
+        sessionId,
+        playerId,
+        milestoneId: msId,
+        libraryResourceId: lib.id,
+        isVisibleToPlayer: data.isVisibleToPlayer,
+      });
+      setRefreshKey((k) => k + 1);
     },
-    [adapter],
+    [adapter, sessionId, playerId, milestoneId],
   );
 
   const updateResource = useCallback(
@@ -99,32 +133,60 @@ export function useResources(
       resourceId: string,
       patch: Partial<Omit<Resource, "id" | "created" | "updated">>,
     ) => {
-      const updated = await adapter.updateResource(resourceId, patch);
-      setResources((prev) =>
-        prev.map((r) => (r.id === resourceId ? updated : r))
-      );
+      const libFields: Array<
+        keyof Pick<
+          Resource,
+          "title" | "type" | "url" | "description" | "resourceKey"
+        >
+      > = ["title", "type", "url", "description", "resourceKey"];
+      const libPatch = Object.fromEntries(
+        libFields
+          .filter((key) => patch[key] !== undefined)
+          .map((key) => [key, patch[key]]),
+      ) as Partial<
+        Pick<Resource, "title" | "type" | "url" | "description" | "resourceKey">
+      >;
+      if (Object.keys(libPatch).length > 0) {
+        await adapter.updateLibraryResource(resourceId, libPatch);
+      }
+      const { isVisibleToPlayer } = patch;
+      if (isVisibleToPlayer !== undefined && playerId) {
+        const attachments = await adapter.listMilestoneResources(playerId);
+        const match = attachments.find((mr) =>
+          mr.libraryResourceId === resourceId
+        );
+        if (match) {
+          await adapter.updateMilestoneResource(match.id, {
+            isVisibleToPlayer,
+          });
+        }
+      }
+      setRefreshKey((k) => k + 1);
     },
-    [adapter],
+    [adapter, playerId],
   );
 
   const deleteResource = useCallback(
     async (resourceId: string) => {
-      await adapter.deleteResource(resourceId);
-      setResources((prev) => prev.filter((r) => r.id !== resourceId));
+      if (playerId) {
+        const attachments = await adapter.listMilestoneResources(playerId);
+        for (const mr of attachments) {
+          if (mr.libraryResourceId === resourceId) {
+            await adapter.detachMilestoneResource(mr.id);
+          }
+        }
+      }
+      await adapter.deleteLibraryResource(resourceId);
+      setRefreshKey((k) => k + 1);
     },
-    [adapter],
+    [adapter, playerId],
   );
 
   const toggleVisibility = useCallback(
     async (resourceId: string, visible: boolean) => {
-      const updated = await adapter.updateResource(resourceId, {
-        isVisibleToPlayer: visible,
-      });
-      setResources((prev) =>
-        prev.map((r) => (r.id === resourceId ? updated : r))
-      );
+      await updateResource(resourceId, { isVisibleToPlayer: visible });
     },
-    [adapter],
+    [updateResource],
   );
 
   if (options.role === "gamemaker") {

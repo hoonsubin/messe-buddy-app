@@ -1,124 +1,65 @@
-@startuml diagram_03_sequence_mission_validation
-title Mission Validation Flow (multi-strategy)
+@startuml diagram_mission_validation
+title Mission Validation — Four Strategies
 
 actor Player
 actor GameMaker
-participant MissionDetailPopup as "MissionDetailPopup"
-participant ValidationDisplay as "ValidationDisplay\n(gmApprove / qr only)"
-participant upsertProgressEvent as "Use Case: upsertProgressEvent"
-participant PBAdapter as "PocketBase Adapter"
-participant PocketBase
+actor ThirdParty as "Third party\n(no app identity)"
+participant Cockpit as "Player Cockpit"
+participant ValidationDisplay as "ValidationDisplay"
+participant upsert as "upsertProgressEvent"
+participant PB as "PocketBase"
+participant PeerPage as "PeerScanPage"
 
-Player -> MissionDetailPopup : Clicks mission (text or link type)
-MissionDetailPopup -> MissionDetailPopup : Renders detail popup\nwith action button
-
-note over MissionDetailPopup : Reads mission.validationMethod\nand routes to correct strategy on action click
-
-== Strategy: gmApprove ==
-
-Player -> MissionDetailPopup : "Mark Complete"
-MissionDetailPopup -> upsertProgressEvent : {playerId, missionId,\nstatus: 'pendingApproval'}
-upsertProgressEvent -> PBAdapter : query progress_events WHERE playerId & missionId
-PBAdapter -> PocketBase : GET progress_events filter
-PocketBase --> PBAdapter : existing record or empty
-
-alt record exists
-    PBAdapter -> PocketBase : PATCH record with status: pendingApproval
-else no record
-    PBAdapter -> PocketBase : POST new ProgressEvent
-end
-
-MissionDetailPopup -> ValidationDisplay : setShowValidation(true)\nmounts PendingApprovalDisplay
-note over ValidationDisplay : Subscribes to SSE via\nadapter.subscribeProgressEvent(playerId, missionId)
-ValidationDisplay -> PBAdapter : subscribeProgressEvent(playerId, missionId, callback)
-PBAdapter -> PocketBase : SSE subscription for ProgressEvent changes
-
-GameMaker -> PocketBase : Opens PendingApprovalsPanel in AdminCockpitPage
-note over GameMaker : Sees ApprovalRequestCard\nfor each pendingApproval event
-
-GameMaker -> upsertProgressEvent : {playerId, missionId,\nstatus: 'completed', validatedBy}
-upsertProgressEvent -> PBAdapter : PATCH progress_events
-PBAdapter -> PocketBase : update record
-PocketBase --> ValidationDisplay : SSE fires callback with status: completed
-ValidationDisplay -> MissionDetailPopup : onValidated()
-MissionDetailPopup -> MissionDetailPopup : Dismiss popup → computeProgress
-
-== Strategy: selfApprove ==
-
-Player -> MissionDetailPopup : "Mark Complete"
-MissionDetailPopup -> upsertProgressEvent : {playerId, missionId,\nstatus: 'autoApproved'}
-upsertProgressEvent -> PBAdapter : POST/PATCH progress_events
-PBAdapter -> PocketBase : write record
-note over ValidationDisplay : No ValidationDisplay mounts\nfor selfApprove — immediate dismiss
-MissionDetailPopup -> MissionDetailPopup : Dismiss immediately → computeProgress
-
-== Strategy: qr (offline — physical co-location required) ==
-
-note over MissionDetailPopup
-  Player side: NO PB write.
-  Just shows QRDisplay + subscribes to SSE for GM completion.
-  Per C-07: only the GameMaker writes via ValidationPage after scanning.
+note over Player, PB
+  **Form missions (type = form)** always write status: autoApproved on submit.
+  validationMethod is ignored. GM always sees formResponse in player analytics.
 end note
 
-Player -> MissionDetailPopup : "Mark Complete"
-MissionDetailPopup -> ValidationDisplay : setShowValidation(true)\nmounts QRDisplay
-note over ValidationDisplay : Subscribes to SSE for\nGM completion events (not player-initiated)
-ValidationDisplay -> PBAdapter : subscribeProgressEvent(playerId, missionId, callback)
+== 1. gmApprove — player requests, GM approves in web UI ==
 
-ValidationDisplay -> ValidationDisplay : Render QRDisplay component\n(encoded payload as QR image)
-note over GameMaker : Opens QRScannerPage on their device\nor uses in-page AdminQRScannerModal
+Player -> Cockpit : Mark mission complete
+Cockpit -> upsert : status: pendingApproval
+upsert -> PB : progress_events upsert
+Cockpit -> ValidationDisplay : "Waiting for approval"
+GameMaker -> PB : PendingApprovalsPanel
+GameMaker -> upsert : status: completed, validatedBy
+upsert -> PB : PATCH
+PB --> ValidationDisplay : SSE / poll → dismiss
+note right : Player earns mission.xpValue XP\n(computeProgress at read time)
 
-GameMaker -> GameMaker : Camera decodes raw QR string
+== 2. qr — player shows QR, GM scans to confirm ==
 
-participant qrPayloadUtil as "qrPayload.ts (util)"
+Player -> Cockpit : Mark complete
+note over Cockpit : **No ProgressEvent write yet (C-07)**
+Cockpit -> ValidationDisplay : QRDisplay encodes\n/validate/{sessionId}?t={signed}
+GameMaker -> ValidationDisplay : Scan URL (camera or in-app scanner)
+GameMaker -> upsert : status: completed (ValidationPage)
+upsert -> PB : write
+PB --> Cockpit : SSE → XP updates
 
-GameMaker -> qrPayloadUtil : decode(rawQrString)
-qrPayloadUtil -> qrPayloadUtil : parse JSON payload
-qrPayloadUtil -> qrPayloadUtil : recompute HMAC from sessionToken
-qrPayloadUtil -> qrPayloadUtil : compare recomputed vs payload.hmac
+== 3. selfApprove — player self-validates ==
 
-alt HMAC valid and issuedAt within tolerance
-    qrPayloadUtil --> GameMaker : ScanData { playerId, missionId, xpValue, ... }
-    GameMaker -> GameMaker : Render ValidationResult\n(player name, mission, XP)
-    
-    participant ValidationPage as "ValidationPage (/validate/:sid?t=)"
-    
-    GameMaker -> ValidationPage : navigate to /validate/<sessionId>?t=<token>
-    ValidationPage -> ValidationPage : decodeQRPayload(token, session.qrSecret)
-    ValidationPage -> ValidationPage : verify payload.sessionId === route sessionId
-    
-    ValidationPage -> PBAdapter : getPlayerById(payload.playerId)
-    PBAdapter -> PocketBase : GET player by ID
-    PocketBase --> PBAdapter : Player record
-    
-    ValidationPage -> PBAdapter : listProgressEvents(playerId)
-    PBAdapter -> PocketBase : GET progress_events filter
-    PocketBase --> PBAdapter : existing record or empty
-    
-    alt record exists (already completed)
-        note over ValidationPage : Shows "Already Completed" indicator
-    else no record
-        ValidationPage -> upsertProgressEvent : {playerId, missionId,\nstatus: 'completed', validatedBy}
-        upsertProgressEvent -> PBAdapter : POST new ProgressEvent
-        PBAdapter -> PocketBase : write record
-    end
-    
-    ValidationPage -> MissionDetailPopup : navigate(replace) back to cockpit\nSSE fires onValidated() callback
-else HMAC invalid or payload expired
-    qrPayloadUtil --> GameMaker : ValidationError
-    GameMaker -> GameMaker : Render error state in ValidationResult
-end
+Player -> Cockpit : Mark complete
+Cockpit -> upsert : status: autoApproved
+upsert -> PB : write
+note over ValidationDisplay : ValidationDisplay does not mount
 
-== Strategy: form (always autoApproved — C-06) ==
+== 4. peerScan — player shows QR, N unique third parties scan ==
 
-note over MissionDetailPopup
-  Form missions are always autoApproved regardless of validationMethod.
-  ValidationDisplay never mounts for type: "form".
-  Player navigates to /form/:missionId instead.
+Player -> Cockpit : Open mission → show PeerQRDisplay
+note over Cockpit
+  QR encodes /peer/{sessionId}?t={signed}
+  Mission.peerScanTarget = required unique scans (e.g. 5)
 end note
 
-Player -> MissionDetailPopup : Clicks FORM mission (not completed)
-MissionDetailPopup -> MissionDetailPopup : Navigate to FormPage (/form/:mid)
-note over FormPage : Renders dynamic fields from FieldSchema[]\nsubmits with status: "autoApproved" + formResponse
+ThirdParty -> PeerPage : Scan QR → name / custom form
+PeerPage -> PB : INSERT peer_scans\n(scannerDeviceId unique per mission+player)
+PB --> GameMaker : SSE live feed in player analytics
+
+alt count(peer_scans) >= peerScanTarget
+  PeerPage -> upsert : status: completed
+  upsert -> PB : progress_events upsert
+  PB --> Cockpit : mission complete + XP
+end
 
 @enduml

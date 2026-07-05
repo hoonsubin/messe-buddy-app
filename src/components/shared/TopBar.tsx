@@ -26,15 +26,16 @@ const TopBar = (props: TopBarProps) => {
 
   return (
     <header className="topbar" data-testid="topbar">
-      <Avatar
-        src={props.avatarUrl}
-        initials={initialsText || undefined}
-        fallback={<MdPerson size={18} aria-hidden="true" />}
-        aria-label="Edit profile"
-        onClick={props.onAvatarClick}
-        disabled={!props.onAvatarClick}
-      />
-      <span className="topbar__name">{props.playerName || "New hire"}</span>
+      {props.onAvatarClick && (
+        <Avatar
+          src={props.avatarUrl}
+          initials={initialsText || undefined}
+          fallback={<MdPerson size={18} aria-hidden="true" />}
+          aria-label="Edit profile"
+          onClick={props.onAvatarClick}
+        />
+      )}
+      <span className="topbar__name">{props.playerName || "Player"}</span>
       {props.totalXP !== undefined && (
         <span className="topbar__xp" aria-label={`${props.totalXP} XP`}>
           {props.totalXP} XP

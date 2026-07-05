@@ -1,8 +1,14 @@
-import type { AppAdapter } from "../interface.ts";
+import type {
+  AppAdapter,
+  ListMilestonesOptions,
+  ListMissionsOptions,
+} from "../interface.ts";
 import type {
   BuddyProfile,
   FormSchema,
+  LibraryResource,
   Milestone,
+  MilestoneResource,
   Mission,
   PBRecord,
   Player,
@@ -13,47 +19,37 @@ import type {
 } from "../../types/index.ts";
 import type { FieldSchema } from "../../types/index.ts";
 import { exportTemplate } from "../../use-cases/exportTemplate.ts";
+import { generateInviteToken } from "../../utils/inviteToken.ts";
 import {
   MOCK_BUDDY_PROFILES,
   MOCK_FORM_SCHEMAS,
+  MOCK_LIBRARY_RESOURCES,
+  MOCK_MILESTONE_RESOURCES,
   MOCK_MILESTONES,
-  MOCK_MILESTONES_2,
   MOCK_MISSIONS,
-  MOCK_MISSIONS_2,
   MOCK_PLAYERS,
   MOCK_PROGRESS_EVENTS,
-  MOCK_PROGRESS_EVENTS_2,
-  MOCK_RESOURCES,
   MOCK_SESSION,
-  MOCK_SESSION_2,
 } from "./mockData.ts";
-
-// ── Storage ───────────────────────────────────────────────────────────────────
-// Module-level Maps initialised from seed data.
-// Each Map key is the PB record id.
 
 const sessions = new Map<string, Session>();
 const players = new Map<string, Player>();
 const milestones = new Map<string, Milestone>();
 const missions = new Map<string, Mission>();
-const formSchemas = new Map<string, FormSchema>(); // keyed by missionId
-const progressEvents = new Map<string, ProgressEvent>(); // keyed by `${playerId}::${missionId}`
-const buddyProfiles = new Map<string, BuddyProfile>(); // keyed by assignedToPlayerId
-const resources = new Map<string, Resource>();
+const formSchemas = new Map<string, FormSchema>();
+const progressEvents = new Map<string, ProgressEvent>();
+const buddyProfiles = new Map<string, BuddyProfile>();
+const libraryResources = new Map<string, LibraryResource>();
+const milestoneResources = new Map<string, MilestoneResource>();
 const templates = new Map<string, TemplateExport>();
 
-// Subscriptions: key = `${playerId}::${missionId}`, value = Set of callbacks
 type ProgressCallback = (event: ProgressEvent) => void;
 const subscriptions = new Map<string, Set<ProgressCallback>>();
 
-// Seeding - runs once at module load.
 (() => {
   sessions.set(MOCK_SESSION.id, MOCK_SESSION);
-  sessions.set(MOCK_SESSION_2.id, MOCK_SESSION_2);
   for (const m of MOCK_MILESTONES) milestones.set(m.id, m);
-  for (const m of MOCK_MILESTONES_2) milestones.set(m.id, m);
   for (const m of MOCK_MISSIONS) missions.set(m.id, m);
-  for (const m of MOCK_MISSIONS_2) missions.set(m.id, m);
   for (const s of MOCK_FORM_SCHEMAS) formSchemas.set(s.missionId, s);
   for (const p of MOCK_PLAYERS) players.set(p.id, p);
   for (const b of MOCK_BUDDY_PROFILES) {
@@ -62,14 +58,11 @@ const subscriptions = new Map<string, Set<ProgressCallback>>();
   for (const e of MOCK_PROGRESS_EVENTS) {
     progressEvents.set(`${e.playerId}::${e.missionId}`, e);
   }
-  for (const e of MOCK_PROGRESS_EVENTS_2) {
-    progressEvents.set(`${e.playerId}::${e.missionId}`, e);
+  for (const r of MOCK_LIBRARY_RESOURCES) libraryResources.set(r.id, r);
+  for (const mr of MOCK_MILESTONE_RESOURCES) {
+    milestoneResources.set(mr.id, mr);
   }
-  for (const r of MOCK_RESOURCES) resources.set(r.id, r);
 
-  // Seed reusable onboarding templates (demo only). All three share the same
-  // milestones but each ships a different (deterministic-"random") subset of the
-  // missions — editable once applied to a hire.
   const allMs = [...MOCK_MILESTONES].sort((a, b) => a.order - b.order);
   const missionsByMs = new Map<string, Mission[]>();
   for (const m of MOCK_MISSIONS) {
@@ -85,7 +78,7 @@ const subscriptions = new Map<string, Set<ProgressCallback>>();
     for (const ms of allMs) {
       const list = missionsByMs.get(ms.id) ?? [];
       list.forEach((mi, idx) => {
-        if (idx === 0 || keep(idx)) chosen.push(mi); // always keep the first
+        if (idx === 0 || keep(idx)) chosen.push(mi);
       });
     }
     const ids = new Set(chosen.map((m) => m.id));
@@ -94,11 +87,11 @@ const subscriptions = new Map<string, Set<ProgressCallback>>();
       name,
       exportTemplate(
         name,
-        MOCK_SESSION,
         allMs,
         chosen,
         schemas,
-        MOCK_RESOURCES,
+        MOCK_MILESTONE_RESOURCES,
+        MOCK_LIBRARY_RESOURCES,
       ),
     );
   };
@@ -107,15 +100,10 @@ const subscriptions = new Map<string, Set<ProgressCallback>>();
   seedTpl("Executive Welcome", (i) => i % 3 !== 1);
 })();
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+const makeId = (): string =>
+  Math.random().toString(36).slice(2, 17).padEnd(15, "0").slice(0, 15);
 
-const makeId = (): string => {
-  return Math.random().toString(36).slice(2, 17).padEnd(15, "0").slice(0, 15);
-};
-
-const now = (): string => {
-  return new Date().toISOString();
-};
+const now = (): string => new Date().toISOString();
 
 const makeRecord = (): PBRecord => {
   const t = now();
@@ -128,25 +116,17 @@ const notify = (key: string, event: ProgressEvent): void => {
   for (const cb of subs) cb(event);
 };
 
-// Store the current GM UID so simulateGmApproval uses the active admin.
-let currentAdminUid = "uid_gamemaker_peter";
+let currentGmUid = "uid_gamemaker_peter";
 
-/** Set the admin UID used for simulated approvals. Call from AdminHomePage. */
-export const setMockAdminUid = (uid: string): void => {
-  currentAdminUid = uid;
+export const setMockGmUid = (uid: string): void => {
+  currentGmUid = uid;
 };
 
-// Simulates Game Maker approval - transitions pendingApproval → completed
-// after 4 seconds. Mirrors what the real PB SSE subscription does.
-const simulateGmApproval = (
-  key: string,
-  gmUid?: string,
-): void => {
-  const effectiveUid = gmUid ?? currentAdminUid;
+const simulateGmApproval = (key: string, gmUid?: string): void => {
+  const effectiveUid = gmUid ?? currentGmUid;
   setTimeout(() => {
     const existing = progressEvents.get(key);
     if (!existing || existing.status !== "pendingApproval") return;
-
     const approved: ProgressEvent = {
       ...existing,
       status: "completed",
@@ -159,13 +139,57 @@ const simulateGmApproval = (
   }, 4000);
 };
 
-// ── Session ───────────────────────────────────────────────────────────────────
+const uniqueInviteToken = async (): Promise<string> => {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const token = generateInviteToken();
+    const taken = [...players.values()].some((p) => p.inviteToken === token);
+    if (!taken) return token;
+  }
+  throw new Error("Could not generate invite token");
+};
+
+const resolveResources = (
+  sessionId: string,
+  options?: { readonly playerId?: string; readonly milestoneId?: string },
+): ReadonlyArray<Resource> => {
+  let attachments = [...milestoneResources.values()].filter(
+    (mr) => mr.sessionId === sessionId,
+  );
+  if (options?.playerId) {
+    attachments = attachments.filter((mr) => mr.playerId === options.playerId);
+  }
+  if (options?.milestoneId) {
+    attachments = attachments.filter((mr) =>
+      mr.milestoneId === options.milestoneId
+    );
+  }
+  return attachments.flatMap((mr) => {
+    const lib = libraryResources.get(mr.libraryResourceId);
+    if (!lib) return [];
+    return [{
+      ...lib,
+      isVisibleToPlayer: mr.isVisibleToPlayer,
+      milestoneId: mr.milestoneId,
+      playerId: mr.playerId,
+    }];
+  });
+};
 
 const getSession = async (sessionId: string): Promise<Session> => {
   await Promise.resolve();
   const s = sessions.get(sessionId);
   if (!s) throw new Error(`Session not found: ${sessionId}`);
   return s;
+};
+
+const getSessionByGmRecoveryKey = async (
+  recoveryKey: string,
+): Promise<Session | null> => {
+  await Promise.resolve();
+  for (const s of sessions.values()) {
+    if (s.gmRecoveryKey === recoveryKey) return s;
+  }
+  return null;
 };
 
 const listSessions = async (): Promise<ReadonlyArray<Session>> => {
@@ -176,6 +200,7 @@ const listSessions = async (): Promise<ReadonlyArray<Session>> => {
 const createSession = async (
   name: string,
   gameMakerUid: string,
+  gmRecoveryKey: string,
 ): Promise<Session> => {
   await Promise.resolve();
   const record = makeRecord();
@@ -185,8 +210,9 @@ const createSession = async (
     bgImageUrl: "",
     mapNodeScale: 0.33,
     gameMakerId: gameMakerUid,
+    gmRecoveryKey,
     preBoardingChecks: [],
-    qrSecret: record.id, // prototype stand-in; matches PB auto-gen semantics in mock
+    qrSecret: record.id,
   };
   sessions.set(session.id, session);
   return session;
@@ -194,9 +220,7 @@ const createSession = async (
 
 const updateSession = async (
   sessionId: string,
-  patch: Partial<Omit<Session, keyof PBRecord | "bgImageUrl">> & {
-    readonly bgImageUrl?: string | File;
-  },
+  patch: Parameters<AppAdapter["updateSession"]>[1],
 ): Promise<Session> => {
   const { bgImageUrl, ...rest } = patch;
   const existing = await getSession(sessionId);
@@ -216,11 +240,8 @@ const updateSession = async (
   return updated;
 };
 
-// ── Player ────────────────────────────────────────────────────────────────────
-
 const getPlayer = async (uid: string): Promise<Player | null> => {
   await Promise.resolve();
-  // Empty string would accidentally match pending slots (uid === ""); treat as not found.
   if (!uid) return null;
   for (const p of players.values()) {
     if (p.uid === uid) return p;
@@ -234,23 +255,50 @@ const getPlayerById = async (playerId: string): Promise<Player | null> => {
 };
 
 const getPlayerByInviteToken = async (
-  token: string,
-  sessionId: string,
+  inviteToken: string,
 ): Promise<Player | null> => {
   await Promise.resolve();
-  // Guard: empty token must never match anything.
-  if (!token) return null;
   for (const p of players.values()) {
-    if (p.sessionId === sessionId && p.inviteToken === token) return p;
+    if (p.inviteToken === inviteToken) return p;
   }
   return null;
 };
 
-const createPlayer = async (
-  data: Omit<Player, keyof PBRecord>,
+const getPlayerByRecoveryKey = async (
+  recoveryKey: string,
+): Promise<Player | null> => {
+  await Promise.resolve();
+  for (const p of players.values()) {
+    if (p.recoveryKey === recoveryKey) return p;
+  }
+  return null;
+};
+
+const invitePlayer = async (
+  sessionId: string,
+  data: { readonly name?: string; readonly jobTitle?: string },
 ): Promise<Player> => {
   await Promise.resolve();
-  const player: Player = { ...makeRecord(), ...data };
+  await getSession(sessionId);
+  const token = await uniqueInviteToken();
+  const today = new Date().toISOString().split("T")[0] ?? "";
+  const player: Player = {
+    ...makeRecord(),
+    sessionId,
+    inviteToken: token,
+    claimStatus: "invited",
+    tutorialComplete: false,
+    profileComplete: false,
+    name: data.name?.trim() || "New player",
+    jobTitle: data.jobTitle?.trim() || "",
+    team: "",
+    startDate: today,
+    location: "",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    skillsConfident: [],
+    skillsDevelop: [],
+    languages: [],
+  };
   players.set(player.id, player);
   return player;
 };
@@ -267,16 +315,6 @@ const updatePlayer = async (
   return updated;
 };
 
-const getPlayerByRecoveryKey = async (
-  recoveryKey: string,
-): Promise<Player | null> => {
-  await Promise.resolve();
-  for (const p of players.values()) {
-    if (p.recoveryKey === recoveryKey) return p;
-  }
-  return null;
-};
-
 const listPlayers = async (
   sessionId: string,
 ): Promise<ReadonlyArray<Player>> => {
@@ -284,14 +322,16 @@ const listPlayers = async (
   return [...players.values()].filter((p) => p.sessionId === sessionId);
 };
 
-// ── Milestones ────────────────────────────────────────────────────────────────
-
 const listMilestones = async (
   sessionId: string,
+  options?: ListMilestonesOptions,
 ): Promise<ReadonlyArray<Milestone>> => {
   await Promise.resolve();
   return [...milestones.values()]
-    .filter((m) => m.sessionId === sessionId)
+    .filter((m) =>
+      m.sessionId === sessionId &&
+      (!options?.playerId || m.playerId === options.playerId)
+    )
     .sort((a, b) => a.order - b.order);
 };
 
@@ -320,16 +360,21 @@ const updateMilestone = async (
 const deleteMilestone = async (milestoneId: string): Promise<void> => {
   await Promise.resolve();
   milestones.delete(milestoneId);
+  for (const [id, mr] of milestoneResources) {
+    if (mr.milestoneId === milestoneId) milestoneResources.delete(id);
+  }
 };
-
-// ── Missions ──────────────────────────────────────────────────────────────────
 
 const listMissions = async (
   sessionId: string,
+  options?: ListMissionsOptions,
 ): Promise<ReadonlyArray<Mission>> => {
   await Promise.resolve();
   return [...missions.values()]
-    .filter((m) => m.sessionId === sessionId)
+    .filter((m) =>
+      m.sessionId === sessionId &&
+      (!options?.playerId || m.playerId === options.playerId)
+    )
     .sort((a, b) => a.order - b.order);
 };
 
@@ -358,9 +403,8 @@ const updateMission = async (
 const deleteMission = async (missionId: string): Promise<void> => {
   await Promise.resolve();
   missions.delete(missionId);
+  formSchemas.delete(missionId);
 };
-
-// ── Form Schema ───────────────────────────────────────────────────────────────
 
 const getFormSchema = async (missionId: string): Promise<FormSchema | null> => {
   await Promise.resolve();
@@ -380,9 +424,6 @@ const upsertFormSchema = async (
   return schema;
 };
 
-// ── Progress Events ───────────────────────────────────────────────────────────
-// C-05, C-14: upsertProgressEvent is the single write path.
-
 const upsertProgressEvent = async (
   playerId: string,
   missionId: string,
@@ -393,11 +434,8 @@ const upsertProgressEvent = async (
   await Promise.resolve();
   const key = `${playerId}::${missionId}`;
   const existing = progressEvents.get(key);
-
-  // Need sessionId - derive from the player record.
   const player = players.get(playerId);
   const sessionId = player?.sessionId ?? existing?.sessionId ?? "";
-
   const base: ProgressEvent = existing ?? {
     ...makeRecord(),
     sessionId,
@@ -405,16 +443,10 @@ const upsertProgressEvent = async (
     missionId,
     status: "pending",
   };
-
   const event: ProgressEvent = { ...base, ...patch, updated: now() };
   progressEvents.set(key, event);
   notify(key, event);
-
-  // Auto-simulate GM approval for pendingApproval events.
-  if (event.status === "pendingApproval") {
-    simulateGmApproval(key);
-  }
-
+  if (event.status === "pendingApproval") simulateGmApproval(key);
   return event;
 };
 
@@ -440,8 +472,6 @@ const subscribeProgressEvent = (
   return () => subs?.delete(callback);
 };
 
-// ── Buddy Profile ─────────────────────────────────────────────────────────────
-
 const getBuddyProfile = async (
   playerId: string,
 ): Promise<BuddyProfile | null> => {
@@ -462,42 +492,88 @@ const upsertBuddyProfile = async (
   return profile;
 };
 
-// ── Resources ─────────────────────────────────────────────────────────────────
-
-const listResources = async (
-  sessionId: string,
-): Promise<ReadonlyArray<Resource>> => {
+const listLibraryResources = async (): Promise<
+  ReadonlyArray<LibraryResource>
+> => {
   await Promise.resolve();
-  return [...resources.values()].filter((r) => r.sessionId === sessionId);
+  return [...libraryResources.values()];
 };
 
-const createResource = async (
-  data: Omit<Resource, keyof PBRecord>,
-): Promise<Resource> => {
+const createLibraryResource = async (
+  data: Omit<LibraryResource, keyof PBRecord>,
+): Promise<LibraryResource> => {
   await Promise.resolve();
-  const resource: Resource = { ...makeRecord(), ...data };
-  resources.set(resource.id, resource);
+  const resource: LibraryResource = { ...makeRecord(), ...data };
+  libraryResources.set(resource.id, resource);
   return resource;
 };
 
-const updateResource = async (
+const updateLibraryResource = async (
   resourceId: string,
-  patch: Partial<Omit<Resource, keyof PBRecord>>,
-): Promise<Resource> => {
+  patch: Partial<Omit<LibraryResource, keyof PBRecord>>,
+): Promise<LibraryResource> => {
   await Promise.resolve();
-  const existing = resources.get(resourceId);
-  if (!existing) throw new Error(`Resource not found: ${resourceId}`);
-  const updated: Resource = { ...existing, ...patch, updated: now() };
-  resources.set(resourceId, updated);
+  const existing = libraryResources.get(resourceId);
+  if (!existing) throw new Error(`Library resource not found: ${resourceId}`);
+  const updated: LibraryResource = { ...existing, ...patch, updated: now() };
+  libraryResources.set(resourceId, updated);
   return updated;
 };
 
-const deleteResource = async (resourceId: string): Promise<void> => {
+const deleteLibraryResource = async (resourceId: string): Promise<void> => {
   await Promise.resolve();
-  resources.delete(resourceId);
+  libraryResources.delete(resourceId);
+  for (const [id, mr] of milestoneResources) {
+    if (mr.libraryResourceId === resourceId) milestoneResources.delete(id);
+  }
 };
 
-// ── Templates ─────────────────────────────────────────────────────────────────
+const listMilestoneResources = async (
+  playerId: string,
+  milestoneId?: string,
+): Promise<ReadonlyArray<MilestoneResource>> => {
+  await Promise.resolve();
+  return [...milestoneResources.values()].filter((mr) =>
+    mr.playerId === playerId &&
+    (!milestoneId || mr.milestoneId === milestoneId)
+  );
+};
+
+const attachMilestoneResource = async (
+  data: Omit<MilestoneResource, keyof PBRecord>,
+): Promise<MilestoneResource> => {
+  await Promise.resolve();
+  const attachment: MilestoneResource = { ...makeRecord(), ...data };
+  milestoneResources.set(attachment.id, attachment);
+  return attachment;
+};
+
+const updateMilestoneResource = async (
+  attachmentId: string,
+  patch: Partial<Omit<MilestoneResource, keyof PBRecord>>,
+): Promise<MilestoneResource> => {
+  await Promise.resolve();
+  const existing = milestoneResources.get(attachmentId);
+  if (!existing) {
+    throw new Error(`Milestone resource not found: ${attachmentId}`);
+  }
+  const updated: MilestoneResource = { ...existing, ...patch, updated: now() };
+  milestoneResources.set(attachmentId, updated);
+  return updated;
+};
+
+const detachMilestoneResource = async (attachmentId: string): Promise<void> => {
+  await Promise.resolve();
+  milestoneResources.delete(attachmentId);
+};
+
+const listResources = async (
+  sessionId: string,
+  options?: { readonly playerId?: string; readonly milestoneId?: string },
+): Promise<ReadonlyArray<Resource>> => {
+  await Promise.resolve();
+  return resolveResources(sessionId, options);
+};
 
 const listTemplates = async (): Promise<ReadonlyArray<TemplateExport>> => {
   await Promise.resolve();
@@ -514,18 +590,17 @@ const deleteTemplate = async (name: string): Promise<void> => {
   templates.delete(name);
 };
 
-// ── Export ────────────────────────────────────────────────────────────────────
-
 export const mockAdapter: AppAdapter = {
   getSession,
+  getSessionByGmRecoveryKey,
   listSessions,
   createSession,
   updateSession,
   getPlayer,
   getPlayerById,
-  getPlayerByRecoveryKey,
   getPlayerByInviteToken,
-  createPlayer,
+  getPlayerByRecoveryKey,
+  invitePlayer,
   updatePlayer,
   listPlayers,
   listMilestones,
@@ -543,10 +618,15 @@ export const mockAdapter: AppAdapter = {
   subscribeProgressEvent,
   getBuddyProfile,
   upsertBuddyProfile,
+  listLibraryResources,
+  createLibraryResource,
+  updateLibraryResource,
+  deleteLibraryResource,
+  listMilestoneResources,
+  attachMilestoneResource,
+  updateMilestoneResource,
+  detachMilestoneResource,
   listResources,
-  createResource,
-  updateResource,
-  deleteResource,
   listTemplates,
   saveTemplate,
   deleteTemplate,

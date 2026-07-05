@@ -1,6 +1,13 @@
 @startuml diagram_05_class_component_architecture
 title Component Class Diagram
 
+note top
+  **Historical UI map** — page names reflect pre-ARCH codebase
+  (AdminCockpitPage, etc.). Target routes: AdminHomePage,
+  PlayerDetailPage, /admin/:sessionId/player/:playerId.
+  See docs/README.md and SPECS.md § Pages.
+end note
+
 ' ── APP SHELL ──────────────────────────────────────────────────
 class App {
     +currentRoute: string

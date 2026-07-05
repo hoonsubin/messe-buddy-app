@@ -75,7 +75,7 @@ export const useFormMission = (
 
   // ── Profile form pre-population (PLR-1) ────────────────────────────────────
   // When the player opens the profile mission, pre-fill from their Player record.
-  // Admin-seeded fields (name, role, department) surface here so the player just
+  // Game Maker-seeded fields (name, job title, department) surface here so the
   // confirms and augments rather than typing everything from scratch.
   const initialValues = useMemo<Record<string, string>>(() => {
     if (missionId !== PROFILE_MISSION_ID || !player) {
@@ -85,7 +85,7 @@ export const useFormMission = (
       name: player.name ?? "",
       preferredName: player.preferredName ?? "",
       pronouns: player.pronouns ?? "",
-      role: player.role ?? "",
+      role: player.jobTitle ?? "",
       department: player.department ?? "",
       team: player.team ?? "",
       location: player.location ?? "",
@@ -118,7 +118,7 @@ export const useFormMission = (
         if (values.pronouns !== undefined) {
           patch["pronouns"] = values.pronouns || undefined;
         }
-        if (values.role) patch["role"] = values.role;
+        if (values.role) patch["jobTitle"] = values.role;
         // department fix (PLR-1): was silently dropped before
         if (values.department !== undefined) {
           patch["department"] = values.department || undefined;

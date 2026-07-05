@@ -2,9 +2,10 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AdapterContextProvider } from "./adapters/AdapterContext.tsx";
 import { DemoAwareAdapterProvider } from "./adapters/DemoAwareAdapterProvider.tsx";
 import LandingPage from "./pages/LandingPage.tsx";
+import RootRedirect from "./pages/RootRedirect.tsx";
 import PlayerCockpitPage from "./pages/PlayerCockpitPage.tsx";
-import AdminHomePage from "./pages/AdminHomePage.tsx";
-import HireDetailPage from "./pages/HireDetailPage.tsx";
+import GameMakerHomePage from "./pages/GameMakerHomePage.tsx";
+import PlayerDetailPage from "./pages/PlayerDetailPage.tsx";
 import FormPage from "./pages/FormPage.tsx";
 import QRScannerView from "./pages/QRScannerView.tsx";
 import ValidationPage from "./pages/ValidationPage.tsx";
@@ -13,7 +14,7 @@ import NotFoundPage from "./pages/NotFoundPage.tsx";
 import { USER_ROLE } from "./types/index.ts";
 
 const router = createBrowserRouter([
-  { path: "/", element: <LandingPage /> },
+  { path: "/", element: <RootRedirect /> },
   {
     path: "/session/:sessionId",
     element: (
@@ -25,27 +26,27 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/admin/:sessionId",
+    path: "/gamemaker/:sessionId",
     element: (
       <RequireRole role={USER_ROLE.GAMEMAKER}>
         <DemoAwareAdapterProvider>
-          <AdminHomePage />
+          <GameMakerHomePage />
         </DemoAwareAdapterProvider>
       </RequireRole>
     ),
   },
   {
-    path: "/admin/:sessionId/hire/:hireId",
+    path: "/gamemaker/:sessionId/player/:playerId",
     element: (
       <RequireRole role={USER_ROLE.GAMEMAKER}>
         <DemoAwareAdapterProvider>
-          <HireDetailPage />
+          <PlayerDetailPage />
         </DemoAwareAdapterProvider>
       </RequireRole>
     ),
   },
   {
-    path: "/admin/:sessionId/scan",
+    path: "/gamemaker/:sessionId/scan",
     element: (
       <RequireRole role={USER_ROLE.GAMEMAKER}>
         <DemoAwareAdapterProvider>
@@ -55,13 +56,16 @@ const router = createBrowserRouter([
     ),
   },
   {
+    // Not wrapped in RequireRole: the sessionId here is the *player's* session,
+    // while a GM's cached identity is scoped to their own home session — the
+    // two never match, so RequireRole's exact-sessionId check always fails
+    // for this route. ValidationPage does its own authorization instead, by
+    // matching the player's gameMakerId against any locally stored GM identity.
     path: "/validate/:sessionId",
     element: (
-      <RequireRole role={USER_ROLE.GAMEMAKER}>
-        <DemoAwareAdapterProvider>
-          <ValidationPage />
-        </DemoAwareAdapterProvider>
-      </RequireRole>
+      <DemoAwareAdapterProvider>
+        <ValidationPage />
+      </DemoAwareAdapterProvider>
     ),
   },
   {

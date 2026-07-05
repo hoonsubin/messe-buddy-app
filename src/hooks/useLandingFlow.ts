@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAdapter } from "../adapters/useAdapter.ts";
-import { useIdentity } from "./useIdentity.ts";
+import { useIdentity, writeActiveUid } from "./useIdentity.ts";
 import {
-  claimPlayerSlot,
   createGameMakerSession,
   joinSession,
-  verifySession,
 } from "../use-cases/joinSession.ts";
 import { recoverIdentity } from "../use-cases/recoverIdentity.ts";
 import type { CachedIdentity } from "../types/index.ts";
@@ -38,20 +36,23 @@ export const DEMO_PROFILES: readonly CachedIdentity[] = [
 export type LandingStatus = "idle" | "loading" | "error";
 
 // Which inline form is expanded
-export type ActiveForm = "employee" | "admin" | null;
+export type ActiveForm = "employee" | "gamemaker" | null;
 
-// Employee join: 2-step (verify → name)
+// Employee join: verify invite token → name (claim)
 export type EmployeeStep = "code" | "name";
 
 export interface UseLandingFlowResult {
   readonly profiles: ReadonlyArray<CachedIdentity>;
+  /** UIDs whose backend session no longer exists (P-17). */
+  readonly orphanedUids: ReadonlySet<string>;
   readonly activeForm: ActiveForm;
   readonly employeeStep: EmployeeStep;
   readonly verifiedSessionId: string;
   readonly sessionCode: string;
+  readonly inviteToken: string;
   readonly playerName: string;
   readonly sessionName: string;
-  readonly adminName: string;
+  readonly gmName: string;
   readonly recoveryKeyInput: string;
   readonly status: LandingStatus;
   readonly errorMessage: string;
@@ -59,13 +60,14 @@ export interface UseLandingFlowResult {
   readonly toast: string | null;
   readonly setActiveForm: (form: ActiveForm) => void;
   readonly setSessionCode: (v: string) => void;
+  readonly setInviteToken: (v: string) => void;
   readonly setPlayerName: (v: string) => void;
   readonly setSessionName: (v: string) => void;
-  readonly setAdminName: (v: string) => void;
+  readonly setGmName: (v: string) => void;
   readonly setRecoveryKeyInput: (v: string) => void;
   readonly handleVerifySession: () => Promise<void>;
   readonly handleJoinSession: () => Promise<void>;
-  readonly handleCreateAdmin: () => Promise<void>;
+  readonly handleCreateGamemaker: () => Promise<void>;
   readonly handleRecover: () => Promise<void>;
   readonly handleResume: (identity: CachedIdentity) => void;
   readonly handleRemoveProfile: (uid: string) => void;
@@ -80,10 +82,10 @@ export const useLandingFlow = (): UseLandingFlowResult => {
   const navigate = useNavigate();
   const adapter = useAdapter();
   const { profiles, setIdentity, removeProfile } = useIdentity();
-
-  // ── Route params — present when rendered at /join/:sessionId ─────────────
-  const { sessionId: routeSessionId } = useParams<{ sessionId: string }>();
   const [searchParams] = useSearchParams();
+
+  const { sessionId: routeSessionId } = useParams<{ sessionId: string }>();
+  const inviteTokenFromUrl = searchParams.get("t") ?? "";
 
   // ── Seed demo profiles once on mount ──────────────────────────────────────
   const seeded = useRef(false);
@@ -97,15 +99,50 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Orphan detection (P-17) ──────────────────────────────────────────────
+  // On mount, check each non-demo cached identity's session against the
+  // backend. Sessions that 404 are marked orphaned so ProfileCard can render
+  // a "User removed" badge instead of silently navigating to a dead route.
+  const [orphanedUids, setOrphanedUids] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const nonDemo = profiles.filter((p) => !p.isDemo);
+    if (nonDemo.length === 0) return;
+
+    const check = async () => {
+      const dead = new Set<string>();
+      await Promise.all(
+        nonDemo.map(async (p) => {
+          try {
+            await adapter.getSession(p.sessionId);
+          } catch {
+            dead.add(p.uid);
+          }
+        }),
+      );
+      if (!cancelled && dead.size > 0) setOrphanedUids(dead);
+    };
+    void check();
+    return () => {
+      cancelled = true;
+    };
+    // Re-check when the profile list changes (e.g. after removing one).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adapter, profiles.length]);
+
   // ── Form state ────────────────────────────────────────────────────────────
   const [activeForm, setActiveFormState] = useState<ActiveForm>(null);
   const [employeeStep, setEmployeeStep] = useState<EmployeeStep>("code");
   const [verifiedSessionId, setVerifiedSessionId] = useState("");
-  // Pre-fill session code from route param when arriving via /join/:sessionId
+  const [verifiedInviteToken, setVerifiedInviteToken] = useState("");
   const [sessionCode, setSessionCode] = useState(routeSessionId ?? "");
+  const [inviteToken, setInviteToken] = useState(inviteTokenFromUrl);
   const [playerName, setPlayerName] = useState("");
   const [sessionName, setSessionName] = useState("");
-  const [adminName, setAdminName] = useState("");
+  const [gmName, setGmName] = useState("");
   const [recoveryKeyInput, setRecoveryKeyInput] = useState("");
   const [status, setStatus] = useState<LandingStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -123,39 +160,6 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     return () => clearTimeout(timer);
   }, []);
 
-  // ── Auto-claim: /join/:sessionId?token=<token> ────────────────────────────
-  // Runs once on mount. If both routeSessionId and ?token are present,
-  // attempt to claim the slot and navigate directly to the player cockpit.
-  const tokenClaimed = useRef(false);
-  useEffect(() => {
-    const token = searchParams.get("token");
-    if (!routeSessionId || !token || tokenClaimed.current) return;
-    tokenClaimed.current = true;
-
-    const claim = async () => {
-      setStatus("loading");
-      setErrorMessage("");
-      try {
-        const { identity } = await claimPlayerSlot(
-          token,
-          routeSessionId,
-          adapter,
-        );
-        setIdentity(identity);
-        navigate(`/session/${identity.sessionId}`, { replace: true });
-      } catch {
-        setStatus("error");
-        setErrorMessage(
-          "This invite link has already been used or is invalid. Ask your Game Maker for a new one.",
-        );
-      }
-    };
-
-    void claim();
-    // Intentionally run only on mount — token is a one-time claim.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   const resetError = useCallback(() => {
@@ -167,40 +171,75 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     setActiveFormState(form);
     setEmployeeStep("code");
     setVerifiedSessionId("");
-    // Keep /join/:sessionId prefill when opening the employee form
+    setVerifiedInviteToken("");
     setSessionCode(form === "employee" && routeSessionId ? routeSessionId : "");
+    setInviteToken(
+      form === "employee" && inviteTokenFromUrl ? inviteTokenFromUrl : "",
+    );
     setPlayerName("");
     setSessionName("");
-    setAdminName("");
+    setGmName("");
     resetError();
-  }, [resetError, routeSessionId]);
+  }, [resetError, routeSessionId, inviteTokenFromUrl]);
 
-  // ── Employee join: step 1 — verify session exists ─────────────────────────
+  useEffect(() => {
+    if (!routeSessionId || !inviteTokenFromUrl) return;
+    let cancelled = false;
+    const verifyFromLink = async () => {
+      try {
+        const player = await adapter.getPlayerByInviteToken(inviteTokenFromUrl);
+        if (cancelled || !player || player.sessionId !== routeSessionId) return;
+        setVerifiedSessionId(routeSessionId);
+        setVerifiedInviteToken(inviteTokenFromUrl);
+        setSessionCode(routeSessionId);
+        setInviteToken(inviteTokenFromUrl);
+        setEmployeeStep("name");
+      } catch {
+        /* invalid link — user can retry manually */
+      }
+    };
+    void verifyFromLink();
+    return () => {
+      cancelled = true;
+    };
+  }, [adapter, routeSessionId, inviteTokenFromUrl]);
+
   const handleVerifySession = useCallback(async () => {
-    const code = sessionCode.trim();
-    if (!code) return;
+    const sid = (sessionCode.trim() || routeSessionId || "").trim();
+    const token = inviteToken.trim();
+    if (!sid || !token) return;
     setStatus("loading");
     setErrorMessage("");
     try {
-      await verifySession(code, adapter);
-      setVerifiedSessionId(code);
+      const player = await adapter.getPlayerByInviteToken(token);
+      if (!player || player.sessionId !== sid) {
+        throw new Error("Invite not found for this session");
+      }
+      setVerifiedSessionId(sid);
+      setVerifiedInviteToken(token);
       setEmployeeStep("name");
       setStatus("idle");
     } catch {
       setStatus("error");
-      setErrorMessage("Session not found. Check the code and try again.");
+      setErrorMessage(
+        "Invite not found. Check the link from your Game Master and try again.",
+      );
     }
-  }, [adapter, sessionCode]);
+  }, [adapter, sessionCode, inviteToken, routeSessionId]);
 
-  // ── Employee join: step 2 — create player with name ───────────────────────
   const handleJoinSession = useCallback(async () => {
     const name = playerName.trim();
-    if (!name || !verifiedSessionId) return;
+    if (!name || !verifiedInviteToken) return;
     setStatus("loading");
     setErrorMessage("");
     try {
-      const { identity } = await joinSession(verifiedSessionId, name, adapter);
+      const { identity } = await joinSession(
+        verifiedInviteToken,
+        name,
+        adapter,
+      );
       setIdentity(identity);
+      writeActiveUid(identity.uid);
       setActiveForm(null);
       navigate(`/session/${identity.sessionId}`, { replace: true });
     } catch {
@@ -210,15 +249,15 @@ export const useLandingFlow = (): UseLandingFlowResult => {
   }, [
     adapter,
     playerName,
-    verifiedSessionId,
+    verifiedInviteToken,
     setIdentity,
     navigate,
     setActiveForm,
   ]);
 
-  // ── Admin: create session ─────────────────────────────────────────────────
-  const handleCreateAdmin = useCallback(async () => {
-    const name = adminName.trim();
+  // ── Game Maker: create workspace session ──────────────────────────────────
+  const handleCreateGamemaker = useCallback(async () => {
+    const name = gmName.trim();
     const sName = sessionName.trim();
     if (!name || !sName) return;
     setStatus("loading");
@@ -226,13 +265,14 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     try {
       const identity = await createGameMakerSession(sName, name, adapter);
       setIdentity(identity);
+      writeActiveUid(identity.uid);
       setActiveForm(null);
-      navigate(`/admin/${identity.sessionId}`, { replace: true });
+      navigate(`/gamemaker/${identity.sessionId}`, { replace: true });
     } catch {
       setStatus("error");
       setErrorMessage("Could not create session. Please try again.");
     }
-  }, [adapter, adminName, sessionName, setIdentity, navigate, setActiveForm]);
+  }, [adapter, gmName, sessionName, setIdentity, navigate, setActiveForm]);
 
   // ── Recovery: key-only ────────────────────────────────────────────────────
   const handleRecover = useCallback(async () => {
@@ -243,11 +283,12 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     try {
       const identity = await recoverIdentity(key, adapter);
       setIdentity(identity);
+      writeActiveUid(identity.uid);
       setRecoveryKeyInput("");
       resetError();
       const dest = identity.role === USER_ROLE.PLAYER
         ? `/session/${identity.sessionId}`
-        : `/admin/${identity.sessionId}`;
+        : `/gamemaker/${identity.sessionId}`;
       navigate(dest, { replace: true });
     } catch {
       setStatus("error");
@@ -257,9 +298,10 @@ export const useLandingFlow = (): UseLandingFlowResult => {
 
   // ── Profile actions ───────────────────────────────────────────────────────
   const handleResume = useCallback((identity: CachedIdentity) => {
+    writeActiveUid(identity.uid);
     const dest = identity.role === USER_ROLE.PLAYER
       ? `/session/${identity.sessionId}`
-      : `/admin/${identity.sessionId}`;
+      : `/gamemaker/${identity.sessionId}`;
     navigate(dest, { replace: true });
   }, [navigate]);
 
@@ -280,13 +322,15 @@ export const useLandingFlow = (): UseLandingFlowResult => {
 
   return {
     profiles,
+    orphanedUids,
     activeForm,
     employeeStep,
     verifiedSessionId,
     sessionCode,
+    inviteToken,
     playerName,
     sessionName,
-    adminName,
+    gmName,
     recoveryKeyInput,
     status,
     errorMessage,
@@ -294,13 +338,14 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     toast,
     setActiveForm,
     setSessionCode,
+    setInviteToken,
     setPlayerName,
     setSessionName,
-    setAdminName,
+    setGmName,
     setRecoveryKeyInput,
     handleVerifySession,
     handleJoinSession,
-    handleCreateAdmin,
+    handleCreateGamemaker,
     handleRecover,
     handleResume,
     handleRemoveProfile,

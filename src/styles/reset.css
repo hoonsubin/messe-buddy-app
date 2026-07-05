@@ -12,7 +12,7 @@
 html {
   font-size: 100%; /* respect user preference */
   height: 100%;
-  /* Always reserve the scrollbar gutter so centred content (e.g. the hire
+  /* Always reserve the scrollbar gutter so centred content (e.g. the player
      header + tabs) doesn't shift between short and tall tab views. */
   scrollbar-gutter: stable;
 }

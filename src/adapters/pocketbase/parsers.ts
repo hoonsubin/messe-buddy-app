@@ -3,7 +3,9 @@ import type { RecordModel } from "pocketbase";
 import type {
   BuddyProfile,
   FormSchema,
+  LibraryResource,
   Milestone,
+  MilestoneResource,
   Mission,
   Player,
   ProgressEvent,
@@ -18,6 +20,7 @@ import type {
   ResourceType,
   ValidationMethod,
 } from "../../types/unions.ts";
+import type { ClaimStatus } from "../../types/domain.ts";
 import type { FieldSchema } from "../../types/value-objects.ts";
 import type { PreBoardingCheckItem } from "../../types/ephemeral.ts";
 
@@ -55,6 +58,7 @@ export const marshalSession = (pb: PocketBase, raw: RecordModel): Session => ({
   bgImageUrl: resolveFileUrl(pb, raw, "bgImageUrl") ?? "",
   mapNodeScale: typeof raw.mapNodeScale === "number" ? raw.mapNodeScale : 0.33,
   gameMakerId: String(raw.gameMakerId ?? ""),
+  gmRecoveryKey: String(raw.gmRecoveryKey ?? ""),
   qrSecret: raw.qrSecret ? String(raw.qrSecret) : undefined,
   preBoardingChecks: parseJsonField<ReadonlyArray<PreBoardingCheckItem>>(
     raw.preBoardingChecks,
@@ -64,16 +68,19 @@ export const marshalSession = (pb: PocketBase, raw: RecordModel): Session => ({
 
 export const marshalPlayer = (pb: PocketBase, raw: RecordModel): Player => ({
   ...pbRecord(raw),
-  uid: String(raw.uid ?? ""),
-  recoveryKey: String(raw.recoveryKey ?? ""),
+  uid: raw.uid ? String(raw.uid) : undefined,
+  recoveryKey: raw.recoveryKey ? String(raw.recoveryKey) : undefined,
   sessionId: String(raw.sessionId ?? ""),
+  inviteToken: String(raw.inviteToken ?? ""),
+  claimStatus: String(raw.claimStatus ?? "invited") as ClaimStatus,
   tutorialComplete: Boolean(raw.tutorialComplete),
   profileComplete: Boolean(raw.profileComplete),
   name: String(raw.name ?? ""),
   preferredName: raw.preferredName ? String(raw.preferredName) : undefined,
   pronouns: raw.pronouns ? String(raw.pronouns) : undefined,
   avatarUrl: resolveFileUrl(pb, raw, "avatarUrl"),
-  role: String(raw.role ?? ""),
+  jobTitle: String(raw.jobTitle ?? ""),
+  department: raw.department ? String(raw.department) : undefined,
   team: String(raw.team ?? ""),
   startDate: String(raw.startDate ?? ""),
   location: String(raw.location ?? ""),
@@ -92,6 +99,7 @@ export const marshalPlayer = (pb: PocketBase, raw: RecordModel): Player => ({
 export const marshalMilestone = (raw: RecordModel): Milestone => ({
   ...pbRecord(raw),
   sessionId: String(raw.sessionId ?? ""),
+  playerId: String(raw.playerId ?? ""),
   name: String(raw.name ?? ""),
   xPercent: Number(raw.xPercent ?? 0),
   yPercent: Number(raw.yPercent ?? 0),
@@ -102,12 +110,12 @@ export const marshalMilestone = (raw: RecordModel): Milestone => ({
 export const marshalMission = (raw: RecordModel): Mission => ({
   ...pbRecord(raw),
   sessionId: String(raw.sessionId ?? ""),
+  playerId: String(raw.playerId ?? ""),
   milestoneId: String(raw.milestoneId ?? ""),
   title: String(raw.title ?? ""),
   body: String(raw.body ?? ""),
   type: String(raw.type ?? "text") as MissionType,
   externalUrl: raw.externalUrl ? String(raw.externalUrl) : undefined,
-  difficulty: Number(raw.difficulty ?? 1),
   xpValue: Number(raw.xpValue ?? 0),
   tags: parseJsonField<ReadonlyArray<MissionTag>>(raw.tags, []),
   suggestedDueDate: raw.suggestedDueDate
@@ -156,14 +164,35 @@ export const marshalBuddyProfile = (
   phone: raw.phone ? String(raw.phone) : undefined,
 });
 
-export const marshalResource = (raw: RecordModel): Resource => ({
+export const marshalLibraryResource = (raw: RecordModel): LibraryResource => ({
   ...pbRecord(raw),
-  sessionId: String(raw.sessionId ?? ""),
+  resourceKey: String(raw.resourceKey ?? ""),
   title: String(raw.title ?? ""),
   description: raw.description ? String(raw.description) : undefined,
   type: String(raw.type ?? "link") as ResourceType,
   url: String(raw.url ?? ""),
+  tags: raw.tags ? String(raw.tags) : undefined,
+});
+
+export const marshalMilestoneResource = (
+  raw: RecordModel,
+): MilestoneResource => ({
+  ...pbRecord(raw),
+  sessionId: String(raw.sessionId ?? ""),
+  playerId: String(raw.playerId ?? ""),
+  milestoneId: String(raw.milestoneId ?? ""),
+  libraryResourceId: String(raw.libraryResourceId ?? ""),
   isVisibleToPlayer: Boolean(raw.isVisibleToPlayer),
+});
+
+export const resolveResource = (
+  lib: LibraryResource,
+  mr: MilestoneResource,
+): Resource => ({
+  ...lib,
+  isVisibleToPlayer: mr.isVisibleToPlayer,
+  milestoneId: mr.milestoneId,
+  playerId: mr.playerId,
 });
 
 export const marshalTemplate = (raw: RecordModel): TemplateExport =>
@@ -174,5 +203,5 @@ export const marshalTemplate = (raw: RecordModel): TemplateExport =>
     milestones: [],
     missions: [],
     formSchemas: [],
-    resources: [],
+    resourceBindings: [],
   });

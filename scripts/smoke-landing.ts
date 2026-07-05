@@ -127,17 +127,17 @@ const main = async () => {
     // ── Demo admin home ───────────────────────────────────────────────────
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: /Resume as Peter Tubak/i }).click();
-    await page.waitForURL(/\/admin\//, { timeout: 10000 });
-    await page.waitForSelector('[data-testid="admin-home-page"]', {
+    await page.waitForURL(/\/gamemaker\//, { timeout: 10000 });
+    await page.waitForSelector('[data-testid="gamemaker-home-page"]', {
       timeout: 10000,
     });
     record(
-      "Demo admin navigates to hire list",
-      page.url().includes("/admin/"),
+      "Demo Game Maker navigates to player list",
+      page.url().includes("/gamemaker/"),
       page.url(),
     );
     await page.screenshot({
-      path: join(SMOKE_OUT_DIR, "06-admin-home.png"),
+      path: join(SMOKE_OUT_DIR, "06-gamemaker-home.png"),
       fullPage: true,
     });
 
