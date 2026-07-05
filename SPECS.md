@@ -48,7 +48,7 @@ earned per Mission**; the Game Maker sets each Mission's `xpValue` directly.
 - Customization by the Game Maker with no developer involvement (templates make
   reuse easy)
 - Gamified progression that is non-linear and autonomy-preserving
-- Simple identity model — no account signup; players claim a hire slot via QR
+- Simple identity model — no account signup; players claim an identity via invite QR
 - Validation flows that promote real human contact (GM approval, GM scan, crowd
   attestation) over opaque automation
 
@@ -56,16 +56,18 @@ earned per Mission**; the Game Maker sets each Mission's `xpValue` directly.
 
 The app exists to support one primary loop:
 
-1. **Game Maker** creates a **workspace** (`Session`) — one per GM — and adds
-   **players** (hires) to it. Each player gets a tailored milestone/mission
-   journey; the GM may **copy from a Template** to bootstrap a player's map.
-   **Resources** are linked to milestones (per-player journey). Templates copy
-   milestone/mission/resource structure into a **specific player**.
+1. **Game Maker** creates a **workspace** (`Session`) — one per GM; **session ≈
+   department** by convention — and adds **players** to it. Each player gets a
+   tailored milestone/mission journey; the GM may **copy from a Template** to
+   bootstrap a player's map. **Library resources** attach to milestones on each
+   player's journey. Templates copy milestone/mission structure (and resource
+   bindings) into a **specific player**.
 2. **Game Maker** shares a **per-player invite link**
-   (`/join/:sessionId?t=:inviteToken`) generated when the player row is created.
-3. **New hire** opens the invite link → **claims** that `players` row (first device
-   binds `uid` + `recoveryKey`) → enters the **Player Cockpit**. The same link
-   on another device re-opens the player via recovery (see § Invite claim).
+   (`/join/:sessionId?t=:inviteToken`) generated when the player identity is
+   created.
+3. **New player** opens the invite link → **claims** that `players` row (first
+   device binds `uid` + `recoveryKey`) → enters the **Player Cockpit**. The same
+   link on another device re-opens the same identity (see § Invite claim).
 4. **Player** completes **their** Missions on the map → earns **XP** when
    validation succeeds.
 5. **Game Maker** monitors the **player list** (aggregate progress) and drills
@@ -91,29 +93,30 @@ This glossary is authoritative.
 
 | Term                   | Definition                                                                                                                                                                                                                                                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Workspace / Session** | The Game Maker's single onboarding container (`/admin/:sessionId`). Holds session map settings (`bgImageUrl`, `mapNodeScale`, `qrSecret`), the GM's own `players` row, and links to all managed players. `sessions.gameMakerId` matches the GM's `players.uid`. |
-| **Player (hire)**      | A first-class PocketBase `players` row — one per person the GM onboards. Has its own Milestones, Missions, Resources (via milestones), ProgressEvents, and BuddyProfile. `claimStatus = invited` until first claim; then `claimed`. |
-| **Invite / pending player** | A `players` row created by the GM with a unique `inviteToken`. Listed on the hire dashboard as "Not joined yet" until claimed. |
+| **Workspace / Session** | The Game Maker's single onboarding container (`/admin/:sessionId`). Holds map settings (`bgImageUrl`, `mapNodeScale`, `qrSecret`), GM identity (`gameMakerId`, `gmRecoveryKey`), pre-boarding, and all managed players. **One session ≈ one department** by convention — no department entity in the system. |
+| **Player**             | A claimable onboarding identity — one PocketBase `players` row per person the GM onboards. Has its own Milestones, Missions, milestone resource attachments, ProgressEvents, and BuddyProfile. `claimStatus = invited` until first claim; then `claimed`. The GM is **not** a `players` row. |
+| **Invite / pending player** | A `players` row created by the GM (`invitePlayer`) with a unique `inviteToken`. Listed on the Players tab as "Not joined yet" until claimed. |
 | **Player invite URL** | `{origin}/join/{sessionId}?t={inviteToken}` — permanent capability URL to one `players` row. First visit: claim flow. Revisit (any device): hydrate identity from PB → cockpit. Progress always from server. |
-| **Device identity** | `localStorage.mb_identity` cache — profile picker and route guards. Authoritative state lives in PocketBase. |
-| **Session**            | Synonym for **Workspace / Session** (historical docs may say "hire session"). |
-| **Milestone**          | A top-level grouping on **one player's** map. Scoped by `playerId`. Contains that player's Missions and linked Resources. |
+| **User type**          | `UserRole` in `CachedIdentity`: `gamemaker` \| `player`. Drives route guards. **Not** stored on `players` rows — collection membership implies player user type. |
+| **Device identity** | `localStorage.mb_identity` cache — profile picker and route guards. Authoritative state lives in PocketBase (`sessions` for GM, `players` for claimed players). |
+| **Session**            | Synonym for **Workspace / Session**. |
+| **Milestone**          | A top-level grouping on **one player's** map. Scoped by `playerId`. Contains that player's Missions and milestone resource attachments. |
 | **Mission**            | An individual task within a Milestone. Scoped by `playerId`. Atomic unit of work. Carries a GM-set `xpValue` and a `validationMethod`. |
-| **Game Maker**         | Admin with a `players` row (`role = gamemaker`) in the workspace. Configures per-player journeys, validates completions, and monitors progress. |
-| **`role` (field)**     | **User type** on `players.role`: `gamemaker` \| `player` (extensible: e.g. `manager`). Not job title. Drives route guards and hook behavior. |
-| **`jobTitle` (field)** | Human-readable job label for UI only (e.g. "Senior Engineer"). No access-control meaning. |
-| **Manager** *(future)* | Planned `role = manager` — may validate missions on behalf of the GM but **cannot** edit milestones or missions. Not in prototype scope. |
-| **Buddy**              | QoL — mentor metadata (`buddy_profiles`), not a system `role`. |
+| **Game Maker**         | Session owner (`sessions.gameMakerId`). Configures per-player journeys, manages the company template/resource libraries, validates completions, and monitors progress. |
+| **`jobTitle` (field)** | Human-readable job label on `players` for UI only (e.g. "Senior Engineer"). No access-control meaning. |
+| **Manager** *(future)* | Planned `UserRole` extension — may validate missions on behalf of the GM but **cannot** edit milestones or missions. Not in prototype scope. |
+| **Buddy**              | QoL — mentor metadata (`buddy_profiles`), not a user type. |
 | **XP**                 | Experience points awarded when a Mission is validated. **The Game Maker sets `missions.xpValue` directly.** Milestone `xpThreshold` = sum of `xpValue` for Missions in that Milestone (recomputed on save). Session total XP = sum of earned Mission XP across Milestones.                                              |
 | **Validation Method**  | How completion is confirmed. One of: `gmApprove` (player requests → GM approves in UI), `selfApprove` (player self-marks → immediate), `qr` (player shows signed URL QR → **GM scans** on `ValidationPage`), `peerScan` (player shows signed URL QR → **N unique third parties** scan on `PeerScanPage` — no app identity required). `form` **type** always `autoApproved` regardless of method. Default: `gmApprove`. |
-| **Hire list**          | All `players` rows in the workspace with `role = player` — invited and claimed — with aggregate progress %. |
-| **Player detail**      | GM drill-down for one player: customize milestones/missions/resources, analytics, buddy, invite link. Route: `/admin/:sessionId/player/:playerId`. |
+| **Players list**       | All `players` rows in the workspace — invited and claimed — with aggregate progress % when claimed. |
+| **Player detail**      | GM drill-down for one player: customize milestones/missions, attach library resources, analytics, buddy, invite link. Route: `/admin/:sessionId/player/:playerId`. |
+| **Library resource**   | Company-wide catalog entry in `library_resources` — visible to all GMs. Referenced by templates and attached to player milestones via `milestone_resources`. |
+| **Template**           | Global portable journey blueprint in `templates` — Milestones, Missions, FormSchemas, and resource bindings by `resourceKey`. GM copies onto a **specific player** via `importTemplate`. Any GM may edit. |
 | **GM Validation URL**  | `{origin}/validate/{sessionId}?t={signed}` — player completion QR (`validationMethod = qr`). **GM-only** confirm path. Player or anonymous scanner → `InvalidIdentityPage`. HMAC via `sessions.qrSecret` (C-16).                                                                                                        |
 | **Peer Scan URL**      | `{origin}/peer/{sessionId}?t={signed}` — crowd attestation QR (`validationMethod = peerScan`). Public: scanner enters name (or mission-specific form). One attestation per `scannerDeviceId` per `(missionId, playerId)`. GM sees live feed.                                                                            |
 | **Validation Request** | Transient state after player marks complete on `gmApprove` (`pendingApproval`) or while waiting for GM scan (`qr`) or peer target (`peerScan`).                                                                                                                                                                          |
 | **Current Missions**   | Missions the GM surfaced to the player's dashboard (`isInCurrentMissions`).                                                                                                                                                                                                                                            |
-| **Resource**           | Link/document attached to a **Milestone** (`milestoneId` FK). Shown in the player milestone sidebar. **No `missionId` FK.** GM CRUD from the workspace **Resources** tab (`AdminHomePage`) or inline from the milestone editor. |
-| **Template**           | Portable export of Milestones, Missions, FormSchemas, and Resources (no player progress). GM **copies** into a **specific player's** journey. |
+| **Milestone resource** | Attachment linking a `library_resources` row to a player's milestone (`milestone_resources`). Shown in the player milestone sidebar when `isVisibleToPlayer`. **No `missionId` FK.** |
 | **Recovery Key**       | 8-character token shown once on identity claim; restores `localStorage` identity.                                                                                                                                                                                                                                        |
 | **Scanner Device ID**  | Client-generated UUID in `localStorage` (`mb_scan_device_id`) — dedupes peer-scan attestations per mission.                                                                                                                                                                                                            |
 | **Shared Hook**         | A React hook that serves both Player and GameMaker roles from a single implementation. Accepts a `role` parameter (or infers it from context) to return role-appropriate data and callbacks. Examples: `useProgress`, `useBuddyProfile`, `useResources`. Components never call [`AppAdapter`](src/adapters/interface.ts:18) directly — they consume data exclusively through shared hooks. |
@@ -253,38 +256,42 @@ Replace the placeholder text with actual Messe München onboarding context.
 
 ## User Roles & Identity Model
 
-### Roles
+### Roles (UI user types)
+
+Two user types only: **`gamemaker`** and **`player`**. Encoded in
+`CachedIdentity.role` and `RequireRole` — not as a field on `players` rows.
 
 **Player (new employee)**
 
 - Read-only cockpit; marks **their** Missions complete and submits validation requests
 - Fills in form-type Missions (profile form, structured data)
-- One `players` row per workspace membership; journey data scoped by `playerId`
+- One `players` row per workspace; journey data scoped by `playerId`
 
 **Game Maker (admin)**
 
 - Full read-write cockpit; creates and edits **per-player** Milestones and Missions
-- Manages per-player Resources (via milestones)
-- Approves Mission completions (directly via admin cockpit, or other methods)
+- Manages the company **template** and **library resource** catalogs (global)
+- Attaches library resources to player milestones; approves Mission completions
 - Configures the `validationMethod` per Mission
-- Manages Buddy profiles, session templates, and background images
+- Manages Buddy profiles and workspace background images
 
 ### No SSO in Prototype
 
 There is no PocketBase auth collection login. Identity is UID-based, backed by
-`players` rows in PocketBase and cached in `localStorage`.
+PocketBase rows and cached in `localStorage`.
 
 - **Player UID:** client-generated UUID on claim, stored in `players.uid` and
   `localStorage.mb_identity`
-- **Game Maker UID:** client-generated UUID on workspace creation, stored in a
-  **`players` row** (`role = gamemaker`) **and** `sessions.gameMakerId`
+- **Game Maker UID:** client-generated UUID on workspace creation, stored in
+  `sessions.gameMakerId` and `sessions.gmRecoveryKey` (not a `players` row)
 - **No Pocketbase auth collections are used** (C-03)
 
-### Unified Identity Model
+### Identity model
 
-Every human participant — Player or Game Maker — has a **`players` row** in
-PocketBase for the workspace they belong to. **`players.role`** is the user type
-(`gamemaker` | `player`; extensible). **`players.jobTitle`** is display-only.
+**Game Makers** are identified by the workspace session (`gameMakerId`,
+`gmRecoveryKey`). **Players** are claimable identities in the `players`
+collection — profile metadata and journey ownership live on that row.
+**`players.jobTitle`** is display-only.
 
 **`localStorage` caches an identity subset for offline resolution.** The
 `mb_identity` key stores only the fields needed to re-establish identity without
@@ -292,18 +299,18 @@ a network call:
 
 ```ts
 interface CachedIdentity {
-  uid: string;            // matches players.uid once claimed
-  recoveryKey: string;    // matches players.recoveryKey once claimed
+  uid: string;            // matches sessions.gameMakerId or players.uid
+  recoveryKey: string;    // matches sessions.gmRecoveryKey or players.recoveryKey
   sessionId: string;      // workspace session id
-  role: UserRole;         // mirrors players.role — user type, not job title
+  role: UserRole;         // gamemaker | player — UI user type
   name?: string;
   isDemo?: boolean;
 }
 ```
 
 The [`useIdentity()`](src/hooks/useIdentity.ts:41) hook resolves from cache and
-hydrates from `players` when online. **`players.role` is authoritative in
-PocketBase.** Device cache is for the profile picker and route guards only.
+hydrates from PocketBase when online. **`CachedIdentity.role` mirrors the user
+type** for route guards; device cache is not authoritative over PB row data.
 
 ### Identity storage and resolution
 
@@ -312,7 +319,7 @@ The app does **not** use PocketBase auth. Identity is resolved client-side via
 
 | Source | Storage | Written by | Cleared by |
 | ------ | ------- | ---------- | ---------- |
-| **Persisted** | `localStorage` key `mb_identity` (stores `CachedIdentity` — a `Player` subset) | `joinSession`, `recoverIdentity`, `createGameMakerSession`, `setIdentity` | **`removeProfile(uid)`** — explicit user action (landing profile card, stale-session banner). **Not** on logout. |
+| **Persisted** | `localStorage` key `mb_identity` (stores `CachedIdentity`) | `claimPlayer`, `recoverIdentity`, `createGameMakerSession`, `setIdentity` | **`removeProfile(uid)`** — explicit user action (landing profile card, stale-session banner). **Not** on logout. |
 | **Scanner device** | `localStorage` key `mb_scan_device_id` | First peer-scan page visit | Browser data wipe |
 | **Ephemeral demo** | In-memory `ephemeralIdentityStore` (module singleton) | Landing page demo buttons via `setEphemeralIdentity` | `clearEphemeralIdentity` (e.g. ephemeral admin "back to landing") |
 
@@ -334,19 +341,20 @@ Ephemeral identity lets demo flows skip `localStorage` writes while still
 passing `RequireRole` (which calls `useIdentity`). Production join/create flows
 always persist to `localStorage`.
 
-> **Trust boundary:** `players.role` is stored in PocketBase. Route guards read
-> the cached copy for synchronous checks.
+> **Trust boundary:** `CachedIdentity.role` drives route guards. GM authority is
+> verified via `sessions.gameMakerId`; player authority via `players.uid` once
+> claimed.
 
 ### Invite claim (per-player `inviteToken`)
 
-Each GM-created player row receives a unique `inviteToken` at creation. The
+Each GM-invited player row receives a unique `inviteToken` at creation. The
 invite URL is `{origin}/join/{sessionId}?t={inviteToken}`.
 
 | Step | Behavior |
 | ---- | -------- |
-| **GM adds player** | `POST players` with `claimStatus=invited`, generated `inviteToken`, display `name`. No `uid`/`recoveryKey` until claim. |
-| **First claim** | Hire opens invite URL → enters display name (if needed) → app assigns `uid` + `recoveryKey` → PATCH player `claimStatus=claimed` → write `CachedIdentity` → `/session/:sessionId`. |
-| **Same link, new device** | Lookup by `inviteToken`. If `claimed`, hydrate `CachedIdentity` from the PB row (`uid`, `recoveryKey`, `role`) → `/session/:sessionId`. No separate recovery step required when the invite link is used. |
+| **GM adds player** | `invitePlayer` → `players` row with `claimStatus=invited`, generated `inviteToken`, optional display `name`. No `uid`/`recoveryKey` until claim. |
+| **First claim** | Player opens invite URL → enters display name (if needed) → `claimPlayer` assigns `uid` + `recoveryKey` → `claimStatus=claimed` → write `CachedIdentity` (`role=player`) → `/session/:sessionId`. |
+| **Same link, new device** | `getPlayerByInviteToken`. If `claimed`, hydrate `CachedIdentity` from the PB row → `/session/:sessionId`. No separate recovery step when the invite link is used. |
 | **Profile picker only** | `mb_identity` caches profiles for convenience; optional if user always uses invite URL. |
 | **Wrong identity on device** | Existing cached GM/other player → `InvalidIdentityPage`. |
 
@@ -368,8 +376,9 @@ This applies to Player Cockpit, Admin Cockpit, and `ValidationPage`.
 
 ### Workspace & player model
 
-One Game Maker operates one **workspace session**. Each managed hire is a
-`players` row with its own milestone, mission, and resource journey.
+One Game Maker operates one **workspace session** (≈ one department). Each
+managed player is a `players` row with its own milestone, mission, and resource
+attachment journey.
 
 ```mermaid
 flowchart TB
@@ -379,24 +388,30 @@ flowchart TB
         PI2["Player device B<br/>role=player"]
     end
 
+    subgraph global ["PocketBase — company library"]
+        T["templates"]
+        LR["library_resources"]
+    end
+
     subgraph workspace ["PocketBase — workspace"]
-        S["sessions: WORKSPACE"]
-        GM["players: GM<br/>role=gamemaker"]
-        P1["players: Alice<br/>inviteToken<br/>claimStatus"]
+        S["sessions<br/>gameMakerId · gmRecoveryKey"]
+        P1["players: Alice<br/>inviteToken · claimStatus"]
     end
 
     subgraph journey ["Alice journey — PB authoritative"]
         MS1["milestones"]
         MI1["missions"]
-        R1["resources.milestoneId"]
+        MR1["milestone_resources"]
         E1["progress_events"]
     end
 
-    S --> GM
     S --> P1
     P1 --> MS1 --> MI1
-    MS1 --> R1
+    MS1 --> MR1
+    LR --> MR1
     P1 --> E1
+    T -->|"importTemplate(playerId)"| MS1
+    GMI --> S
     PI1 --> P1
     PI2 --> P1
 ```
@@ -405,21 +420,23 @@ flowchart TB
 
 | Entity | Scope | Notes |
 | ------ | ----- | ----- |
-| `sessions` | Workspace | One per GM; map background, `qrSecret`, pre-boarding |
-| `players` | Workspace | GM row + one per hire; `role`, `claimStatus`, `inviteToken` |
+| `sessions` | Workspace | One per GM; map background, `qrSecret`, `gameMakerId`, `gmRecoveryKey`, pre-boarding |
+| `players` | Workspace | One per onboarded person; **no GM rows**; `claimStatus`, `inviteToken`, profile fields |
 | `milestones`, `missions`, `form_schemas` | Per player | `playerId` FK |
-| `resources` | Per milestone | `milestoneId` FK (implies per-player via milestone); **no `missionId`** |
+| `library_resources` | Company-wide | All GMs; optional user-only `tags` text (not interpreted in prototype) |
+| `milestone_resources` | Per player milestone | `playerId`, `milestoneId`, `libraryResourceId`; no `missionId` |
+| `templates` | Company-wide | Any GM may edit; `importTemplate` targets one `playerId` |
 | `progress_events`, `buddy_profiles` | Per player | Unchanged |
-| Templates | Portable copy | Import onto a **player** (milestones, missions, resources) |
 
 ### Session constraint
 
 > A single `uid` may hold at most one identity per workspace session (one
 > `players` row per `uid` per `sessionId`).
 
-Joining as a player creates or claims a `players` row in the target workspace.
-A device may cache multiple profiles (different workspaces or roles) in
-`mb_identity`; `mb_active_uid` selects the last-active profile on app boot.
+Joining as a player **claims** an existing `players` row in the target workspace
+(via `inviteToken`). A device may cache multiple profiles (different workspaces
+or roles) in `mb_identity`; `mb_active_uid` selects the last-active profile on
+app boot.
 
 ### Identity Recovery
 
@@ -427,16 +444,19 @@ When `localStorage` is cleared (new device, browser reset):
 
 1. User opens Landing Page → clicks **"Recover my progress"**
 2. Enters their `recoveryKey` (8-char token)
-3. App queries Pocketbase: `players WHERE recoveryKey = input` (and optionally
-   `sessionId` when known from URL)
-4. On match: `CachedIdentity` is reconstructed from the `players` row and
-   written back to `localStorage`
+3. App queries PocketBase: `players WHERE recoveryKey = input` (player path), or
+   `sessions WHERE gmRecoveryKey = input` (GM path), optionally scoped by
+   `sessionId` when known from URL
+4. On match: `CachedIdentity` is reconstructed and written to `localStorage`
 5. User is routed to their cockpit (`/admin/:sessionId` or `/session/:sessionId`
    based on `role`)
 
 The `recoveryKey` is displayed **once** on first claim with a copy button.
 
-**Game Maker recovery:** `players WHERE recoveryKey = input AND role = gamemaker`.
+**Game Maker recovery:** `sessions WHERE gmRecoveryKey = input`.
+
+**Player recovery:** `players WHERE recoveryKey = input` (invite link preferred
+on new devices).
 
 ### Returning User (identity valid)
 
@@ -541,7 +561,7 @@ QR routing: [`docs/qr-routing.puml`](docs/qr-routing.puml)
 
 1. Player marks complete → `status: pendingApproval`
 2. `ValidationDisplay` — waiting state (poll/SSE per C-20)
-3. GM approves in hire analytics → `status: completed`
+3. GM approves in player analytics → `status: completed`
 4. Player cockpit XP updates
 
 **`selfApprove`**
@@ -564,7 +584,7 @@ QR routing: [`docs/qr-routing.puml`](docs/qr-routing.puml)
 3. Scanner submits name / optional form fields → `peer_scans` record
 4. Dedup: one row per `(missionId, playerId, scannerDeviceId)`
 5. When count ≥ `mission.peerScanTarget` → `upsertProgressEvent(completed)`
-6. GM hire analytics shows live attestations (SSE)
+6. GM player analytics shows live attestations (SSE)
 
 **QR identity rules (normative)**
 
@@ -589,8 +609,8 @@ without the MesseBuddy app installed; the browser handles routing.
 
 | Tab | Purpose |
 | --- | ------- |
-| **Players** | All `role = player` — invited + claimed; summary stats; **Add player** → `inviteToken` + link |
-| **Resources** | Dedicated CRUD for all milestone-linked resources in the workspace |
+| **Players** | All workspace players — invited + claimed; summary stats; **Add player** → `invitePlayer` → `inviteToken` + link |
+| **Resource library** | Global CRUD on `library_resources` — all GMs; attach entries to player milestones from player detail |
 
 - Navigate to player detail for per-player customize / analytics
 - Stale workspace session → "Remove this profile"
@@ -602,7 +622,7 @@ without the MesseBuddy app installed; the browser handles routing.
 | Tab | Purpose |
 | --- | ------- |
 | **Analytics** | Map progress, pending approvals, peer-scan feed, form submissions |
-| **Customize** | This player's milestones, missions, map BG; inline resource attach per milestone |
+| **Customize** | This player's milestones, missions, map BG; attach library resources per milestone |
 | **Buddy** | Mentor card for this player |
 | **Pre-boarding** | Workspace checklist |
 
@@ -610,7 +630,7 @@ without the MesseBuddy app installed; the browser handles routing.
 - Per-player invite link (`SessionInviteCard`) — `/join/:sessionId?t=:inviteToken`
 - `AdminQRScannerModal` — scan any MesseBuddy URL
 
-Diagram: [`docs/hire-lifecycle.puml`](docs/hire-lifecycle.puml)
+Diagram: [`docs/player-lifecycle.puml`](docs/player-lifecycle.puml) *(rename from `hire-lifecycle.puml` in ARCH)*
 
 ### Admin draft architecture (normative)
 
@@ -650,10 +670,12 @@ flexible as possible for the users.
 | `recordPeerScan`      | `missionId`, `playerId`, attestation  | `PeerScan`            | POST to PB; may complete mission |
 | `validateMission`     | `ScanData`, `gameMakerUid`            | `ProgressEvent`       | Calls `upsertProgressEvent` |
 | `completeForm`        | `missionId`, `formResponse`           | `ProgressEvent`       | Calls `upsertProgressEvent` |
-| `joinSession`         | `inviteToken`, `name`                 | `CachedIdentity`      | Claims `players` row; writes `localStorage` |
+| `joinSession`         | `inviteToken`, `name`                 | `CachedIdentity`      | Orchestrates `claimPlayer`; writes `localStorage` |
+| `invitePlayer`        | `sessionId`, `name?`                  | `Player`              | Creates invited `players` row with `inviteToken` |
+| `claimPlayer`         | `inviteToken`, `name?`                | `CachedIdentity`      | Binds `uid`/`recoveryKey`; `claimStatus=claimed` |
 | `recoverIdentity`     | `recoveryKey`                         | `CachedIdentity`      | Writes `localStorage`       |
-| `exportTemplate`      | `Session`, `Milestone[]`, `Mission[]` | `TemplateExport`      | None - pure function        |
-| `importTemplate`      | `TemplateExport`, `playerId`          | `void`                | POST milestones/missions/resources onto target player |
+| `exportTemplate`      | `playerId`, `name`                    | `TemplateExport`      | None - pure function; resolves resource bindings |
+| `importTemplate`      | `TemplateExport`, `playerId`          | `void`                | POST milestones/missions/attachments onto target player |
 
 > **`upsertProgressEvent` is the single write path for all ProgressEvent
 > mutations.** No component or page may PATCH or POST to `progress_events`
@@ -895,6 +917,7 @@ interface Session extends PBRecord {
   readonly name: string;
   readonly bgImageUrl: string;
   readonly gameMakerId: string; // raw UID string, not a PB relation
+  readonly gmRecoveryKey: string; // GM recovery; shown once on workspace create
   readonly qrSecret?: string; // 64-char hex HMAC key (C-16); GM verify only; PB auto-generates
   readonly preBoardingChecks: ReadonlyArray<PreBoardingCheckItem>; // session-scoped checklist JSON
 }
@@ -903,7 +926,6 @@ interface Player extends PBRecord {
   readonly uid?: string; // set on claim; unique index when present
   readonly recoveryKey?: string; // set on claim; unique index when present
   readonly sessionId: string; // FK → workspace sessions
-  readonly role: UserRole; // user type: gamemaker | player (extensible)
   readonly claimStatus: "invited" | "claimed";
   readonly inviteToken: string; // unique; permanent invite permalink key
   readonly tutorialComplete: boolean;
@@ -986,14 +1008,20 @@ interface PeerScan extends PBRecord {
   readonly formResponse?: Readonly<Record<string, string>>;
 }
 
-interface Resource extends PBRecord {
-  readonly sessionId: string; // denormalized workspace FK
-  readonly playerId: string; // denormalized — owner of linked milestone
-  readonly milestoneId: string; // FK → milestones; required
+interface LibraryResource extends PBRecord {
+  readonly resourceKey: string; // unique slug; referenced by templates
   readonly title: string;
   readonly description?: string;
   readonly type: ResourceType;
   readonly url: string;
+  readonly tags?: string; // optional user-only text; not interpreted in prototype
+}
+
+interface MilestoneResource extends PBRecord {
+  readonly sessionId: string; // denormalized workspace FK
+  readonly playerId: string; // denormalized journey owner
+  readonly milestoneId: string; // FK → milestones
+  readonly libraryResourceId: string; // FK → library_resources
   readonly isVisibleToPlayer: boolean;
 }
 ```
@@ -1040,7 +1068,10 @@ interface TemplateRecord {
   readonly milestones: ReadonlyArray<Omit<Milestone, keyof PBRecord>>;
   readonly missions: ReadonlyArray<Omit<Mission, keyof PBRecord>>;
   readonly formSchemas: ReadonlyArray<Omit<FormSchema, keyof PBRecord>>;
-  readonly resources: ReadonlyArray<Omit<Resource, keyof PBRecord>>;
+  readonly resourceBindings: ReadonlyArray<{
+    readonly milestoneOrder: number;
+    readonly resourceKey: string;
+  }>;
 }
 ```
 
@@ -1050,15 +1081,17 @@ interface TemplateRecord {
 
 | Collection        | Key indexes                                         | Constraints                                    |
 | ----------------- | --------------------------------------------------- | ---------------------------------------------- |
-| `sessions`        | `gameMakerId`                                       | One workspace per GM (app-enforced)            |
-| `players`         | `uid` (unique, sparse), `recoveryKey` (unique, sparse), `inviteToken` (unique), `sessionId` | `role`, `claimStatus`; `uid`/`recoveryKey` null until claim |
+| `sessions`        | `gameMakerId`, `gmRecoveryKey` (unique, sparse)   | One workspace per GM (app-enforced)            |
+| `players`         | `uid` (unique, sparse), `recoveryKey` (unique, sparse), `inviteToken` (unique), `sessionId` | Player identities only; `claimStatus`; `uid`/`recoveryKey` null until claim |
 | `milestones`      | `playerId`, `order`                                 | Per-player journey                             |
 | `missions`        | `playerId`, `milestoneId`, `order`                  | Per-player journey                             |
 | `form_schemas`    | `missionId` (unique)                                | One schema per mission                         |
 | `progress_events` | `(playerId, missionId)` composite                   | App-layer uniqueness via `upsertProgressEvent` (C-05) |
 | `peer_scans`      | `(missionId, playerId, scannerDeviceId)` composite  | C-25                                           |
 | `buddy_profiles`  | `assignedToPlayerId`                                | -                                              |
-| `resources`       | `milestoneId`, `playerId`, `sessionId`              | Per-milestone; no `missionId` (C-26)           |
+| `library_resources` | `resourceKey` (unique)                            | Company-wide catalog; any GM may edit          |
+| `milestone_resources` | `playerId`, `milestoneId`, `libraryResourceId`    | Per-milestone attachment; no `missionId` (C-26)  |
+| `templates`       | `name` (unique)                                     | Company-wide; any GM may edit                  |
 
 ### Field Type Notes
 
@@ -1114,7 +1147,7 @@ xpThreshold = 50
 Player completes first three → earnedXP = 25 → percentComplete = 50%
 ```
 
-Used in `TopBar` and Game Maker's hire analytics.
+Used in `TopBar` and Game Maker player analytics.
 
 ## Session Export / Import
 
@@ -1125,20 +1158,36 @@ interface TemplateExport {
   exportType: "template";
   exportedAt: string;
   name: string;
+  tags?: string; // optional user-only text; not interpreted in prototype
   milestones: Array<Omit<Milestone, keyof PBRecord>>;
-  missions: Array<Omit<Mission, keyof PBRecord>>;
-  formSchemas: Array<Omit<FormSchema, keyof PBRecord>>;
-  resources: Array<Omit<Resource, keyof PBRecord>>;
+  missions: Array<
+    Omit<Mission, keyof PBRecord> & { readonly _milestoneOrder: number }
+  >;
+  formSchemas: Array<
+    Omit<FormSchema, keyof PBRecord> & { readonly _missionOrder: number }
+  >;
+  resourceBindings: Array<{
+    readonly milestoneOrder: number;
+    readonly resourceKey: string;
+  }>;
 }
 ```
 
 **Import process (template → player):**
 
-1. Target workspace `sessionId` and target `playerId` must already exist
-2. Insert Milestones for **that player** in `order` sequence → collect `oldId → newId` map
-3. Insert Missions for **that player**, remapping `milestoneId` via the id map
-4. Insert FormSchemas, remapping `missionId` via the id map
-5. Insert Resources remapping `milestoneId` (and `playerId`) via the id map
+1. Target `playerId` must already exist (invited or claimed)
+2. Insert Milestones for **that player** in `order` sequence → collect `order → newId` map
+3. Insert Missions for **that player**, remapping `milestoneId` via the map
+4. Insert FormSchemas, remapping `missionId` via the map
+5. For each `resourceBinding`, resolve `resourceKey` in `library_resources` and
+   create `milestone_resources` on the remapped milestone
+
+**Export process (player → template):** `exportTemplate(playerId, name)` strips
+PB ids, embeds `_milestoneOrder` / `_missionOrder`, and emits `resourceBindings`
+from existing `milestone_resources` → `library_resources.resourceKey`.
+
+**Import does not create a session.** `bootstrapFromTemplate` at GM signup is
+removed; templates apply only to existing players.
 
 **Import process (full session export):** same as template per player, plus Players,
 ProgressEvents, BuddyProfiles with id remapping.
@@ -1153,7 +1202,7 @@ interface FullSessionExport {
   milestones: Array<Omit<Milestone, keyof PBRecord>>;
   missions: Array<Omit<Mission, keyof PBRecord>>;
   formSchemas: Array<Omit<FormSchema, keyof PBRecord>>;
-  resources: Array<Omit<Resource, keyof PBRecord>>;
+  resources: Array<Omit<LibraryResource, keyof PBRecord>>;
   players: Array<Omit<Player, keyof PBRecord>>; // uid + recoveryKey preserved
   progressEvents: Array<Omit<ProgressEvent, keyof PBRecord>>;
   buddyProfiles: Array<Omit<BuddyProfile, keyof PBRecord>>;
@@ -1174,8 +1223,8 @@ interface FullSessionExport {
 | # | Constraint | Enforcement |
 | --- | ---------- | ----------- |
 | C-01 | One `players` row per person per workspace; `uid` unique globally once claimed | `players.uid` unique index |
-| C-02 | Progress is always recoverable | `recoveryKey` stored in PB, shown once on claim |
-| C-03 | No PocketBase auth login | Identity via `players` rows (`role`, `uid`, `recoveryKey`, `inviteToken`). `localStorage.mb_identity` caches a subset. GM and Player both have `players` rows. |
+| C-02 | Progress is always recoverable | `recoveryKey` on `players`; `gmRecoveryKey` on `sessions` |
+| C-03 | No PocketBase auth login | GM via `sessions.gameMakerId` + `gmRecoveryKey`; players via `players` rows (`uid`, `recoveryKey`, `inviteToken`). `localStorage.mb_identity` caches `UserRole`. |
 | C-04 | `xpThreshold` = sum of `missions.xpValue` in the Milestone | Recomputed on mission save; stored on `milestones` |
 | C-05 | One `ProgressEvent` per `(playerId, missionId)` | `upsertProgressEvent` only |
 | C-06 | Form missions always `autoApproved`, regardless of `validationMethod` | `ValidationDisplay` never mounts for `form` type |
@@ -1196,10 +1245,11 @@ interface FullSessionExport {
 | C-21 | Pre-boarding checks in dedicated collection | `pre_boarding_checks` collection |
 | C-22 | Admin lists project pending draft edits | `usePlayerDetailPage`, `MissionBottomSheet` |
 | C-23 | Logout navigates to landing only; `removeProfile` is explicit | `AdminHomePage`, `usePlayerCockpitPage` |
-| C-24 | Hire list shows all workspace players (`role = player`) | `AdminHomePage` Players tab |
+| C-24 | Players list shows all workspace `players` (invited + claimed) | `AdminHomePage` Players tab |
 | C-25 | `peerScan` attestations unique per `(missionId, playerId, scannerDeviceId)` | `peer_scans` unique index |
-| C-26 | Milestones and Missions per `playerId`; Resources per `milestoneId`; no mission–resource link | Schema FKs |
-| C-27 | Per-player invite via `inviteToken`; URL `/join/:sessionId?t=` | `createPlayer`, `SessionInviteCard` |
+| C-26 | Milestones and Missions per `playerId`; player-visible resources via `milestone_resources` → `library_resources`; no mission–resource link | Schema FKs |
+| C-27 | Per-player invite via `inviteToken` on `players`; URL `/join/:sessionId?t=` | `invitePlayer`, `claimPlayer`, `SessionInviteCard` |
+| C-28 | `templates` and `library_resources` are company-wide; any GM may edit | No `sessionId` on library collections |
 
 ---
 
@@ -1235,6 +1285,12 @@ or delete existing rows.** Open questions use `Status: open`; settled items use
 | OD-21 | — | open | `peerScan` scanner input: mission `FormSchema` vs fixed name-only form | `PeerScanPage` + analytics |
 | OD-24 | — | open | Snapshot `validatedXp` on confirm vs re-derive from live `missions.xpValue` | Fairness vs C-11 simplicity |
 | OD-28 | — | open | Harden invite tokens (expiry, PIN, or one-time claim) | Prototype uses permanent capability URLs (OD-25) |
-| OD-29 | — | open | `role = manager`: validate missions, no milestone/mission edit | Future system role extension |
+| OD-29 | — | open | `UserRole` extension for manager: validate missions, no milestone/mission edit | Future system role |
+| D-ARCH-2 | 2026-07-05 | decided | **Workspace model (final):** one `sessions` row per GM (`gameMakerId`, `gmRecoveryKey`); claimable identities = `players` only (no GM row); `inviteToken` + `claimStatus`; per-player `playerId` journeys. **Supersedes D-ARCH and OD-14** where they require GM `players` rows or `players.role`. | Separates user types from player entities; fixes phantom workspace-as-hire |
+| D-ARCH-3 | 2026-07-05 | decided | **Company library:** global `templates` + `library_resources`; per-player `milestone_resources` attachments; `importTemplate(template, playerId)`; templates reference resources by `resourceKey`. **Supersedes OD-22 and OD-26** resource-session scoping. | Shared onboarding across GMs/sessions; independent journeys per player |
+| D-ARCH-4 | 2026-07-05 | decided | **Session ≈ department** by convention; no department entity, enum, or app logic. Optional user-only `tags` text on library rows for future filtering only. | Prototype simplicity; architecture allows later scalability |
+| D-ARCH-5 | 2026-07-05 | decided | Any GM may create, edit, and delete `templates` and `library_resources` | Shared company onboarding ops; no ACL in prototype (C-03) |
+| D-NAMING-1 | 2026-07-05 | decided | UI user types = `gamemaker` \| `player` (`UserRole`); PB onboarding entity = `players` / domain `Player`; **no `role` field on `players` rows** | Aligns code with product language; removes legacy hire/role overload |
+| D-NAMING-2 | 2026-07-05 | decided | Purge **hire** from routes, hooks, filenames, and docs. Use **player** consistently (`useGmPlayers`, `/player/:playerId`, `PlayerDetailPage`). Adapter: `invitePlayer`, `claimPlayer`. | Cleans up legacy one-session-per-hire implementation naming |
 
 Diagram index: [`docs/README.md`](docs/README.md)
