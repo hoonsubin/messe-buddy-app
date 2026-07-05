@@ -51,14 +51,14 @@ const ValidationPage = () => {
     });
   }, [navigate, identity]);
 
-  const handleConfirm = useCallback(async () => {
+  const handleConfirm = async () => {
     try {
       await validation.confirm(identity?.uid);
       goToGmHome();
     } catch {
       // confirm error surfaced via validation.errorMessage
     }
-  }, [goToGmHome, validation, identity?.uid]);
+  };
 
   if (validation.errorKind === "missing_token") {
     return (

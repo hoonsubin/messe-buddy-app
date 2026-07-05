@@ -75,10 +75,18 @@ export const usePlayerDetailPage = () => {
 
   useEffect(() => {
     if (playerId) gmProgress.handlePlayerSelect(playerId);
+    // gmProgress is a fresh object every render; handlePlayerSelect is the
+    // only thing used here and is itself stable (useCallback([], [])), so
+    // depending on the whole object would refire this on every unrelated
+    // gmProgress change (e.g. loading/players updates).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerId, gmProgress.handlePlayerSelect]);
 
   useEffect(() => {
     if (playerId) gmProgress.refresh();
+    // Same reasoning as above: depending on the whole gmProgress object here
+    // would re-trigger refresh() on every state change it causes, looping.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerId, gmProgress.refresh]);
 
   const inviteToken = usePlayerInviteToken(playerId, {
@@ -252,6 +260,7 @@ export const usePlayerDetailPage = () => {
       .catch(() => showToast("Could not update template"));
   }, [
     appliedTemplate,
+    session,
     milestones,
     missions,
     gmResources.resources,
