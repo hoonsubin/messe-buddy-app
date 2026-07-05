@@ -1,4 +1,8 @@
-import type { AppAdapter, ListMilestonesOptions, ListMissionsOptions } from "../interface.ts";
+import type {
+  AppAdapter,
+  ListMilestonesOptions,
+  ListMissionsOptions,
+} from "../interface.ts";
 import type {
   BuddyProfile,
   FormSchema,
@@ -112,14 +116,14 @@ const notify = (key: string, event: ProgressEvent): void => {
   for (const cb of subs) cb(event);
 };
 
-let currentAdminUid = "uid_gamemaker_peter";
+let currentGmUid = "uid_gamemaker_peter";
 
-export const setMockAdminUid = (uid: string): void => {
-  currentAdminUid = uid;
+export const setMockGmUid = (uid: string): void => {
+  currentGmUid = uid;
 };
 
 const simulateGmApproval = (key: string, gmUid?: string): void => {
-  const effectiveUid = gmUid ?? currentAdminUid;
+  const effectiveUid = gmUid ?? currentGmUid;
   setTimeout(() => {
     const existing = progressEvents.get(key);
     if (!existing || existing.status !== "pendingApproval") return;
@@ -457,7 +461,7 @@ const subscribeProgressEvent = (
   playerId: string,
   missionId: string,
   callback: (event: ProgressEvent) => void,
-): (() => void) => {
+): () => void => {
   const key = `${playerId}::${missionId}`;
   let subs = subscriptions.get(key);
   if (!subs) {
@@ -488,7 +492,9 @@ const upsertBuddyProfile = async (
   return profile;
 };
 
-const listLibraryResources = async (): Promise<ReadonlyArray<LibraryResource>> => {
+const listLibraryResources = async (): Promise<
+  ReadonlyArray<LibraryResource>
+> => {
   await Promise.resolve();
   return [...libraryResources.values()];
 };

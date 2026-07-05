@@ -4,7 +4,7 @@ import type { Milestone, Mission, ProgressEvent } from "../../types/index.ts";
 import { expectedProgressPct } from "../../utils/expectedProgress.ts";
 import MissionTimelineChart from "./MissionTimelineChart.tsx";
 
-interface HireAnalyticsProps {
+interface PlayerAnalyticsProps {
   readonly startDateISO?: string;
   readonly firstName: string;
   readonly milestones: ReadonlyArray<Milestone>;
@@ -29,12 +29,12 @@ const StatCard = (
     readonly children: React.ReactNode;
   },
 ) => (
-  <div className="card hire-analytics__stat">
-    <div className="hire-analytics__stat-header">
-      <span className="hire-analytics__stat-icon">
+  <div className="card player-analytics__stat">
+    <div className="player-analytics__stat-header">
+      <span className="player-analytics__stat-icon">
         {icon}
       </span>
-      <span className="hire-analytics__stat-label">
+      <span className="player-analytics__stat-label">
         {label}
       </span>
     </div>
@@ -42,7 +42,7 @@ const StatCard = (
   </div>
 );
 
-const HireAnalytics = (props: HireAnalyticsProps) => {
+const PlayerAnalytics = (props: PlayerAnalyticsProps) => {
   const completedSet = useMemo(
     () =>
       new Set(
@@ -84,22 +84,22 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
   }, [orderedMilestones, props.missions, completedSet]);
 
   return (
-    <div className="hire-analytics">
-      <div className="hire-analytics__grid">
+    <div className="player-analytics">
+      <div className="player-analytics__grid">
         {/* 1. Onboarding age */}
         <StatCard
           icon={<MdWbSunny size={18} aria-hidden="true" />}
           label="Onboarding age"
         >
-          <div className="hire-analytics__stat-row">
-            <span className="hire-analytics__big-number">
+          <div className="player-analytics__stat-row">
+            <span className="player-analytics__big-number">
               {days ?? "—"}
             </span>
-            <span className="hire-analytics__label">
+            <span className="player-analytics__label">
               {days === 1 ? "day" : "days"}
             </span>
           </div>
-          <p className="hire-analytics__caption">
+          <p className="player-analytics__caption">
             since onboarding started
           </p>
         </StatCard>
@@ -109,15 +109,15 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
           icon={<MdTrendingUp size={18} aria-hidden="true" />}
           label="Progress vs plan"
         >
-          <div className="hire-analytics__stat-row--wrap">
-            <span className="hire-analytics__big-number">
+          <div className="player-analytics__stat-row--wrap">
+            <span className="player-analytics__big-number">
               {actualPct}%
             </span>
-            <span className="hire-analytics__label">
+            <span className="player-analytics__label">
               of tasks completed
             </span>
           </div>
-          <p className="hire-analytics__caption">
+          <p className="player-analytics__caption">
             Should be ~<strong className="core-text-fg">
               {expectedPct}%
             </strong>
@@ -136,23 +136,23 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
         >
           {total === 0
             ? (
-              <div className="hire-analytics__all-done">
+              <div className="player-analytics__all-done">
                 No missions set up yet — add some in the Customize tab.
               </div>
             )
             : nextTask
             ? (
               <>
-                <div className="hire-analytics__next-title">
+                <div className="player-analytics__next-title">
                   {nextTask.title}
                 </div>
-                <p className="hire-analytics__caption">
+                <p className="player-analytics__caption">
                   in {nextTask.milestone}
                 </p>
               </>
             )
             : (
-              <div className="hire-analytics__all-done">
+              <div className="player-analytics__all-done">
                 All tasks complete 🎉
               </div>
             )}
@@ -164,7 +164,7 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
         className="card"
         style={{ padding: "var(--space-4) var(--space-5)" }}
       >
-        <h3 className="hire-analytics__section-title">
+        <h3 className="player-analytics__section-title">
           Missions completed over time
         </h3>
         <MissionTimelineChart
@@ -179,4 +179,4 @@ const HireAnalytics = (props: HireAnalyticsProps) => {
   );
 };
 
-export default HireAnalytics;
+export default PlayerAnalytics;

@@ -204,7 +204,7 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
               onChange={(e) =>
                 setDraft({ ...draft, isVisibleToPlayer: e.target.checked })}
             />
-            Visible to the new hire
+            Visible to the player
           </label>
 
           <div className="resources-editor__modal-actions">

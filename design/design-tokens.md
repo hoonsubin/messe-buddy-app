@@ -41,7 +41,7 @@ Mobile-first. Primary smoke viewport: **390×844** (iPhone-class). Admin desktop
 @import "./styles/components/qr.css";
 @import "./styles/components/shared.css";
 @import "./styles/components/player.css";
-@import "./styles/components/admin.css";
+@import "./styles/components/gamemaker.css";
 @import "./styles/components/tutorial.css";
 ```
 
@@ -50,7 +50,7 @@ Mobile-first. Primary smoke viewport: **390×844** (iPhone-class). Admin desktop
 | Prefix | Scope | Example |
 |--------|-------|---------|
 | `core-` | Utility (layout, typography, icons, spacing) | `.core-flex-row`, `.core-text-sm`, `.core-mb-4` |
-| `{component}-` | Component block (BEM: `block__element--modifier`) | `.daily-plan__header`, `.hire-analytics__stat-row--wrap` |
+| `{component}-` | Component block (BEM: `block__element--modifier`) | `.daily-plan__header`, `.player-analytics__stat-row--wrap` |
 | `{page}-` | Page-scoped layout | `.cockpit-col`, `.landing__card` |
 | `.btn` / `.btn--` | Shared button system | `.btn--primary`, `.btn--ghost` |
 | `.card` | Shared card surface | `.card` (padding, border-radius, shadow) |
@@ -106,8 +106,8 @@ All values are HSL channels. Usage: `hsl(var(--token))`.
 |-------|----------|------|
 | `--color-role-player` | `212 72% 37%` | Landing employee accent |
 | `--color-role-player-bg` | `212 72% 93%` | Landing employee surface |
-| `--color-role-admin` | `160 73% 28%` | Landing admin accent |
-| `--color-role-admin-bg` | `160 73% 91%` | Landing admin surface |
+| `--color-role-gamemaker` | `160 73% 28%` | Landing Game Maker accent |
+| `--color-role-gamemaker-bg` | `160 73% 91%` | Landing Game Maker surface |
 | `--color-mission-text` | `200 70% 45%` | Text mission badge |
 | `--color-mission-link` | `270 60% 50%` | Link mission badge |
 | `--color-mission-form` | `150 55% 42%` | Form mission badge |
@@ -195,7 +195,7 @@ Apply via `data-role` / `data-mission-type` in CSS — not hardcoded HSL in TSX.
 | `--duration-slow` | 400ms — progress fills, sheet open |
 | `--ease-out` | `cubic-bezier(0.16, 1, 0.3, 1)` |
 
-Map collapse uses `0.35s cubic-bezier(0.4, 0, 0.2, 1)` — keep consistent when touching admin layout.
+Map collapse uses `0.35s cubic-bezier(0.4, 0, 0.2, 1)` — keep consistent when touching GM layout.
 
 ---
 
@@ -213,8 +213,8 @@ Map collapse uses `0.35s cubic-bezier(0.4, 0, 0.2, 1)` — keep consistent when 
 | Query | Behavior |
 |-------|----------|
 | `min-width: 640px` | Resources grid 2 columns |
-| `min-width: 40rem` | Admin `.admin-layout` → map + sidebar columns |
-| `min-width: 64rem` | Additional admin/player layout adjustments |
+| `min-width: 40rem` | Admin `.gm-layout` → map + sidebar columns |
+| `min-width: 64rem` | Additional GM/player layout adjustments |
 
 ### Z-index stack (do not invent new layers without updating this table)
 
@@ -285,7 +285,7 @@ Reuse these before creating new components. Paths relative to `src/components/`.
 | Center modal | `.modal-backdrop`, `.modal`, `.modal__*` | [`Modal`](../src/components/patterns/Modal.tsx) — prefer component |
 | Bottom sheet | `.bottom-sheet-*`, `.sheet-*` | [`BottomSheet`](../src/components/patterns/BottomSheet.tsx) |
 | Recovery key (legacy CSS aliases) | `.recovery-modal__*` | Use `Modal variant="narrow"` |
-| Confirm sheet | `.sheet-confirm` | [`ConfirmSheet`](../src/components/admin/ConfirmSheet.tsx) |
+| Confirm sheet | `.sheet-confirm` | [`ConfirmSheet`](../src/components/gamemaker/ConfirmSheet.tsx) |
 | Full-screen | `.tutorial-overlay`, `.qr-scanner` | Tutorial, QR scanner |
 | Toast | inline styles only | [`Toast.tsx`](../src/components/shared/Toast.tsx) |
 | Error full page | inline styles | [`FetchErrorPanel`](../src/components/shared/FetchErrorPanel.tsx) |
@@ -308,7 +308,7 @@ Reuse these before creating new components. Paths relative to `src/components/`.
 | [`MapViewport`](../src/components/shared/MapViewport.tsx) | `.map-viewport`, `.map-canvas`, `.map-zoom-*` |
 | [`MilestoneNode`](../src/components/shared/MilestoneNode.tsx) | `.milestone-node`, liquid `.milestone-node__fill` |
 | [`IsometricMilestoneMap`](../src/components/player/IsometricMilestoneMap.tsx) | Isometric 3D player map (PR #17); used by `MilestoneMapViewer` for player-facing map |
-| Admin editor | `.milestone-map-editor`, `.map-editor-toolbar__*` | |
+| GM editor | `.milestone-map-editor`, `.map-editor-toolbar__*` | |
 
 Milestone positions use **percentage** coordinates (`xPercent` / `yPercent` 0–100) — never pixel positions in domain data.
 
@@ -316,16 +316,16 @@ Milestone positions use **percentage** coordinates (`xPercent` / `yPercent` 0–
 
 ## 8. Page composition map
 
-How routes assemble components (for regression scope). PR #17 replaced the admin tab-based `AdminCockpitPage` with separate route-based pages.
+How routes assemble components (for regression scope). PR #17 replaced the legacy tab-based GM cockpit with separate route-based pages.
 
 | Route | Page | Layout | Key components |
 |-------|------|--------|----------------|
 | `/`, `/join/:sessionId` | [`LandingPage`](../src/pages/LandingPage.tsx) | `LandingShell` + view switch | `RoleSelectView`, `JoinSessionView`, `CreateSessionView`, `TemplatesView`, `RecoverView`, modals |
 | `/session/:id` | [`PlayerCockpitPage`](../src/pages/PlayerCockpitPage.tsx) | `TopBar` + tab bar (Dashboard / AI Assistant) | `MilestoneMapViewer` (→ `IsometricMilestoneMap`), `MilestoneSidebarViewer`, `CurrentMissionsList`, `BuddyCard`, `ResourcesSection`, `ChatPanel`, `TutorialOverlay` |
-| `/admin/:id` | [`AdminHomePage`](../src/pages/AdminHomePage.tsx) | `TopBar` + hire list | `GmHireRow` cards, status indicators, "Add hire" placeholder |
-| `/admin/:id/hire/:hireId` | [`HireDetailPage`](../src/pages/HireDetailPage.tsx) | `TopBar` + detail columns | `IsometricMilestoneMap` (read-only), `MilestoneMapEditor` (editable), `MissionBottomSheet`, `HireAnalytics`, `MissionTimelineChart`, `SessionInviteCard`, `ResourcesEditor`, `TemplateSelect`, `SaveActions`, `BuddyAssignmentForm` |
+| `/gamemaker/:id` | [`GameMakerHomePage`](../src/pages/GameMakerHomePage.tsx) | `TopBar` + player list | Player cards, status indicators, "Add player" |
+| `/gamemaker/:id/player/:playerId` | [`PlayerDetailPage`](../src/pages/PlayerDetailPage.tsx) | `TopBar` + detail columns | `IsometricMilestoneMap` (read-only), `MilestoneMapEditor` (editable), `MissionBottomSheet`, `PlayerAnalytics`, `MissionTimelineChart`, `SessionInviteCard`, `ResourcesEditor`, `TemplateSelect`, `SaveActions`, `BuddyAssignmentForm` |
 | `/form/:sessionId/:missionId` | [`FormPage`](../src/pages/FormPage.tsx) | `TopBar` + `FormShell` | `FormField` per schema |
-| `/admin/:sessionId/scan` | [`QRScannerView`](../src/pages/QRScannerView.tsx) | Full-screen `.qr-scanner` | `CameraFeed`, `ValidationResult` |
+| `/gamemaker/:sessionId/scan` | [`QRScannerView`](../src/pages/QRScannerView.tsx) | Full-screen `.qr-scanner` | `CameraFeed`, `ValidationResult` |
 
 ### Landing view states
 
@@ -380,7 +380,7 @@ After any UI change, verify on **390×844** (Playwright MCP, Firefox/iPhone 15 p
 
 1. **Landing** (`/`, `/join/:sessionId`): brand, grid bg, card max-width, all five views, modals after join/create.
 2. **Player cockpit** (`/session/:id` demo): TopBar, map visible, mission list scrolls, no clipped CTAs.
-3. **Admin cockpit** (`/admin/:id` demo): map + sidebar, bottom sheet opens, tabs switch.
+3. **GM cockpit** (`/gamemaker/:id` demo): map + sidebar, bottom sheet opens, tabs switch.
 4. **Form** (`/form/:missionId`): TopBar + form fields + submit.
 5. Console: no errors. Screenshots → `.playwright-mcp/`.
 6. **Token drift:** new colours/spacing must extend `tokens.css`, not hardcode hex/rgb in TSX.

@@ -1,4 +1,4 @@
-// Today's Missions - primary orientation surface for new hires.
+// Today's Missions - primary orientation surface for players.
 // Renders missions computed by the getDailyMissions use case.
 // Collapsible by default; collapsed state shows only a header bar
 // with a numbered badge. Click to expand and see the full list.

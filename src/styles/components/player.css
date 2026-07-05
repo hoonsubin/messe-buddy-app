@@ -400,7 +400,7 @@
   border-block-end-color: hsl(var(--color-primary));
 }
 
-/* Centered scrollable tab row (player + hire detail pages) */
+/* Centered scrollable tab row (player + player detail pages) */
 .route-tab-bar {
   display: flex;
   flex-shrink: 0;

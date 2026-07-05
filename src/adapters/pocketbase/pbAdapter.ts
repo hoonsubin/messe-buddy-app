@@ -219,7 +219,9 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     playerId: string,
     patch: Partial<Omit<Player, "id" | "created" | "updated">>,
   ): Promise<Player> => {
-    const record = await pb.collection("players").update(playerId, { ...patch });
+    const record = await pb.collection("players").update(playerId, {
+      ...patch,
+    });
     return marshalPlayer(pb, record);
   };
 
@@ -245,7 +247,9 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
   };
 
   const createMilestone = async (
-    data: Omit<Milestone, "id" | "created" | "updated"> & { readonly id?: string },
+    data: Omit<Milestone, "id" | "created" | "updated"> & {
+      readonly id?: string;
+    },
   ): Promise<Milestone> => {
     const record = await pb.collection("milestones").create({ ...data });
     return marshalMilestone(record);
@@ -277,7 +281,9 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
   };
 
   const createMission = async (
-    data: Omit<Mission, "id" | "created" | "updated"> & { readonly id?: string },
+    data: Omit<Mission, "id" | "created" | "updated"> & {
+      readonly id?: string;
+    },
   ): Promise<Mission> => {
     const record = await pb.collection("missions").create({
       ...data,
@@ -416,7 +422,10 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
 
   const upsertBuddyProfile = async (
     playerId: string,
-    data: Omit<BuddyProfile, "id" | "created" | "updated" | "assignedToPlayerId">,
+    data: Omit<
+      BuddyProfile,
+      "id" | "created" | "updated" | "assignedToPlayerId"
+    >,
   ): Promise<BuddyProfile> => {
     const existing = await getBuddyProfile(playerId);
     if (existing) {
@@ -500,7 +509,9 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     return marshalMilestoneResource(record);
   };
 
-  const detachMilestoneResource = async (attachmentId: string): Promise<void> => {
+  const detachMilestoneResource = async (
+    attachmentId: string,
+  ): Promise<void> => {
     await pb.collection("milestone_resources").delete(attachmentId);
   };
 

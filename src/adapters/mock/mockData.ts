@@ -2,18 +2,18 @@ import mapBackground from "../../assets/map-background.jpg";
 import type {
   BuddyProfile,
   FormSchema,
+  LibraryResource,
   Milestone,
+  MilestoneResource,
   Mission,
   Player,
   PreBoardingCheckItem,
   ProgressEvent,
-  LibraryResource,
-  MilestoneResource,
   Session,
 } from "../../types/index.ts";
 
 // Seed data — Messe München onboarding journey.
-// Milestones and missions match the "New hire onboarding milestone map" spec.
+// Milestones and missions match the "Player onboarding milestone map" spec.
 // 6 milestones, 33 missions, 360 XP total.
 // IDs are descriptive for readability; real PB IDs are 15-char alphanumeric.
 
@@ -42,7 +42,7 @@ const MOCK_PRE_BOARDING_CHECKS: ReadonlyArray<PreBoardingCheckItem> = [
   { id: "pbc_buddy", label: "Buddy assigned and briefed", checked: true },
   {
     id: "pbc_schedule",
-    label: "First-week schedule shared with new hire",
+    label: "First-week schedule shared with player",
     checked: false,
   },
   {
@@ -256,7 +256,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
     milestoneId: "ms_compliance",
     title: "Complete Safety Briefing",
     body:
-      "## Safety Briefing\n\nAttend the formal safety briefing conducted by your supervisor. This is a mandatory step for all new hires and covers emergency procedures, fire exits, and workplace safety rules specific to your area.\n\nAfter the briefing, show your supervisor the QR code — as the person who conducted it, they'll validate your completion.\n\n> **Note:** This is a legal requirement. Please complete it during your first week.",
+      "## Safety Briefing\n\nAttend the formal safety briefing conducted by your supervisor. This is a mandatory step for all players and covers emergency procedures, fire exits, and workplace safety rules specific to your area.\n\nAfter the briefing, show your supervisor the QR code — as the person who conducted it, they'll validate your completion.\n\n> **Note:** This is a legal requirement. Please complete it during your first week.",
     type: "text",
     xpValue: 15,
     tags: ["mandatory"],
@@ -850,8 +850,6 @@ export const MOCK_BUDDY_PROFILES: ReadonlyArray<BuddyProfile> = [
 export const MOCK_PROGRESS_EVENTS: ReadonlyArray<ProgressEvent> = [];
 
 // ── Second session (stub — kept for adapter compatibility) ────────────────────
-
-
 
 export const MOCK_MILESTONES_2: ReadonlyArray<Milestone> = [];
 export const MOCK_MISSIONS_2: ReadonlyArray<Mission> = [];

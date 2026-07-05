@@ -280,7 +280,7 @@
 }
 
 .landing-profile__card[data-role="gamemaker"]:focus-visible {
-  box-shadow: 0 0 0 2px hsl(var(--color-role-admin));
+  box-shadow: 0 0 0 2px hsl(var(--color-role-gamemaker));
 }
 
 .landing-profile__demo-pill {
@@ -301,7 +301,7 @@
 }
 
 .landing-profile__card[data-role="gamemaker"] .landing-profile__demo-pill {
-  background: hsl(var(--color-role-admin));
+  background: hsl(var(--color-role-gamemaker));
 }
 
 .landing-profile__avatar {
@@ -328,8 +328,8 @@
 }
 
 .landing-profile__avatar[data-role="gamemaker"] {
-  background: hsl(var(--color-role-admin-bg));
-  color: hsl(var(--color-role-admin));
+  background: hsl(var(--color-role-gamemaker-bg));
+  color: hsl(var(--color-role-gamemaker));
 }
 
 .landing-profile__meta {
@@ -368,7 +368,7 @@
 }
 
 .landing-profile__key-btn--active[data-role="gamemaker"] {
-  color: hsl(var(--color-role-admin));
+  color: hsl(var(--color-role-gamemaker));
 }
 
 .landing-profile__key-reveal {
@@ -416,8 +416,8 @@
 
 .landing-role-toggle--active[data-role="gamemaker"] {
   border-style: solid;
-  border-color: hsl(var(--color-role-admin));
-  color: hsl(var(--color-role-admin));
+  border-color: hsl(var(--color-role-gamemaker));
+  color: hsl(var(--color-role-gamemaker));
 }
 
 /* ── Inline join / create forms ──────────────────────────────────────────── */
@@ -433,7 +433,7 @@
 }
 
 .landing-form-panel[data-role="gamemaker"] {
-  border: 1px solid hsl(var(--color-role-admin));
+  border: 1px solid hsl(var(--color-role-gamemaker));
 }
 
 .landing-form-panel__header {
@@ -460,8 +460,8 @@
 }
 
 .landing-form-panel[data-role="gamemaker"] .btn--primary {
-  background: hsl(var(--color-role-admin));
-  border-color: hsl(var(--color-role-admin));
+  background: hsl(var(--color-role-gamemaker));
+  border-color: hsl(var(--color-role-gamemaker));
 }
 
 /* ── Recovery row ────────────────────────────────────────────────────────── */

@@ -20,7 +20,7 @@ export interface UseBuddyProfilePlayerResult {
   readonly refresh: () => void;
 }
 
-export interface UseBuddyProfileAdminResult {
+export interface UseBuddyProfileGmResult {
   readonly role: "gamemaker";
   readonly buddyDraft: Omit<
     BuddyProfile,
@@ -52,12 +52,12 @@ export function useBuddyProfile(
   sessionId: string,
   playerId: string,
   options: { role: "gamemaker" },
-): UseBuddyProfileAdminResult;
+): UseBuddyProfileGmResult;
 export function useBuddyProfile(
   sessionId: string,
   playerId: string,
   options: UseBuddyProfileOptions,
-): UseBuddyProfilePlayerResult | UseBuddyProfileAdminResult {
+): UseBuddyProfilePlayerResult | UseBuddyProfileGmResult {
   const adapter = useAdapter();
   const [buddy, setBuddy] = useState<BuddyProfile | null>(null);
   const [savedBuddy, setSavedBuddy] = useState<BuddyProfile | null>(null);

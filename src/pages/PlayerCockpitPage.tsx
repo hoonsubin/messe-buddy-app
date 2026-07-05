@@ -120,7 +120,7 @@ const PlayerCockpitPage = () => {
         tabs={PLAYER_TABS}
         activeKey={m.tab}
         onChange={(key) => m.setTab(key as PlayerTabKey)}
-        ariaLabel="New hire views"
+        ariaLabel="Player views"
       />
 
       {m.popupMission !== null && (

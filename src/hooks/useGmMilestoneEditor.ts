@@ -11,7 +11,7 @@ const defaultDraftMilestone = (
   yPercent: number,
 ): DraftMilestone => ({ id, name, xPercent, yPercent, isDirty: false });
 
-interface UseAdminMilestoneEditorResult {
+interface UseGmMilestoneEditorResult {
   readonly draftMilestones: ReadonlyArray<DraftMilestone>;
   readonly selectedMilestone: Milestone | null;
   readonly setSelectedMilestone: (ms: Milestone | null) => void;
@@ -54,13 +54,13 @@ interface UseAdminMilestoneEditorResult {
 }
 
 /**
- * Manages draft milestone state for the admin map editor.
+ * Manages draft milestone state for the GM map editor.
  * Milestones are seeded once from the server-fetched list and tracked locally
  * until an explicit save or discard.
  */
-export const useAdminMilestoneEditor = (
+export const useGmMilestoneEditor = (
   milestones: ReadonlyArray<Milestone>,
-): UseAdminMilestoneEditorResult => {
+): UseGmMilestoneEditorResult => {
   const adapter = useAdapter();
   const [draftMilestones, setDraftMilestones] = useState<
     ReadonlyArray<DraftMilestone>

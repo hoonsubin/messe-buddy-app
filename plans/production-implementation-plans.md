@@ -44,17 +44,17 @@ The **target** is the locked architecture in SPECS (**D-ARCH-2** … **D-NAMING-
 | Resources | `library_resources` + `milestone_resources` | `resources` with `sessionId` only |
 | Templates | Global; `importTemplate(template, playerId)` | `importTemplate` creates new session |
 | Player invite | `/join/:sessionId?t=:inviteToken` | `/join/:sessionId` shared link |
-| Admin routes | `/admin/:sessionId/player/:playerId` | `/admin/:sessionId/hire/:hireId` |
+| Admin routes | `/gamemaker/:sessionId/player/:playerId` | `/gamemaker/:sessionId/hire/:hireId` |
 | `players.role` | **No field** — `UserRole` in cache only | Job title string (legacy overload) |
-| Naming | `useGmPlayers`, `PlayerDetailPage` | `useGmHires`, `HireDetailPage`, `hire-detail/` |
+| Naming | `useGmPlayers`, `PlayerDetailPage` | `useGmHires`, `PlayerDetailPage`, `player-detail/` |
 
 **Recently shipped (legacy model — re-verify after ARCH):**
 
 | Area | What landed | Key files |
 | ---- | ----------- | --------- |
-| Admin draft projection | Derived `selectedMilestone`; `missionOrderChanges` in sheet list | `useAdminMilestoneEditor.ts`, `useHireDetailPage.ts` |
+| Admin draft projection | Derived `selectedMilestone`; `missionOrderChanges` in sheet list | `useGmMilestoneEditor.ts`, `usePlayerDetailPage.ts` |
 | Player stale session | `session-missing` card + remove profile | `usePlayerCockpitPage.ts`, `PlayerCockpitPage.tsx` |
-| GM Journey Map XP (no player) | `computeProgress` fallback for threshold display | `useHireDetailPage.ts` |
+| GM Journey Map XP (no player) | `computeProgress` fallback for threshold display | `usePlayerDetailPage.ts` |
 | Orphaned profiles | Landing badge + confirm remove | `useLandingFlow.ts`, `ProfileCard.tsx` |
 | Auto-resume | `RootRedirect` + `mb_active_uid` | `RootRedirect.tsx`, `useIdentity.ts`, `App.tsx` |
 | Logout / identity | Logout keeps profile; `clearActiveUid` on leave | C-23 paths across admin + player |
@@ -84,7 +84,7 @@ The **target** is the locked architecture in SPECS (**D-ARCH-2** … **D-NAMING-
 
 | ID | Task | Primary files |
 | -- | ---- | ------------- |
-| **ARCH-06** | Routes: `/admin/:sid/player/:pid`; `AdminHomePage` **Players \| Resource library** tabs | `App.tsx`, `AdminHomePage.tsx` |
+| **ARCH-06** | Routes: `/gamemaker/:sid/player/:pid`; `GameMakerHomePage` **Players \| Resource library** tabs | `App.tsx`, `GameMakerHomePage.tsx` |
 | **ARCH-07** | `useGmPlayers(sessionId)` lists `players` — not `sessions`; `invitePlayer` on add | `gmHires.ts` → `gmPlayers.ts`, `createGameMakerSession` |
 | **ARCH-08** | Player cockpit + `useSession` scoped by resolved `playerId` | `useSession.ts`, `usePlayerCockpitPage.ts`, `useResources.ts` |
 
@@ -92,7 +92,7 @@ The **target** is the locked architecture in SPECS (**D-ARCH-2** … **D-NAMING-
 
 | ID | Task | Primary files |
 | -- | ---- | ------------- |
-| **ARCH-09** | Rename pages: `HireDetailPage` → `PlayerDetailPage`; `hire-detail/` → `player-detail/`; `useHireDetailPage` → `usePlayerDetailPage` | `src/pages/` |
+| **ARCH-09** | Rename pages: `PlayerDetailPage` → `PlayerDetailPage`; `player-detail/` → `player-detail/`; `usePlayerDetailPage` → `usePlayerDetailPage` | `src/pages/` |
 | **ARCH-10** | Rename hooks/types: `useGmHires` → `useGmPlayers`; `GmHireRow` → `GmPlayerRow`; `crossHire.ts` → `crossPlayer.ts` (or fold into `gmPlayers`) | `src/hooks/useProgress/` |
 | **ARCH-11** | Grep pass: remove **hire** from user-facing strings, `data-testid`, comments, remaining docs | `src/`, `AGENTS.md` — **docs/ done 2026-07-05** |
 
@@ -112,9 +112,9 @@ testing).
 | Legacy | Target |
 | ------ | ------ |
 | `useGmHires`, `GmHireRow`, `createHire` | `useGmPlayers`, `GmPlayerRow`, `invitePlayer` |
-| `HireDetailPage`, `useHireDetailPage` | `PlayerDetailPage`, `usePlayerDetailPage` |
-| `src/pages/hire-detail/` | `src/pages/player-detail/` |
-| `/admin/:sessionId/hire/:hireId` | `/admin/:sessionId/player/:playerId` |
+| `PlayerDetailPage`, `usePlayerDetailPage` | `PlayerDetailPage`, `usePlayerDetailPage` |
+| `src/pages/player-detail/` | `src/pages/player-detail/` |
+| `/gamemaker/:sessionId/hire/:hireId` | `/gamemaker/:sessionId/player/:playerId` |
 | `joinSession` creating player row | `claimPlayer` on invited row |
 | `bootstrapFromTemplate` → new session | Remove; templates apply to `playerId` only |
 
@@ -171,7 +171,7 @@ for player · G-05 profile field display · G-06–G-09 · G-16–G-17 tutorial 
 - [ ] Same invite on second device → same `players` row, progress syncs
 - [ ] Resource library visible to second GM session; attach to player milestone
 - [ ] Template import onto selected player only (not new session)
-- [ ] Drill-down `/admin/:sessionId/player/:playerId`
+- [ ] Drill-down `/gamemaker/:sessionId/player/:playerId`
 - [ ] No `hire` in routes or primary hook names
 
 ---
@@ -184,9 +184,9 @@ for player · G-05 profile field display · G-06–G-09 · G-16–G-17 tutorial 
 | Schema target | `docs/pb-schema.md`, `server/pb_migrations/` |
 | GM signup / claim | `src/use-cases/joinSession.ts` (+ `invitePlayer`, `claimPlayer`) |
 | Player list | `src/hooks/useProgress/gmHires.ts` → **`gmPlayers.ts`** |
-| Admin dashboard | `src/pages/AdminHomePage.tsx` |
-| Per-player editor | `src/pages/hire-detail/` → **`player-detail/`** |
-| Mission / milestone editors | `src/hooks/useAdminMissionEditor.ts`, `useAdminMilestoneEditor.ts` |
+| Admin dashboard | `src/pages/GameMakerHomePage.tsx` |
+| Per-player editor | `src/pages/player-detail/` → **`player-detail/`** |
+| Mission / milestone editors | `src/hooks/useGmMissionEditor.ts`, `useGmMilestoneEditor.ts` |
 | Landing / identity | `src/hooks/useLandingFlow.ts`, `useIdentity.ts`, `RootRedirect.tsx` |
 | Player cockpit | `src/pages/player-cockpit/usePlayerCockpitPage.ts` |
 | Adapters | `src/adapters/mock/mockAdapter.ts`, `pocketbase/pbAdapter.ts` |
@@ -294,10 +294,10 @@ Full-stack smoke on `:8700` validated P-01, P-16, P-17, P-18, P-07, and core GM/
 | Phase | Was | Status |
 | ----- | --- | ------ |
 | 1 | Spec alignment quick wins | Done 2026-07-03 |
-| 2 | Admin editor correctness | P-01 done; re-verify post-ARCH |
+| 2 | GM editor correctness | P-01 done; re-verify post-ARCH |
 | 3 | Invite + identity hardening | P-07/17/18 done; token claim → ARCH-03 |
 | 4 | `peerScan` | Open — P-02 |
 | 5 | QoL polish | Backlog |
-| 6 | UI redesign (`AdminCockpitPage`) | Superseded by `AdminHomePage` + player detail |
+| 6 | UI redesign (`AdminCockpitPage`) | Superseded by `GameMakerHomePage` + player detail |
 
 UI redesign intent (2026-06): GM player list as primary view, per-player detail with customize/analytics — **achieved** in current pages; ARCH renames hire → player and adds resource library tab.

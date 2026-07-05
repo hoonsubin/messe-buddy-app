@@ -16,14 +16,14 @@ import { MODAL_VARIANT } from "../patterns/types.ts";
 
 type ScanState = "idle" | "scanning" | "success" | "invalid" | "error";
 
-interface AdminQRScannerModalProps {
+interface GmQRScannerModalProps {
   readonly isOpen: boolean;
   readonly sessionId: string;
   readonly playerId?: string;
   readonly onClose: () => void;
 }
 
-const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
+const GmQRScannerModal = (props: GmQRScannerModalProps) => {
   const navigate = useNavigate();
   const scanContext = useQRScanContext({
     sessionId: props.sessionId,
@@ -104,7 +104,7 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
       variant={MODAL_VARIANT.STRUCTURED}
       backdropClassName="modal-backdrop--blur"
       aria-label="Scan QR code"
-      testId="admin-qr-scanner-modal"
+      testId="gm-qr-scanner-modal"
       panelClassName="qr-scanner-modal"
     >
       <div className="qr-scanner-modal__header core-flex-row core-justify-between">
@@ -162,4 +162,4 @@ const AdminQRScannerModal = (props: AdminQRScannerModalProps) => {
   );
 };
 
-export default AdminQRScannerModal;
+export default GmQRScannerModal;

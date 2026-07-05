@@ -76,7 +76,12 @@ export const useGmPlayers = (
               adapter.listMissions(sessionId, { playerId: p.id }),
               adapter.listProgressEvents(p.id),
             ]);
-            const progress = computeProgress(p.id, missions, milestones, events);
+            const progress = computeProgress(
+              p.id,
+              missions,
+              milestones,
+              events,
+            );
             const { milestoneProgress } = progress;
             const progressPercent = milestoneProgress.length === 0
               ? 0

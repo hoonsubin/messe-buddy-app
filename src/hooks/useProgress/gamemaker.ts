@@ -3,16 +3,18 @@ import type { ProgressEvent } from "../../types/index.ts";
 import { useAdapter } from "../../adapters/useAdapter.ts";
 import { computeProgress } from "../../use-cases/computeProgress.ts";
 import type {
-  UseProgressAdminOptions,
-  UseProgressAdminResult,
+  UseProgressGamemakerOptions,
+  UseProgressGamemakerResult,
 } from "./types.ts";
 
-export const useProgressAdmin = (
-  options: Omit<UseProgressAdminOptions, "mode">,
-): UseProgressAdminResult => {
+export const useProgressGamemaker = (
+  options: Omit<UseProgressGamemakerOptions, "mode">,
+): UseProgressGamemakerResult => {
   const { sid, milestones, missions, validatorUid } = options;
   const adapter = useAdapter();
-  const [players, setPlayers] = useState<UseProgressAdminResult["players"]>([]);
+  const [players, setPlayers] = useState<UseProgressGamemakerResult["players"]>(
+    [],
+  );
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [allProgressEvents, setAllProgressEvents] = useState<
     ReadonlyArray<ProgressEvent>

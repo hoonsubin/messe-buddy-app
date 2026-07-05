@@ -15,7 +15,7 @@ const defaultDraftMission = (milestoneId: string): DraftMission => ({
 
 // ── Hook ───────────────────────────────────────────────────────────────────────
 
-interface UseAdminMissionEditorResult {
+interface UseGmMissionEditorResult {
   readonly selectedMissionId: string | null;
   readonly activeDraftMission: DraftMission | null;
   readonly draftMissions: ReadonlyMap<string, DraftMission>;
@@ -47,13 +47,13 @@ interface UseAdminMissionEditorResult {
 }
 
 /**
- * Manages draft mission state for the admin mission editor.
+ * Manages draft mission state for the GM mission editor.
  * Missions are keyed by a local draft ID (not the PB mission ID) so new and
  * existing missions share the same map structure.
  */
-export const useAdminMissionEditor = (
+export const useGmMissionEditor = (
   missions: ReadonlyArray<Mission>,
-): UseAdminMissionEditorResult => {
+): UseGmMissionEditorResult => {
   const adapter = useAdapter();
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(
     null,

@@ -11,7 +11,7 @@ interface TemplateSelectProps {
 
 /**
  * Template chooser: a dropdown of saved templates (selecting one applies it to
- * the hire) plus a button to save a new template.
+ * the player) plus a button to save a new template.
  */
 const TemplateSelect = (props: TemplateSelectProps) => (
   <div className="core-flex-row core-gap-2">

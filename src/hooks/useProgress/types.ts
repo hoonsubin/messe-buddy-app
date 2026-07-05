@@ -13,7 +13,7 @@ export interface UseProgressPlayerOptions {
   readonly missions: ReadonlyArray<Mission>;
 }
 
-export interface UseProgressAdminOptions {
+export interface UseProgressGamemakerOptions {
   readonly mode: "gamemaker";
   readonly sid: string;
   readonly milestones: ReadonlyArray<Milestone>;
@@ -23,7 +23,7 @@ export interface UseProgressAdminOptions {
 
 export type UseProgressOptions =
   | UseProgressPlayerOptions
-  | UseProgressAdminOptions;
+  | UseProgressGamemakerOptions;
 
 export interface UseProgressPlayerResult {
   readonly mode: "player";
@@ -46,7 +46,7 @@ export interface UseProgressPlayerResult {
   ) => () => void;
 }
 
-export interface UseProgressAdminResult {
+export interface UseProgressGamemakerResult {
   readonly mode: "gamemaker";
   readonly players: ReadonlyArray<Player>;
   readonly selectedPlayerId: string;

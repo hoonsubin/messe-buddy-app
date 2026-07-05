@@ -1,15 +1,15 @@
 import Toast from "../../components/shared/Toast.tsx";
 import ConfirmDialog from "../../components/shared/ConfirmDialog.tsx";
 import NameCaptureModal from "../../components/shared/NameCaptureModal.tsx";
-import MissionBottomSheet from "../../components/admin/MissionBottomSheet.tsx";
-import AdminQRScannerModal from "../../components/admin/AdminQRScannerModal.tsx";
-import type { HireDetailPageModel } from "./useHireDetailPage.ts";
+import MissionBottomSheet from "../../components/gamemaker/MissionBottomSheet.tsx";
+import GmQRScannerModal from "../../components/gamemaker/GmQRScannerModal.tsx";
+import type { PlayerDetailPageModel } from "./usePlayerDetailPage.ts";
 
-interface HireDetailOverlaysProps {
-  readonly vm: HireDetailPageModel;
+interface PlayerDetailOverlaysProps {
+  readonly vm: PlayerDetailPageModel;
 }
 
-const HireDetailOverlays = ({ vm }: HireDetailOverlaysProps) => (
+const PlayerDetailOverlays = ({ vm }: PlayerDetailOverlaysProps) => (
   <>
     <MissionBottomSheet
       isOpen={vm.milestoneEditor.selectedMilestone !== null}
@@ -42,7 +42,7 @@ const HireDetailOverlays = ({ vm }: HireDetailOverlaysProps) => (
       onClose={vm.closeMilestoneEditor}
     />
 
-    <AdminQRScannerModal
+    <GmQRScannerModal
       isOpen={vm.scannerOpen}
       sessionId={vm.homeSid}
       playerId={vm.playerId}
@@ -52,7 +52,7 @@ const HireDetailOverlays = ({ vm }: HireDetailOverlaysProps) => (
     {vm.showAddTemplate && (
       <NameCaptureModal
         title="New template"
-        description="Save this hire's current milestones & missions as a reusable template."
+        description="Save this player's current milestones & missions as a reusable template."
         placeholder="e.g. Engineering Onboarding"
         submitLabel="Create template"
         inputLabel="Template name"
@@ -66,10 +66,10 @@ const HireDetailOverlays = ({ vm }: HireDetailOverlaysProps) => (
       isOpen={vm.showTemplateSavePrompt}
       title="Update template too?"
       body={vm.appliedTemplate
-        ? `Changes are saved for ${vm.hireFirstName}. Also save them to the "${vm.appliedTemplate}" template so future hires get them?`
+        ? `Changes are saved for ${vm.playerFirstName}. Also save them to the "${vm.appliedTemplate}" template so future players get them?`
         : ""}
       confirmLabel="Update template"
-      cancelLabel="Just this hire"
+      cancelLabel="Just this player"
       onConfirm={vm.handleSaveToTemplate}
       onCancel={() => vm.setShowTemplateSavePrompt(false)}
     />
@@ -78,4 +78,4 @@ const HireDetailOverlays = ({ vm }: HireDetailOverlaysProps) => (
   </>
 );
 
-export default HireDetailOverlays;
+export default PlayerDetailOverlays;

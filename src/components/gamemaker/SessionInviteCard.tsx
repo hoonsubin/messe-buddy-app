@@ -57,8 +57,9 @@ const SessionInviteCard = (
   const [copied, setCopied] = useState(false);
   const qrContainerRef = useRef<HTMLDivElement>(null);
 
-  const joinUrl =
-    `${globalThis.location.origin}/join/${sessionId}?t=${encodeURIComponent(inviteToken)}`;
+  const joinUrl = `${globalThis.location.origin}/join/${sessionId}?t=${
+    encodeURIComponent(inviteToken)
+  }`;
   const qrSize = compact ? 104 : 160;
 
   // Render QR code into the container div
@@ -162,7 +163,7 @@ const SessionInviteCard = (
   if (bare) {
     return (
       <div
-        aria-label="Invite new hire"
+        aria-label="Invite player"
         style={{
           display: "flex",
           flexDirection: "column",
@@ -176,7 +177,7 @@ const SessionInviteCard = (
 
   return (
     <section
-      aria-label="Invite new hire"
+      aria-label="Invite player"
       className="card"
       style={{
         padding: "var(--space-4)",
@@ -202,7 +203,7 @@ const SessionInviteCard = (
             color: "hsl(var(--color-fg))",
           }}
         >
-          Invite New Hire
+          Invite Player
         </h3>
       </header>
       {content}

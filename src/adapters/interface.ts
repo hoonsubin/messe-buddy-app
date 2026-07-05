@@ -140,7 +140,7 @@ export interface AppAdapter {
   ): Promise<MilestoneResource>;
   detachMilestoneResource(attachmentId: string): Promise<void>;
 
-  /** Resolved library rows for UI (player sidebar / admin lists). */
+  /** Resolved library rows for UI (player sidebar / GM lists). */
   listResources(
     sessionId: string,
     options?: { readonly playerId?: string; readonly milestoneId?: string },

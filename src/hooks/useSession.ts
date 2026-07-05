@@ -7,7 +7,7 @@ import { useAdapter } from "../adapters/useAdapter.ts";
 // fetch AbortError) is not evidence the session failed to load — it means
 // some other in-flight request pre-empted this one. Treating it as a real
 // error trips the "session not found, bounce to Game Maker home" effect in
-// useHireDetailPage.ts on a request that was never actually resolved either
+// usePlayerDetailPage.ts on a request that was never actually resolved either
 // way. See plans/production-implementation-plans.md (hire creation race / P0 history).
 const isAbortError = (e: unknown): boolean => {
   if (e instanceof ClientResponseError && e.isAbort) return true;
@@ -84,7 +84,7 @@ export function useSession(
       } catch (e) {
         // A cancelled request isn't a real failure — some other in-flight
         // call pre-empted it. Don't surface it as a session error (that
-        // would bounce the user out via useHireDetailPage's error effect)
+        // would bounce the user out via usePlayerDetailPage's error effect)
         // and don't clear already-loaded data; just stop quietly.
         if (!cancelled && !isAbortError(e)) {
           setError(e instanceof Error ? e : new Error(String(e)));

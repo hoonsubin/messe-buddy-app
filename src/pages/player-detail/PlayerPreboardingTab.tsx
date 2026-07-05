@@ -1,24 +1,24 @@
 import type { PreBoardingCheckItem } from "../../types/index.ts";
-import PreBoardingChecklist from "../../components/admin/PreBoardingChecklist.tsx";
+import PreBoardingChecklist from "../../components/gamemaker/PreBoardingChecklist.tsx";
 
-interface HirePreboardingTabProps {
-  readonly hireFirstName: string;
+interface PlayerPreboardingTabProps {
+  readonly playerFirstName: string;
   readonly items: ReadonlyArray<PreBoardingCheckItem>;
   readonly onToggle: (id: string) => void;
   readonly onAdd: (label: string) => void;
   readonly onMarkAllDone: () => void;
 }
 
-const HirePreboardingTab = ({
-  hireFirstName,
+const PlayerPreboardingTab = ({
+  playerFirstName,
   items,
   onToggle,
   onAdd,
   onMarkAllDone,
-}: HirePreboardingTabProps) => (
-  <main className="hire-detail__main">
+}: PlayerPreboardingTabProps) => (
+  <main className="player-detail__main">
     <PreBoardingChecklist
-      playerName={hireFirstName}
+      playerName={playerFirstName}
       items={items}
       onToggle={onToggle}
       onAdd={onAdd}
@@ -27,4 +27,4 @@ const HirePreboardingTab = ({
   </main>
 );
 
-export default HirePreboardingTab;
+export default PlayerPreboardingTab;

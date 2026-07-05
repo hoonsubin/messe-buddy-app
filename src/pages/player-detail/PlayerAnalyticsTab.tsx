@@ -5,14 +5,14 @@ import type {
   Player,
   ProgressEvent,
 } from "../../types/index.ts";
-import HireAnalytics from "../../components/admin/HireAnalytics.tsx";
+import PlayerAnalytics from "../../components/gamemaker/PlayerAnalytics.tsx";
 import IsometricMilestoneMap from "../../components/player/IsometricMilestoneMap.tsx";
-import PendingApprovalsPanel from "../../components/admin/PendingApprovalsPanel.tsx";
-import HireDetailSection from "./HireDetailSection.tsx";
-import HireInviteAccordion from "./HireInviteAccordion.tsx";
+import PendingApprovalsPanel from "../../components/gamemaker/PendingApprovalsPanel.tsx";
+import PlayerDetailSection from "./PlayerDetailSection.tsx";
+import PlayerInviteAccordion from "./PlayerInviteAccordion.tsx";
 
-interface HireAnalyticsTabProps {
-  readonly hireFirstName: string;
+interface PlayerAnalyticsTabProps {
+  readonly playerFirstName: string;
   readonly startDateISO?: string;
   readonly milestones: ReadonlyArray<Milestone>;
   readonly missions: ReadonlyArray<Mission>;
@@ -29,8 +29,8 @@ interface HireAnalyticsTabProps {
   readonly onMilestoneClick: (id: string) => void;
 }
 
-const HireAnalyticsTab = ({
-  hireFirstName,
+const PlayerAnalyticsTab = ({
+  playerFirstName,
   startDateISO,
   milestones,
   missions,
@@ -45,18 +45,18 @@ const HireAnalyticsTab = ({
   onApprove,
   onReject,
   onMilestoneClick,
-}: HireAnalyticsTabProps) => (
-  <main className="hire-detail__main hire-detail__main--wide">
-    <HireAnalytics
+}: PlayerAnalyticsTabProps) => (
+  <main className="player-detail__main player-detail__main--wide">
+    <PlayerAnalytics
       {...(startDateISO !== undefined && { startDateISO })}
-      firstName={hireFirstName}
+      firstName={playerFirstName}
       milestones={milestones}
       missions={missions}
       events={events}
     />
 
     {pendingEvents.length > 0 && (
-      <HireDetailSection title="Pending approvals">
+      <PlayerDetailSection title="Pending approvals">
         <PendingApprovalsPanel
           pendingEvents={pendingEvents}
           players={players}
@@ -64,21 +64,21 @@ const HireAnalyticsTab = ({
           onApprove={onApprove}
           onReject={onReject}
         />
-      </HireDetailSection>
+      </PlayerDetailSection>
     )}
 
-    <div className="card hire-detail__journey-card">
-      <header className="hire-detail__journey-header">
-        <h3 className="hire-detail__journey-title">
-          {hireFirstName}'s Journey Map
+    <div className="card player-detail__journey-card">
+      <header className="player-detail__journey-header">
+        <h3 className="player-detail__journey-title">
+          {playerFirstName}'s Journey Map
         </h3>
-        <p className="hire-detail__journey-sub">
+        <p className="player-detail__journey-sub">
           Quick access for mission edits
         </p>
       </header>
       {hasMilestones
         ? (
-          <div className="hire-detail__map-wrap">
+          <div className="player-detail__map-wrap">
             <IsometricMilestoneMap
               milestones={draftMilestones}
               milestoneProgress={milestoneProgress}
@@ -87,18 +87,19 @@ const HireAnalyticsTab = ({
           </div>
         )
         : (
-          <p className="hire-detail__journey-empty">
-            No milestones yet — set up this hire's journey in the Customize tab.
+          <p className="player-detail__journey-empty">
+            No milestones yet — set up this player's journey in the Customize
+            tab.
           </p>
         )}
     </div>
 
-    <HireInviteAccordion
-      hireFirstName={hireFirstName}
+    <PlayerInviteAccordion
+      playerFirstName={playerFirstName}
       sessionId={sessionId}
       inviteToken={inviteToken}
     />
   </main>
 );
 
-export default HireAnalyticsTab;
+export default PlayerAnalyticsTab;

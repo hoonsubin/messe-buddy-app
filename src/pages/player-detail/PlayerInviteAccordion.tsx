@@ -1,40 +1,43 @@
 import { useState } from "react";
 import { MdExpandLess, MdExpandMore, MdPersonAdd } from "react-icons/md";
-import SessionInviteCard from "../../components/admin/SessionInviteCard.tsx";
+import SessionInviteCard from "../../components/gamemaker/SessionInviteCard.tsx";
 
-interface HireInviteAccordionProps {
-  readonly hireFirstName: string;
+interface PlayerInviteAccordionProps {
+  readonly playerFirstName: string;
   readonly sessionId: string;
   readonly inviteToken: string;
 }
 
-const HireInviteAccordion = ({
-  hireFirstName,
+const PlayerInviteAccordion = ({
+  playerFirstName,
   sessionId,
   inviteToken,
-}: HireInviteAccordionProps) => {
+}: PlayerInviteAccordionProps) => {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="card hire-invite" data-testid="hire-invite-accordion">
+    <div className="card player-invite" data-testid="player-invite-accordion">
       <button
         type="button"
         data-testid="invite-toggle"
         aria-expanded={open}
-        className="hire-invite__trigger"
-        onClick={() => setOpen((o) => !o)}
+        className="player-invite__trigger"
+        onClick={() =>
+          setOpen((o) =>
+            !o
+          )}
       >
         <MdPersonAdd
           size={22}
           aria-hidden="true"
           className="core-icon-accent"
         />
-        <span className="hire-invite__trigger-text">
-          <span className="hire-invite__title">
-            Send {hireFirstName} their onboarding link
+        <span className="player-invite__trigger-text">
+          <span className="player-invite__title">
+            Send {playerFirstName} their onboarding link
           </span>
-          <span className="hire-invite__subtitle">
-            {hireFirstName}{" "}
+          <span className="player-invite__subtitle">
+            {playerFirstName}{" "}
             can start their onboarding straight away by using this link.
           </span>
         </span>
@@ -55,7 +58,7 @@ const HireInviteAccordion = ({
           )}
       </button>
       {open && (
-        <div className="hire-invite__body">
+        <div className="player-invite__body">
           <SessionInviteCard
             sessionId={sessionId}
             inviteToken={inviteToken}
@@ -68,4 +71,4 @@ const HireInviteAccordion = ({
   );
 };
 
-export default HireInviteAccordion;
+export default PlayerInviteAccordion;

@@ -20,7 +20,7 @@ Read **SPECS.md** before architectural decisions. Read **design/** before new UI
 
 - **File edits:** never change more than **500 lines** in one edit — chunk logically.
 - **Adapter boundary:** components → use cases/hooks → [`AppAdapter`](src/adapters/interface.ts) — never PocketBase directly. Swap adapter in [`AdapterContext.tsx`](src/adapters/AdapterContext.tsx).
-- **ARCH:** locked model in SPECS (D-ARCH-2 … D-NAMING-2); code may still be legacy — see plan **Current state** before assuming one-session-per-player or hire-named routes.
+- **ARCH:** locked model in SPECS (D-ARCH-2 … D-NAMING-2); routes use `/gamemaker/` and `player-detail/` naming.
 
 ---
 

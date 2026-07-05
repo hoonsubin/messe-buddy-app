@@ -28,7 +28,7 @@ const RootRedirect = () => {
     if (match) {
       const dest = match.role === USER_ROLE.PLAYER
         ? `/session/${match.sessionId}`
-        : `/admin/${match.sessionId}`;
+        : `/gamemaker/${match.sessionId}`;
       return <Navigate to={dest} replace />;
     }
   }

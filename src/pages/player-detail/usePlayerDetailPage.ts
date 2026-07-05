@@ -5,20 +5,20 @@ import { USER_ROLE } from "../../types/index.ts";
 import { computeProgress } from "../../use-cases/computeProgress.ts";
 import { useActiveProfile } from "../../hooks/useActiveProfile.ts";
 import { useSession } from "../../hooks/useSession.ts";
-import { useAdminMilestoneEditor } from "../../hooks/useAdminMilestoneEditor.ts";
-import { useAdminMissionEditor } from "../../hooks/useAdminMissionEditor.ts";
-import { useProgressAdmin } from "../../hooks/useProgress/index.ts";
+import { useGmMilestoneEditor } from "../../hooks/useGmMilestoneEditor.ts";
+import { useGmMissionEditor } from "../../hooks/useGmMissionEditor.ts";
+import { useProgressGamemaker } from "../../hooks/useProgress/index.ts";
 import { useBuddyProfile } from "../../hooks/useBuddyProfile.ts";
 import { useResources } from "../../hooks/useResources.ts";
 import { usePreBoardingChecklist } from "../../hooks/usePreBoardingChecklist.ts";
-import { useHireTemplates } from "../../hooks/useHireTemplates.ts";
-import type { HireDetailTabKey } from "./constants.ts";
+import { usePlayerTemplates } from "../../hooks/usePlayerTemplates.ts";
+import type { PlayerDetailTabKey } from "./constants.ts";
 import {
   readAppliedTemplate,
   writeAppliedTemplate,
-} from "./hireDetailStorage.ts";
+} from "./playerDetailStorage.ts";
 
-export const useHireDetailPage = () => {
+export const usePlayerDetailPage = () => {
   const { sessionId, playerId: routePlayerId } = useParams<{
     sessionId: string;
     playerId: string;
@@ -29,7 +29,7 @@ export const useHireDetailPage = () => {
   const [searchParams] = useSearchParams();
   const identity = useActiveProfile(homeSid, USER_ROLE.GAMEMAKER);
 
-  const [tab, setTab] = useState<HireDetailTabKey>(
+  const [tab, setTab] = useState<PlayerDetailTabKey>(
     searchParams.get("new") === "1" ? "customize" : "analytics",
   );
 
@@ -45,10 +45,10 @@ export const useHireDetailPage = () => {
   } = useSession(homeSid, { role: "gamemaker", playerId });
 
   const [scannerOpen, setScannerOpen] = useState(false);
-  const milestoneEditor = useAdminMilestoneEditor(milestones);
-  const missionEditor = useAdminMissionEditor(missions);
+  const milestoneEditor = useGmMilestoneEditor(milestones);
+  const missionEditor = useGmMissionEditor(missions);
 
-  const adminProgress = useProgressAdmin({
+  const gmProgress = useProgressGamemaker({
     sid: homeSid,
     milestones,
     missions,
@@ -56,13 +56,13 @@ export const useHireDetailPage = () => {
   });
 
   useEffect(() => {
-    if (playerId) adminProgress.handlePlayerSelect(playerId);
-  }, [playerId, adminProgress.handlePlayerSelect]);
+    if (playerId) gmProgress.handlePlayerSelect(playerId);
+  }, [playerId, gmProgress.handlePlayerSelect]);
 
   const buddyProfile = useBuddyProfile(homeSid, playerId, {
     role: "gamemaker",
   });
-  const adminResources = useResources(homeSid, {
+  const gmResources = useResources(homeSid, {
     role: "gamemaker",
     playerId,
   });
@@ -72,7 +72,7 @@ export const useHireDetailPage = () => {
     applying: applyingTemplate,
     applyTemplate,
     saveAsTemplate,
-  } = useHireTemplates(homeSid, playerId);
+  } = usePlayerTemplates(homeSid, playerId);
 
   const [appliedTemplate, setAppliedTemplate] = useState<string | null>(() =>
     readAppliedTemplate(playerId)
@@ -109,7 +109,7 @@ export const useHireDetailPage = () => {
       void saveAsTemplate(name, {
         milestones,
         missions,
-        resources: adminResources.resources,
+        resources: gmResources.resources,
       })
         .then(() => {
           writeAppliedTemplate(playerId, name);
@@ -124,7 +124,7 @@ export const useHireDetailPage = () => {
       session,
       milestones,
       missions,
-      adminResources.resources,
+      gmResources.resources,
       saveAsTemplate,
       playerId,
       showToast,
@@ -203,7 +203,7 @@ export const useHireDetailPage = () => {
     void saveAsTemplate(appliedTemplate, {
       milestones,
       missions,
-      resources: adminResources.resources,
+      resources: gmResources.resources,
     })
       .then(() => showToast(`Updated "${appliedTemplate}" template`))
       .catch(() => showToast("Could not update template"));
@@ -211,7 +211,7 @@ export const useHireDetailPage = () => {
     appliedTemplate,
     milestones,
     missions,
-    adminResources.resources,
+    gmResources.resources,
     saveAsTemplate,
     showToast,
   ]);
@@ -243,27 +243,27 @@ export const useHireDetailPage = () => {
 
   useEffect(() => {
     if (sessionError && !sessionLoading) {
-      navigate(`/admin/${homeSid}`, { replace: true });
+      navigate(`/gamemaker/${homeSid}`, { replace: true });
     }
   }, [sessionError, sessionLoading, navigate, homeSid]);
 
-  const hireName = adminProgress.selectedPlayer?.name || session?.name ||
-    "New hire";
-  const hireFirstName = hireName.split(" ")[0] || hireName;
+  const playerName = gmProgress.selectedPlayer?.name || session?.name ||
+    "Player";
+  const playerFirstName = playerName.split(" ")[0] || playerName;
   // If a player has joined we surface their live progress. Before that, fall
   // back to a zero-progress projection so the Journey Map widget's XP totals
-  // reflect the hire's configured mission XP instead of reading 0/0 (P-16).
+  // reflect the player's configured mission XP instead of reading 0/0 (P-16).
   // The player cockpit already does this implicitly because `computeProgress`
   // is always called with a real player id there; here we synthesize the same
   // shape from `missions` + `milestones` alone.
   const milestoneProgress = useMemo<ReadonlyArray<MilestoneProgress>>(() => {
-    const real = adminProgress.selectedPlayerProgress?.milestoneProgress;
+    const real = gmProgress.selectedPlayerProgress?.milestoneProgress;
     if (real && real.length > 0) return real;
     return computeProgress("", missions, milestones, []).milestoneProgress;
-  }, [adminProgress.selectedPlayerProgress, missions, milestones]);
+  }, [gmProgress.selectedPlayerProgress, missions, milestones]);
   const completedMissionIds =
-    adminProgress.selectedPlayerProgress?.completedMissionIds ?? [];
-  const startDateISO = adminProgress.selectedPlayer?.startDate ??
+    gmProgress.selectedPlayerProgress?.completedMissionIds ?? [];
+  const startDateISO = gmProgress.selectedPlayer?.startDate ??
     session?.created;
   const hasMilestones = milestones.length > 0;
 
@@ -314,8 +314,8 @@ export const useHireDetailPage = () => {
     identity,
     tab,
     setTab,
-    hireName,
-    hireFirstName,
+    playerName,
+    playerFirstName,
     startDateISO,
     hasMilestones,
     milestones,
@@ -327,9 +327,9 @@ export const useHireDetailPage = () => {
     mapNodeScale: session?.mapNodeScale ?? 1,
     uploadBackground,
     updateMapNodeScale,
-    adminProgress,
+    gmProgress,
     buddyProfile,
-    adminResources,
+    gmResources,
     preBoardingChecklist,
     templates,
     appliedTemplate,
@@ -361,4 +361,4 @@ export const useHireDetailPage = () => {
   };
 };
 
-export type HireDetailPageModel = ReturnType<typeof useHireDetailPage>;
+export type PlayerDetailPageModel = ReturnType<typeof usePlayerDetailPage>;

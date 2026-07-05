@@ -21,15 +21,19 @@ export type TemplateMilestone = Omit<
   keyof PBRecord | "sessionId" | "playerId"
 >;
 
-export type TemplateMission = Omit<
-  Mission,
-  keyof PBRecord | "sessionId" | "playerId" | "milestoneId"
-> & { readonly _milestoneOrder: number };
+export type TemplateMission =
+  & Omit<
+    Mission,
+    keyof PBRecord | "sessionId" | "playerId" | "milestoneId"
+  >
+  & { readonly _milestoneOrder: number };
 
-export type TemplateFormSchema = Omit<
-  FormSchema,
-  keyof PBRecord | "missionId"
-> & { readonly _missionOrder: number };
+export type TemplateFormSchema =
+  & Omit<
+    FormSchema,
+    keyof PBRecord | "missionId"
+  >
+  & { readonly _missionOrder: number };
 
 export interface TemplateExport {
   readonly exportType: "template";
@@ -49,7 +53,9 @@ export interface FullSessionExport {
   readonly milestones: ReadonlyArray<Omit<Milestone, keyof PBRecord>>;
   readonly missions: ReadonlyArray<Omit<Mission, keyof PBRecord>>;
   readonly formSchemas: ReadonlyArray<Omit<FormSchema, keyof PBRecord>>;
-  readonly libraryResources: ReadonlyArray<Omit<LibraryResource, keyof PBRecord>>;
+  readonly libraryResources: ReadonlyArray<
+    Omit<LibraryResource, keyof PBRecord>
+  >;
   readonly milestoneResources: ReadonlyArray<
     Omit<MilestoneResource, keyof PBRecord>
   >;

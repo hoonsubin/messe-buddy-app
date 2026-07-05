@@ -1,24 +1,24 @@
 /*
- * MesseBuddy — Admin Component Styles
+ * MesseBuddy — Game Maker Component Styles
  *
  * Component-specific CSS for game-maker / admin UI pieces.
  * Imported from src/index.css via @import.
  */
 
-/* ── HireAnalytics ── */
-.hire-analytics {
+/* ── PlayerAnalytics ── */
+.player-analytics {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 }
 
-.hire-analytics__grid {
+.player-analytics__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
   gap: var(--space-3);
 }
 
-.hire-analytics__stat {
+.player-analytics__stat {
   padding: var(--space-4) var(--space-5);
   display: flex;
   flex-direction: column;
@@ -26,37 +26,37 @@
   justify-content: space-between;
 }
 
-.hire-analytics__stat-header {
+.player-analytics__stat-header {
   display: flex;
   align-items: center;
   gap: var(--space-2);
 }
 
-.hire-analytics__stat-icon {
+.player-analytics__stat-icon {
   display: inline-flex;
   color: hsl(var(--color-primary));
 }
 
-.hire-analytics__stat-label {
+.player-analytics__stat-label {
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
   color: hsl(var(--color-fg));
 }
 
-.hire-analytics__stat-row {
+.player-analytics__stat-row {
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
 }
 
-.hire-analytics__stat-row--wrap {
+.player-analytics__stat-row--wrap {
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
   flex-wrap: wrap;
 }
 
-.hire-analytics__big-number {
+.player-analytics__big-number {
   font-family: var(--font-display);
   font-size: 3rem;
   font-weight: var(--weight-semibold);
@@ -64,19 +64,19 @@
   line-height: 1;
 }
 
-.hire-analytics__label {
+.player-analytics__label {
   font-size: var(--text-lg);
   font-weight: var(--weight-medium);
   color: hsl(var(--color-muted-fg));
 }
 
-.hire-analytics__caption {
+.player-analytics__caption {
   margin: 0;
   font-size: var(--text-sm);
   color: hsl(var(--color-muted-fg));
 }
 
-.hire-analytics__next-title {
+.player-analytics__next-title {
   font-family: var(--font-display);
   font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
@@ -84,13 +84,13 @@
   line-height: var(--leading-tight);
 }
 
-.hire-analytics__all-done {
+.player-analytics__all-done {
   font-size: var(--text-base);
   color: hsl(var(--color-status-complete));
   font-weight: var(--weight-medium);
 }
 
-.hire-analytics__section-title {
+.player-analytics__section-title {
   margin: 0 0 var(--space-3);
   font-family: var(--font-display);
   font-size: var(--text-base);
@@ -519,7 +519,7 @@
   justify-content: flex-end;
 }
 
-/* ── AdminQRScannerModal (Modal pattern) ── */
+/* ── GmQRScannerModal (Modal pattern) ── */
 .qr-scanner-modal {
   display: flex;
   flex-direction: column;
@@ -678,14 +678,14 @@
   padding: var(--space-4) 0;
 }
 
-/* Hire-detail header: collapse labels on narrow screens */
+/* Player detail header: collapse labels on narrow screens */
 @media (max-width: 30rem) {
-  .hire-header__back-label,
-  .hire-header__scan-label {
+  .player-detail-header__back-label,
+  .player-detail-header__scan-label {
     display: none;
   }
 }
-/* ── Admin editor specifics ──────────────────────────────────────────────── */
+/* ── GM editor specifics ──────────────────────────────────────────────── */
 
 
 .difficulty-selector {
@@ -715,7 +715,7 @@
   color: hsl(var(--color-primary-fg));
   border-color: hsl(var(--color-primary));
 }
-/* ── Admin cockpit layout ────────────────────────────────────────────────── */
+/* ── GM cockpit layout ────────────────────────────────────────────────── */
 /*
  * Mobile-first: single column, map on top, sidebar panels below.
  * At ≥ sidebar-w + map-min (≈ 40rem) we switch to two-column.
@@ -723,14 +723,14 @@
  * Order trick: map canvas gets order: -1 on mobile so it renders first
  * even though it is the second child in DOM order.
  */
-.admin-layout {
+.gm-layout {
   display: grid;
   grid-template-columns: 1fr;
   grid-template-rows: auto 1fr;
   overflow: auto;
 }
 
-.admin-layout__map {
+.gm-layout__map {
   order: -1;            /* map first on mobile */
   height: auto;
   max-height: 44svh;    /* generous ceiling — 16:9 map + toolbar always fits */
@@ -743,12 +743,12 @@
 }
 
 /* Collapsed state — shows only the toolbar strip */
-.admin-layout[data-map-collapsed="true"] .admin-layout__map {
+.gm-layout[data-map-collapsed="true"] .gm-layout__map {
   max-height: 3.25rem;
 }
 
 /* Gradient veil that fades in when map is collapsed, signalling "minimised" */
-.admin-layout__map::after {
+.gm-layout__map::after {
   content: "";
   position: absolute;
   inset-inline: 0;
@@ -764,11 +764,11 @@
   transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.admin-layout[data-map-collapsed="true"] .admin-layout__map::after {
+.gm-layout[data-map-collapsed="true"] .gm-layout__map::after {
   opacity: 1;
 }
 
-.admin-layout__sidebar {
+.gm-layout__sidebar {
   order: 1;             /* sidebar panels below on mobile */
   overflow-y: auto;
   display: flex;
@@ -779,13 +779,13 @@
 
 
 @media (min-width: 40rem) {
-  .admin-layout {
+  .gm-layout {
     grid-template-columns: var(--sidebar-w) 1fr;
     grid-template-rows: 1fr;
     overflow: hidden;
   }
 
-  .admin-layout__map {
+  .gm-layout__map {
     order: 1;           /* map is second column (right) on desktop */
     height: 100%;       /* fill the grid cell */
     max-height: unset;
@@ -798,17 +798,17 @@
   }
 
   /* Disable collapse on desktop */
-  .admin-layout[data-map-collapsed="true"] .admin-layout__map {
+  .gm-layout[data-map-collapsed="true"] .gm-layout__map {
     height: 100%;
     max-height: unset;
   }
 
   /* Disable gradient veil on desktop */
-  .admin-layout__map::after {
+  .gm-layout__map::after {
     display: none;
   }
 
-  .admin-layout__sidebar {
+  .gm-layout__sidebar {
     order: -1;          /* sidebar is first column (left) on desktop */
     border-right: 1px solid hsl(var(--color-border));
   }
@@ -1147,8 +1147,8 @@
   flex-shrink: 0;
 }
 
-/* ── Hire detail page ── */
-.hire-detail {
+/* ── Player detail page ── */
+.player-detail {
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
@@ -1156,7 +1156,7 @@
   background: hsl(var(--color-bg));
 }
 
-.hire-detail__header {
+.player-detail__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1166,7 +1166,7 @@
   border-bottom: 1px solid hsl(var(--color-border));
 }
 
-.hire-detail__header-btn {
+.player-detail__header-btn {
   font-size: var(--text-sm);
   color: hsl(var(--color-muted-fg));
   display: flex;
@@ -1175,7 +1175,7 @@
   flex-shrink: 0;
 }
 
-.hire-detail__header-title {
+.player-detail__header-title {
   flex: 1;
   min-width: 0;
   text-align: center;
@@ -1190,7 +1190,7 @@
   white-space: nowrap;
 }
 
-.hire-detail__main {
+.player-detail__main {
   flex: 1;
   width: 100%;
   max-width: 40rem;
@@ -1198,22 +1198,22 @@
   padding: var(--space-6) var(--space-4);
 }
 
-.hire-detail__main--wide {
+.player-detail__main--wide {
   max-width: 60rem;
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
 }
 
-.hire-detail__journey-card {
+.player-detail__journey-card {
   padding: var(--space-4) var(--space-5);
 }
 
-.hire-detail__journey-header {
+.player-detail__journey-header {
   margin-bottom: var(--space-3);
 }
 
-.hire-detail__journey-title {
+.player-detail__journey-title {
   margin: 0;
   font-family: var(--font-display);
   font-size: var(--text-base);
@@ -1221,32 +1221,32 @@
   color: hsl(var(--color-fg));
 }
 
-.hire-detail__journey-sub {
+.player-detail__journey-sub {
   margin: 2px 0 0;
   font-size: var(--text-xs);
   color: hsl(var(--color-muted-fg));
 }
 
-.hire-detail__map-wrap {
+.player-detail__map-wrap {
   width: 100%;
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-md);
 }
 
-.hire-detail__journey-empty {
+.player-detail__journey-empty {
   font-size: var(--text-sm);
   color: hsl(var(--color-muted-fg));
   text-align: center;
   margin: 0;
 }
 
-.hire-invite {
+.player-invite {
   padding: 0;
   overflow: hidden;
 }
 
-.hire-invite__trigger {
+.player-invite__trigger {
   width: 100%;
   display: flex;
   align-items: center;
@@ -1259,24 +1259,24 @@
   font-family: var(--font-sans);
 }
 
-.hire-invite__trigger-text {
+.player-invite__trigger-text {
   flex: 1;
   min-width: 0;
 }
 
-.hire-invite__title {
+.player-invite__title {
   display: block;
   font-weight: var(--weight-semibold);
   font-size: var(--text-sm);
   color: hsl(var(--color-fg));
 }
 
-.hire-invite__subtitle {
+.player-invite__subtitle {
   display: block;
   font-size: var(--text-xs);
   color: hsl(var(--color-muted-fg));
 }
 
-.hire-invite__body {
+.player-invite__body {
   padding: 0 var(--space-4) var(--space-4);
 }

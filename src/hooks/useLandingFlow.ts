@@ -52,7 +52,7 @@ export interface UseLandingFlowResult {
   readonly inviteToken: string;
   readonly playerName: string;
   readonly sessionName: string;
-  readonly adminName: string;
+  readonly gmName: string;
   readonly recoveryKeyInput: string;
   readonly status: LandingStatus;
   readonly errorMessage: string;
@@ -63,11 +63,11 @@ export interface UseLandingFlowResult {
   readonly setInviteToken: (v: string) => void;
   readonly setPlayerName: (v: string) => void;
   readonly setSessionName: (v: string) => void;
-  readonly setAdminName: (v: string) => void;
+  readonly setGmName: (v: string) => void;
   readonly setRecoveryKeyInput: (v: string) => void;
   readonly handleVerifySession: () => Promise<void>;
   readonly handleJoinSession: () => Promise<void>;
-  readonly handleCreateAdmin: () => Promise<void>;
+  readonly handleCreateGamemaker: () => Promise<void>;
   readonly handleRecover: () => Promise<void>;
   readonly handleResume: (identity: CachedIdentity) => void;
   readonly handleRemoveProfile: (uid: string) => void;
@@ -142,7 +142,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
   const [inviteToken, setInviteToken] = useState(inviteTokenFromUrl);
   const [playerName, setPlayerName] = useState("");
   const [sessionName, setSessionName] = useState("");
-  const [adminName, setAdminName] = useState("");
+  const [gmName, setGmName] = useState("");
   const [recoveryKeyInput, setRecoveryKeyInput] = useState("");
   const [status, setStatus] = useState<LandingStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -173,12 +173,12 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     setVerifiedSessionId("");
     setVerifiedInviteToken("");
     setSessionCode(form === "employee" && routeSessionId ? routeSessionId : "");
-    setInviteToken(form === "employee" && inviteTokenFromUrl
-      ? inviteTokenFromUrl
-      : "");
+    setInviteToken(
+      form === "employee" && inviteTokenFromUrl ? inviteTokenFromUrl : "",
+    );
     setPlayerName("");
     setSessionName("");
-    setAdminName("");
+    setGmName("");
     resetError();
   }, [resetError, routeSessionId, inviteTokenFromUrl]);
 
@@ -256,8 +256,8 @@ export const useLandingFlow = (): UseLandingFlowResult => {
   ]);
 
   // ── Game Maker: create workspace session ──────────────────────────────────
-  const handleCreateAdmin = useCallback(async () => {
-    const name = adminName.trim();
+  const handleCreateGamemaker = useCallback(async () => {
+    const name = gmName.trim();
     const sName = sessionName.trim();
     if (!name || !sName) return;
     setStatus("loading");
@@ -267,12 +267,12 @@ export const useLandingFlow = (): UseLandingFlowResult => {
       setIdentity(identity);
       writeActiveUid(identity.uid);
       setActiveForm(null);
-      navigate(`/admin/${identity.sessionId}`, { replace: true });
+      navigate(`/gamemaker/${identity.sessionId}`, { replace: true });
     } catch {
       setStatus("error");
       setErrorMessage("Could not create session. Please try again.");
     }
-  }, [adapter, adminName, sessionName, setIdentity, navigate, setActiveForm]);
+  }, [adapter, gmName, sessionName, setIdentity, navigate, setActiveForm]);
 
   // ── Recovery: key-only ────────────────────────────────────────────────────
   const handleRecover = useCallback(async () => {
@@ -288,7 +288,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
       resetError();
       const dest = identity.role === USER_ROLE.PLAYER
         ? `/session/${identity.sessionId}`
-        : `/admin/${identity.sessionId}`;
+        : `/gamemaker/${identity.sessionId}`;
       navigate(dest, { replace: true });
     } catch {
       setStatus("error");
@@ -301,7 +301,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     writeActiveUid(identity.uid);
     const dest = identity.role === USER_ROLE.PLAYER
       ? `/session/${identity.sessionId}`
-      : `/admin/${identity.sessionId}`;
+      : `/gamemaker/${identity.sessionId}`;
     navigate(dest, { replace: true });
   }, [navigate]);
 
@@ -330,7 +330,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     inviteToken,
     playerName,
     sessionName,
-    adminName,
+    gmName,
     recoveryKeyInput,
     status,
     errorMessage,
@@ -341,11 +341,11 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     setInviteToken,
     setPlayerName,
     setSessionName,
-    setAdminName,
+    setGmName,
     setRecoveryKeyInput,
     handleVerifySession,
     handleJoinSession,
-    handleCreateAdmin,
+    handleCreateGamemaker,
     handleRecover,
     handleResume,
     handleRemoveProfile,

@@ -1,30 +1,30 @@
 import { MdClose } from "react-icons/md";
 import { Button, IconButton, Input } from "../../components/ui/index.ts";
 
-interface AdminFormProps {
+interface GameMakerFormProps {
   readonly sessionName: string;
-  readonly adminName: string;
+  readonly gmName: string;
   readonly status: "idle" | "loading" | "error";
   readonly errorMessage: string;
   readonly onSessionNameChange: (v: string) => void;
-  readonly onAdminNameChange: (v: string) => void;
+  readonly onGmNameChange: (v: string) => void;
   readonly onCreate: () => void;
   readonly onClose: () => void;
 }
 
-const AdminForm = ({
+const GameMakerForm = ({
   sessionName,
-  adminName,
+  gmName,
   status,
   errorMessage,
   onSessionNameChange,
-  onAdminNameChange,
+  onGmNameChange,
   onCreate,
   onClose,
-}: AdminFormProps) => (
+}: GameMakerFormProps) => (
   <div className="landing-form-panel" data-role="gamemaker">
     <div className="landing-form-panel__header">
-      <span className="landing-form-panel__title">Create admin session</span>
+      <span className="landing-form-panel__title">Create workspace</span>
       <IconButton type="button" aria-label="Close" onClick={onClose}>
         <MdClose size={18} />
       </IconButton>
@@ -38,21 +38,23 @@ const AdminForm = ({
         id="lp-session-name"
         type="text"
         value={sessionName}
-        onChange={(e) => onSessionNameChange(e.target.value)}
+        onChange={(e) =>
+          onSessionNameChange(e.target.value)}
         placeholder="e.g. MMT Onboarding June 2026"
         autoFocus
       />
     </div>
 
     <div className="landing__form-field--compact">
-      <label htmlFor="lp-admin-name" className="form-label">
+      <label htmlFor="lp-gm-name" className="form-label">
         Your name
       </label>
       <Input
-        id="lp-admin-name"
+        id="lp-gm-name"
         type="text"
-        value={adminName}
-        onChange={(e) => onAdminNameChange(e.target.value)}
+        value={gmName}
+        onChange={(e) =>
+          onGmNameChange(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && onCreate()}
         placeholder="e.g. Peter Tubak"
       />
@@ -65,7 +67,7 @@ const AdminForm = ({
       fullWidth
       className="landing__btn-full"
       disabled={status === "loading" || !sessionName.trim() ||
-        !adminName.trim()}
+        !gmName.trim()}
       onClick={onCreate}
     >
       {status === "loading" ? "Creating…" : "Create & save profile"}
@@ -73,4 +75,4 @@ const AdminForm = ({
   </div>
 );
 
-export default AdminForm;
+export default GameMakerForm;

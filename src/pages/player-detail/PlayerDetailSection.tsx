@@ -1,15 +1,15 @@
 import type { ReactNode } from "react";
 
-interface HireDetailSectionProps {
+interface PlayerDetailSectionProps {
   readonly title: string;
   readonly children: ReactNode;
 }
 
-const HireDetailSection = ({ title, children }: HireDetailSectionProps) => (
+const PlayerDetailSection = ({ title, children }: PlayerDetailSectionProps) => (
   <section>
     <h2 className="section-label">{title}</h2>
     {children}
   </section>
 );
 
-export default HireDetailSection;
+export default PlayerDetailSection;

@@ -1,79 +1,79 @@
 import TopBar from "../components/shared/TopBar.tsx";
 import RouteTabBar from "../components/shared/RouteTabBar.tsx";
 import {
-  HIRE_DETAIL_TABS,
-  type HireDetailTabKey,
-} from "./hire-detail/constants.ts";
-import { useHireDetailPage } from "./hire-detail/useHireDetailPage.ts";
-import HireDetailHeader from "./hire-detail/HireDetailHeader.tsx";
-import HireAnalyticsTab from "./hire-detail/HireAnalyticsTab.tsx";
-import HireCustomizeTab from "./hire-detail/HireCustomizeTab.tsx";
-import HireBuddyTab from "./hire-detail/HireBuddyTab.tsx";
-import HirePreboardingTab from "./hire-detail/HirePreboardingTab.tsx";
-import HireDetailOverlays from "./hire-detail/HireDetailOverlays.tsx";
+  PLAYER_DETAIL_TABS,
+  type PlayerDetailTabKey,
+} from "./player-detail/constants.ts";
+import { usePlayerDetailPage } from "./player-detail/usePlayerDetailPage.ts";
+import PlayerDetailHeader from "./player-detail/PlayerDetailHeader.tsx";
+import PlayerAnalyticsTab from "./player-detail/PlayerAnalyticsTab.tsx";
+import PlayerCustomizeTab from "./player-detail/PlayerCustomizeTab.tsx";
+import PlayerBuddyTab from "./player-detail/PlayerBuddyTab.tsx";
+import PlayerPreboardingTab from "./player-detail/PlayerPreboardingTab.tsx";
+import PlayerDetailOverlays from "./player-detail/PlayerDetailOverlays.tsx";
 
-const HireDetailPage = () => {
-  const vm = useHireDetailPage();
+const PlayerDetailPage = () => {
+  const vm = usePlayerDetailPage();
 
   return (
     <div
-      className="hire-detail"
-      data-testid="hire-detail-page"
-      data-page="hire-detail"
+      className="player-detail"
+      data-testid="player-detail-page"
+      data-page="player-detail"
     >
       <TopBar
         playerName={vm.identity?.name ?? "Game Master"}
         role="Game Master"
       />
 
-      <HireDetailHeader
-        hireName={vm.hireName}
-        onBack={() => vm.navigate(`/admin/${vm.homeSid}`)}
+      <PlayerDetailHeader
+        playerName={vm.playerName}
+        onBack={() => vm.navigate(`/gamemaker/${vm.homeSid}`)}
         onScan={() => vm.setScannerOpen(true)}
       />
 
       <RouteTabBar
-        tabs={HIRE_DETAIL_TABS}
+        tabs={PLAYER_DETAIL_TABS}
         activeKey={vm.tab}
-        onChange={(key) => vm.setTab(key as HireDetailTabKey)}
-        ariaLabel="Hire views"
+        onChange={(key) => vm.setTab(key as PlayerDetailTabKey)}
+        ariaLabel="Player views"
       />
 
       {vm.tab === "analytics" && (
-        <HireAnalyticsTab
-          hireFirstName={vm.hireFirstName}
+        <PlayerAnalyticsTab
+          playerFirstName={vm.playerFirstName}
           {...(vm.startDateISO !== undefined &&
             { startDateISO: vm.startDateISO })}
           milestones={vm.milestones}
           missions={vm.missions}
-          events={vm.adminProgress.selectedPlayerEvents}
-          pendingEvents={vm.adminProgress.pendingEvents}
-          players={vm.adminProgress.players}
+          events={vm.gmProgress.selectedPlayerEvents}
+          pendingEvents={vm.gmProgress.pendingEvents}
+          players={vm.gmProgress.players}
           draftMilestones={vm.draftMilestonesAsMilestones}
           milestoneProgress={vm.milestoneProgress}
           hasMilestones={vm.hasMilestones}
           sessionId={vm.homeSid}
-          inviteToken={vm.adminProgress.selectedPlayer?.inviteToken ?? ""}
+          inviteToken={vm.gmProgress.selectedPlayer?.inviteToken ?? ""}
           onApprove={(playerId, missionId) =>
-            void vm.adminProgress.handleApprove(playerId, missionId)}
+            void vm.gmProgress.handleApprove(playerId, missionId)}
           onReject={(playerId, missionId) =>
-            void vm.adminProgress.handleReject(playerId, missionId)}
+            void vm.gmProgress.handleReject(playerId, missionId)}
           onMilestoneClick={vm.openMilestone}
         />
       )}
 
       {vm.tab === "customize" && (
-        <HireCustomizeTab
-          hireFirstName={vm.hireFirstName}
+        <PlayerCustomizeTab
+          playerFirstName={vm.playerFirstName}
           sessionId={vm.homeSid}
-          inviteToken={vm.adminProgress.selectedPlayer?.inviteToken ?? ""}
+          inviteToken={vm.gmProgress.selectedPlayer?.inviteToken ?? ""}
           templates={vm.templates}
           appliedTemplate={vm.appliedTemplate}
           applyingTemplate={vm.applyingTemplate}
           draftMilestones={vm.draftMilestonesAsMilestones}
           missions={vm.missions}
           completedMissionIds={vm.completedMissionIds}
-          resources={vm.adminResources.resources}
+          resources={vm.gmResources.resources}
           bgImageUrl={vm.bgImageUrl}
           mapNodeScale={vm.mapNodeScale}
           onSelectTemplate={vm.handleUseTemplate}
@@ -86,29 +86,29 @@ const HireDetailPage = () => {
           onUploadBackground={(file) => void vm.uploadBackground(file)}
           onMapNodeScaleChange={(scale) => void vm.updateMapNodeScale(scale)}
           onOpenScanner={() => vm.setScannerOpen(true)}
-          onAddResource={(data) => void vm.adminResources.addResource(data)}
+          onAddResource={(data) => void vm.gmResources.addResource(data)}
           onUpdateResource={(id, patch) =>
-            void vm.adminResources.updateResource(id, patch)}
-          onDeleteResource={(id) => void vm.adminResources.deleteResource(id)}
+            void vm.gmResources.updateResource(id, patch)}
+          onDeleteResource={(id) => void vm.gmResources.deleteResource(id)}
           onToggleVisibility={(id, visible) =>
-            void vm.adminResources.toggleVisibility(id, visible)}
+            void vm.gmResources.toggleVisibility(id, visible)}
         />
       )}
 
       {vm.tab === "buddy" && (
-        <HireBuddyTab
-          players={vm.adminProgress.players}
+        <PlayerBuddyTab
+          players={vm.gmProgress.players}
           draft={vm.buddyProfile.buddyDraft}
-          selectedPlayerId={vm.adminProgress.selectedPlayerId}
-          onPlayerChange={vm.adminProgress.handlePlayerSelect}
+          selectedPlayerId={vm.gmProgress.selectedPlayerId}
+          onPlayerChange={vm.gmProgress.handlePlayerSelect}
           onDraftChange={vm.buddyProfile.setBuddyDraft}
           onSave={vm.handleBuddySave}
         />
       )}
 
       {vm.tab === "preboarding" && (
-        <HirePreboardingTab
-          hireFirstName={vm.hireFirstName}
+        <PlayerPreboardingTab
+          playerFirstName={vm.playerFirstName}
           items={vm.preBoardingChecklist.items}
           onToggle={vm.preBoardingChecklist.onToggle}
           onAdd={vm.preBoardingChecklist.onAdd}
@@ -116,9 +116,9 @@ const HireDetailPage = () => {
         />
       )}
 
-      <HireDetailOverlays vm={vm} />
+      <PlayerDetailOverlays vm={vm} />
     </div>
   );
 };
 
-export default HireDetailPage;
+export default PlayerDetailPage;

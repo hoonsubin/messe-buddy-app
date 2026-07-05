@@ -1,7 +1,7 @@
 import type { BuddyProfile, Player } from "../../types/index.ts";
-import BuddyAssignmentForm from "../../components/admin/BuddyAssignmentForm.tsx";
+import BuddyAssignmentForm from "../../components/gamemaker/BuddyAssignmentForm.tsx";
 
-interface HireBuddyTabProps {
+interface PlayerBuddyTabProps {
   readonly players: ReadonlyArray<Player>;
   readonly draft: Omit<
     BuddyProfile,
@@ -18,15 +18,15 @@ interface HireBuddyTabProps {
   readonly onSave: () => void;
 }
 
-const HireBuddyTab = ({
+const PlayerBuddyTab = ({
   players,
   draft,
   selectedPlayerId,
   onPlayerChange,
   onDraftChange,
   onSave,
-}: HireBuddyTabProps) => (
-  <main className="hire-detail__main">
+}: PlayerBuddyTabProps) => (
+  <main className="player-detail__main">
     <BuddyAssignmentForm
       players={players}
       draft={draft}
@@ -39,4 +39,4 @@ const HireBuddyTab = ({
   </main>
 );
 
-export default HireBuddyTab;
+export default PlayerBuddyTab;

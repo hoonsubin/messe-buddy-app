@@ -19,9 +19,9 @@ export interface UseValidationConfirmResult {
   readonly xpValue: number;
   readonly alreadyCompleted: boolean;
   /**
-   * The hire session's owning Game Maker uid, once the session has loaded.
+   * The player session's owning Game Maker uid, once the session has loaded.
    * Callers use this to resolve which locally-cached identity (if any) is
-   * authorized to confirm — the hire's sessionId never matches a GM's own
+   * authorized to confirm — the player's sessionId never matches a GM's own
    * cached identity, which is scoped to their home session instead.
    */
   readonly gameMakerId: string | null;

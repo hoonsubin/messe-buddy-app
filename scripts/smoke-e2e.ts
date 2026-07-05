@@ -57,11 +57,11 @@ const main = async () => {
     await gmPage.getByRole("button", { name: "Admin", exact: true }).click();
     await gmPage.waitForSelector("#lp-session-name", { timeout: 5000 });
     await gmPage.locator("#lp-session-name").fill("E2E Smoke Test");
-    await gmPage.locator("#lp-admin-name").fill("Smoke GM");
+    await gmPage.locator("#lp-gm-name").fill("Smoke GM");
     await gmPage.getByRole("button", { name: "Create & save profile" }).click();
 
     try {
-      await gmPage.waitForURL(/\/admin\//, { timeout: 20000 });
+      await gmPage.waitForURL(/\/gamemaker\//, { timeout: 20000 });
     } catch {
       const errText = await gmPage.locator(".form-error").textContent().catch(
         () => "",
@@ -78,18 +78,18 @@ const main = async () => {
       throw new Error("GM session create failed");
     }
 
-    await gmPage.waitForSelector('[data-testid="admin-home-page"]', {
+    await gmPage.waitForSelector('[data-testid="gamemaker-home-page"]', {
       timeout: 15000,
     });
 
-    const sessionId = gmPage.url().split("/admin/")[1]?.split(/[?#]/)[0] ?? "";
+    const sessionId = gmPage.url().split("/gamemaker/")[1]?.split(/[?#]/)[0] ?? "";
     record(
       "SMOKE-01 GM session create",
       sessionId.length >= 10,
       `sessionId=${sessionId}`,
     );
     await gmPage.screenshot({
-      path: join(SMOKE_OUT_DIR, "e2e-01-admin-home.png"),
+      path: join(SMOKE_OUT_DIR, "e2e-01-gamemaker-home.png"),
       fullPage: true,
     });
 
@@ -126,12 +126,12 @@ const main = async () => {
 
     // ── Persistence: reload both contexts ──────────────────────────────────
     await gmPage.reload({ waitUntil: "networkidle" });
-    await gmPage.waitForSelector('[data-testid="admin-home-page"]', {
+    await gmPage.waitForSelector('[data-testid="gamemaker-home-page"]', {
       timeout: 15000,
     });
     record(
       "SMOKE-01 GM reload persists",
-      gmPage.url().includes(`/admin/${sessionId}`),
+      gmPage.url().includes(`/gamemaker/${sessionId}`),
     );
 
     await playerPage.reload({ waitUntil: "networkidle" });
@@ -145,7 +145,7 @@ const main = async () => {
 
     record(
       "SMOKE-02 Admin home reachable after create",
-      await gmPage.locator('[data-testid="admin-home-page"]').isVisible(),
+      await gmPage.locator('[data-testid="gamemaker-home-page"]').isVisible(),
     );
 
     const bad = consoleErrors.filter((e) => !isBenignConsoleError(e));

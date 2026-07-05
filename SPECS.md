@@ -93,7 +93,7 @@ This glossary is authoritative.
 
 | Term                   | Definition                                                                                                                                                                                                                                                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Workspace / Session** | The Game Maker's single onboarding container (`/admin/:sessionId`). Holds map settings (`bgImageUrl`, `mapNodeScale`, `qrSecret`), GM identity (`gameMakerId`, `gmRecoveryKey`), pre-boarding, and all managed players. **One session ≈ one department** by convention — no department entity in the system. |
+| **Workspace / Session** | The Game Maker's single onboarding container (`/gamemaker/:sessionId`). Holds map settings (`bgImageUrl`, `mapNodeScale`, `qrSecret`), GM identity (`gameMakerId`, `gmRecoveryKey`), pre-boarding, and all managed players. **One session ≈ one department** by convention — no department entity in the system. |
 | **Player**             | A claimable onboarding identity — one PocketBase `players` row per person the GM onboards. Has its own Milestones, Missions, milestone resource attachments, ProgressEvents, and BuddyProfile. `claimStatus = invited` until first claim; then `claimed`. The GM is **not** a `players` row. |
 | **Invite / pending player** | A `players` row created by the GM (`invitePlayer`) with a unique `inviteToken`. Listed on the Players tab as "Not joined yet" until claimed. |
 | **Player invite URL** | `{origin}/join/{sessionId}?t={inviteToken}` — permanent capability URL to one `players` row. First visit: claim flow. Revisit (any device): hydrate identity from PB → cockpit. Progress always from server. |
@@ -109,7 +109,7 @@ This glossary is authoritative.
 | **XP**                 | Experience points awarded when a Mission is validated. **The Game Maker sets `missions.xpValue` directly.** Milestone `xpThreshold` = sum of `xpValue` for Missions in that Milestone (recomputed on save). Session total XP = sum of earned Mission XP across Milestones.                                              |
 | **Validation Method**  | How completion is confirmed. One of: `gmApprove` (player requests → GM approves in UI), `selfApprove` (player self-marks → immediate), `qr` (player shows signed URL QR → **GM scans** on `ValidationPage`), `peerScan` (player shows signed URL QR → **N unique third parties** scan on `PeerScanPage` — no app identity required). `form` **type** always `autoApproved` regardless of method. Default: `gmApprove`. |
 | **Players list**       | All `players` rows in the workspace — invited and claimed — with aggregate progress % when claimed. |
-| **Player detail**      | GM drill-down for one player: customize milestones/missions, attach library resources, analytics, buddy, invite link. Route: `/admin/:sessionId/player/:playerId`. |
+| **Player detail**      | GM drill-down for one player: customize milestones/missions, attach library resources, analytics, buddy, invite link. Route: `/gamemaker/:sessionId/player/:playerId`. |
 | **Library resource**   | Company-wide catalog entry in `library_resources` — visible to all GMs. Referenced by templates and attached to player milestones via `milestone_resources`. |
 | **Template**           | Global portable journey blueprint in `templates` — Milestones, Missions, FormSchemas, and resource bindings by `resourceKey`. GM copies onto a **specific player** via `importTemplate`. Any GM may edit. |
 | **GM Validation URL**  | `{origin}/validate/{sessionId}?t={signed}` — player completion QR (`validationMethod = qr`). **GM-only** confirm path. Player or anonymous scanner → `InvalidIdentityPage`. HMAC via `sessions.qrSecret` (C-16).                                                                                                        |
@@ -448,7 +448,7 @@ When `localStorage` is cleared (new device, browser reset):
    `sessions WHERE gmRecoveryKey = input` (GM path), optionally scoped by
    `sessionId` when known from URL
 4. On match: `CachedIdentity` is reconstructed and written to `localStorage`
-5. User is routed to their cockpit (`/admin/:sessionId` or `/session/:sessionId`
+5. User is routed to their cockpit (`/gamemaker/:sessionId` or `/session/:sessionId`
    based on `role`)
 
 The `recoveryKey` is displayed **once** on first claim with a copy button.
@@ -486,12 +486,12 @@ import).
 | `/` | Public | `RootRedirect` → dashboard or `LandingPage` | Auto-resume via `mb_active_uid` |
 | `/join/:sessionId` | Public | `LandingPage` | Reads `?t=inviteToken`; claim or recover player row |
 | `/session/:sessionId` | `RequireRole` → `player` | `PlayerCockpitPage` | Player cockpit (missions scoped to their `playerId`) |
-| `/admin/:sessionId` | `RequireRole` → `gamemaker` | `AdminHomePage` | GM workspace — Players and Resources tabs |
-| `/admin/:sessionId/player/:playerId` | `RequireRole` → `gamemaker` | `PlayerDetailPage` | Per-player customize, analytics, invite |
+| `/gamemaker/:sessionId` | `RequireRole` → `gamemaker` | `GameMakerHomePage` | GM workspace — Players and Resources tabs |
+| `/gamemaker/:sessionId/player/:playerId` | `RequireRole` → `gamemaker` | `PlayerDetailPage` | Per-player customize, analytics, invite |
 | `/form/:sessionId/:missionId` | `RequireRole` → `player` | `FormPage` | Dynamic form missions |
 | `/validate/:sessionId` | GM auth on page | `ValidationPage` | GM scans player completion QR (`qr`) |
 | `/peer/:sessionId` | Public | `PeerScanPage` | Crowd attestation (`peerScan`) — **planned** |
-| `/admin/:sessionId/scan` | `RequireRole` → `gamemaker` | `QRScannerView` | In-app URL scanner → routes by URL type |
+| `/gamemaker/:sessionId/scan` | `RequireRole` → `gamemaker` | `QRScannerView` | In-app URL scanner → routes by URL type |
 | `/invalid-identity` | Public | `InvalidIdentityPage` | Wrong scanner for URL type — **planned** |
 
 > `ValidationPage` authorizes by matching `session.gameMakerId` to the cached GM
@@ -605,7 +605,7 @@ without the MesseBuddy app installed; the browser handles routing.
 
 ### Admin surfaces
 
-**GM Home (`AdminHomePage`)** — tabbed workspace shell
+**GM Home (`GameMakerHomePage`)** — tabbed workspace shell
 
 | Tab | Purpose |
 | --- | ------- |
@@ -638,9 +638,9 @@ Player customization uses **draft layers** until explicit Save:
 
 | State | Location | Rule |
 | ----- | -------- | ---- |
-| `draftMilestones[]` | `useAdminMilestoneEditor` | Source of truth for name, position |
-| `draftMissions` Map | `useAdminMissionEditor` | Source of truth for mission fields incl. `xpValue` |
-| `missionOrderChanges` Map | `useAdminMissionEditor` | Must be **merged into list props** for display before save |
+| `draftMilestones[]` | `useGmMilestoneEditor` | Source of truth for name, position |
+| `draftMissions` Map | `useGmMissionEditor` | Source of truth for mission fields incl. `xpValue` |
+| `missionOrderChanges` Map | `useGmMissionEditor` | Must be **merged into list props** for display before save |
 | `selectedMilestoneId` | player detail | **Store ID only** — derive `Milestone` from `draftMilestones` for UI |
 
 **Dirty guards:** Any exit from mission editor (back, close, overlay dismiss)
@@ -695,13 +695,13 @@ App
 ├── RootRedirect                      [/]  auto-resume or LandingPage
 ├── LandingPage                       [/join/:sessionId]
 ├── PlayerCockpitPage                 [/session/:sessionId]
-├── AdminHomePage                     [/admin/:sessionId]  Players + Resources tabs
-├── PlayerDetailPage                  [/admin/:sessionId/player/:playerId]
+├── GameMakerHomePage                     [/gamemaker/:sessionId]  Players + Resources tabs
+├── PlayerDetailPage                  [/gamemaker/:sessionId/player/:playerId]
 ├── FormPage                          [/form/:sessionId/:missionId]
 ├── ValidationPage                    [/validate/:sessionId]  GM QR confirm
 ├── PeerScanPage                      [/peer/:sessionId]  crowd attestation (planned)
 ├── InvalidIdentityPage               [/invalid-identity]  wrong QR for identity (planned)
-└── QRScannerView                     [/admin/:sessionId/scan]  GM camera scanner
+└── QRScannerView                     [/gamemaker/:sessionId/scan]  GM camera scanner
 ```
 
 ### Shared Component Contracts
@@ -785,7 +785,7 @@ ValidationPage                        [GM-only; RequireRole gamemaker]
 ├── Confirmation card                 [milestone, mission, player names, XP]
 └── Confirm / Cancel                  [Confirm → upsertProgressEvent completed]
 
-QRScannerView                         [/admin/:sessionId/scan]
+QRScannerView                         [/gamemaker/:sessionId/scan]
 ├── CameraFeed                        [device camera API]
 └── ValidationResult                  [scan status only; confirm on ValidationPage]
 ```
@@ -1135,7 +1135,7 @@ the single enforcement point for C-05.
 ### Editor UX
 
 - GM picks XP from a constrained chip set (e.g. 5, 10, 15, 20) or numeric input.
-- Player and admin lists display the same `xpValue` the GM saved.
+- Player and GM lists display the same `xpValue` the GM saved.
 - Validation confirm screens show `mission.xpValue` from server record.
 
 ### Worked example
@@ -1244,8 +1244,8 @@ interface FullSessionExport {
 | C-20 | Real-time subscriptions are hook-internal | Opaque to components (OD-09) |
 | C-21 | Pre-boarding checks in dedicated collection | `pre_boarding_checks` collection |
 | C-22 | Admin lists project pending draft edits | `usePlayerDetailPage`, `MissionBottomSheet` |
-| C-23 | Logout navigates to landing only; `removeProfile` is explicit | `AdminHomePage`, `usePlayerCockpitPage` |
-| C-24 | Players list shows all workspace `players` (invited + claimed) | `AdminHomePage` Players tab |
+| C-23 | Logout navigates to landing only; `removeProfile` is explicit | `GameMakerHomePage`, `usePlayerCockpitPage` |
+| C-24 | Players list shows all workspace `players` (invited + claimed) | `GameMakerHomePage` Players tab |
 | C-25 | `peerScan` attestations unique per `(missionId, playerId, scannerDeviceId)` | `peer_scans` unique index |
 | C-26 | Milestones and Missions per `playerId`; player-visible resources via `milestone_resources` → `library_resources`; no mission–resource link | Schema FKs |
 | C-27 | Per-player invite via `inviteToken` on `players`; URL `/join/:sessionId?t=` | `invitePlayer`, `claimPlayer`, `SessionInviteCard` |
@@ -1270,7 +1270,7 @@ or delete existing rows.** Open questions use `Status: open`; settled items use
 | D-ARCH | 2026-07-05 | decided | **Workspace model:** one `sessions` row per GM; each hire is a `players` row with per-player milestones/missions; resources linked per `milestoneId`; `role` = user type, `jobTitle` = UI label | Replaces prior one-session-per-hire model; matches multi-player GM workflow |
 | OD-22 | 2026-07-05 | decided | Resources attach to milestones via `milestoneId`; no `missionId` FK | GM links resources like missions; player sees them in milestone sidebar |
 | OD-25 | 2026-07-05 | decided | Per-player `inviteToken`; invite URL `/join/:sessionId?t=`; capability link hydrates cache on any device | Same link reopens same PB row; progress always server-authoritative |
-| OD-26 | 2026-07-05 | decided | Resources editor: dedicated **Resources** tab on `AdminHomePage` plus inline CRUD in milestone editor | Central list + contextual edit at milestone |
+| OD-26 | 2026-07-05 | decided | Resources editor: dedicated **Resources** tab on `GameMakerHomePage` plus inline CRUD in milestone editor | Central list + contextual edit at milestone |
 | OD-27 | 2026-07-05 | decided | Multi-device concurrent edits use last-write-wins; no merge UI in prototype | Keeps backend simple; conflict resolution deferred |
 | OD-01 | — | open | Should `link`-type missions auto-complete on click, or require explicit mark + validation? | Affects whether link missions mount `ValidationDisplay` |
 | OD-03 | — | open | `MilestoneNode` fill: gradient vs step thresholds (0/25/50/75/100%) | Visual design only |

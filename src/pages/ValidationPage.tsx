@@ -13,10 +13,10 @@ const ValidationPage = () => {
   const sid = sessionId ?? "";
   const token = searchParams.get("t") ?? "";
 
-  // This route's sessionId is the *hire's* session, which never matches a
+  // This route's sessionId is the *player's* session, which never matches a
   // GM's cached identity (scoped to their own home session) — so instead of
   // useActiveProfile's exact-sessionId lookup, find any locally stored GM
-  // identity whose uid owns this hire (session.gameMakerId), once the hire
+  // identity whose uid owns this player (session.gameMakerId), once the player
   // session has loaded. `gameMakerId` is mirrored into state — adjusted
   // during render (React's documented pattern for deriving state from a
   // changed prop/value without an Effect) rather than in a useEffect — so the
@@ -43,18 +43,18 @@ const ValidationPage = () => {
   }
 
   // Session has loaded (we know who owns it) but no locally stored GM
-  // identity matches — this GM is not authorized to validate this hire.
+  // identity matches — this GM is not authorized to validate this player.
   const unauthorized = !validation.loading && validation.gameMakerId !== null &&
     identity === null;
 
-  // Always return the GM to their own home session, never the hire's — the
-  // two are different sessionIds, and /admin/:sessionId's RequireRole guard
+  // Always return the GM to their own home session, never the player's — the
+  // two are different sessionIds, and /gamemaker/:sessionId's RequireRole guard
   // checks the GM's home session specifically. `identity` (resolved above via
   // gameMakerId) carries that home sessionId; if it hasn't resolved yet (or
-  // this GM isn't authorized for this hire), fall back to the public landing
+  // this GM isn't authorized for this player), fall back to the public landing
   // page instead of a route that will just bounce.
-  const goToAdmin = useCallback(() => {
-    navigate(identity?.sessionId ? `/admin/${identity.sessionId}` : "/", {
+  const goToGmHome = useCallback(() => {
+    navigate(identity?.sessionId ? `/gamemaker/${identity.sessionId}` : "/", {
       replace: true,
     });
   }, [navigate, identity]);
@@ -62,11 +62,11 @@ const ValidationPage = () => {
   const handleConfirm = useCallback(async () => {
     try {
       await validation.confirm();
-      goToAdmin();
+      goToGmHome();
     } catch {
       // confirm error surfaced via validation.errorMessage
     }
-  }, [goToAdmin, validation]);
+  }, [goToGmHome, validation]);
 
   if (validation.errorKind === "missing_token") {
     return (
@@ -75,7 +75,7 @@ const ValidationPage = () => {
           "Missing validation token."}
         onRetry={() => validation.retry()}
         retryLabel="Reload"
-        onBack={goToAdmin}
+        onBack={goToGmHome}
         backLabel="Back to cockpit"
         testId="validation-page"
         page="validation"
@@ -91,7 +91,7 @@ const ValidationPage = () => {
       <FetchErrorPanel
         message={validation.errorMessage}
         onRetry={() => validation.refresh()}
-        onBack={goToAdmin}
+        onBack={goToGmHome}
         backLabel="Back to cockpit"
         testId="validation-page"
         page="validation"
@@ -102,7 +102,7 @@ const ValidationPage = () => {
   if (unauthorized) {
     return (
       <FetchErrorPanel
-        message="You're not signed in as this hire's Game Master, so you can't confirm this validation. Sign in from that Game Master's own admin session and scan again."
+        message="You're not signed in as this player's Game Master, so you can't confirm this validation. Sign in from that Game Master's own GM workspace and scan again."
         onRetry={() => navigate("/", { replace: true })}
         retryLabel="Go to home"
         testId="validation-page"
@@ -162,7 +162,7 @@ const ValidationPage = () => {
               "This QR code belongs to a different session."}
             onRetry={() => validation.retry()}
             retryLabel="Try again"
-            onBack={goToAdmin}
+            onBack={goToGmHome}
             backLabel="Back to cockpit"
           />
         )}
@@ -173,7 +173,7 @@ const ValidationPage = () => {
             message={validation.errorMessage}
             onRetry={() => validation.retry()}
             retryLabel="Try again"
-            onBack={goToAdmin}
+            onBack={goToGmHome}
             backLabel="Back to cockpit"
           />
         )}
@@ -281,7 +281,7 @@ const ValidationPage = () => {
               <button
                 type="button"
                 className="btn btn--ghost"
-                onClick={goToAdmin}
+                onClick={goToGmHome}
                 disabled={validation.confirming}
               >
                 {validation.alreadyCompleted ? "Back to cockpit" : "Cancel"}

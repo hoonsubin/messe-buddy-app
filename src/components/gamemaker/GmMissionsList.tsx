@@ -19,7 +19,7 @@ const TYPE_COLOR: Record<string, string> = {
 
 // ── Props ───────────────────────────────────────────────────────────────────
 
-interface AdminMissionsListProps {
+interface GmMissionsListProps {
   readonly missions: ReadonlyArray<Mission>;
   readonly milestones: ReadonlyArray<Milestone>;
   readonly onReorder?: (missionId: string, newOrder: number) => void;
@@ -70,7 +70,7 @@ const buildGroups = (
 
 // ── Component ───────────────────────────────────────────────────────────────
 
-const AdminMissionsList = (props: AdminMissionsListProps) => {
+const GmMissionsList = (props: GmMissionsListProps) => {
   const { missions, milestones, onReorder, onMissionClick } = props;
 
   // Groups computed from props - seed local order state on first render
@@ -195,7 +195,7 @@ const AdminMissionsList = (props: AdminMissionsListProps) => {
   if (groups.length === 0) {
     return (
       <section
-        data-testid="admin-missions-list"
+        data-testid="gm-missions-list"
         aria-label="Mission list"
         style={{
           padding: "var(--space-4)",
@@ -222,7 +222,7 @@ const AdminMissionsList = (props: AdminMissionsListProps) => {
 
   return (
     <section
-      data-testid="admin-missions-list"
+      data-testid="gm-missions-list"
       aria-label="Mission list"
       style={{
         borderTop: "1px solid hsl(var(--color-border))",
@@ -479,4 +479,4 @@ const AdminMissionsList = (props: AdminMissionsListProps) => {
   );
 };
 
-export default AdminMissionsList;
+export default GmMissionsList;

@@ -35,7 +35,7 @@ const TopBar = (props: TopBarProps) => {
           onClick={props.onAvatarClick}
         />
       )}
-      <span className="topbar__name">{props.playerName || "New hire"}</span>
+      <span className="topbar__name">{props.playerName || "Player"}</span>
       {props.totalXP !== undefined && (
         <span className="topbar__xp" aria-label={`${props.totalXP} XP`}>
           {props.totalXP} XP

@@ -1,9 +1,9 @@
 export { useProgressPlayer } from "./player.ts";
-export { useProgressAdmin } from "./admin.ts";
+export { useProgressGamemaker } from "./gamemaker.ts";
 export { useGmPlayers } from "./gmPlayers.ts";
 export { useWatchMission } from "./watchMission.ts";
 export type {
-  UseProgressAdminResult,
+  UseProgressGamemakerResult,
   UseProgressOptions,
   UseProgressPlayerResult,
 } from "./types.ts";

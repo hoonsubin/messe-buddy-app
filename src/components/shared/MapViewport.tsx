@@ -30,7 +30,7 @@ interface MapViewportProps {
    * Use for the player view where the user should always be able to pan.
    *
    * When false (default), touches on nodes are ignored by the viewport so the
-   * admin editor's pointer-event handlers can take over.
+   * GM editor's pointer-event handlers can take over.
    */
   readonly panFromNodes?: boolean;
   /**

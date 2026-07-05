@@ -7,7 +7,7 @@ import { MILESTONE_STATUS } from "../types/index.ts";
 // Pure function - no side effects, no adapter calls.
 //
 // The result is sorted by mission.order so it can be rendered directly in
-// DailyPlanView as the primary orientation surface for new hires.
+// DailyPlanView as the primary orientation surface for players.
 
 export const getDailyMissions = (
   playerProgress: PlayerProgress,

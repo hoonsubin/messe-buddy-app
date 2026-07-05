@@ -22,7 +22,7 @@ When capturing this repository's UI:
 
 - **Viewport:** 390×844 (iPhone-class — matches AGENTS.md smoke tests)
 - **Save to:** `.playwright-mcp/` (preferred for agent workflows)
-- **Routes to smoke:** `/`, `/session/:id` (demo), `/admin/:id`, `/form/:missionId`
+- **Routes to smoke:** `/`, `/session/:id` (demo), `/gamemaker/:id`, `/form/:missionId`
 - **After UI changes:** verify no console errors; never force-click obscured elements
 
 ---

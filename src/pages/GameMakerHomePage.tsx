@@ -25,7 +25,10 @@ const statusOf = (p: GmPlayerRow): { label: string; colorVar: string } => {
 };
 
 const PlayerCard = (
-  { player, onOpen }: { readonly player: GmPlayerRow; readonly onOpen: () => void },
+  { player, onOpen }: {
+    readonly player: GmPlayerRow;
+    readonly onOpen: () => void;
+  },
 ) => {
   const status = statusOf(player);
   return (
@@ -138,7 +141,7 @@ const PlayerCard = (
   );
 };
 
-const AdminHomePage = () => {
+const GameMakerHomePage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const sid = sessionId ?? "";
   const navigate = useNavigate();
@@ -169,7 +172,7 @@ const AdminHomePage = () => {
         .then((newPlayerId) => {
           setAdding(false);
           setCreating(false);
-          navigate(`/admin/${sid}/player/${newPlayerId}?new=1`);
+          navigate(`/gamemaker/${sid}/player/${newPlayerId}?new=1`);
         })
         .catch(() => setCreating(false));
     },
@@ -188,8 +191,8 @@ const AdminHomePage = () => {
 
   return (
     <div
-      data-testid="admin-home-page"
-      data-page="admin-home"
+      data-testid="gamemaker-home-page"
+      data-page="gamemaker-home"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -259,7 +262,7 @@ const AdminHomePage = () => {
                 color: "hsl(var(--color-fg))",
               }}
             >
-              New Hires
+              Players
             </h1>
             <p
               style={{
@@ -284,7 +287,7 @@ const AdminHomePage = () => {
               onClick={() => setAdding(true)}
             >
               <MdAdd size={18} aria-hidden="true" />
-              Add new hire
+              Add player
             </button>
           )}
         </header>
@@ -327,7 +330,7 @@ const AdminHomePage = () => {
                 padding: "var(--space-8) 0",
               }}
             >
-              Loading new hires…
+              Loading players…
             </p>
           )
           : visiblePlayers.length === 0
@@ -346,7 +349,7 @@ const AdminHomePage = () => {
                   fontSize: "var(--text-sm)",
                 }}
               >
-                No new hires yet. Add your first one to start their onboarding.
+                No players yet. Add your first one to start their onboarding.
               </p>
               <button
                 type="button"
@@ -355,7 +358,7 @@ const AdminHomePage = () => {
                 onClick={() => setAdding(true)}
               >
                 <MdAdd size={18} aria-hidden="true" />
-                Add new hire
+                Add player
               </button>
             </div>
           )
@@ -375,7 +378,7 @@ const AdminHomePage = () => {
                   key={player.playerId}
                   player={player}
                   onOpen={() =>
-                    navigate(`/admin/${sid}/player/${player.playerId}`)}
+                    navigate(`/gamemaker/${sid}/player/${player.playerId}`)}
                 />
               ))}
             </ul>
@@ -386,11 +389,11 @@ const AdminHomePage = () => {
         <NameCaptureModal
           onSubmit={handleCreate}
           loading={creating}
-          title="Add a new hire"
-          description="Give this onboarding a name (the new hire's name works well). You'll pick a template and send them an invite next."
+          title="Add a player"
+          description="Give this onboarding a name (the player's name works well). You'll pick a template and send them an invite next."
           placeholder="e.g. Sofia Chen"
           submitLabel="Create"
-          inputLabel="New hire name"
+          inputLabel="Player name"
           onCancel={() => setAdding(false)}
         />
       )}
@@ -398,4 +401,4 @@ const AdminHomePage = () => {
   );
 };
 
-export default AdminHomePage;
+export default GameMakerHomePage;

@@ -20,7 +20,7 @@ export interface UseResourcesPlayerResult {
   readonly refresh: () => void;
 }
 
-export interface UseResourcesAdminResult {
+export interface UseResourcesGmResult {
   readonly role: "gamemaker";
   readonly resources: ReadonlyArray<Resource>;
   readonly loading: boolean;
@@ -55,11 +55,11 @@ export function useResources(
 export function useResources(
   sessionId: string,
   options: { role: "gamemaker"; playerId?: string; milestoneId?: string },
-): UseResourcesAdminResult;
+): UseResourcesGmResult;
 export function useResources(
   sessionId: string,
   options: UseResourcesOptions,
-): UseResourcesPlayerResult | UseResourcesAdminResult {
+): UseResourcesPlayerResult | UseResourcesGmResult {
   const adapter = useAdapter();
   const { playerId, milestoneId } = options;
   const [resources, setResources] = useState<ReadonlyArray<Resource>>([]);
@@ -134,7 +134,10 @@ export function useResources(
       patch: Partial<Omit<Resource, "id" | "created" | "updated">>,
     ) => {
       const libFields: Array<
-        keyof Pick<Resource, "title" | "type" | "url" | "description" | "resourceKey">
+        keyof Pick<
+          Resource,
+          "title" | "type" | "url" | "description" | "resourceKey"
+        >
       > = ["title", "type", "url", "description", "resourceKey"];
       const libPatch = Object.fromEntries(
         libFields

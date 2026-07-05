@@ -92,5 +92,3 @@ export const usePlayerTemplates = (
 
   return { templates, applying, applyTemplate, saveAsTemplate };
 };
-
-export const useHireTemplates = usePlayerTemplates;

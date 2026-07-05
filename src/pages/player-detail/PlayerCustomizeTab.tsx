@@ -1,20 +1,16 @@
 import { useMemo } from "react";
 import type { AddResourceInput } from "../../hooks/useResources.ts";
-import type {
-  Milestone,
-  Mission,
-  Resource,
-} from "../../types/index.ts";
+import type { Milestone, Mission, Resource } from "../../types/index.ts";
 import type { TemplateExport } from "../../types/exports.ts";
-import TemplateSelect from "../../components/admin/TemplateSelect.tsx";
-import MilestoneGrid from "../../components/admin/MilestoneGrid.tsx";
-import MilestoneMapEditor from "../../components/admin/MilestoneMapEditor.tsx";
-import ResourcesEditor from "../../components/admin/ResourcesEditor.tsx";
-import HireDetailSection from "./HireDetailSection.tsx";
-import HireInviteAccordion from "./HireInviteAccordion.tsx";
+import TemplateSelect from "../../components/gamemaker/TemplateSelect.tsx";
+import MilestoneGrid from "../../components/gamemaker/MilestoneGrid.tsx";
+import MilestoneMapEditor from "../../components/gamemaker/MilestoneMapEditor.tsx";
+import ResourcesEditor from "../../components/gamemaker/ResourcesEditor.tsx";
+import PlayerDetailSection from "./PlayerDetailSection.tsx";
+import PlayerInviteAccordion from "./PlayerInviteAccordion.tsx";
 
-interface HireCustomizeTabProps {
-  readonly hireFirstName: string;
+interface PlayerCustomizeTabProps {
+  readonly playerFirstName: string;
   readonly sessionId: string;
   readonly inviteToken: string;
   readonly templates: ReadonlyArray<TemplateExport>;
@@ -39,14 +35,16 @@ interface HireCustomizeTabProps {
   readonly onAddResource: (data: AddResourceInput) => void;
   readonly onUpdateResource: (
     id: string,
-    patch: Partial<Pick<Resource, "title" | "type" | "url" | "isVisibleToPlayer">>,
+    patch: Partial<
+      Pick<Resource, "title" | "type" | "url" | "isVisibleToPlayer">
+    >,
   ) => void;
   readonly onDeleteResource: (id: string) => void;
   readonly onToggleVisibility: (id: string, visible: boolean) => void;
 }
 
-const HireCustomizeTab = ({
-  hireFirstName,
+const PlayerCustomizeTab = ({
+  playerFirstName,
   sessionId,
   inviteToken,
   templates,
@@ -72,7 +70,7 @@ const HireCustomizeTab = ({
   onUpdateResource,
   onDeleteResource,
   onToggleVisibility,
-}: HireCustomizeTabProps) => {
+}: PlayerCustomizeTabProps) => {
   const missionCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const m of missions) {
@@ -82,8 +80,8 @@ const HireCustomizeTab = ({
   }, [missions]);
 
   return (
-    <main className="hire-detail__main hire-detail__main--wide">
-      <HireDetailSection title="Onboarding template">
+    <main className="player-detail__main player-detail__main--wide">
+      <PlayerDetailSection title="Onboarding template">
         <TemplateSelect
           templates={templates}
           appliedName={appliedTemplate}
@@ -91,14 +89,14 @@ const HireCustomizeTab = ({
           onSelect={onSelectTemplate}
           onAddNew={onAddTemplate}
         />
-      </HireDetailSection>
+      </PlayerDetailSection>
 
-      <HireDetailSection title="Milestones & Missions">
+      <PlayerDetailSection title="Milestones & Missions">
         <p className="core-text-sm core-text-muted core-mb-3">
           Drag nodes to reposition them on the journey map, use the + button to
           add a new milestone, or pick a template above.
         </p>
-        <div className="hire-detail__map-wrap">
+        <div className="player-detail__map-wrap">
           <MilestoneMapEditor
             milestones={draftMilestones}
             missionCounts={missionCounts}
@@ -120,9 +118,9 @@ const HireCustomizeTab = ({
           completedMissionIds={completedMissionIds}
           onSelect={onSelectMilestone}
         />
-      </HireDetailSection>
+      </PlayerDetailSection>
 
-      <HireDetailSection title="Resources">
+      <PlayerDetailSection title="Resources">
         <ResourcesEditor
           resources={resources}
           sessionId={sessionId}
@@ -131,10 +129,10 @@ const HireCustomizeTab = ({
           onDelete={(id) => onDeleteResource(id)}
           onToggleVisibility={(id, visible) => onToggleVisibility(id, visible)}
         />
-      </HireDetailSection>
+      </PlayerDetailSection>
 
-      <HireInviteAccordion
-        hireFirstName={hireFirstName}
+      <PlayerInviteAccordion
+        playerFirstName={playerFirstName}
         sessionId={sessionId}
         inviteToken={inviteToken}
       />
@@ -142,4 +140,4 @@ const HireCustomizeTab = ({
   );
 };
 
-export default HireCustomizeTab;
+export default PlayerCustomizeTab;
