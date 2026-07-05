@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAdapter } from "../../adapters/useAdapter.ts";
+import { writeAppliedTemplate } from "../../pages/player-detail/playerDetailStorage.ts";
 import { computeProgress } from "../../use-cases/computeProgress.ts";
-import { invitePlayer as invitePlayerUseCase } from "../../use-cases/invitePlayer.ts";
+import {
+  createOnboardingJourney as createOnboardingJourneyUseCase,
+  type CreateOnboardingJourneyInput,
+} from "../../use-cases/createOnboardingJourney.ts";
 import type { ClaimStatus } from "../../types/index.ts";
 
 export interface GmPlayerRow {
@@ -20,8 +24,10 @@ export interface UseGmPlayersResult {
   readonly loading: boolean;
   readonly error: Error | null;
   readonly refresh: () => void;
-  /** Invite a new player into this workspace session. Returns playerId. */
-  readonly invitePlayer: (name: string) => Promise<string>;
+  /** Run the 3-step onboarding wizard use case. Returns playerId. */
+  readonly createOnboardingJourney: (
+    input: CreateOnboardingJourneyInput,
+  ) => Promise<string>;
 }
 
 const STALL_DAYS = 3;
@@ -38,11 +44,18 @@ export const useGmPlayers = (
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
-  const invitePlayerFn = useCallback(
-    async (name: string): Promise<string> => {
-      const player = await invitePlayerUseCase(sessionId, adapter, { name });
+  const createOnboardingJourneyFn = useCallback(
+    async (input: CreateOnboardingJourneyInput): Promise<string> => {
+      const result = await createOnboardingJourneyUseCase(
+        sessionId,
+        adapter,
+        input,
+      );
+      if (result.appliedTemplateName) {
+        writeAppliedTemplate(result.playerId, result.appliedTemplateName);
+      }
       setRefreshKey((k) => k + 1);
-      return player.id;
+      return result.playerId;
     },
     [adapter, sessionId],
   );
@@ -132,6 +145,6 @@ export const useGmPlayers = (
     loading,
     error,
     refresh,
-    invitePlayer: invitePlayerFn,
+    createOnboardingJourney: createOnboardingJourneyFn,
   };
 };

@@ -116,11 +116,11 @@ const GmPlayersTab = ({
         <button
           type="button"
           className="btn btn--primary gm-home__header-btn"
-          data-testid="add-player-btn"
+          data-testid="new-onboarding-journey-btn"
           onClick={onAdd}
         >
           <MdAdd size={18} aria-hidden="true" />
-          Add player
+          New onboarding journey
         </button>
       )}
     </header>
@@ -149,15 +149,16 @@ const GmPlayersTab = ({
       ? (
         <div className="card gm-home__empty">
           <p className="gm-home__empty-text">
-            No players yet. Add your first one to start their onboarding.
+            No players yet. Start your first onboarding journey to invite someone.
           </p>
           <button
             type="button"
             className="btn btn--primary"
+            data-testid="new-onboarding-journey-btn"
             onClick={onAdd}
           >
             <MdAdd size={18} aria-hidden="true" />
-            Add player
+            New onboarding journey
           </button>
         </div>
       )

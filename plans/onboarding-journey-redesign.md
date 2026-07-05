@@ -1,7 +1,7 @@
 # Implementation Plan — Onboarding Journey UI Redesign
 
 **ID:** OJ-01  
-**Status:** In progress (Phase 1 complete)  
+**Status:** In progress (Phases 1–2 complete)  
 **Last updated:** 2026-07-05  
 **Wireframe:** Cursor canvas [`onboarding-journey-redesign.canvas.tsx`](../../.cursor/projects/Users-hoonkim-Projects-messe-buddy-app/canvases/onboarding-journey-redesign.canvas.tsx) (open beside chat in IDE)
 
@@ -64,21 +64,26 @@ Same fields as today’s `GameMakerForm`: **Session name**, **Your name**, **Cre
 
 ### 5. Wizard — step 2: Assign buddy
 
+**Not a buddy catalog** — `buddy_profiles` is one row per **player** (`assignedToPlayerId` unique).
+“Pick existing” **copies** fields from a prior assignment into a **new** row for the new player (no FK).
+
 **UI draft shape** (`BuddyPickerDraft`):
 
 ```ts
 interface BuddyPickerDraft {
   readonly name: string;
   readonly email: string;
-  readonly telephone: string;
+  readonly telephone: string; // maps to BuddyProfile.phone on save
   readonly role: string;
 }
 ```
 
 - Mode toggle: **Existing buddy** | **Add new**.
-- Existing: radio list from `listBuddyProfiles(sessionId)` — show name, role, email, telephone.
-- Add new: four fields above.
-- Persist via `upsertBuddyProfile` on journey create (`telephone` → PB `phone`).
+- Existing: radio list from `listDistinctBuddyProfilesForPicker(sessionId)` — show name, role, email, phone; submit `buddyProfileId` (PB record `id` of source assignment).
+- Add new: four fields above → `buddyPickerDraftToProfileFields`.
+- Persist: `createOnboardingJourney` → `upsertBuddyProfile(newPlayerId, …)` (can run while `claimStatus=invited`).
+
+**Do not use `useBuddyProfile` for the wizard** — its GM draft still uses `tenure` / `contactUrl` and omits `email` / `phone` on load (align in Phase 4).
 
 ### 6. Wizard — step 3: Choose template
 
@@ -282,15 +287,116 @@ interface CreateOnboardingJourneyResult {
 
 ### Phase 3 — Wizard modal + GM home
 
-| Task | Files |
-| ---- | ----- |
-| New `OnboardingJourneyModal` (3 steps, back/cancel) | `src/components/gamemaker/OnboardingJourneyModal.tsx` |
-| New `BuddyPicker` (existing list + new form) | `src/components/gamemaker/BuddyPicker.tsx` |
-| Template step: scratch + `listTemplates` radio list | inside modal or `TemplateRadioList.tsx` |
-| Wire GM home to modal; navigate on success | `GameMakerHomePage.tsx` |
-| Rename CTAs | `GmPlayersTab.tsx` |
+**Status:** Planned (next)
 
-**Exit:** Wizard E2E path reaches player detail Customize.
+#### Buddy data model (pre-flight — resolved for Phase 3)
+
+| Topic | Finding | Phase 3 implication |
+| ----- | ------- | ------------------- |
+| **Storage** | `buddy_profiles`: 1:1 with `players` via unique `assignedToPlayerId` | No new collection; no buddy catalog CRUD |
+| **Adapter CRUD** | Create/Read/Update via `upsertBuddyProfile`, `getBuddyProfile`, `listBuddyProfiles`; **no Delete** | Wizard only **lists** + **creates** on journey submit |
+| **“Existing” pick** | Copies `name`, `role`, `email`, `phone`, optional legacy fields from source row | UI label: “Reuse contact from …”; `buddyProfileId` = source assignment id |
+| **Dedupe** | `listDistinctBuddyProfilesForPicker` dedupes by normalized **name** | Same person on two players → one picker row; edge case: name collision hides a row |
+| **Before claim** | Buddy row created while `claimStatus=invited` | Player cockpit can show `BuddyCard` before claim; supersedes P-04 / form hint “once joined” for wizard path |
+| **OD-05 (SPECS)** | Open: pool vs per-player | **Decided for OJ-01:** per-player assignment + copy-from-history picker (document in D-OJ-1) |
+| **OD-20 (SPECS)** | Auto-apply first template on add-player | **Superseded** by wizard step 3 + `createOnboardingJourney` |
+| **`useBuddyProfile`** | Legacy draft fields | **Out of scope** for Phase 3; new `useBuddyPickerOptions` hook |
+| **`importTemplate`** | Does not touch buddies | Template step independent of buddy step |
+
+```mermaid
+erDiagram
+  players ||--o| buddy_profiles : "assignedToPlayerId unique"
+  sessions ||--o{ players : sessionId
+  sessions ||--o{ buddy_profiles : "sessionId denormalized"
+```
+
+**Layering (Phase 3 UI):**
+
+```
+GameMakerHomePage
+  → OnboardingJourneyModal
+       step 1: player name (local state)
+       step 2: BuddyPicker → useBuddyPickerOptions (read-only)
+       step 3: TemplateRadioList → usePlayerTemplates.listTemplates (read-only)
+  → useGmPlayers.createOnboardingJourney(input)
+       → createOnboardingJourney use-case (Phase 2)
+       → writeAppliedTemplate(playerId, name) when applied
+  → navigate /gamemaker/:sid/player/:pid?journey=1
+```
+
+#### Phase 3 tasks (implementation order)
+
+| # | Task | Files | Notes |
+| - | ---- | ----- | ----- |
+| 3.1 | **`useBuddyPickerOptions`** — fetch `listDistinctBuddyProfilesForPicker`; expose `{ options, loading, error, refresh }` | `src/hooks/useBuddyPickerOptions.ts` | Adapter via `useAdapter`; active-guard like `useGmPlayers` |
+| 3.2 | **`BuddyPicker`** — mode toggle; existing radios (`data-testid="oj-buddy-option-{id}"`); new form with `BuddyPickerDraft`; validation: all four fields required for new; one existing selected for pick | `src/components/gamemaker/BuddyPicker.tsx` | Display `phone` as telephone in UI |
+| 3.3 | **`TemplateRadioList`** — “Start from scratch” (`templateName=null`) + templates from props; show milestone/mission counts | `src/components/gamemaker/TemplateRadioList.tsx` | Reuse `TemplateExport` shape from `usePlayerTemplates` |
+| 3.4 | **`OnboardingJourneyModal`** — 3 steps, Back/Cancel, `data-testid` contract; accumulates `CreateOnboardingJourneyInput`; calls `onSubmit` on Create journey | `src/components/gamemaker/OnboardingJourneyModal.tsx` | Bottom sheet or `Modal` pattern like `NameCaptureModal` / library modals |
+| 3.5 | **`useGmPlayers`** — add `createOnboardingJourney(input)`; **deprecate** `invitePlayer` from public hook API (remove or keep private until callers gone) | `src/hooks/useProgress/gmPlayers.ts` | On success: `writeAppliedTemplate` when `appliedTemplateName` set; `refresh()` player list |
+| 3.6 | **`GameMakerHomePage`** — replace `NameCaptureModal` + `handleCreate` with `OnboardingJourneyModal`; loading/error toast on failure | `GameMakerHomePage.tsx` | Navigate `…/player/:pid?journey=1` (interim tab hint; Phase 4 removes query) |
+| 3.7 | **`usePlayerDetailPage`** — `?journey=1` → initial tab **Customize** (replaces `?new=1` interim) | `usePlayerDetailPage.ts` | Small cross-phase hook; full invite/analytics gating stays Phase 4 |
+| 3.8 | **`GmPlayersTab`** — CTA copy **New onboarding journey**; `data-testid="new-onboarding-journey-btn"` on header + empty state | `GmPlayersTab.tsx` | Remove “Add player” strings |
+| 3.9 | **Styles** — wizard step layout, buddy option cards, template radios | `gamemaker.css` or colocated module | Match `design-tokens.md`; 390px modal width |
+| 3.10 | **Remove** GM-home `NameCaptureModal` import | `GameMakerHomePage.tsx` | Keep `NameCaptureModal` for other flows if any |
+
+#### Phase 3 component contracts
+
+```ts
+// useBuddyPickerOptions.ts
+interface UseBuddyPickerOptionsResult {
+  readonly options: ReadonlyArray<BuddyProfile>; // deduped picker rows
+  readonly loading: boolean;
+  readonly error: Error | null;
+  readonly refresh: () => void;
+}
+
+// OnboardingJourneyModal.tsx
+interface OnboardingJourneyModalProps {
+  readonly open: boolean;
+  readonly sessionId: string;
+  readonly templates: ReadonlyArray<TemplateExport>;
+  readonly loading: boolean;
+  readonly onSubmit: (input: CreateOnboardingJourneyInput) => void;
+  readonly onClose: () => void;
+}
+
+// BuddyPicker.tsx
+interface BuddyPickerProps {
+  readonly options: ReadonlyArray<BuddyProfile>;
+  readonly loading: boolean;
+  readonly value: BuddySelection | null;
+  readonly onChange: (value: BuddySelection) => void;
+}
+```
+
+#### Phase 3 — explicitly out of scope
+
+- Global buddy catalog table or `deleteBuddyProfile`
+- Refactoring `useBuddyProfile` / `BuddyAssignmentForm` field set (Phase 4)
+- Invite card pin-to-top / `pinnedUntilClaimed` (Phase 4)
+- Analytics tab gating (Phase 4)
+- `smoke-onboarding-journey` script (Phase 5; manual MCP check optional after 3.10)
+- SPECS D-OJ-1 entry (Phase 5)
+
+#### Phase 3 exit criteria
+
+- [ ] GM home shows **New onboarding journey** only (no Add player / name modal).
+- [ ] Wizard completes all 3 steps; mock session shows ≥1 existing buddy option (Marcus/Lena).
+- [ ] Submit calls `createOnboardingJourney`; new player appears in list as **Not joined yet**.
+- [ ] Redirect to `/gamemaker/:sessionId/player/:playerId?journey=1` with **Customize** tab active.
+- [ ] `deno task build` + `deno task lint` pass.
+- [ ] No new calls to `useGmPlayers.invitePlayer` from UI.
+
+#### Phase 3 manual test script (mock `:5173`)
+
+1. Resume demo GM (Peter) → GM home.
+2. Tap **New onboarding journey** → step 1 → enter name → Continue.
+3. Step 2 → pick **Marcus Weber** (existing) or add new with email + telephone.
+4. Step 3 → **Start from scratch** or a seeded template → **Create journey**.
+5. Land on player detail Customize; player visible on GM home as pending.
+6. Player detail → Customize shows template section (empty or applied).
+
+**Exit:** Wizard E2E path reaches player detail Customize (invite pinning + Analytics gate in Phase 4).
 
 ### Phase 4 — Player detail behavior
 
@@ -320,14 +426,14 @@ interface CreateOnboardingJourneyResult {
 | Concern | Primary files |
 | ------- | ------------- |
 | Landing | `LandingPage.tsx`, `ProfileList.tsx`, `ProfileCard.tsx`, `GameMakerForm.tsx`, `useLandingFlow.ts` |
-| GM home + wizard | `GameMakerHomePage.tsx`, `GmPlayersTab.tsx`, `OnboardingJourneyModal.tsx`, `BuddyPicker.tsx` |
+| GM home + wizard | `GameMakerHomePage.tsx`, `GmPlayersTab.tsx`, `OnboardingJourneyModal.tsx`, `BuddyPicker.tsx`, `TemplateRadioList.tsx`, `useBuddyPickerOptions.ts` |
 | Use cases | `createOnboardingJourney.ts`, `invitePlayer.ts`, `importTemplate.ts` |
 | Player detail | `PlayerDetailPage.tsx`, `PlayerCustomizeTab.tsx`, `PlayerInviteAccordion.tsx`, `usePlayerDetailPage.ts` |
 | Adapters | `interface.ts`, `mockAdapter.ts`, `pocketbase/pbAdapter.ts` |
 | Smokes | `smoke-landing.ts`, `smoke-e2e.ts`, new `smoke-onboarding-journey.ts` |
 | Styles | `landing.css`, `player-detail` / `gamemaker` CSS as needed |
 
-**Delete / deprecate:** `EmployeeForm.tsx`, `RecoverySection.tsx`, GM-home `NameCaptureModal` usage, `?new=1` query convention.
+**Delete / deprecate (by phase):** `RecoverySection.tsx` (done); GM-home `NameCaptureModal` usage (Phase 3); `?new=1` query (Phase 4 → `?journey=1` interim in Phase 3); `useGmPlayers.invitePlayer` public API (Phase 3).
 
 ---
 
@@ -340,6 +446,8 @@ interface CreateOnboardingJourneyResult {
 | GM new journey CTA | `new-onboarding-journey-btn` |
 | Wizard modal | `onboarding-journey-modal` |
 | Wizard step panels | `oj-step-name`, `oj-step-buddy`, `oj-step-template` |
+| Buddy existing option | `oj-buddy-option-{buddyProfileId}` |
+| Template scratch option | `oj-template-scratch` |
 | Create journey submit | `oj-create-journey-btn` |
 | Player invite card | `player-invite-accordion` (existing) |
 | Invite body visible when pinned | `player-invite-body` |
@@ -435,10 +543,13 @@ Keep existing regression blocks (gmApprove, logout, orphan profile) from `produc
 
 ## Risks and notes
 
-- **Buddy catalog:** `buddy_profiles` is per-player today; `listBuddyProfiles` returns buddies already assigned in the session — dedupe for picker UX, not a new global collection.
-- **P-11 superseded:** Explicit template choice in wizard replaces “starter template on add player.”
-- **Demo profiles:** Landing demo GM/player remain for quick smoke; demo session must expose buddies/templates for wizard step 2–3 in mock adapter.
-- **SPECS update:** Record D-OJ-1 when implementing — landing no longer offers employee join; GM onboarding journey is the canonical create path.
+- **Buddy model (OJ-01):** No catalog — `buddy_profiles` is per-player; picker lists prior assignments and **copies** on select. Resolves SPECS OD-05 for prototype scope (document in D-OJ-1).
+- **Name dedupe:** Two different mentors with the same display name → only one picker entry; acceptable for prototype.
+- **Buddy before claim:** Wizard assigns buddy while `claimStatus=invited`; player cockpit `BuddyCard` works immediately. Backlog P-04 and `BuddyAssignmentForm` hint are stale for this path (fix in Phase 4).
+- **P-11 / OD-20 superseded:** Explicit template in wizard step 3; no auto-template on `invitePlayer`.
+- **Demo data:** Mock session `sess_mmt2026` must expose buddies (Marcus, Lena) and templates for wizard steps 2–3.
+- **SPECS gaps:** `BuddyProfile` snippet in SPECS body missing `email`/`phone`/`quote`; `domain.ts` + `pb-schema.md` are authoritative until SPECS sync in Phase 5.
+- **SPECS update:** Record **D-OJ-1** in Phase 5 — landing join removal, wizard pipeline, buddy copy semantics, OD-20 superseded.
 
 ---
 
@@ -446,4 +557,6 @@ Keep existing regression blocks (gmApprove, logout, orphan profile) from `produc
 
 | Date | Note |
 | ---- | ---- |
+| 2026-07-05 | Phase 2 complete; buddy DB investigation; Phase 3 expanded with hook boundaries and task order |
+| 2026-07-05 | Phase 1 landing simplification complete |
 | 2026-07-05 | Initial plan from wireframe canvas OJ-01 |

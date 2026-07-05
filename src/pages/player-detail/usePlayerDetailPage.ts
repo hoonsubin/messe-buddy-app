@@ -35,7 +35,9 @@ export const usePlayerDetailPage = () => {
   const adapter = useAdapter();
 
   const [tab, setTab] = useState<PlayerDetailTabKey>(
-    searchParams.get("new") === "1" ? "customize" : "analytics",
+    searchParams.get("journey") === "1" || searchParams.get("new") === "1"
+      ? "customize"
+      : "analytics",
   );
 
   const {

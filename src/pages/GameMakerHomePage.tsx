@@ -6,9 +6,12 @@ import { useActiveProfile } from "../hooks/useActiveProfile.ts";
 import { clearActiveUid, useIdentity } from "../hooks/useIdentity.ts";
 import { useSessionExists } from "../hooks/useSessionExists.ts";
 import { useGmPlayers } from "../hooks/useProgress/gmPlayers.ts";
+import { usePlayerTemplates } from "../hooks/usePlayerTemplates.ts";
+import type { CreateOnboardingJourneyInput } from "../use-cases/createOnboardingJourney.ts";
 import TopBar from "../components/shared/TopBar.tsx";
 import RouteTabBar from "../components/shared/RouteTabBar.tsx";
-import NameCaptureModal from "../components/shared/NameCaptureModal.tsx";
+import Toast from "../components/patterns/Toast.tsx";
+import OnboardingJourneyModal from "../components/gamemaker/OnboardingJourneyModal.tsx";
 import GmPlayersTab from "../components/gamemaker/GmPlayersTab.tsx";
 import ResourceLibraryTab from "../components/gamemaker/ResourceLibraryTab.tsx";
 import {
@@ -23,13 +26,26 @@ const GameMakerHomePage = () => {
   const { removeProfile } = useIdentity();
   const identity = useActiveProfile(sid, USER_ROLE.GAMEMAKER);
 
-  const { players, loading, invitePlayer } = useGmPlayers(sid, true);
+  const { players, loading, createOnboardingJourney } = useGmPlayers(sid, true);
+  const { templates } = usePlayerTemplates(sid, "");
   const { checking: checkingSession, missing: sessionMissing } =
     useSessionExists(sid);
 
   const [tab, setTab] = useState<GmHomeTabKey>("players");
-  const [adding, setAdding] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardKey, setWizardKey] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [toastError, setToastError] = useState(false);
+
+  const showToast = useCallback((msg: string, isError = false) => {
+    setToast(msg);
+    setToastError(isError);
+    setTimeout(() => {
+      setToast(null);
+      setToastError(false);
+    }, 3000);
+  }, []);
 
   const handleRemoveStaleProfile = useCallback(() => {
     if (identity) removeProfile(identity.uid);
@@ -37,18 +53,21 @@ const GameMakerHomePage = () => {
     navigate("/", { replace: true });
   }, [identity, removeProfile, navigate]);
 
-  const handleCreate = useCallback(
-    (name: string) => {
+  const handleCreateJourney = useCallback(
+    (input: CreateOnboardingJourneyInput) => {
       setCreating(true);
-      void invitePlayer(name)
+      void createOnboardingJourney(input)
         .then((newPlayerId) => {
-          setAdding(false);
+          setWizardOpen(false);
           setCreating(false);
-          navigate(`/gamemaker/${sid}/player/${newPlayerId}?new=1`);
+          navigate(`/gamemaker/${sid}/player/${newPlayerId}?journey=1`);
         })
-        .catch(() => setCreating(false));
+        .catch(() => {
+          setCreating(false);
+          showToast("Could not create onboarding journey", true);
+        });
     },
-    [invitePlayer, navigate, sid],
+    [createOnboardingJourney, navigate, sid, showToast],
   );
 
   const joinedCount = players.filter((p) => p.joined).length;
@@ -106,7 +125,10 @@ const GameMakerHomePage = () => {
               avgProgress={avgProgress}
               stalledCount={stalledCount}
               pendingCount={pendingCount}
-              onAdd={() => setAdding(true)}
+              onAdd={() => {
+                setWizardKey((k) => k + 1);
+                setWizardOpen(true);
+              }}
               onOpenPlayer={(playerId) =>
                 navigate(`/gamemaker/${sid}/player/${playerId}`)}
               onRemoveStaleProfile={handleRemoveStaleProfile}
@@ -115,18 +137,18 @@ const GameMakerHomePage = () => {
           : <ResourceLibraryTab active={tab === "library"} />}
       </main>
 
-      {adding && (
-        <NameCaptureModal
-          onSubmit={handleCreate}
+      {wizardOpen && (
+        <OnboardingJourneyModal
+          key={wizardKey}
+          sessionId={sid}
+          templates={templates}
           loading={creating}
-          title="Add a player"
-          description="Give this onboarding a name (the player's name works well). A starter template is applied when one exists — then send the invite from the player page."
-          placeholder="e.g. Sofia Chen"
-          submitLabel="Create"
-          inputLabel="Player name"
-          onCancel={() => setAdding(false)}
+          onSubmit={handleCreateJourney}
+          onClose={() => setWizardOpen(false)}
         />
       )}
+
+      <Toast message={toast} isError={toastError} />
     </div>
   );
 };
