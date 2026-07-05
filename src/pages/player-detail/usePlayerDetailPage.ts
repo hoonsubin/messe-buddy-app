@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import type { Milestone, MilestoneProgress } from "../../types/index.ts";
 import { USER_ROLE } from "../../types/index.ts";
+import { usePlayerInviteToken } from "../../hooks/usePlayerInviteToken.ts";
 import { computeProgress } from "../../use-cases/computeProgress.ts";
 import { useActiveProfile } from "../../hooks/useActiveProfile.ts";
 import { useSession } from "../../hooks/useSession.ts";
@@ -21,6 +27,10 @@ import {
   writeAppliedTemplate,
 } from "./playerDetailStorage.ts";
 
+type PlayerDetailNavState = {
+  readonly inviteToken?: string;
+};
+
 export const usePlayerDetailPage = () => {
   const { sessionId, playerId: routePlayerId } = useParams<{
     sessionId: string;
@@ -29,7 +39,10 @@ export const usePlayerDetailPage = () => {
   const homeSid = sessionId ?? "";
   const playerId = routePlayerId ?? "";
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
+  const navInviteToken =
+    (location.state as PlayerDetailNavState | null)?.inviteToken ?? "";
   const identity = useActiveProfile(homeSid, USER_ROLE.GAMEMAKER);
 
   const [tab, setTab] = useState<PlayerDetailTabKey>(
@@ -67,6 +80,11 @@ export const usePlayerDetailPage = () => {
   useEffect(() => {
     if (playerId) gmProgress.refresh();
   }, [playerId, gmProgress.refresh]);
+
+  const inviteToken = usePlayerInviteToken(playerId, {
+    listToken: gmProgress.selectedPlayer?.inviteToken,
+    navToken: navInviteToken,
+  });
 
   const buddyProfile = useBuddyProfile(homeSid, playerId, {
     role: "gamemaker",
@@ -359,6 +377,7 @@ export const usePlayerDetailPage = () => {
     milestoneProgress,
     completedMissionIds,
     claimStatus,
+    inviteToken,
     showAnalyticsTab,
     draftMilestonesAsMilestones,
     bgImageUrl: session?.bgImageUrl ?? "",

@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { useIdentity, writeActiveUid } from "./useIdentity.ts";
-import { createGameMakerSession, joinSession } from "../use-cases/joinSession.ts";
+import {
+  createGameMakerSession,
+  joinSession,
+} from "../use-cases/joinSession.ts";
 import type { CachedIdentity } from "../types/index.ts";
 import { USER_ROLE } from "../types/index.ts";
 
@@ -236,9 +239,14 @@ export const useLandingFlow = (): UseLandingFlowResult => {
       setIdentity(identity);
       writeActiveUid(identity.uid);
       navigate(`/session/${identity.sessionId}`, { replace: true });
-    } catch {
+    } catch (e) {
       setStatus("error");
-      setErrorMessage("Could not join session. Please try again.");
+      const msg = e instanceof Error ? e.message : "";
+      setErrorMessage(
+        msg === "Invite not found"
+          ? "Invite not found. Check the link from your Game Master and try again."
+          : "Could not join session. Please try again.",
+      );
     }
   }, [adapter, playerName, verifiedInviteToken, setIdentity, navigate]);
 
@@ -258,7 +266,14 @@ export const useLandingFlow = (): UseLandingFlowResult => {
       setStatus("error");
       setErrorMessage("Could not create session. Please try again.");
     }
-  }, [adapter, gmName, sessionName, setIdentity, navigate, setWorkspacePanelOpen]);
+  }, [
+    adapter,
+    gmName,
+    sessionName,
+    setIdentity,
+    navigate,
+    setWorkspacePanelOpen,
+  ]);
 
   const handleResume = useCallback((identity: CachedIdentity) => {
     writeActiveUid(identity.uid);

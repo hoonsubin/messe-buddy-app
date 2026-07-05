@@ -46,6 +46,21 @@ deno task dev         # Vite dev server with HMR → http://localhost:5173
 
 The app runs with the mock adapter — no backend required. Set `VITE_USE_MOCK_PB=true` to develop with simulated data.
 
+### Local development with real PocketBase (no Docker)
+
+For testing against real PB data/migrations without paying the full docker-compose cost (litellm, pgvector, nginx):
+
+```sh
+cd server && go mod tidy && cd ..   # one-time: generates server/go.sum (gitignored)
+deno task dev:full                  # Vite (HMR) + native `go run . serve` in parallel → http://localhost:5173
+```
+
+| Requires | Note |
+|----------|------|
+| Go 1.25+ on `PATH` | `go run` compiles `server/`; first run is slow (module download), later runs use Go's build cache |
+
+This forces `VITE_USE_MOCK_PB=false` and starts PocketBase on `127.0.0.1:8090` (Vite's dev proxy already points `/api` there — see [`vite.config.ts`](vite.config.ts)). Admin UI: `http://localhost:8090/_/`, login `dev@local.test` / `devdevdevdev` (hardcoded local-only credential, unrelated to `.env`'s `PB_ADMIN_*`). Data lives in `server/pb_data/` (gitignored) — delete it to reset. AI chat still uses its own mock (`useMockChat`) since there's no LiteLLM proxy in this mode.
+
 ### Full-stack with Docker
 
 ```sh

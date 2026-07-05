@@ -29,8 +29,7 @@ const BuddyAssignmentFields = ({
           className="form-input"
           type="text"
           value={draft.name}
-          onChange={(e) =>
-            onDraftChange({ ...draft, name: e.target.value })}
+          onChange={(e) => onDraftChange({ ...draft, name: e.target.value })}
           placeholder="e.g. Marcus Weber"
           autoFocus={autoFocus}
           {...(tid("name") !== undefined && { "data-testid": tid("name") })}
@@ -45,8 +44,7 @@ const BuddyAssignmentFields = ({
           className="form-input"
           type="text"
           value={draft.role}
-          onChange={(e) =>
-            onDraftChange({ ...draft, role: e.target.value })}
+          onChange={(e) => onDraftChange({ ...draft, role: e.target.value })}
           placeholder="e.g. Senior Product Manager"
           {...(tid("role") !== undefined && { "data-testid": tid("role") })}
         />
@@ -60,8 +58,7 @@ const BuddyAssignmentFields = ({
           className="form-input"
           type="email"
           value={draft.email ?? ""}
-          onChange={(e) =>
-            onDraftChange({ ...draft, email: e.target.value })}
+          onChange={(e) => onDraftChange({ ...draft, email: e.target.value })}
           placeholder="marcus.weber@messe.de"
           {...(tid("email") !== undefined && { "data-testid": tid("email") })}
         />
@@ -75,8 +72,7 @@ const BuddyAssignmentFields = ({
           className="form-input"
           type="tel"
           value={draft.phone ?? ""}
-          onChange={(e) =>
-            onDraftChange({ ...draft, phone: e.target.value })}
+          onChange={(e) => onDraftChange({ ...draft, phone: e.target.value })}
           placeholder="+49 89 1234 5678"
           {...(tid("phone") !== undefined && { "data-testid": tid("phone") })}
         />
@@ -90,8 +86,7 @@ const BuddyAssignmentFields = ({
           className="form-input"
           type="text"
           value={draft.tenure ?? ""}
-          onChange={(e) =>
-            onDraftChange({ ...draft, tenure: e.target.value })}
+          onChange={(e) => onDraftChange({ ...draft, tenure: e.target.value })}
           placeholder="e.g. 4 years at Messe München"
         />
       </div>

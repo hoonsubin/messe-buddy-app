@@ -8,6 +8,12 @@ export interface ClaimPlayerResult {
   readonly player: Player;
 }
 
+const hasCompleteClaimedIdentity = (player: Player): boolean =>
+  player.claimStatus === "claimed" &&
+  !!player.uid &&
+  !!player.recoveryKey &&
+  !player.uid.startsWith("pending_");
+
 export const claimPlayer = async (
   inviteToken: string,
   name: string | undefined,
@@ -18,13 +24,10 @@ export const claimPlayer = async (
     throw new Error("Invite not found");
   }
 
-  if (existing.claimStatus === "claimed") {
-    if (!existing.uid || !existing.recoveryKey) {
-      throw new Error("Player identity incomplete");
-    }
+  if (hasCompleteClaimedIdentity(existing)) {
     const identity: CachedIdentity = {
-      uid: existing.uid,
-      recoveryKey: existing.recoveryKey,
+      uid: existing.uid!,
+      recoveryKey: existing.recoveryKey!,
       sessionId: existing.sessionId,
       role: USER_ROLE.PLAYER,
       name: existing.name || undefined,

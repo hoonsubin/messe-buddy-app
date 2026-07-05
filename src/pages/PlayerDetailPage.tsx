@@ -66,7 +66,7 @@ const PlayerDetailPage = () => {
         <PlayerCustomizeTab
           playerFirstName={vm.playerFirstName}
           sessionId={vm.homeSid}
-          inviteToken={vm.gmProgress.selectedPlayer?.inviteToken ?? ""}
+          inviteToken={vm.inviteToken}
           claimStatus={vm.claimStatus}
           templates={vm.templates}
           appliedTemplate={vm.appliedTemplate}

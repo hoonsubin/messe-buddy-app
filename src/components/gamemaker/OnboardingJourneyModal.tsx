@@ -1,8 +1,5 @@
 import { useState } from "react";
-import type {
-  BuddySelection,
-  TemplateExport,
-} from "../../types/index.ts";
+import type { BuddySelection, TemplateExport } from "../../types/index.ts";
 import {
   defaultBuddySelection,
   isBuddySelectionValid,
@@ -120,11 +117,9 @@ const OnboardingJourneyModal = ({
               variant={BUTTON_VARIANT.PRIMARY}
               fullWidth={step === 1}
               onClick={handleContinue}
-              disabled={
-                loading ||
+              disabled={loading ||
                 (step === 1 && !canContinueStep1) ||
-                (step === 2 && !canContinueStep2)
-              }
+                (step === 2 && !canContinueStep2)}
               data-testid="oj-continue-btn"
             >
               Continue
@@ -167,7 +162,8 @@ const OnboardingJourneyModal = ({
                 id="oj-player-name"
                 type="text"
                 value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
+                onChange={(e) =>
+                  setPlayerName(e.target.value)}
                 placeholder="e.g. Sofia Chen"
                 autoFocus
                 data-testid="oj-player-name-input"

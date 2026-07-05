@@ -149,7 +149,8 @@ const GmPlayersTab = ({
       ? (
         <div className="card gm-home__empty">
           <p className="gm-home__empty-text">
-            No players yet. Start your first onboarding journey to invite someone.
+            No players yet. Start your first onboarding journey to invite
+            someone.
           </p>
           <button
             type="button"

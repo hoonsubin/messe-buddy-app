@@ -59,7 +59,8 @@ const BuddyPicker = ({
               mode === "existing" ? "btn--primary" : "btn--secondary",
             )}
             aria-pressed={mode === "existing"}
-            onClick={() => setMode("existing")}
+            onClick={() =>
+              setMode("existing")}
           >
             Existing buddy
           </button>
@@ -70,7 +71,8 @@ const BuddyPicker = ({
               mode === "new" ? "btn--primary" : "btn--secondary",
             )}
             aria-pressed={mode === "new"}
-            onClick={() => setMode("new")}
+            onClick={() =>
+              setMode("new")}
           >
             Add new
           </button>
@@ -89,9 +91,10 @@ const BuddyPicker = ({
             {options.map((profile) => {
               const selected = value?.kind === "existing" &&
                 value.buddyProfileId === profile.id;
-              const contact = [profile.email, profile.phone].filter(Boolean).join(
-                " · ",
-              );
+              const contact = [profile.email, profile.phone].filter(Boolean)
+                .join(
+                  " · ",
+                );
               return (
                 <SelectCard
                   key={profile.id}

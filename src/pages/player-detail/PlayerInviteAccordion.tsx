@@ -20,12 +20,11 @@ const PlayerInviteAccordion = ({
 }: PlayerInviteAccordionProps) => {
   const pinned = pinnedUntilClaimed && claimStatus === "invited";
   const [open, setOpen] = useState(pinned);
+  const tokenReady = inviteToken.trim().length >= 8;
 
   return (
     <div
-      className={`card player-invite${
-        pinned ? " player-invite--pinned" : ""
-      }`}
+      className={`card player-invite${pinned ? " player-invite--pinned" : ""}`}
       data-testid="player-invite-accordion"
     >
       <button
@@ -70,12 +69,23 @@ const PlayerInviteAccordion = ({
           className="player-invite__body"
           data-testid="player-invite-body"
         >
-          <SessionInviteCard
-            sessionId={sessionId}
-            inviteToken={inviteToken}
-            compact
-            bare
-          />
+          {tokenReady
+            ? (
+              <SessionInviteCard
+                sessionId={sessionId}
+                inviteToken={inviteToken}
+                compact
+                bare
+              />
+            )
+            : (
+              <p
+                className="core-text-sm core-text-muted"
+                data-testid="player-invite-loading"
+              >
+                Preparing invite link…
+              </p>
+            )}
         </div>
       )}
     </div>

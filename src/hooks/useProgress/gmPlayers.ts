@@ -5,6 +5,7 @@ import { computeProgress } from "../../use-cases/computeProgress.ts";
 import {
   createOnboardingJourney as createOnboardingJourneyUseCase,
   type CreateOnboardingJourneyInput,
+  type CreateOnboardingJourneyResult,
 } from "../../use-cases/createOnboardingJourney.ts";
 import type { ClaimStatus } from "../../types/index.ts";
 
@@ -24,10 +25,10 @@ export interface UseGmPlayersResult {
   readonly loading: boolean;
   readonly error: Error | null;
   readonly refresh: () => void;
-  /** Run the 3-step onboarding wizard use case. Returns playerId. */
+  /** Run the 3-step onboarding wizard use case. */
   readonly createOnboardingJourney: (
     input: CreateOnboardingJourneyInput,
-  ) => Promise<string>;
+  ) => Promise<CreateOnboardingJourneyResult>;
 }
 
 const STALL_DAYS = 3;
@@ -45,7 +46,9 @@ export const useGmPlayers = (
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   const createOnboardingJourneyFn = useCallback(
-    async (input: CreateOnboardingJourneyInput): Promise<string> => {
+    async (
+      input: CreateOnboardingJourneyInput,
+    ): Promise<CreateOnboardingJourneyResult> => {
       const result = await createOnboardingJourneyUseCase(
         sessionId,
         adapter,
@@ -55,7 +58,7 @@ export const useGmPlayers = (
         writeAppliedTemplate(result.playerId, result.appliedTemplateName);
       }
       setRefreshKey((k) => k + 1);
-      return result.playerId;
+      return result;
     },
     [adapter, sessionId],
   );

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import type { BuddyProfile } from "../types/index.ts";
 import {
-  emptyBuddyProfileDraft,
   type BuddyProfileDraft,
+  emptyBuddyProfileDraft,
 } from "../types/buddyPicker.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 

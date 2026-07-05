@@ -42,8 +42,7 @@ const GameMakerForm = ({
         id="lp-session-name"
         type="text"
         value={sessionName}
-        onChange={(e) =>
-          onSessionNameChange(e.target.value)}
+        onChange={(e) => onSessionNameChange(e.target.value)}
         placeholder="e.g. MMT Onboarding June 2026"
         autoFocus
       />
@@ -57,8 +56,7 @@ const GameMakerForm = ({
         id="lp-gm-name"
         type="text"
         value={gmName}
-        onChange={(e) =>
-          onGmNameChange(e.target.value)}
+        onChange={(e) => onGmNameChange(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && onCreate()}
         placeholder="e.g. Peter Tubak"
       />

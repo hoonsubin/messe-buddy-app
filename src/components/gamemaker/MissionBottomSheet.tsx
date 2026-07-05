@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { MdArrowBack, MdClose, MdEditNote } from "react-icons/md";
-import type { DraftMission, Milestone, Mission, Resource } from "../../types/index.ts";
+import type {
+  DraftMission,
+  Milestone,
+  Mission,
+  Resource,
+} from "../../types/index.ts";
 import type { AddResourceInput } from "../../hooks/useResources.ts";
 import type { StoredDraft } from "../../utils/draftStorage.ts";
 import {

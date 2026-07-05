@@ -57,10 +57,12 @@ const GameMakerHomePage = () => {
     (input: CreateOnboardingJourneyInput) => {
       setCreating(true);
       void createOnboardingJourney(input)
-        .then((newPlayerId) => {
+        .then(({ playerId, inviteToken }) => {
           setWizardOpen(false);
           setCreating(false);
-          navigate(`/gamemaker/${sid}/player/${newPlayerId}?journey=1`);
+          navigate(`/gamemaker/${sid}/player/${playerId}?journey=1`, {
+            state: { inviteToken },
+          });
         })
         .catch(() => {
           setCreating(false);

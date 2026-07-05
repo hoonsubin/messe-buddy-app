@@ -12,7 +12,11 @@ const TemplateRadioList = ({
   value,
   onChange,
 }: TemplateRadioListProps) => (
-  <div className="select-card-list" role="radiogroup" aria-label="Starting template">
+  <div
+    className="select-card-list"
+    role="radiogroup"
+    aria-label="Starting template"
+  >
     <SelectCard
       selected={value === null}
       testId="oj-template-scratch"
