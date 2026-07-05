@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type {
   BuddyProfile,
@@ -9,8 +9,10 @@ import type {
 import { MISSION_TYPE, USER_ROLE } from "../../types/index.ts";
 import type { CachedIdentity } from "../../types/index.ts";
 import { useActiveProfile } from "../../hooks/useActiveProfile.ts";
+import { clearActiveUid, useIdentity } from "../../hooks/useIdentity.ts";
 import { useResolvedPlayer } from "../../hooks/useResolvedPlayer.ts";
 import { useSession } from "../../hooks/useSession.ts";
+import { useSessionExists } from "../../hooks/useSessionExists.ts";
 import { useProgressPlayer } from "../../hooks/useProgress/index.ts";
 import { useBuddyProfile } from "../../hooks/useBuddyProfile.ts";
 import { useResources } from "../../hooks/useResources.ts";
@@ -60,6 +62,7 @@ export interface PlayerCockpitPageModel {
 export type UsePlayerCockpitPageResult =
   | { readonly status: "no-identity" }
   | { readonly status: "player-error" }
+  | { readonly status: "session-missing"; readonly onRemove: () => void }
   | { readonly status: "session-redirect" }
   | { readonly status: "ready"; readonly model: PlayerCockpitPageModel };
 
@@ -86,6 +89,17 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     error: sessionError,
   } = useSession(sessionId);
 
+  const { checking: checkingSession, missing: sessionMissing } =
+    useSessionExists(sessionId);
+
+  const { removeProfile } = useIdentity();
+
+  const handleRemoveStaleProfile = useCallback(() => {
+    if (identity) removeProfile(identity.uid);
+    clearActiveUid();
+    navigate("/", { replace: true });
+  }, [identity, removeProfile, navigate]);
+
   const progress = useProgressPlayer({ playerId, milestones, missions });
 
   const { buddy } = useBuddyProfile(sessionId, playerId, { role: "player" });
@@ -108,13 +122,6 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     handleSkipConfirm,
     handleSkipCancel,
   } = useTutorial(tutorialPlayer, updatePlayer, sessionId);
-
-  useEffect(() => {
-    if (sessionError && !sessionLoading) {
-      sessionStorage.setItem("mb_landing_toast", "Session does not exist.");
-      navigate("/", { replace: true });
-    }
-  }, [sessionError, sessionLoading, navigate]);
 
   const [tab, setTab] = useState<PlayerTabKey>("dashboard");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(
@@ -200,6 +207,7 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
   const chat = useChat(aiAppContext);
 
   const handleLeave = useCallback(() => {
+    clearActiveUid();
     sessionStorage.removeItem("mb_tutorial_step");
     sessionStorage.removeItem(TUTORIAL_FORM_KEY);
     navigate("/", { replace: true });
@@ -207,6 +215,9 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
 
   if (!identity) return { status: "no-identity" };
   if (playerError) return { status: "player-error" };
+  if (!checkingSession && sessionMissing) {
+    return { status: "session-missing", onRemove: handleRemoveStaleProfile };
+  }
   if (sessionError && !sessionLoading) return { status: "session-redirect" };
   if (!player) return { status: "session-redirect" };
 

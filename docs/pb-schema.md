@@ -2,7 +2,12 @@
 
 Auto-provisioned by embedded Go migrations (`server/pb_migrations/`) on first `docker compose up --build`. No manual setup required.
 
-All collections use **public API rules** (C-03 — no auth system). The PWA manages identity via `localStorage.mb_identity` UID — identity is **not** stored in PocketBase.
+> **Architecture revision (2026-07-05):** Target schema: `players.role` (UserRole),
+> `players.jobTitle`, `claimStatus`, `inviteToken`; `milestones.playerId`,
+> `missions.playerId`; `resources.milestoneId`. Legacy `players.role` (job title)
+> migrates to `jobTitle`. See SPECS.md § Workspace & player model.
+
+All collections use **public API rules** (C-03 — no auth system). The PWA caches identity in `localStorage.mb_identity`; authoritative identity fields live on `players` rows once ARCH-01 lands.
 
 **Target schema** below includes migration `003_hardening.go` (pending implementation). Collections created by `001`/`002` alone omit `sessions.mapNodeScale`, use `bgImageUrl` as text, and lack the `progress_events` composite unique index.
 
@@ -24,32 +29,21 @@ See also: [`docs/shared-data-access.md`](shared-data-access.md) (hook → collec
 **GM writes:** `bgImageUrl` (file upload), `mapNodeScale`, `preBoardingChecks` via [`useSession`](src/hooks/useSession.ts) gamemaker overload.  
 **Player reads:** `name`, `bgImageUrl`, `mapNodeScale`, `qrSecret` (encode only).
 
-### `players`
+### `players` *(ARCH-01 target)*
 
 | Field | Type | Required | Unique | Notes |
 |-------|------|----------|--------|-------|
-| `uid` | text | ✓ | ✓ | Client-generated UUID (C-03) — links to `mb_identity.uid` |
-| `recoveryKey` | text | ✓ | ✓ | 8-char alphanumeric recovery code |
+| `uid` | text | | ✓ (sparse) | Set on claim |
+| `recoveryKey` | text | | ✓ (sparse) | Set on claim |
+| `inviteToken` | text | ✓ | ✓ | Per-player invite permalink |
 | `sessionId` | text | ✓ | | FK → sessions |
-| `tutorialComplete` | bool | | | Tutorial skipped/completed flag |
-| `profileComplete` | bool | | | Profile form submitted flag |
+| `role` | text | ✓ | | User type: `gamemaker` \| `player` |
+| `claimStatus` | text | ✓ | | `invited` \| `claimed` |
 | `name` | text | | | Display name |
-| `preferredName` | text | | | Name the player prefers |
-| `pronouns` | text | | | e.g. "they/them" |
-| `avatarUrl` | file | | | Max 5 MB |
-| `role` | text | | | Job title |
-| `team` | text | | | Team/department |
-| `startDate` | text | | | ISO date string |
-| `location` | text | | | Office/city |
-| `timezone` | text | | | IANA timezone (e.g. "Europe/Berlin") |
-| `skillsConfident` | JSON | | | `string[]` |
-| `skillsDevelop` | JSON | | | `string[]` |
-| `languages` | JSON | | | `string[]` |
-| `workStyle` | text | | | e.g. "hybrid" |
-| `energizers` | JSON | | | `string[]` |
-| `drainers` | JSON | | | `string[]` |
+| `jobTitle` | text | | | UI label only *(migrated from legacy `role`)* |
+| … | | | | Profile fields unchanged — see SPECS `Player` type |
 
-**GM reads:** full list via `useProgressAdmin`. **Player writes:** `updatePlayer` (profile form, tutorial skip).
+**Current (001):** `role` = job title string; no `inviteToken`, `claimStatus`, or `jobTitle`.
 
 ### `milestones`
 
@@ -141,18 +135,23 @@ See also: [`docs/shared-data-access.md`](shared-data-access.md) (hook → collec
 
 **GM write** via `useBuddyProfile`. **Player read** via `useBuddyProfile`.
 
-### `resources`
+### `resources` *(ARCH-02 target)*
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
-| `sessionId` | text | ✓ | FK → sessions |
+| `sessionId` | text | ✓ | FK → sessions (denormalized) |
+| `playerId` | text | ✓ | FK → players (denormalized) |
+| `milestoneId` | text | ✓ | FK → milestones — **no `missionId`** |
 | `title` | text | ✓ | Resource title |
 | `description` | text | | Markdown description |
 | `type` | text | ✓ | `guide`, `video`, `link`, or `document` |
 | `url` | url | ✓ | Resource URL |
-| `isVisibleToPlayer` | bool | | Toggle visibility on player dashboard |
+| `isVisibleToPlayer` | bool | | Shown in milestone sidebar when true |
 
-**GM CRUD** via `useResources`. **Player read** (filtered) via `useResources`.
+**GM CRUD:** Resources tab on `AdminHomePage` + inline from milestone editor.
+**Player read:** filtered by current milestone in sidebar.
+
+**Current (001):** `sessionId` only — no `milestoneId` or `playerId`.
 
 ### `templates`
 
@@ -171,6 +170,8 @@ See also: [`docs/shared-data-access.md`](shared-data-access.md) (hook → collec
 | `players` | `idx_recoveryKey` | ✓ | `recoveryKey` |
 | `form_schemas` | `idx_missionId` | ✓ | `missionId` |
 | `buddy_profiles` | `idx_assignedToPlayerId` | ✓ | `assignedToPlayerId` |
+| `players` | `idx_inviteToken` | ✓ | `inviteToken` |
+| `resources` | `idx_milestoneId` | | `milestoneId` |
 | `templates` | `idx_name` | ✓ | `name` |
 | `progress_events` | `idx_player_mission` (003) | ✓ | `playerId`, `missionId` |
 | `peer_scans` | `idx_peer_scan_unique` (planned) | ✓ | `missionId`, `playerId`, `scannerDeviceId` |

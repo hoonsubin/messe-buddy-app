@@ -18,6 +18,7 @@ const LandingPage = () => {
       <div className="landing__card landing__card--wide">
         <ProfileList
           profiles={flow.profiles}
+          orphanedUids={flow.orphanedUids}
           keyPopupUid={flow.keyPopupUid}
           activeForm={flow.activeForm}
           onResume={flow.handleResume}

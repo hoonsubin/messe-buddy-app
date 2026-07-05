@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { MdAdd, MdArrowBack, MdChevronRight } from "react-icons/md";
 import { USER_ROLE } from "../types/index.ts";
 import { useActiveProfile } from "../hooks/useActiveProfile.ts";
-import { useIdentity } from "../hooks/useIdentity.ts";
+import { clearActiveUid, useIdentity } from "../hooks/useIdentity.ts";
 import { useSessionExists } from "../hooks/useSessionExists.ts";
 import { useGmHires } from "../hooks/useProgress/gmHires.ts";
 import type { GmHireRow } from "../hooks/useProgress/gmHires.ts";
@@ -160,6 +160,7 @@ const AdminHomePage = () => {
 
   const handleRemoveStaleProfile = useCallback(() => {
     if (identity) removeProfile(identity.uid);
+    clearActiveUid();
     navigate("/", { replace: true });
   }, [identity, removeProfile, navigate]);
 
@@ -224,7 +225,10 @@ const AdminHomePage = () => {
             alignItems: "center",
             gap: "var(--space-1)",
           }}
-          onClick={() => navigate("/", { replace: true })}
+          onClick={() => {
+            clearActiveUid();
+            navigate("/", { replace: true });
+          }}
         >
           <MdArrowBack size={16} />
           {identity?.isDemo ? "Back to Landing" : "Log Out"}

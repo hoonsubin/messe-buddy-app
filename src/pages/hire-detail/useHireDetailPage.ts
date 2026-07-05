@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import type { Milestone } from "../../types/index.ts";
+import type { Milestone, MilestoneProgress } from "../../types/index.ts";
 import { USER_ROLE } from "../../types/index.ts";
+import { computeProgress } from "../../use-cases/computeProgress.ts";
 import { useActiveProfile } from "../../hooks/useActiveProfile.ts";
 import { useSession } from "../../hooks/useSession.ts";
 import { useAdminMilestoneEditor } from "../../hooks/useAdminMilestoneEditor.ts";
@@ -243,8 +244,17 @@ export const useHireDetailPage = () => {
   const hireName = adminProgress.selectedPlayer?.name || session?.name ||
     "New hire";
   const hireFirstName = hireName.split(" ")[0] || hireName;
-  const milestoneProgress =
-    adminProgress.selectedPlayerProgress?.milestoneProgress ?? [];
+  // If a player has joined we surface their live progress. Before that, fall
+  // back to a zero-progress projection so the Journey Map widget's XP totals
+  // reflect the hire's configured mission XP instead of reading 0/0 (P-16).
+  // The player cockpit already does this implicitly because `computeProgress`
+  // is always called with a real player id there; here we synthesize the same
+  // shape from `missions` + `milestones` alone.
+  const milestoneProgress = useMemo<ReadonlyArray<MilestoneProgress>>(() => {
+    const real = adminProgress.selectedPlayerProgress?.milestoneProgress;
+    if (real && real.length > 0) return real;
+    return computeProgress("", missions, milestones, []).milestoneProgress;
+  }, [adminProgress.selectedPlayerProgress, missions, milestones]);
   const completedMissionIds =
     adminProgress.selectedPlayerProgress?.completedMissionIds ?? [];
   const startDateISO = adminProgress.selectedPlayer?.startDate ??
@@ -266,11 +276,31 @@ export const useHireDetailPage = () => {
     milestoneEditor.setSelectedMilestone(null);
   }, [missionEditor, milestoneEditor]);
 
-  const sheetMissions = milestoneEditor.selectedMilestone
-    ? missions
-      .filter((m) => m.milestoneId === milestoneEditor.selectedMilestone!.id)
+  // Project unsaved edits into the mission list the sheet renders:
+  //   1. filter to the currently-open milestone,
+  //   2. drop missions the user has deleted (but not yet saved),
+  //   3. apply pending order changes from `missionOrderChanges` so a drag
+  //      persists visually until save (C-22, P-01) instead of snapping back.
+  // Falling back to `m.order` keeps unmoved missions in their server slot.
+  const sheetMissions = useMemo(() => {
+    if (!milestoneEditor.selectedMilestone) return [];
+    const milestoneId = milestoneEditor.selectedMilestone.id;
+    const orderChanges = missionEditor.missionOrderChanges;
+    return missions
+      .filter((m) => m.milestoneId === milestoneId)
       .filter((m) => !missionEditor.deletedMissionIds.has(m.id))
-    : [];
+      .slice()
+      .sort((a, b) => {
+        const aOrder = orderChanges.get(a.id) ?? a.order;
+        const bOrder = orderChanges.get(b.id) ?? b.order;
+        return aOrder - bOrder;
+      });
+  }, [
+    missions,
+    milestoneEditor.selectedMilestone,
+    missionEditor.deletedMissionIds,
+    missionEditor.missionOrderChanges,
+  ]);
 
   return {
     homeSid,

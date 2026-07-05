@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAdapter } from "../adapters/useAdapter.ts";
-import { useIdentity } from "./useIdentity.ts";
+import { useIdentity, writeActiveUid } from "./useIdentity.ts";
 import {
   createGameMakerSession,
   joinSession,
@@ -44,6 +44,8 @@ export type EmployeeStep = "code" | "name";
 
 export interface UseLandingFlowResult {
   readonly profiles: ReadonlyArray<CachedIdentity>;
+  /** UIDs whose backend session no longer exists (P-17). */
+  readonly orphanedUids: ReadonlySet<string>;
   readonly activeForm: ActiveForm;
   readonly employeeStep: EmployeeStep;
   readonly verifiedSessionId: string;
@@ -94,6 +96,40 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Orphan detection (P-17) ──────────────────────────────────────────────
+  // On mount, check each non-demo cached identity's session against the
+  // backend. Sessions that 404 are marked orphaned so ProfileCard can render
+  // a "User removed" badge instead of silently navigating to a dead route.
+  const [orphanedUids, setOrphanedUids] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const nonDemo = profiles.filter((p) => !p.isDemo);
+    if (nonDemo.length === 0) return;
+
+    const check = async () => {
+      const dead = new Set<string>();
+      await Promise.all(
+        nonDemo.map(async (p) => {
+          try {
+            await adapter.getSession(p.sessionId);
+          } catch {
+            dead.add(p.uid);
+          }
+        }),
+      );
+      if (!cancelled && dead.size > 0) setOrphanedUids(dead);
+    };
+    void check();
+    return () => {
+      cancelled = true;
+    };
+    // Re-check when the profile list changes (e.g. after removing one).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adapter, profiles.length]);
 
   // ── Form state ────────────────────────────────────────────────────────────
   const [activeForm, setActiveFormState] = useState<ActiveForm>(null);
@@ -166,6 +202,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     try {
       const { identity } = await joinSession(verifiedSessionId, name, adapter);
       setIdentity(identity);
+      writeActiveUid(identity.uid);
       setActiveForm(null);
       navigate(`/session/${identity.sessionId}`, { replace: true });
     } catch {
@@ -191,6 +228,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     try {
       const identity = await createGameMakerSession(sName, name, adapter);
       setIdentity(identity);
+      writeActiveUid(identity.uid);
       setActiveForm(null);
       navigate(`/admin/${identity.sessionId}`, { replace: true });
     } catch {
@@ -208,6 +246,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     try {
       const identity = await recoverIdentity(key, adapter);
       setIdentity(identity);
+      writeActiveUid(identity.uid);
       setRecoveryKeyInput("");
       resetError();
       const dest = identity.role === USER_ROLE.PLAYER
@@ -222,6 +261,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
 
   // ── Profile actions ───────────────────────────────────────────────────────
   const handleResume = useCallback((identity: CachedIdentity) => {
+    writeActiveUid(identity.uid);
     const dest = identity.role === USER_ROLE.PLAYER
       ? `/session/${identity.sessionId}`
       : `/admin/${identity.sessionId}`;
@@ -245,6 +285,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
 
   return {
     profiles,
+    orphanedUids,
     activeForm,
     employeeStep,
     verifiedSessionId,

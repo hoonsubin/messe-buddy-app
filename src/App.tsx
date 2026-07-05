@@ -2,6 +2,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AdapterContextProvider } from "./adapters/AdapterContext.tsx";
 import { DemoAwareAdapterProvider } from "./adapters/DemoAwareAdapterProvider.tsx";
 import LandingPage from "./pages/LandingPage.tsx";
+import RootRedirect from "./pages/RootRedirect.tsx";
 import PlayerCockpitPage from "./pages/PlayerCockpitPage.tsx";
 import AdminHomePage from "./pages/AdminHomePage.tsx";
 import HireDetailPage from "./pages/HireDetailPage.tsx";
@@ -13,7 +14,7 @@ import NotFoundPage from "./pages/NotFoundPage.tsx";
 import { USER_ROLE } from "./types/index.ts";
 
 const router = createBrowserRouter([
-  { path: "/", element: <LandingPage /> },
+  { path: "/", element: <RootRedirect /> },
   {
     path: "/session/:sessionId",
     element: (

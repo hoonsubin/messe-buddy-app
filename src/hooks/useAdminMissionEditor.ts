@@ -124,11 +124,48 @@ export const useAdminMissionEditor = (
     [selectedMissionId],
   );
 
+  // On drop, `newOrder` is the *positional index* within the milestone's
+  // currently-visible mission list (see MissionListView). Storing that value
+  // for the dragged mission alone would collide with siblings that still hold
+  // their original server `order` and cause an unstable-tie sort in the sheet.
+  // Instead, reconstruct the whole milestone's ordering after the reinsert
+  // and write a change entry for every mission whose effective slot moved —
+  // that way `sheetMissions`' sort always sees distinct values (C-22, P-01).
   const handleMissionReorder = useCallback(
     (missionId: string, newOrder: number) => {
-      setMissionOrderChanges((prev) => new Map(prev).set(missionId, newOrder));
+      setMissionOrderChanges((prev) => {
+        const moved = missions.find((m) => m.id === missionId);
+        if (!moved) return prev;
+        const deleted = deletedMissionIdsRef.current;
+        const siblings = missions
+          .filter((m) => m.milestoneId === moved.milestoneId)
+          .filter((m) => !deleted.has(m.id))
+          .slice()
+          .sort((a, b) => {
+            const ao = prev.get(a.id) ?? a.order;
+            const bo = prev.get(b.id) ?? b.order;
+            return ao - bo;
+          });
+        const fromIndex = siblings.findIndex((m) => m.id === missionId);
+        if (fromIndex === -1) return prev;
+        const clamped = Math.max(
+          0,
+          Math.min(newOrder, siblings.length - 1),
+        );
+        if (fromIndex === clamped) return prev;
+        const [row] = siblings.splice(fromIndex, 1);
+        siblings.splice(clamped, 0, row);
+        const next = new Map(prev);
+        siblings.forEach((m, i) => {
+          // Skip entries where the effective order matches the server value,
+          // so the change map only holds genuine deltas.
+          if (i === m.order) next.delete(m.id);
+          else next.set(m.id, i);
+        });
+        return next;
+      });
     },
-    [],
+    [missions],
   );
 
   const handleDeleteMission = useCallback(async (missionId: string) => {

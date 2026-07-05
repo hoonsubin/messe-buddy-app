@@ -7,6 +7,7 @@ import ProfileCard from "./ProfileCard.tsx";
 
 interface ProfileListProps {
   readonly profiles: ReadonlyArray<CachedIdentity>;
+  readonly orphanedUids: ReadonlySet<string>;
   readonly keyPopupUid: string | null;
   readonly activeForm: ActiveForm;
   readonly onResume: (identity: CachedIdentity) => void;
@@ -18,6 +19,7 @@ interface ProfileListProps {
 
 const ProfileList = ({
   profiles,
+  orphanedUids,
   keyPopupUid,
   activeForm,
   onResume,
@@ -39,6 +41,7 @@ const ProfileList = ({
       <ProfileCard
         key={identity.uid}
         identity={identity}
+        isOrphaned={orphanedUids.has(identity.uid)}
         isKeyOpen={keyPopupUid === identity.uid}
         onResume={onResume}
         onRemove={onRemove}

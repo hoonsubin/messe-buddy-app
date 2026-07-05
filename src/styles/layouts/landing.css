@@ -250,6 +250,31 @@
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
+.landing-profile__card--orphaned {
+  opacity: 0.6;
+  border-style: dashed;
+  border-color: hsl(var(--color-destructive));
+}
+
+.landing-profile__card--orphaned:hover,
+.landing-profile__card--orphaned:focus-visible {
+  opacity: 0.8;
+}
+
+.landing-profile__orphan-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  padding: 2px 7px;
+  color: hsl(var(--color-destructive-fg));
+  background: hsl(var(--color-destructive));
+  border-radius: 0 0 var(--radius-sm) 0;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+}
+
 .landing-profile__card[data-role="player"]:focus-visible {
   box-shadow: 0 0 0 2px hsl(var(--color-role-player));
 }

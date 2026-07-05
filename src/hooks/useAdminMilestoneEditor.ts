@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DraftMilestone, Milestone } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { makeId } from "../utils/id.ts";
@@ -64,9 +64,13 @@ export const useAdminMilestoneEditor = (
   const [draftMilestones, setDraftMilestones] = useState<
     ReadonlyArray<DraftMilestone>
   >([]);
-  const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(
-    null,
-  );
+  // Track the *id* of the currently-open milestone, not a Milestone snapshot.
+  // The exposed `selectedMilestone` is derived below from the live draft, so
+  // renames/moves in the sheet reflect immediately instead of showing the
+  // milestone as it looked at open time (C-22, P-01).
+  const [selectedMilestoneId, setSelectedMilestoneIdState] = useState<
+    string | null
+  >(null);
   const seededSig = useRef<string>("");
 
   // Seed from real milestones, and re-seed whenever the underlying milestone
@@ -87,6 +91,34 @@ export const useAdminMilestoneEditor = (
       ),
     );
   }, [milestones]);
+
+  const setSelectedMilestone = useCallback((ms: Milestone | null) => {
+    setSelectedMilestoneIdState(ms?.id ?? null);
+  }, []);
+
+  // Compose the exposed milestone from (a) the live draft (source of truth
+  // for name + position) and (b) the server-fetched record for fields the
+  // draft does not carry (order, xpThreshold, timestamps, sessionId). If the
+  // milestone was just added client-side there is no server record yet; fall
+  // back to safe defaults so the union is still a valid `Milestone`.
+  const selectedMilestone = useMemo<Milestone | null>(() => {
+    if (!selectedMilestoneId) return null;
+    const draft = draftMilestones.find((dm) => dm.id === selectedMilestoneId);
+    if (!draft) return null;
+    const real = milestones.find((m) => m.id === selectedMilestoneId);
+    const now = new Date().toISOString();
+    return {
+      id: draft.id,
+      name: draft.name,
+      xPercent: draft.xPercent,
+      yPercent: draft.yPercent,
+      order: real?.order ?? 0,
+      sessionId: real?.sessionId ?? "",
+      xpThreshold: real?.xpThreshold ?? 100,
+      created: real?.created ?? now,
+      updated: real?.updated ?? now,
+    };
+  }, [selectedMilestoneId, draftMilestones, milestones]);
 
   const handleNodeDrop = useCallback(
     (id: string, xPercent: number, yPercent: number) => {
@@ -135,6 +167,7 @@ export const useAdminMilestoneEditor = (
       await adapter.deleteMilestone(id);
     }
     setDraftMilestones((prev) => prev.filter((dm) => dm.id !== id));
+    setSelectedMilestoneIdState((prev) => (prev === id ? null : prev));
   }, [adapter, milestones]);
 
   const handleResetToGrid = useCallback(() => {

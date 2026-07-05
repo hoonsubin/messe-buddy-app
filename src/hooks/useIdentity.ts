@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { CachedIdentity } from "../types/index.ts";
 
 const IDENTITY_KEY = "mb_identity";
+const ACTIVE_UID_KEY = "mb_active_uid";
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
 
@@ -22,6 +23,19 @@ const readProfiles = (): CachedIdentity[] => {
 const writeProfiles = (profiles: CachedIdentity[]): void => {
   localStorage.setItem(IDENTITY_KEY, JSON.stringify(profiles));
 };
+
+// ── Active-profile pointer (P-18) ────────────────────────────────────────────
+// Separate key from the profile list so clearing it (logout) doesn't wipe any
+// cached profile data (C-23). Read synchronously at boot by RootRedirect.
+
+export const readActiveUid = (): string | null =>
+  localStorage.getItem(ACTIVE_UID_KEY);
+
+export const writeActiveUid = (uid: string): void =>
+  localStorage.setItem(ACTIVE_UID_KEY, uid);
+
+export const clearActiveUid = (): void =>
+  localStorage.removeItem(ACTIVE_UID_KEY);
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
 
