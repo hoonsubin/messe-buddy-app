@@ -8,27 +8,7 @@ import {
 } from "../use-cases/joinSession.ts";
 import type { CachedIdentity } from "../types/index.ts";
 import { USER_ROLE } from "../types/index.ts";
-
-// ── Demo profiles (pre-seeded, always at top of list) ────────────────────────
-
-export const DEMO_PROFILES: readonly CachedIdentity[] = [
-  {
-    uid: "uid_sofia_002",
-    recoveryKey: "SOFIA026",
-    sessionId: "sess_mmt2026",
-    role: USER_ROLE.PLAYER,
-    name: "Sofia Chen",
-    isDemo: true,
-  },
-  {
-    uid: "uid_gamemaker_peter",
-    recoveryKey: "DEMO1234",
-    sessionId: "sess_mmt2026",
-    role: USER_ROLE.GAMEMAKER,
-    name: "Peter Tubak",
-    isDemo: true,
-  },
-] as const;
+import { DEMO_PROFILES } from "../constants/demoInstance.ts";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

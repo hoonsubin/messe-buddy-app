@@ -160,7 +160,10 @@ Deno.test("applyDefaultOnboardingJourney seeds milestone, profile mission, and s
     [...attachments.values()].map((a) => libById.get(a.libraryResourceId)),
   );
   assert.equal(keysUsed.size, 7);
-  assert.ok(!keysUsed.has(undefined), "every attachment resolved to a real library resource");
+  assert.ok(
+    !keysUsed.has(undefined),
+    "every attachment resolved to a real library resource",
+  );
 
   const arriveMilestone = firstMilestone!;
   const arriveKeys = [...attachments.values()]

@@ -18,19 +18,8 @@ import type {
   TemplateExport,
 } from "../../types/index.ts";
 import type { FieldSchema } from "../../types/index.ts";
-import { exportTemplate } from "../../use-cases/exportTemplate.ts";
 import { generateInviteToken } from "../../utils/inviteToken.ts";
-import {
-  MOCK_BUDDY_PROFILES,
-  MOCK_FORM_SCHEMAS,
-  MOCK_LIBRARY_RESOURCES,
-  MOCK_MILESTONE_RESOURCES,
-  MOCK_MILESTONES,
-  MOCK_MISSIONS,
-  MOCK_PLAYERS,
-  MOCK_PROGRESS_EVENTS,
-  MOCK_SESSION,
-} from "./mockData.ts";
+import { seedDemoInstance } from "../../use-cases/seedDemoInstance.ts";
 
 const sessions = new Map<string, Session>();
 const players = new Map<string, Player>();
@@ -45,60 +34,6 @@ const templates = new Map<string, TemplateExport>();
 
 type ProgressCallback = (event: ProgressEvent) => void;
 const subscriptions = new Map<string, Set<ProgressCallback>>();
-
-(() => {
-  sessions.set(MOCK_SESSION.id, MOCK_SESSION);
-  for (const m of MOCK_MILESTONES) milestones.set(m.id, m);
-  for (const m of MOCK_MISSIONS) missions.set(m.id, m);
-  for (const s of MOCK_FORM_SCHEMAS) formSchemas.set(s.missionId, s);
-  for (const p of MOCK_PLAYERS) players.set(p.id, p);
-  for (const b of MOCK_BUDDY_PROFILES) {
-    buddyProfiles.set(b.assignedToPlayerId, b);
-  }
-  for (const e of MOCK_PROGRESS_EVENTS) {
-    progressEvents.set(`${e.playerId}::${e.missionId}`, e);
-  }
-  for (const r of MOCK_LIBRARY_RESOURCES) libraryResources.set(r.id, r);
-  for (const mr of MOCK_MILESTONE_RESOURCES) {
-    milestoneResources.set(mr.id, mr);
-  }
-
-  const allMs = [...MOCK_MILESTONES].sort((a, b) => a.order - b.order);
-  const missionsByMs = new Map<string, Mission[]>();
-  for (const m of MOCK_MISSIONS) {
-    const list = missionsByMs.get(m.milestoneId) ?? [];
-    list.push(m);
-    missionsByMs.set(m.milestoneId, list);
-  }
-  for (const list of missionsByMs.values()) {
-    list.sort((a, b) => a.order - b.order);
-  }
-  const seedTpl = (name: string, keep: (idx: number) => boolean) => {
-    const chosen: Mission[] = [];
-    for (const ms of allMs) {
-      const list = missionsByMs.get(ms.id) ?? [];
-      list.forEach((mi, idx) => {
-        if (idx === 0 || keep(idx)) chosen.push(mi);
-      });
-    }
-    const ids = new Set(chosen.map((m) => m.id));
-    const schemas = MOCK_FORM_SCHEMAS.filter((s) => ids.has(s.missionId));
-    templates.set(
-      name,
-      exportTemplate(
-        name,
-        allMs,
-        chosen,
-        schemas,
-        MOCK_MILESTONE_RESOURCES,
-        MOCK_LIBRARY_RESOURCES,
-      ),
-    );
-  };
-  seedTpl("Engineering Onboarding", (i) => i % 3 !== 2);
-  seedTpl("Sales Bootcamp", (i) => i % 2 === 0);
-  seedTpl("Executive Welcome", (i) => i % 3 !== 1);
-})();
 
 const makeId = (): string =>
   Math.random().toString(36).slice(2, 17).padEnd(15, "0").slice(0, 15);
@@ -201,18 +136,21 @@ const createSession = async (
   name: string,
   gameMakerUid: string,
   gmRecoveryKey: string,
+  id?: string,
 ): Promise<Session> => {
   await Promise.resolve();
   const record = makeRecord();
+  const sessionId = id ?? record.id;
   const session: Session = {
     ...record,
+    id: sessionId,
     name,
     bgImageUrl: "",
     mapNodeScale: 0.33,
     gameMakerId: gameMakerUid,
     gmRecoveryKey,
     preBoardingChecks: [],
-    qrSecret: record.id,
+    qrSecret: sessionId,
   };
   sessions.set(session.id, session);
   return session;
@@ -277,13 +215,16 @@ const getPlayerByRecoveryKey = async (
 const invitePlayer = async (
   sessionId: string,
   data: { readonly name?: string; readonly jobTitle?: string },
+  id?: string,
 ): Promise<Player> => {
   await Promise.resolve();
   await getSession(sessionId);
   const token = await uniqueInviteToken();
   const today = new Date().toISOString().split("T")[0] ?? "";
+  const record = makeRecord();
   const player: Player = {
-    ...makeRecord(),
+    ...record,
+    id: id ?? record.id,
     sessionId,
     inviteToken: token,
     claimStatus: "invited",
@@ -639,3 +580,7 @@ export const mockAdapter: AppAdapter = {
   saveTemplate,
   deleteTemplate,
 };
+
+// Bootstrap the demo instance (idempotent) through real adapter calls —
+// no more direct Map seeding from hand-authored MOCK_* constants.
+await seedDemoInstance(mockAdapter);

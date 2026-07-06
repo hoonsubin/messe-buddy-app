@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { MdClose } from "react-icons/md";
-import { DEMO_PROFILES } from "../../hooks/useLandingFlow.ts";
+import { DEMO_PROFILES } from "../../constants/demoInstance.ts";
 import type { CachedIdentity } from "../../types/index.ts";
 import { IconButton } from "../../components/shared/index.ts";
 import ConfirmDialog from "../../components/shared/ConfirmDialog.tsx";

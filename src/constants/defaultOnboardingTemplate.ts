@@ -1,5 +1,9 @@
 import type { TemplateExport } from "../types/index.ts";
-import { MISSION_TAG, MISSION_TYPE, VALIDATION_METHOD } from "../types/unions.ts";
+import {
+  MISSION_TAG,
+  MISSION_TYPE,
+  VALIDATION_METHOD,
+} from "../types/unions.ts";
 import { PROFILE_FORM_FIELDS } from "./profileFormFields.ts";
 
 /**
