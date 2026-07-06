@@ -27,6 +27,7 @@ When SPECS and code disagree, **SPECS wins** until ARCH closes the gap.
 | Pri | ID | Item | Spec / OD |
 | --- | -- | ---- | --------- |
 | P0 | OJ-01 | Onboarding journey UI redesign — landing + wizard + player detail gating | [`plans/onboarding-journey-redesign.md`](onboarding-journey-redesign.md) |
+| P1 | DS-01 | Data source-of-truth consolidation — templates, library resources, demo instance | [`plans/data-source-of-truth-consolidation.md`](data-source-of-truth-consolidation.md) |
 | P0 | P-02 | `peerScan` — page, `peer_scans` collection, admin feed | C-25, OD-21 |
 | P1 | P-04 | Buddy save disabled / no-op before `claimStatus=claimed` | QoL |
 | P1 | P-05 | Analytics empty-state on zero missions (re-verify) | — |
@@ -95,6 +96,7 @@ for player · G-05 profile field display · G-06–G-09 · G-16–G-17 tutorial 
 | Player cockpit | `src/pages/player-cockpit/usePlayerCockpitPage.ts` |
 | Adapters | `mockAdapter.ts`, `pocketbase/pbAdapter.ts` |
 | Templates | `importTemplate.ts`, `exportTemplate.ts`, `usePlayerTemplates.ts` |
+| DS-01 consolidation | [`plans/data-source-of-truth-consolidation.md`](data-source-of-truth-consolidation.md) — one declared source per concept (template, library resources, demo instance) |
 | Resource library | `useLibraryResources.ts`, `LibraryResourceFormModal.tsx` |
 | QR validate | `ValidationPage.tsx`, `qrPayload.ts` |
 

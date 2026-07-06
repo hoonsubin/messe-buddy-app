@@ -1,7 +1,16 @@
 import type { AppAdapter } from "../adapters/interface.ts";
 import type { TemplateExport } from "../types/index.ts";
 
-/** Seeds a player's journey from a template. Does not create sessions. */
+/**
+ * Seeds a player's journey from a template. Does not create sessions.
+ *
+ * Walks the template's milestone/mission tree directly: each milestone is
+ * created, then each of its missions is created with the milestone id just
+ * returned, then each form mission's fields are attached with the mission id
+ * just returned. Order is assigned from array position at creation time.
+ * There are no numeric cross-references to resolve — nesting already told us
+ * exactly which mission a form's fields belong to.
+ */
 export const importTemplate = async (
   template: TemplateExport,
   playerId: string,
@@ -24,48 +33,47 @@ export const importTemplate = async (
     await adapter.detachMilestoneResource(mr.id);
   }
 
-  const milestoneIdByOrder = new Map<number, string>();
-  const sortedMilestones = [...template.milestones].sort(
-    (a, b) => a.order - b.order,
-  );
-  for (const ms of sortedMilestones) {
-    const created = await adapter.createMilestone({
-      ...ms,
-      sessionId,
-      playerId,
-    });
-    milestoneIdByOrder.set(ms.order, created.id);
-  }
-
-  const missionIdByOrder = new Map<number, string>();
-  for (const { _milestoneOrder, ...missionData } of template.missions) {
-    const newMilestoneId = milestoneIdByOrder.get(_milestoneOrder) ?? "";
-    const created = await adapter.createMission({
-      ...missionData,
-      sessionId,
-      playerId,
-      milestoneId: newMilestoneId,
-    });
-    missionIdByOrder.set(missionData.order, created.id);
-  }
-
-  for (const { _missionOrder, ...schemaData } of template.formSchemas) {
-    const newMissionId = missionIdByOrder.get(_missionOrder) ?? "";
-    await adapter.upsertFormSchema(newMissionId, schemaData.fields);
-  }
-
   const library = await adapter.listLibraryResources();
-  const libByKey = new Map(library.map((r) => [r.resourceKey, r.id]));
-  for (const binding of template.resourceBindings) {
-    const libId = libByKey.get(binding.resourceKey);
-    const milestoneId = milestoneIdByOrder.get(binding.milestoneOrder);
-    if (!libId || !milestoneId) continue;
-    await adapter.attachMilestoneResource({
+  const libIdByResourceKey = new Map(
+    library.map((r) => [r.resourceKey, r.id]),
+  );
+
+  for (const [milestoneIndex, ms] of template.milestones.entries()) {
+    const { missions, resources, ...milestoneData } = ms;
+
+    const createdMilestone = await adapter.createMilestone({
+      ...milestoneData,
       sessionId,
       playerId,
-      milestoneId,
-      libraryResourceId: libId,
-      isVisibleToPlayer: true,
+      order: milestoneIndex,
     });
+
+    for (const [missionIndex, mission] of missions.entries()) {
+      const { formFields, ...missionData } = mission;
+
+      const createdMission = await adapter.createMission({
+        ...missionData,
+        sessionId,
+        playerId,
+        milestoneId: createdMilestone.id,
+        order: missionIndex,
+      });
+
+      if (formFields) {
+        await adapter.upsertFormSchema(createdMission.id, formFields);
+      }
+    }
+
+    for (const resourceKey of resources ?? []) {
+      const libraryResourceId = libIdByResourceKey.get(resourceKey);
+      if (!libraryResourceId) continue;
+      await adapter.attachMilestoneResource({
+        sessionId,
+        playerId,
+        milestoneId: createdMilestone.id,
+        libraryResourceId,
+        isVisibleToPlayer: true,
+      });
+    }
   }
 };

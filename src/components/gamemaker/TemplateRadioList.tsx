@@ -26,7 +26,10 @@ const TemplateRadioList = ({
       },
       ...templates.map((template) => {
         const milestoneCount = template.milestones.length;
-        const missionCount = template.missions.length;
+        const missionCount = template.milestones.reduce(
+          (n, ms) => n + ms.missions.length,
+          0,
+        );
         return {
           id: template.name,
           title: template.name,

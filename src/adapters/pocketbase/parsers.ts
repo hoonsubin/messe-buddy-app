@@ -201,7 +201,4 @@ export const marshalTemplate = (raw: RecordModel): TemplateExport =>
     exportedAt: raw.created ?? new Date().toISOString(),
     name: String(raw.name ?? ""),
     milestones: [],
-    missions: [],
-    formSchemas: [],
-    resourceBindings: [],
   });
