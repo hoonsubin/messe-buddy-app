@@ -21,7 +21,10 @@ import { useChat } from "../../hooks/useChat.ts";
 import type { UseChatWithAvailability } from "../../hooks/useChat.ts";
 import { findOnboardingProfileMission } from "../../utils/onboardingMission.ts";
 import type { PlayerTabKey } from "./constants.ts";
-import { TUTORIAL_FORM_KEY } from "./constants.ts";
+import {
+  TUTORIAL_FORM_KEY,
+  TUTORIAL_STEP_KEY,
+} from "../../components/tutorial/constants.ts";
 
 export interface PlayerCockpitPageModel {
   readonly sessionId: string;
@@ -225,7 +228,7 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
 
   const handleLeave = useCallback(() => {
     clearActiveUid();
-    sessionStorage.removeItem("mb_tutorial_step");
+    sessionStorage.removeItem(TUTORIAL_STEP_KEY);
     sessionStorage.removeItem(TUTORIAL_FORM_KEY);
     navigate("/", { replace: true });
   }, [navigate]);

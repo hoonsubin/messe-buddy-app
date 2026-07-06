@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AdapterContextProvider } from "./adapters/AdapterContext.tsx";
 import { DemoAwareAdapterProvider } from "./adapters/DemoAwareAdapterProvider.tsx";
+import { QueryProvider } from "./store/QueryProvider.tsx";
 import LandingPage from "./pages/LandingPage.tsx";
 import RootRedirect from "./pages/RootRedirect.tsx";
 import PlayerCockpitPage from "./pages/PlayerCockpitPage.tsx";
@@ -85,7 +86,9 @@ const router = createBrowserRouter([
 const App = () => {
   return (
     <AdapterContextProvider>
-      <RouterProvider router={router} />
+      <QueryProvider>
+        <RouterProvider router={router} />
+      </QueryProvider>
     </AdapterContextProvider>
   );
 };

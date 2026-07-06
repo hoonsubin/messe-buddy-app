@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { PLACEHOLDER_STEPS } from "../components/tutorial/TutorialOverlay.tsx";
+import {
+  TUTORIAL_FORM_KEY,
+  TUTORIAL_STEP_KEY,
+} from "../components/tutorial/constants.ts";
 import type { Mission, PBRecord, Player } from "../types/index.ts";
 
 /** 0-based index of the profile step within PLACEHOLDER_STEPS. */
 export const PROFILE_STEP_INDEX = 4;
-
-// sessionStorage keys for tutorial state.
-const TUTORIAL_FORM_KEY = "mb_tutorial_form_pending";
-const TUTORIAL_STEP_KEY = "mb_tutorial_step";
 
 export interface UseTutorialOptions {
   readonly onboardingProfileMission: Mission | null;

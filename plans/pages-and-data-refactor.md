@@ -124,6 +124,37 @@ Each hook returns `{ data, isInitialLoading, isRefreshing, error, actions }`. Ch
 
 GM editor draft state (`useGmMilestoneEditor`, `useGmMissionEditor`) stays in-memory; saves go through `useMutation` → invalidate `journey:*`. Mission bottom-sheet autosave keeps `utils/draftStorage.ts` (local crash recovery only).
 
+### Developer backend trace (session-scoped, dev-only)
+
+A single trace sink records **every backend touch** from this browser tab, filterable by the active route `sessionId`. Replaces ad-hoc `console.log` in hooks and makes PB read counts observable during migration.
+
+**Module:** `store/devBackendTrace.ts` (+ wired from `queryClient`, `useMutation`, adapter proxy during Phase 3).
+
+| Property | Value |
+|----------|-------|
+| Enabled when | `import.meta.env.DEV` **and** `localStorage.mb_dev_trace !== "0"` (on by default in dev; opt out per tab) |
+| Scope key | Route `sessionId` from `useParams()` (validation route uses the URL session; landing/join logs as `_public`) |
+| Storage | In-memory ring buffer per scope (last ~200 events); not persisted across reload |
+| Console | One line per event: `[mb:trace:{sessionId}] {kind} {detail}` |
+| DevTools | `window.__MB_DEV_TRACE__` — `{ getLog(sessionId?), clear(), setEnabled(bool) }` |
+
+**Event kinds** (all include `ts`, `sessionId`, `kind`):
+
+| Kind | When | Detail fields |
+|------|------|---------------|
+| `query:fetch` | `fetchQuery` starts (not coalesced joiner) | `key`, `deduped: false` |
+| `query:coalesce` | subscriber joins in-flight fetch | `key` |
+| `query:hit` | cache served without network | `key`, `ageMs` |
+| `query:invalidate` | `invalidateQuery` | `keys[]` |
+| `query:patch` | SSE or `patchQuery` | `key` |
+| `mutation:start` / `mutation:done` / `mutation:error` | `useMutation` lifecycle | `label`, `invalidates[]` |
+| `adapter:call` | direct adapter method (until hooks retired) | `method`, `args` summary |
+| `sse:subscribe` / `sse:event` | progress subscription | `playerId`, `missionId` |
+
+**Page-hook integration:** each page hook sets the active trace scope once from `useParams().sessionId` so navigating `/gamemaker/A` → `/gamemaker/B` partitions logs automatically.
+
+**Migration use:** ValidationPage pilot success metric (“≤ 5 reads on load”) is verified by filtering `__MB_DEV_TRACE__.getLog(sessionId)` for `query:fetch` events on first paint.
+
 ---
 
 ## Deletions (not wrappers)
@@ -191,7 +222,7 @@ Already superseded by `applyTemplateIfBlank` + `applyTemplateToNewPlayer`.
 | `pages/*/use*Page.ts` | `hooks/pages/use*Page.ts` |
 | `playerDetailStorage.ts` | `utils/playerDetailStorage.ts` |
 | `TUTORIAL_FORM_KEY` (duplicated) | `components/tutorial/constants.ts` (single source) |
-| New | `store/queryClient.ts`, `store/queryKeys.ts`, `store/QueryProvider.tsx`, `hooks/useQuery.ts`, `hooks/useMutation.ts`, `components/qr/QrScanPanel.tsx` |
+| New | `store/queryClient.ts`, `store/queryKeys.ts`, `store/QueryProvider.tsx`, `store/devBackendTrace.ts`, `hooks/useQuery.ts`, `hooks/useMutation.ts`, `components/qr/QrScanPanel.tsx` |
 
 ---
 
@@ -212,6 +243,7 @@ Already superseded by `applyTemplateIfBlank` + `applyTemplateToNewPlayer`.
 ### Phase 1 — Store + dead code removal
 
 - [ ] `store/` + `hooks/useQuery.ts` / `useMutation.ts` + unit tests (coalesce, invalidate, loading semantics)
+- [ ] `store/devBackendTrace.ts` — ring buffer, console sink, `window.__MB_DEV_TRACE__`; emit from `queryClient` (`fetch`, `coalesce`, `hit`, `invalidate`, `patch`)
 - [ ] Mount `QueryProvider` in `App.tsx`
 - [ ] `git rm` dead use-case stubs + `useScrollCollapse.ts`
 - [ ] Centralize tutorial storage keys
@@ -240,12 +272,13 @@ Then remaining page hooks; **delete legacy hooks as each page migrates** (do not
 - [ ] `useLandingPage` (wrap `useLandingFlow` actions; orphan check via `sessionMeta`)
 
 - [ ] Delete all hooks listed in **Deletions** section
-- [ ] SSE patches `progress:{playerId}` in store
+- [ ] SSE patches `progress:{playerId}` in store; trace `sse:subscribe` / `sse:event`
+- [ ] `useMutation` emits `mutation:*` events; optional thin adapter trace wrapper until legacy hooks are gone
 
 ### Phase 4 — Verify + guard
 
 - [ ] CI/lint: no `useAdapter` in `src/components/` (adapter boundary)
-- [ ] Dev-only query log (one line per key fetch/invalidate)
+- [ ] Document trace in README dev section: enable/disable via `localStorage.mb_dev_trace`, inspect via `__MB_DEV_TRACE__.getLog(sessionId)`
 - [ ] Update `data-page` attributes and smoke paths (design-tokens §10)
 - [ ] `deno task build`, `deno task lint`
 
@@ -265,6 +298,7 @@ Then remaining page hooks; **delete legacy hooks as each page migrates** (do not
 | Validation UI | Spinner ↔ card flicker | Stable card after first paint |
 | Tab change | Re-fetch all parent hooks | Cache hit, no spinner |
 | `useAdapter` in `components/` | 4 call sites | **0** |
+| Backend calls visible per session (dev) | PocketBase logs only | `__MB_DEV_TRACE__.getLog(sessionId)` |
 
 ---
 
@@ -291,3 +325,4 @@ Then remaining page hooks; **delete legacy hooks as each page migrates** (do not
 | D-DATA-6 | Components never fetch | Props from page hooks; CI enforced |
 | D-QR-1 | One `QrScanPanel`, delete orphaned scan route | `QRScannerView` unused in navigation |
 | D-STORE-1 | SSE patches `progress` cache | Delete `useWatchMission` |
+| D-DEV-1 | Session-scoped `devBackendTrace` in dev | One sink for query/adapter/SSE; replaces hook `console.log`; validates read budgets |
