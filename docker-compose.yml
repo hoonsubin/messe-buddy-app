@@ -103,7 +103,13 @@ services:
     image: ghcr.io/berriai/litellm:main-stable
     container_name: litellm
     ports:
-      - "4000:4000"
+      # Bound to loopback only — the app's browser-facing /llm proxy already
+      # covers normal use (see nginx.conf); this stays reachable for the
+      # operator via `ssh -L 4000:localhost:4000` for the admin UI, but not
+      # from the public internet. Do not publish this on 0.0.0.0 in prod:
+      # a direct :4000 connection bypasses nginx's server-side Authorization
+      # injection and would need the raw LITELLM_MASTER_KEY to do anything.
+      - "127.0.0.1:4000:4000"
     volumes:
       - ./docker/litellm.yaml:/app/config.yaml:ro
     command:
@@ -175,6 +181,26 @@ services:
       - litellm-internal
     restart: unless-stopped
 
+  # -- Certbot (automated HTTPS) --
+  # Issues + renews the Let's Encrypt cert for PUBLIC_DOMAIN and drops it into
+  # the shared nginx_ssl volume as server.crt/server.key — no domain name is
+  # hard-coded anywhere in nginx.conf or here; change PUBLIC_DOMAIN in .env
+  # and restart both this and `app` to point the whole stack at a new domain.
+  # No-ops (idles) if PUBLIC_DOMAIN is unset, e.g. local/LAN dev — app then
+  # falls back to its own self-signed cert as before.
+  certbot:
+    build:
+      context: ./docker/certbot
+    container_name: messebuddy-certbot
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:-}
+      CERTBOT_EMAIL: ${CERTBOT_EMAIL:-}
+    volumes:
+      - certbot_webroot:/var/www/certbot
+      - certbot_letsencrypt:/etc/letsencrypt
+      - nginx_ssl:/nginx_ssl
+    restart: unless-stopped
+
   # -- App (PWA + PocketBase) --
   app:
     build:
@@ -190,15 +216,26 @@ services:
     volumes:
       - pb_data:/pb_data
       - app_runtime:/runtime:ro
-      # Optional: mount mkcert certs for trusted HTTPS (see entrypoint.sh self-signed cert note).
+      # Populated by the certbot service above (or left empty for local/LAN
+      # dev, in which case entrypoint.sh generates a self-signed cert here).
+      - nginx_ssl:/etc/nginx/ssl
+      # ACME HTTP-01 webroot, shared with the certbot service. Read-only here:
+      # only certbot needs to write challenge files.
+      - certbot_webroot:/var/www/certbot:ro
     environment:
       PB_AUTO_MIGRATE: ${PB_AUTO_MIGRATE:-true}
       PB_ADMIN_EMAIL: ${PB_ADMIN_EMAIL:-}
       PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-}
+      # Read by entrypoint.sh to set nginx's server_name/SNI. Empty → "_"
+      # (catch-all), matching the old LAN/dev behavior exactly.
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:-}
     restart: unless-stopped
     depends_on:
       litellm:
         condition: service_healthy
+      # NOT certbot: certbot's HTTP-01 challenge needs this container's nginx
+      # already answering on :80 (see docker/nginx.conf's acme-challenge
+      # location), so app must come up independently, not after certbot.
     networks:
       - litellm-external
 
@@ -210,6 +247,12 @@ volumes:
   vector_db_data:
     driver: local
   app_runtime:
+    driver: local
+  nginx_ssl:
+    driver: local
+  certbot_webroot:
+    driver: local
+  certbot_letsencrypt:
     driver: local
 
 networks:

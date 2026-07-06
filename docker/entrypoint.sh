@@ -16,6 +16,14 @@ SSL_DIR="/etc/nginx/ssl"
 SSL_CERT="$SSL_DIR/server.crt"
 SSL_KEY="$SSL_DIR/server.key"
 
+# Public domain nginx should answer to (server_name + SNI). Unset/empty in
+# local/LAN dev, where "_" (catch-all) plus the self-signed cert below is
+# correct. In production, set PUBLIC_DOMAIN so the `certbot` sidecar and
+# nginx both target the same name — no domain is hard-coded in any config
+# file, so changing it is just an env var + a fresh cert, no rebuild.
+DOMAIN="${PUBLIC_DOMAIN:-_}"
+export DOMAIN
+
 # ── TLS certificate ─────────────────────────────────────────────────────────
 # If no cert is present (e.g. from a volume mount), generate a self-signed one.
 # Mount a mkcert-generated or Let's Encrypt cert at $SSL_CERT / $SSL_KEY to
@@ -67,8 +75,9 @@ if [ -z "$KEY" ]; then
 fi
 export KEY
 
-# Render nginx config, substituting ONLY ${KEY} (leaves $host, $uri, … intact).
-envsubst '${KEY}' < "$NGINX_TEMPLATE" > "$NGINX_CONF"
+# Render nginx config, substituting ONLY ${KEY} and ${DOMAIN} (leaves $host,
+# $uri, … intact — envsubst's variable list is an allowlist).
+envsubst '${KEY} ${DOMAIN}' < "$NGINX_TEMPLATE" > "$NGINX_CONF"
 
 # Front-end runtime config: same-origin proxy for LLM and PB.
 # llmBaseUrl: same-origin /llm proxy (nginx injects Authorization server-side).
