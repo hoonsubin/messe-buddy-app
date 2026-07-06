@@ -233,3 +233,98 @@ Work top-down; each task unblocks the next.
     required for this cleanup to be complete.
   - Manual smoke test (task 10 in this file's original numbering) is
     intentionally not done — deferred until you build and check yourself.
+- 2026-07-06 (later same day) — Follow-up request: the seeded template
+  should be registered and visible as "Messe München Onboarding" in the GM's
+  template list, and "Start from scratch" should start with exactly one
+  milestone instead of the full 6-milestone default.
+  - `DEFAULT_ONBOARDING_TEMPLATE.name` renamed "Default Onboarding" →
+    "Messe München Onboarding".
+  - New `seedTemplates.ts` registers it via `adapter.saveTemplate` so it
+    shows up in `listTemplates()`/the GM wizard's `TemplateRadioList`. Called
+    from `seedDemoInstance.ts` unconditionally (before the session-exists
+    early return) since templates and library resources are global, not
+    session-scoped — a template rename now lands even on an
+    already-seeded instance, verified by a new idempotency test.
+  - New `scratchJourneyTemplate.ts` (`SCRATCH_JOURNEY_TEMPLATE`, deliberately
+    *not* registered as a selectable template) and `applyScratchJourney.ts`
+    give "start from scratch" exactly one milestone with one mission
+    (the profile mission) — it previously called
+    `applyDefaultOnboardingJourney` and silently produced the full
+    6-milestone/33-mission journey, which contradicted the wizard's own
+    "Includes a profile mission to get started" copy.
+    `createOnboardingJourney.ts`'s null-template branch now calls this
+    instead. `applyDefaultOnboardingJourney` is unchanged and still used by
+    `seedDemoInstance` for Sofia/Alex's full demo journeys — that behavior
+    wasn't part of this ask.
+  - `deno check` clean on every touched/new file; full-graph check still
+    shows only the same 4 pre-existing `__MB_CONFIG__` errors as before,
+    unrelated to any of this. 10/10 unit tests pass (2 new files:
+    `applyScratchJourney.test.ts`, plus 3 new assertions in
+    `seedDemoInstance.test.ts`).
+- 2026-07-06 (later still) — Hoon reported the registered template didn't
+  show up against a real PocketBase instance. Live-checked against the
+  running dev server (`useMockPb: false`) by querying the PB REST API
+  directly: `templates` and `library_resources` were both empty (0 records),
+  confirming task 9 ("seed a live PocketBase instance") wasn't just a
+  stretch goal — it was the actual gap. Root cause: `seedTemplates`/
+  `seedLibraryResources` were only ever invoked from `seedDemoInstance`,
+  which is only called from `mockAdapter.ts`'s module init — nothing
+  equivalent existed for `pbAdapter`.
+  - Fix (task 9, scoped): `pocketbase/mod.ts` now fires
+    `seedLibraryResources(pbAdapter)` + `seedTemplates(pbAdapter)` once on
+    module init, wrapped in try/catch and not awaited at the top level.
+    Deliberately does **not** call `seedDemoInstance` here — that would
+    fabricate a demo session/players against a real cohort's backend, which
+    was never part of this ask. Swallowing failures matters because
+    `pocketbase/mod.ts` is imported unconditionally regardless of
+    mock/PB mode (`AdapterContextValue.ts`, `AdapterContext.tsx`,
+    `DemoAwareAdapterProvider.tsx` all statically import both adapters), so
+    mock-only dev with no PocketBase server running must not break.
+  - Verified live: reloaded the dev server, queried
+    `http://127.0.0.1:8090/api/collections/templates/records` and
+    `.../library_resources/records` directly — "Messe München Onboarding"
+    and all 7 library resources present, zero console errors. Also
+    confirmed in passing that the scratch-journey fix from the prior entry
+    is working correctly against real PB (a manually-invited player had
+    exactly 1 milestone / 1 mission).
+  - `deno check` on the changed file plus `src/main.tsx`: same 4
+    pre-existing, unrelated errors, nothing new.
+- 2026-07-06 (later still) — Hoon asked for the "Messe München Onboarding"
+  template to use the same mission-map background image as the mock demo.
+  Turned up a real regression from the original consolidation: the
+  consolidation dropped `MOCK_SESSION.bgImageUrl` (the `map-background.jpg`
+  asset) entirely — nothing in the codebase imported that asset anymore
+  after `mockData.ts` was gutted.
+  - New `constants/defaultSessionBackground.ts` holds the one Vite asset
+    import (`DEFAULT_SESSION_BACKGROUND_URL`), isolated on purpose:
+    `demoInstance.ts` is imported by `seedDemoInstance.test.ts`, and a
+    binary asset import isn't resolvable under plain `deno test` (only
+    under Vite/browser). This file and `use-cases/createOnboardingJourney.ts`
+    (no test file) are the only places that import it.
+  - New `use-cases/applyDefaultSessionBackground.ts`: sets a session's
+    `bgImageUrl` only if unset (never clobbers a GM's own upload), uploading
+    a real `File` (fetched from the asset URL) when `fetch`/`File` are
+    available — required for PocketBase's `bgImageUrl` file field; falls
+    back to passing the URL string through otherwise (mock accepts either).
+  - `seedDemoInstance.ts` takes an optional `{ bgImageUrl }` and applies it
+    once at session creation; `mockAdapter.ts` passes
+    `DEFAULT_SESSION_BACKGROUND_URL` in, restoring parity with the original
+    mock. `createOnboardingJourney.ts` applies the same background whenever
+    the GM's chosen template is `DEFAULT_ONBOARDING_TEMPLATE` — works for
+    either adapter, so it also covers the real-PB path this ask was
+    actually about.
+  - Verified live end-to-end against the running dev server: logged in as
+    a real GM (via injected `mb_identity`, since I don't have credential
+    prompts in a headless flow), ran the actual "New onboarding journey"
+    wizard, picked "Messe München Onboarding", and confirmed via the PB
+    REST API that the session's `bgImageUrl` became a real uploaded file
+    (`map_background_*.jpg`, 125KB, `image/jpeg`, fetchable at
+    `/api/files/...`) — not just a string reference. Zero new console
+    errors (the one error Playwright reported was my own stray probe, not
+    the app). **Note:** this created one real test player ("Playwright Test
+    Player") in Hoon's live "saf" session as a side effect of exercising the
+    real wizard — safe to delete, flagging so it doesn't look like stray
+    data from something else.
+  - `deno check`/`deno test` on all touched/new files: same 4 pre-existing
+    unrelated errors, 14/14 tests pass (2 new:
+    `applyDefaultSessionBackground.test.ts`).

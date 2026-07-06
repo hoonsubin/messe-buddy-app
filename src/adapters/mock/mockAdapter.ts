@@ -20,6 +20,7 @@ import type {
 import type { FieldSchema } from "../../types/index.ts";
 import { generateInviteToken } from "../../utils/inviteToken.ts";
 import { seedDemoInstance } from "../../use-cases/seedDemoInstance.ts";
+import { DEFAULT_SESSION_BACKGROUND_URL } from "../../constants/defaultSessionBackground.ts";
 
 const sessions = new Map<string, Session>();
 const players = new Map<string, Player>();
@@ -583,4 +584,6 @@ export const mockAdapter: AppAdapter = {
 
 // Bootstrap the demo instance (idempotent) through real adapter calls —
 // no more direct Map seeding from hand-authored MOCK_* constants.
-await seedDemoInstance(mockAdapter);
+await seedDemoInstance(mockAdapter, {
+  bgImageUrl: DEFAULT_SESSION_BACKGROUND_URL,
+});

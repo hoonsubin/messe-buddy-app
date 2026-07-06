@@ -13,15 +13,6 @@ const ValidationPage = () => {
   const sid = sessionId ?? "";
   const token = searchParams.get("t") ?? "";
 
-  // This route's sessionId is the *player's* session, which never matches a
-  // GM's cached identity (scoped to their own home session) — so instead of
-  // useActiveProfile's exact-sessionId lookup, find any locally stored GM
-  // identity whose uid owns this player (session.gameMakerId), once the player
-  // session has loaded. `gameMakerId` is mirrored into state — adjusted
-  // during render (React's documented pattern for deriving state from a
-  // changed prop/value without an Effect) rather than in a useEffect — so the
-  // single `useValidationConfirm` call below can be re-invoked with the
-  // resolved validator uid without a second, duplicate session/decode fetch.
   const { profiles } = useIdentity();
 
   const validation = useValidationConfirm(sid, token, undefined);
@@ -39,12 +30,6 @@ const ValidationPage = () => {
   const unauthorized = !validation.loading && validation.gameMakerId !== null &&
     identity === null;
 
-  // Always return the GM to their own home session, never the player's — the
-  // two are different sessionIds, and /gamemaker/:sessionId's RequireRole guard
-  // checks the GM's home session specifically. `identity` (resolved above via
-  // gameMakerId) carries that home sessionId; if it hasn't resolved yet (or
-  // this GM isn't authorized for this player), fall back to the public landing
-  // page instead of a route that will just bounce.
   const goToGmHome = useCallback(() => {
     navigate(identity?.sessionId ? `/gamemaker/${identity.sessionId}` : "/", {
       replace: true,

@@ -1,7 +1,10 @@
 import type { AppAdapter } from "../adapters/interface.ts";
 import type { BuddyProfile, BuddySelection } from "../types/index.ts";
 import { buddyDraftToProfileFields } from "../types/buddyPicker.ts";
-import { applyDefaultOnboardingJourney } from "./applyDefaultOnboardingJourney.ts";
+import { DEFAULT_ONBOARDING_TEMPLATE } from "../constants/defaultOnboardingTemplate.ts";
+import { DEFAULT_SESSION_BACKGROUND_URL } from "../constants/defaultSessionBackground.ts";
+import { applyDefaultSessionBackground } from "./applyDefaultSessionBackground.ts";
+import { applyScratchJourney } from "./applyScratchJourney.ts";
 import { importTemplate } from "./importTemplate.ts";
 import { invitePlayer } from "./invitePlayer.ts";
 
@@ -85,8 +88,15 @@ export const createOnboardingJourney = async (
     }
     await importTemplate(template, player.id, adapter);
     appliedTemplateName = template.name;
+    if (template.name === DEFAULT_ONBOARDING_TEMPLATE.name) {
+      await applyDefaultSessionBackground(
+        sessionId,
+        DEFAULT_SESSION_BACKGROUND_URL,
+        adapter,
+      );
+    }
   } else {
-    await applyDefaultOnboardingJourney(player.id, adapter);
+    await applyScratchJourney(player.id, adapter);
   }
 
   return {

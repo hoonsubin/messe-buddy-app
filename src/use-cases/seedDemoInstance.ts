@@ -9,7 +9,9 @@ import {
   type DemoPersona,
 } from "../constants/demoInstance.ts";
 import { applyDefaultOnboardingJourney } from "./applyDefaultOnboardingJourney.ts";
+import { applyDefaultSessionBackground } from "./applyDefaultSessionBackground.ts";
 import { seedLibraryResources } from "./seedLibraryResources.ts";
+import { seedTemplates } from "./seedTemplates.ts";
 
 const PROFILE_MISSION_TITLE = "Complete Your Profile";
 
@@ -81,13 +83,29 @@ const applyPersona = async (
 /**
  * Bootstraps the "Sofia Chen / Peter Tubak" demo instance purely through
  * `AppAdapter` calls, so both `mockAdapter` and `pbAdapter` produce the same
- * state from the same declared data in `demoInstance.ts`. Idempotent — skips
- * entirely if the demo session already exists.
+ * state from the same declared data in `demoInstance.ts`.
+ *
+ * Library resources and the registered template list are global (not
+ * session-scoped), so they're re-synced on every call regardless of whether
+ * the demo session already exists — that way a template rename or a new
+ * library resource still lands on an already-seeded instance. Session and
+ * persona creation stay idempotent by bailing out once the demo session id
+ * is found.
+ *
+ * `bgImageUrl`, if given, seeds the session's map background — pass a Vite
+ * asset URL from the caller (e.g. mockAdapter.ts) since this file otherwise
+ * stays free of binary asset imports so it's safe for Deno.test to import.
  */
-export const seedDemoInstance = async (adapter: AppAdapter): Promise<void> => {
+export const seedDemoInstance = async (
+  adapter: AppAdapter,
+  options?: { readonly bgImageUrl?: string },
+): Promise<void> => {
+  await seedLibraryResources(adapter);
+  await seedTemplates(adapter);
+
   try {
     await adapter.getSession(DEMO_SESSION_ID);
-    return; // Already seeded.
+    return; // Session/personas already seeded.
   } catch {
     // Not found — proceed to seed.
   }
@@ -101,8 +119,13 @@ export const seedDemoInstance = async (adapter: AppAdapter): Promise<void> => {
   await adapter.updateSession(DEMO_SESSION_ID, {
     preBoardingChecks: DEMO_PRE_BOARDING_CHECKS,
   });
-
-  await seedLibraryResources(adapter);
+  if (options?.bgImageUrl) {
+    await applyDefaultSessionBackground(
+      DEMO_SESSION_ID,
+      options.bgImageUrl,
+      adapter,
+    );
+  }
 
   for (const persona of DEMO_PERSONAS) {
     await applyPersona(adapter, persona);

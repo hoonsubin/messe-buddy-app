@@ -7,9 +7,11 @@ import {
 import { PROFILE_FORM_FIELDS } from "./profileFormFields.ts";
 
 /**
- * Bundled journey applied when a GM onboards a player without selecting a
- * template. Sourced from "New hire onboarding milestone map.md" — 6
- * milestones, 33 missions, 360 XP total.
+ * Registered as the "Messe München Onboarding" template — selectable from
+ * the GM's onboarding wizard alongside any GM-saved templates. Sourced from
+ * "New hire onboarding milestone map.md" — 6 milestones, 33 missions, 360 XP
+ * total. (Not the same as "Start from scratch", which applies
+ * `SCRATCH_JOURNEY_TEMPLATE` instead — see scratchJourneyTemplate.ts.)
  *
  * Each milestone owns its missions directly; each form mission owns its
  * fields directly. Position in the array is the order — there is nothing
@@ -18,7 +20,7 @@ import { PROFILE_FORM_FIELDS } from "./profileFormFields.ts";
 export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
   exportType: "template",
   exportedAt: "2026-07-06T00:00:00.000Z",
-  name: "Default Onboarding",
+  name: "Messe München Onboarding",
   milestones: [
     {
       name: "Arrive & Get Set Up",

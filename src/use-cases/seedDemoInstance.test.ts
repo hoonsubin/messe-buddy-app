@@ -9,6 +9,7 @@ import type {
   Player,
   ProgressEvent,
   Session,
+  TemplateExport,
 } from "../types/index.ts";
 import {
   DEMO_GM_UID,
@@ -33,6 +34,7 @@ const createFakeAdapter = () => {
   const buddyProfiles = new Map<string, BuddyProfile>();
   const libraryResources = new Map<string, LibraryResource>();
   const milestoneResources = new Map<string, MilestoneResource>();
+  const templates = new Map<string, TemplateExport>();
 
   let nextId = 1;
   const makeId = () => `gen_${nextId++}`;
@@ -67,8 +69,15 @@ const createFakeAdapter = () => {
     updateSession: async (sessionId, patch) => {
       const existing = sessions.get(sessionId);
       if (!existing) throw new Error(`Session not found: ${sessionId}`);
-      const { bgImageUrl: _bgImageUrl, ...rest } = patch;
-      const updated: Session = { ...existing, ...rest, updated: now() };
+      const { bgImageUrl, ...rest } = patch;
+      const updated: Session = {
+        ...existing,
+        ...rest,
+        bgImageUrl: typeof bgImageUrl === "string"
+          ? bgImageUrl
+          : existing.bgImageUrl,
+        updated: now(),
+      };
       sessions.set(sessionId, updated);
       return updated;
     },
@@ -233,9 +242,13 @@ const createFakeAdapter = () => {
       milestoneResources.delete(attachmentId);
     },
     listResources: async () => [],
-    listTemplates: async () => [],
-    saveTemplate: async () => {},
-    deleteTemplate: async () => {},
+    listTemplates: async () => [...templates.values()],
+    saveTemplate: async (template) => {
+      templates.set(template.name, template);
+    },
+    deleteTemplate: async (name) => {
+      templates.delete(name);
+    },
   };
 
   return {
@@ -245,14 +258,23 @@ const createFakeAdapter = () => {
     missions,
     progressEvents,
     buddyProfiles,
+    templates,
   };
 };
 
+const FAKE_BG_IMAGE_URL = "https://example.invalid/map-background.jpg";
+
 Deno.test("seedDemoInstance reproduces the demo session, players, and progress", async () => {
-  const { adapter, sessions, players, progressEvents, buddyProfiles } =
+  const { adapter, sessions, players, progressEvents, buddyProfiles, templates } =
     createFakeAdapter();
 
-  await seedDemoInstance(adapter);
+  await seedDemoInstance(adapter, { bgImageUrl: FAKE_BG_IMAGE_URL });
+
+  // The bundled template is registered and selectable from the GM wizard.
+  assert.equal(templates.size, 1);
+  assert.ok(templates.has("Messe München Onboarding"));
+
+  assert.equal(sessions.get(DEMO_SESSION_ID)?.bgImageUrl, FAKE_BG_IMAGE_URL);
 
   assert.equal(sessions.size, 1);
   assert.ok(sessions.has(DEMO_SESSION_ID));
@@ -288,11 +310,11 @@ Deno.test("seedDemoInstance reproduces the demo session, players, and progress",
 });
 
 Deno.test("seedDemoInstance is idempotent", async () => {
-  const { adapter, sessions, players, progressEvents, buddyProfiles } =
+  const { adapter, sessions, players, progressEvents, buddyProfiles, templates } =
     createFakeAdapter();
 
-  await seedDemoInstance(adapter);
-  await seedDemoInstance(adapter);
+  await seedDemoInstance(adapter, { bgImageUrl: FAKE_BG_IMAGE_URL });
+  await seedDemoInstance(adapter, { bgImageUrl: FAKE_BG_IMAGE_URL });
 
   assert.equal(sessions.size, 1);
   assert.equal(players.size, DEMO_PERSONAS.length);
@@ -301,4 +323,17 @@ Deno.test("seedDemoInstance is idempotent", async () => {
   );
   assert.equal(sofiaCompleted.length, 3);
   assert.equal(buddyProfiles.size, 2);
+  assert.equal(templates.size, 1);
+  assert.equal(sessions.get(DEMO_SESSION_ID)?.bgImageUrl, FAKE_BG_IMAGE_URL);
+});
+
+Deno.test("seedDemoInstance re-registers the template even if the session already exists", async () => {
+  const { adapter, templates } = createFakeAdapter();
+
+  await seedDemoInstance(adapter);
+  templates.delete("Messe München Onboarding"); // simulate a stale/pre-rename instance
+
+  await seedDemoInstance(adapter);
+
+  assert.ok(templates.has("Messe München Onboarding"));
 });
