@@ -1,39 +1,53 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type {
   BuddyProfile,
   Milestone,
   Mission,
+  PBRecord,
+  Player,
   Resource,
+  Session,
 } from "../../types/index.ts";
 import { MISSION_TYPE, USER_ROLE } from "../../types/index.ts";
 import type { CachedIdentity } from "../../types/index.ts";
 import { useActiveProfile } from "../../hooks/useActiveProfile.ts";
 import { clearActiveUid, useIdentity } from "../../hooks/useIdentity.ts";
-import { useResolvedPlayer } from "../../hooks/useResolvedPlayer.ts";
-import { useSession } from "../../hooks/useSession.ts";
-import { useSessionExists } from "../../hooks/useSessionExists.ts";
-import { useProgressPlayer } from "../../hooks/useProgress/index.ts";
-import { useBuddyProfile } from "../../hooks/useBuddyProfile.ts";
-import { useResources } from "../../hooks/useResources.ts";
+import { useDerivedPlayerProgress } from "../../hooks/useDerivedPlayerProgress.ts";
 import { useTutorial } from "../../hooks/useTutorial.ts";
 import { useChat } from "../../hooks/useChat.ts";
 import type { UseChatWithAvailability } from "../../hooks/useChat.ts";
+import { useMutation } from "../../hooks/useMutation.ts";
+import { useQuery } from "../../hooks/useQuery.ts";
+import { devBackendTrace } from "../../store/devBackendTrace.ts";
+import {
+  fetchBuddy,
+  fetchJourney,
+  fetchPlayerByUid,
+  fetchPlayerResources,
+  fetchProgress,
+  fetchSessionMeta,
+} from "../../store/queryFetchers.ts";
+import { queryKeys } from "../../store/queryKeys.ts";
+import { useQueryClient } from "../../store/useQueryClient.ts";
+import { useAdapter } from "../../adapters/useAdapter.ts";
 import { findOnboardingProfileMission } from "../../utils/onboardingMission.ts";
 import {
   TUTORIAL_FORM_KEY,
   TUTORIAL_STEP_KEY,
 } from "../../components/tutorial/constants.ts";
+import type { UseProgressPlayerResult } from "../progressTypes.ts";
 
 export interface PlayerCockpitPageModel {
   readonly sessionId: string;
   readonly identity: CachedIdentity;
-  readonly player: NonNullable<ReturnType<typeof useResolvedPlayer>["player"]>;
+  readonly player: Player;
   readonly isLoading: boolean;
-  readonly milestones: ReturnType<typeof useSession>["milestones"];
-  readonly missions: ReturnType<typeof useSession>["missions"];
-  readonly session: ReturnType<typeof useSession>["session"];
-  readonly progress: ReturnType<typeof useProgressPlayer>;
+  readonly milestones: ReadonlyArray<Milestone>;
+  readonly missions: ReadonlyArray<Mission>;
+  readonly session: Session | null;
+  readonly qrSecret: string | undefined;
+  readonly progress: UseProgressPlayerResult;
   readonly buddy: BuddyProfile | null;
   readonly resources: ReadonlyArray<Resource>;
   readonly chat: UseChatWithAvailability;
@@ -72,43 +86,99 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
   const { sessionId: routeSessionId } = useParams<{ sessionId: string }>();
   const sessionId = routeSessionId ?? "";
   const navigate = useNavigate();
+  const adapter = useAdapter();
+  const client = useQueryClient();
   const identity = useActiveProfile(sessionId, USER_ROLE.PLAYER);
+  const uid = identity?.uid;
 
-  const {
-    player,
-    loading: playerLoading,
-    error: playerError,
-    updatePlayer,
-  } = useResolvedPlayer(identity?.uid);
+  useEffect(() => {
+    if (sessionId) devBackendTrace.setActiveScope(sessionId);
+  }, [sessionId]);
 
+  const playerQuery = useQuery(
+    uid ? queryKeys.playerUid(uid) : null,
+    fetchPlayerByUid(uid ?? ""),
+    { enabled: !!uid },
+  );
+
+  const player = playerQuery.data ?? null;
   const playerId = player?.id ?? "";
 
-  const {
-    session,
+  const sessionMeta = useQuery(
+    sessionId ? queryKeys.sessionMeta(sessionId) : null,
+    fetchSessionMeta(sessionId),
+    { enabled: !!sessionId },
+  );
+
+  const journey = useQuery(
+    sessionId && playerId
+      ? queryKeys.journey(sessionId, playerId)
+      : null,
+    fetchJourney(sessionId, playerId),
+    { enabled: !!sessionId && !!playerId },
+  );
+
+  const progressQuery = useQuery(
+    playerId ? queryKeys.progress(playerId) : null,
+    fetchProgress(playerId),
+    { enabled: !!playerId },
+  );
+
+  const buddyQuery = useQuery(
+    playerId ? queryKeys.buddy(playerId) : null,
+    fetchBuddy(playerId),
+    { enabled: !!playerId },
+  );
+
+  const resourcesQuery = useQuery(
+    sessionId && playerId
+      ? queryKeys.resources(sessionId, playerId)
+      : null,
+    fetchPlayerResources(sessionId, playerId, true),
+    { enabled: !!sessionId && !!playerId },
+  );
+
+  const refreshProgress = useCallback(() => {
+    if (playerId) client.invalidateQuery(queryKeys.progress(playerId));
+  }, [client, playerId]);
+
+  const milestones = journey.data?.milestones ?? [];
+  const missions = journey.data?.missions ?? [];
+  const session = sessionMeta.data ?? null;
+
+  const progress = useDerivedPlayerProgress(
+    playerId,
     milestones,
     missions,
-    loading: sessionLoading,
-    error: sessionError,
-  } = useSession(sessionId, { playerId: playerId || undefined });
-
-  const { checking: checkingSession, missing: sessionMissing } =
-    useSessionExists(sessionId);
+    progressQuery.data,
+    progressQuery.isInitialLoading,
+    progressQuery.error,
+    refreshProgress,
+  );
 
   const { removeProfile } = useIdentity();
+
+  const updatePlayerMutation = useMutation({
+    label: "player:update",
+    mutationFn: async (patch: Partial<Omit<Player, keyof PBRecord>>) => {
+      if (!player) throw new Error("No player loaded");
+      return adapter.updatePlayer(player.id, patch);
+    },
+    invalidateKeys: () =>
+      uid ? [queryKeys.playerUid(uid), queryKeys.playerId(playerId)] : [],
+  });
+
+  const updatePlayer = useCallback(
+    async (patch: Partial<Omit<Player, keyof PBRecord>>) =>
+      updatePlayerMutation.mutate(patch),
+    [updatePlayerMutation],
+  );
 
   const handleRemoveStaleProfile = useCallback(() => {
     if (identity) removeProfile(identity.uid);
     clearActiveUid();
     navigate("/", { replace: true });
   }, [identity, removeProfile, navigate]);
-
-  const progress = useProgressPlayer({ playerId, milestones, missions });
-
-  const { buddy } = useBuddyProfile(sessionId, playerId, { role: "player" });
-  const { resources } = useResources(sessionId, {
-    role: "player",
-    playerId: playerId || undefined,
-  });
 
   const tutorialPlayer = useMemo(() => {
     if (!player) return null;
@@ -123,7 +193,7 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     [milestones, missions],
   );
 
-  const missionsReady = !sessionLoading;
+  const missionsReady = !journey.isInitialLoading && !sessionMeta.isInitialLoading;
 
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(
     null,
@@ -197,7 +267,11 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     return milestones[0] ?? null;
   })();
 
-  const isLoading = sessionLoading || playerLoading;
+  const isLoading = sessionMeta.isInitialLoading || playerQuery.isInitialLoading ||
+    journey.isInitialLoading;
+
+  const buddy = buddyQuery.data ?? null;
+  const resources = resourcesQuery.data ?? [];
 
   const aiAppContext = useMemo(() => {
     const lines: string[] = [];
@@ -229,12 +303,17 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     navigate("/", { replace: true });
   }, [navigate]);
 
+  const checkingSession = sessionMeta.isInitialLoading;
+  const sessionMissing = !checkingSession && !!sessionMeta.error;
+
   if (!identity) return { status: "no-identity" };
-  if (playerError) return { status: "player-error" };
+  if (playerQuery.error) return { status: "player-error" };
   if (!checkingSession && sessionMissing) {
     return { status: "session-missing", onRemove: handleRemoveStaleProfile };
   }
-  if (sessionError && !sessionLoading) return { status: "session-redirect" };
+  if (sessionMeta.error && !sessionMeta.isInitialLoading) {
+    return { status: "session-redirect" };
+  }
   if (!player) return { status: "session-redirect" };
 
   return {
@@ -247,6 +326,7 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
       milestones,
       missions,
       session,
+      qrSecret: session?.qrSecret ?? sessionId,
       progress,
       buddy,
       resources,

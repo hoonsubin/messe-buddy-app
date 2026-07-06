@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdClose } from "react-icons/md";
-import { useQRScanContext } from "../../hooks/useQRScanContext.ts";
+import { useQrScan } from "../../hooks/useQrScan.ts";
 import {
   parseValidationToken,
   validationPathFromToken,
@@ -20,12 +20,11 @@ interface GmQRScannerModalProps {
 
 const GmQRScannerModal = (props: GmQRScannerModalProps) => {
   const navigate = useNavigate();
-  const scanContext = useQRScanContext({
-    sessionId: props.sessionId,
-    playerId: props.playerId,
-  });
+  const scanContext = useQrScan(props.sessionId, props.playerId);
   const [cameraReady, setCameraReady] = useState(false);
-  const [validationState, setValidationState] = useState<QrScanState>("scanning");
+  const [validationState, setValidationState] = useState<QrScanState>(
+    "scanning",
+  );
   const [errorMessage, setErrorMessage] = useState("");
   const cameraActive = props.isOpen && cameraReady;
 

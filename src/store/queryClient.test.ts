@@ -68,8 +68,14 @@ Deno.test("getQueryState distinguishes isInitialLoading vs isRefreshing", async 
   });
 
   const first = client.fetchQuery("player:uid:u1", () => gate);
-  assert.equal(client.getQueryState<string>("player:uid:u1").isInitialLoading, true);
-  assert.equal(client.getQueryState<string>("player:uid:u1").isRefreshing, false);
+  assert.equal(
+    client.getQueryState<string>("player:uid:u1").isInitialLoading,
+    true,
+  );
+  assert.equal(
+    client.getQueryState<string>("player:uid:u1").isRefreshing,
+    false,
+  );
 
   resolve("player");
   await first;
@@ -82,13 +88,22 @@ Deno.test("getQueryState distinguishes isInitialLoading vs isRefreshing", async 
   client.invalidateQuery("player:uid:u1");
   const second = client.fetchQuery("player:uid:u1", () => gate2);
 
-  assert.equal(client.getQueryState<string>("player:uid:u1").isInitialLoading, false);
-  assert.equal(client.getQueryState<string>("player:uid:u1").isRefreshing, true);
+  assert.equal(
+    client.getQueryState<string>("player:uid:u1").isInitialLoading,
+    false,
+  );
+  assert.equal(
+    client.getQueryState<string>("player:uid:u1").isRefreshing,
+    true,
+  );
 
   resolveSecond("player");
   await second;
 
-  assert.equal(client.getQueryState<string>("player:uid:u1").isRefreshing, false);
+  assert.equal(
+    client.getQueryState<string>("player:uid:u1").isRefreshing,
+    false,
+  );
   assert.equal(client.getQueryState<string>("player:uid:u1").data, "player");
 });
 
@@ -102,10 +117,13 @@ Deno.test("patchQuery updates cache without a network fetch", async () => {
     "b",
   ]);
 
-  assert.deepEqual(client.getQueryState<ReadonlyArray<string>>("progress:p1").data, [
-    "a",
-    "b",
-  ]);
+  assert.deepEqual(
+    client.getQueryState<ReadonlyArray<string>>("progress:p1").data,
+    [
+      "a",
+      "b",
+    ],
+  );
 });
 
 Deno.test("journey key is not fetched when caller skips fetchQuery", async () => {

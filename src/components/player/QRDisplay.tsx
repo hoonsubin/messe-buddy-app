@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as QRCode from "qrcode";
-import { useSession } from "../../hooks/useSession.ts";
-import { useWatchMission } from "../../hooks/useProgress/index.ts";
+import { useWatchProgressMission } from "../../hooks/useWatchProgressMission.ts";
 import { encodeQRPayload } from "../../utils/qrPayload.ts";
 import { buildValidationUrl } from "../../utils/qrUrl.ts";
 
@@ -9,6 +8,7 @@ interface QRDisplayProps {
   readonly playerId: string;
   readonly missionId: string;
   readonly sessionId: string;
+  readonly qrSecret: string;
   readonly xpValue: number;
   readonly onValidated: () => void;
 }
@@ -16,21 +16,24 @@ interface QRDisplayProps {
 const QRDisplay = (props: QRDisplayProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [encodeError, setEncodeError] = useState<string | null>(null);
-  const { session } = useSession(props.sessionId, {
-    playerId: props.playerId,
-  });
-  const { watchMission } = useWatchMission(props.playerId);
 
-  const { playerId, missionId, sessionId, xpValue, onValidated } = props;
+  const { playerId, missionId, sessionId, qrSecret, xpValue, onValidated } =
+    props;
+
+  useWatchProgressMission(playerId, missionId, (event) => {
+    if (event.status === "completed" || event.status === "autoApproved") {
+      onValidated();
+    }
+  });
 
   useEffect(() => {
     let cancelled = false;
 
     const render = async () => {
-      if (!canvasRef.current || !session) return;
+      if (!canvasRef.current) return;
 
       try {
-        const secret = session.qrSecret ?? sessionId;
+        const secret = qrSecret || sessionId;
 
         const encoded = await encodeQRPayload(
           {
@@ -65,16 +68,7 @@ const QRDisplay = (props: QRDisplayProps) => {
     return () => {
       cancelled = true;
     };
-  }, [playerId, missionId, session, sessionId, xpValue]);
-
-  useEffect(() => {
-    const unsubscribe = watchMission(missionId, (event) => {
-      if (event.status === "completed" || event.status === "autoApproved") {
-        onValidated();
-      }
-    });
-    return unsubscribe;
-  }, [missionId, onValidated, watchMission]);
+  }, [playerId, missionId, qrSecret, sessionId, xpValue]);
 
   return (
     <div

@@ -1,51 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { USER_ROLE } from "../types/index.ts";
-import { useActiveProfile } from "../hooks/useActiveProfile.ts";
-import { useResolvedPlayer } from "../hooks/useResolvedPlayer.ts";
-import { useSession } from "../hooks/useSession.ts";
-import { useProgressPlayer } from "../hooks/useProgress/index.ts";
-import { useFormMission } from "../hooks/useFormMission.ts";
+import { useNavigate } from "react-router-dom";
+import { usePlayerFormPage } from "../hooks/pages/usePlayerFormPage.ts";
 import TopBar from "../components/shared/TopBar.tsx";
 import FetchErrorPanel from "../components/shared/FetchErrorPanel.tsx";
 import FormShell from "../components/form/FormShell.tsx";
 
 const PlayerFormPage = () => {
-  const { sessionId: routeSessionId, missionId } = useParams<{
-    sessionId: string;
-    missionId: string;
-  }>();
-  const sessionId = routeSessionId ?? "";
   const navigate = useNavigate();
-  const identity = useActiveProfile(sessionId, USER_ROLE.PLAYER);
-
-  const {
-    player,
-    loading: playerLoading,
-    updatePlayer,
-  } = useResolvedPlayer(identity?.uid);
-
-  const playerId = player?.id ?? "";
-
-  const {
-    milestones,
-    missions,
-    loading: sessionLoading,
-    error: sessionError,
-    refresh: refreshSession,
-  } = useSession(sessionId, { playerId: playerId || undefined });
-
-  const progress = useProgressPlayer({
-    playerId: player?.id ?? "",
-    milestones,
-    missions,
-  });
-
-  const formMission = useFormMission(sessionId, missionId, missions, {
-    player,
-    updatePlayer,
-    markAutoApproved: progress.markAutoApproved,
-  });
+  const vm = usePlayerFormPage();
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -53,14 +15,13 @@ const PlayerFormPage = () => {
   const [isDraft, setIsDraft] = useState(false);
 
   useEffect(() => {
-    if (!formMission.formSchema) return;
-    // Merge admin-seeded initialValues (PLR-1); fall back to "" for unknown fields.
-    const defaults: Record<string, string> = { ...formMission.initialValues };
-    for (const field of formMission.formSchema.fields) {
+    if (vm.status !== "ready") return;
+    const defaults: Record<string, string> = { ...vm.initialValues };
+    for (const field of vm.formSchema!.fields) {
       if (!(field.id in defaults)) defaults[field.id] = "";
     }
     setValues(defaults);
-  }, [formMission.formSchema, formMission.initialValues]);
+  }, [vm]);
 
   const handleFieldChange = useCallback(
     (fieldId: string, value: string) => {
@@ -76,27 +37,28 @@ const PlayerFormPage = () => {
   );
 
   const validate = useCallback((): boolean => {
-    if (!formMission.formSchema) return false;
+    if (vm.status !== "ready" || !vm.formSchema) return false;
 
     const newErrors: Record<string, string> = {};
-    for (const field of formMission.formSchema.fields) {
+    for (const field of vm.formSchema.fields) {
       if (field.required && !values[field.id]?.trim()) {
         newErrors[field.id] = `${field.label} is required`;
       }
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formMission.formSchema, values]);
+  }, [values, vm]);
 
   const handleSubmit = useCallback(async () => {
+    if (vm.status !== "ready") return;
     if (!validate()) return;
-    if (!player || !missionId) return;
+    if (!vm.player) return;
 
     setIsSubmitting(true);
     setIsDraft(false);
     try {
-      await formMission.submitForm(values);
-      navigate(`/session/${sessionId}`, { replace: true });
+      await vm.submitForm(values);
+      navigate(`/session/${vm.sessionId}`, { replace: true });
     } catch (e) {
       setErrors((prev) => ({
         ...prev,
@@ -105,17 +67,13 @@ const PlayerFormPage = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [validate, player, missionId, formMission, values, sessionId, navigate]);
+  }, [navigate, validate, values, vm]);
 
   const handleSaveForLater = useCallback(() => {
     setIsDraft(true);
   }, []);
 
-  const handleBack = useCallback(() => {
-    navigate(`/session/${sessionId}`);
-  }, [sessionId, navigate]);
-
-  if (!identity) {
+  if (vm.status === "no-identity") {
     return (
       <div
         data-testid="form-page"
@@ -134,23 +92,20 @@ const PlayerFormPage = () => {
     );
   }
 
-  if (sessionError && !sessionLoading) {
+  if (vm.status === "session-error") {
     return (
       <FetchErrorPanel
         message="Could not load session data. Please try again."
-        onRetry={refreshSession}
+        onRetry={vm.refreshSession}
         testId="form-page"
         page="form"
-        {...(sessionId && {
-          onBack: () => navigate(`/session/${sessionId}`),
-          backLabel: "← Back to Dashboard",
-        })}
+        onBack={vm.navigateBack}
+        backLabel="← Back to Dashboard"
       />
     );
   }
 
-  const isLoading = playerLoading || sessionLoading || formMission.loading;
-  if (isLoading) {
+  if (vm.status === "loading") {
     return (
       <div
         data-testid="form-page"
@@ -169,7 +124,7 @@ const PlayerFormPage = () => {
     );
   }
 
-  if (formMission.error) {
+  if (vm.status === "form-error") {
     return (
       <div
         data-testid="form-page"
@@ -187,22 +142,20 @@ const PlayerFormPage = () => {
         }}
       >
         <p style={{ color: "hsl(var(--color-destructive))" }}>
-          {formMission.error.message}
+          {vm.formError?.message}
         </p>
-        {sessionId && (
-          <button
-            type="button"
-            className="btn btn--secondary"
-            onClick={handleBack}
-          >
-            ← Back to Dashboard
-          </button>
-        )}
+        <button
+          type="button"
+          className="btn btn--secondary"
+          onClick={vm.navigateBack}
+        >
+          ← Back to Dashboard
+        </button>
       </div>
     );
   }
 
-  if (!formMission.formSchema) {
+  if (vm.status === "no-schema") {
     return (
       <div
         data-testid="form-page"
@@ -220,18 +173,22 @@ const PlayerFormPage = () => {
         }}
       >
         <p>No form schema found for this mission.</p>
-        {sessionId && (
-          <button
-            type="button"
-            className="btn btn--secondary"
-            onClick={handleBack}
-          >
-            ← Back to Dashboard
-          </button>
-        )}
+        <button
+          type="button"
+          className="btn btn--secondary"
+          onClick={vm.navigateBack}
+        >
+          ← Back to Dashboard
+        </button>
       </div>
     );
   }
+
+  if (vm.status !== "ready" || !vm.formSchema) {
+    return null;
+  }
+
+  const { formSchema } = vm;
 
   return (
     <div
@@ -245,8 +202,8 @@ const PlayerFormPage = () => {
       }}
     >
       <TopBar
-        playerName={player?.name || (identity.uid.slice(0, 6))}
-        totalXP={progress.playerProgress?.totalXP ?? 0}
+        playerName={vm.player?.name || (vm.identity.uid.slice(0, 6))}
+        totalXP={vm.progress.playerProgress?.totalXP ?? 0}
         role="player"
       />
 
@@ -277,9 +234,9 @@ const PlayerFormPage = () => {
             </p>
           )}
           <FormShell
-            missionTitle={formMission.missionTitle}
-            description={formMission.missionBody}
-            fields={formMission.formSchema.fields}
+            missionTitle={vm.missionTitle}
+            description={vm.missionBody}
+            fields={formSchema.fields}
             values={values}
             errors={errors}
             isSubmitting={isSubmitting}
@@ -287,7 +244,7 @@ const PlayerFormPage = () => {
             onFieldChange={handleFieldChange}
             onSubmit={handleSubmit}
             onSaveForLater={handleSaveForLater}
-            onBack={handleBack}
+            onBack={vm.navigateBack}
           />
         </div>
       </main>

@@ -1,6 +1,5 @@
-import { useEffect } from "react";
 import type { Mission } from "../../types/index.ts";
-import { useWatchMission } from "../../hooks/useProgress/index.ts";
+import { useWatchProgressMission } from "../../hooks/useWatchProgressMission.ts";
 import QRDisplay from "./QRDisplay.tsx";
 import PendingApprovalDisplay from "./PendingApprovalDisplay.tsx";
 
@@ -8,26 +7,26 @@ interface ValidationDisplayProps {
   readonly playerId: string;
   readonly missionId: string;
   readonly sessionId: string;
+  readonly qrSecret: string;
   readonly mission: Mission;
   readonly onValidated: () => void;
 }
 
 const ValidationDisplay = (props: ValidationDisplayProps) => {
-  const { playerId, missionId, sessionId, mission, onValidated } = props;
+  const { playerId, missionId, sessionId, qrSecret, mission, onValidated } =
+    props;
   const method = mission.validationMethod;
-  const { watchMission } = useWatchMission(playerId);
 
-  useEffect(() => {
-    if (method !== "gmApprove") return;
-
-    const unsubscribe = watchMission(missionId, (event) => {
+  useWatchProgressMission(
+    playerId,
+    missionId,
+    (event) => {
       if (event.status === "completed" || event.status === "autoApproved") {
         onValidated();
       }
-    });
-
-    return unsubscribe;
-  }, [method, missionId, onValidated, watchMission]);
+    },
+    method === "gmApprove",
+  );
 
   return (
     <div
@@ -41,6 +40,7 @@ const ValidationDisplay = (props: ValidationDisplayProps) => {
             playerId={playerId}
             missionId={missionId}
             sessionId={sessionId}
+            qrSecret={qrSecret}
             xpValue={mission.xpValue}
             onValidated={onValidated}
           />

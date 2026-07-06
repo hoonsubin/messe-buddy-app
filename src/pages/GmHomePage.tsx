@@ -1,14 +1,3 @@
-import { useCallback, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { MdArrowBack } from "react-icons/md";
-import { USER_ROLE } from "../types/index.ts";
-import { useActiveProfile } from "../hooks/useActiveProfile.ts";
-import { clearActiveUid, useIdentity } from "../hooks/useIdentity.ts";
-import { useSessionExists } from "../hooks/useSessionExists.ts";
-import { useGmPlayers } from "../hooks/useProgress/gmPlayers.ts";
-import { usePlayerTemplates } from "../hooks/usePlayerTemplates.ts";
-import type { CreateOnboardingJourneyInput } from "../use-cases/createOnboardingJourney.ts";
-import { parseGmHomeTab } from "../utils/routeTabs.ts";
 import TopBar from "../components/shared/TopBar.tsx";
 import RouteTabBar from "../components/shared/RouteTabBar.tsx";
 import Toast from "../components/shared/Toast.tsx";
@@ -16,70 +5,12 @@ import OnboardingJourneyModal from "../components/gamemaker/OnboardingJourneyMod
 import GmPlayersTab from "../components/gamemaker/GmPlayersTab.tsx";
 import ResourceLibraryTab from "../components/gamemaker/ResourceLibraryTab.tsx";
 import { gmHomeTabsForSession } from "../components/gamemaker/gmHomeConstants.ts";
+import { useGmHomePage } from "../hooks/pages/useGmHomePage.ts";
+import { MdArrowBack } from "react-icons/md";
+import { clearActiveUid } from "../hooks/useIdentity.ts";
 
 const GmHomePage = () => {
-  const { sessionId } = useParams<{ sessionId: string }>();
-  const sid = sessionId ?? "";
-  const location = useLocation();
-  const tab = parseGmHomeTab(location.pathname);
-  const navigate = useNavigate();
-  const { removeProfile } = useIdentity();
-  const identity = useActiveProfile(sid, USER_ROLE.GAMEMAKER);
-
-  const { players, loading, createOnboardingJourney } = useGmPlayers(sid, true);
-  const { templates } = usePlayerTemplates(sid, "");
-  const { checking: checkingSession, missing: sessionMissing } =
-    useSessionExists(sid);
-
-  const [wizardOpen, setWizardOpen] = useState(false);
-  const [wizardKey, setWizardKey] = useState(0);
-  const [creating, setCreating] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
-  const [toastError, setToastError] = useState(false);
-
-  const showToast = useCallback((msg: string, isError = false) => {
-    setToast(msg);
-    setToastError(isError);
-    setTimeout(() => {
-      setToast(null);
-      setToastError(false);
-    }, 3000);
-  }, []);
-
-  const handleRemoveStaleProfile = useCallback(() => {
-    if (identity) removeProfile(identity.uid);
-    clearActiveUid();
-    navigate("/", { replace: true });
-  }, [identity, removeProfile, navigate]);
-
-  const handleCreateJourney = useCallback(
-    (input: CreateOnboardingJourneyInput) => {
-      setCreating(true);
-      void createOnboardingJourney(input)
-        .then(({ playerId, inviteToken }) => {
-          setWizardOpen(false);
-          setCreating(false);
-          navigate(`/gamemaker/${sid}/player/${playerId}/customize`, {
-            state: { inviteToken },
-          });
-        })
-        .catch(() => {
-          setCreating(false);
-          showToast("Could not create onboarding journey", true);
-        });
-    },
-    [createOnboardingJourney, navigate, sid, showToast],
-  );
-
-  const joinedCount = players.filter((p) => p.joined).length;
-  const joinedPlayers = players.filter((p) => p.joined);
-  const avgProgress = joinedCount > 0
-    ? Math.round(
-      joinedPlayers.reduce((s, p) => s + p.progressPercent, 0) / joinedCount,
-    )
-    : 0;
-  const stalledCount = joinedPlayers.filter((p) => p.isStalled).length;
-  const pendingCount = players.length - joinedCount;
+  const vm = useGmHomePage();
 
   return (
     <div
@@ -88,7 +19,7 @@ const GmHomePage = () => {
       data-page="gm-home"
     >
       <TopBar
-        playerName={identity?.name ?? "Game Master"}
+        playerName={vm.identity?.name ?? "Game Master"}
         role="Game Master"
       />
 
@@ -98,56 +29,69 @@ const GmHomePage = () => {
           className="btn btn--ghost gm-home__back-btn"
           onClick={() => {
             clearActiveUid();
-            navigate("/", { replace: true });
+            vm.navigate("/", { replace: true });
           }}
         >
           <MdArrowBack size={16} aria-hidden="true" />
-          {identity?.isDemo ? "Back to Landing" : "Log Out"}
+          {vm.identity?.isDemo ? "Back to Landing" : "Log Out"}
         </button>
       </div>
 
       <RouteTabBar
-        tabs={gmHomeTabsForSession(sid)}
+        tabs={gmHomeTabsForSession(vm.sid)}
         ariaLabel="Game Maker workspace"
         testIdPrefix="gm-home-tab"
       />
 
       <main className="gm-home__main">
-        {tab === "players"
+        {vm.tab === "players"
           ? (
             <GmPlayersTab
-              players={players}
-              loading={loading}
-              checkingSession={checkingSession}
-              sessionMissing={sessionMissing}
-              joinedCount={joinedCount}
-              avgProgress={avgProgress}
-              stalledCount={stalledCount}
-              pendingCount={pendingCount}
+              players={vm.players}
+              loading={vm.loading}
+              checkingSession={vm.checkingSession}
+              sessionMissing={vm.sessionMissing}
+              joinedCount={vm.joinedCount}
+              avgProgress={vm.avgProgress}
+              stalledCount={vm.stalledCount}
+              pendingCount={vm.pendingCount}
               onAdd={() => {
-                setWizardKey((k) => k + 1);
-                setWizardOpen(true);
+                vm.setWizardKey((k) => k + 1);
+                vm.setWizardOpen(true);
               }}
               onOpenPlayer={(playerId) =>
-                navigate(`/gamemaker/${sid}/player/${playerId}`)}
-              onRemoveStaleProfile={handleRemoveStaleProfile}
+                vm.navigate(`/gamemaker/${vm.sid}/player/${playerId}`)}
+              onRemoveStaleProfile={vm.handleRemoveStaleProfile}
             />
           )
-          : <ResourceLibraryTab active={tab === "library"} />}
+          : (
+            <ResourceLibraryTab
+              resources={vm.libraryResources}
+              tagSuggestions={vm.libraryTagSuggestions}
+              loading={vm.libraryLoading}
+              error={vm.libraryError}
+              refresh={vm.refreshLibrary}
+              createResource={vm.createLibraryResource}
+              updateResource={vm.updateLibraryResource}
+              deleteResource={vm.deleteLibraryResource}
+            />
+          )}
       </main>
 
-      {wizardOpen && (
+      {vm.wizardOpen && (
         <OnboardingJourneyModal
-          key={wizardKey}
-          sessionId={sid}
-          templates={templates}
-          loading={creating}
-          onSubmit={handleCreateJourney}
-          onClose={() => setWizardOpen(false)}
+          key={vm.wizardKey}
+          sessionId={vm.sid}
+          templates={vm.templates}
+          buddyOptions={vm.buddyOptions}
+          buddyLoading={vm.buddyLoading}
+          loading={vm.creating}
+          onSubmit={vm.handleCreateJourney}
+          onClose={() => vm.setWizardOpen(false)}
         />
       )}
 
-      <Toast message={toast} isError={toastError} />
+      <Toast message={vm.toast} isError={vm.toastError} />
     </div>
   );
 };

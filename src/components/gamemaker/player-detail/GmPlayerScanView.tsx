@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdArrowBack } from "react-icons/md";
-import { useQRScanContext } from "../../../hooks/useQRScanContext.ts";
+import { useQrScan } from "../../../hooks/useQrScan.ts";
 import type { GmPlayerDetailPageModel } from "../../../hooks/pages/useGmPlayerDetailPage.ts";
 import {
   parseValidationToken,
@@ -16,12 +16,11 @@ interface GmPlayerScanViewProps {
 
 const GmPlayerScanView = ({ vm }: GmPlayerScanViewProps) => {
   const navigate = useNavigate();
-  const scanContext = useQRScanContext({
-    sessionId: vm.homeSid,
-    playerId: vm.playerId,
-  });
+  const scanContext = useQrScan(vm.homeSid, vm.playerId);
   const [cameraActive, setCameraActive] = useState(true);
-  const [validationState, setValidationState] = useState<QrScanState>("scanning");
+  const [validationState, setValidationState] = useState<QrScanState>(
+    "scanning",
+  );
   const [errorMessage, setErrorMessage] = useState("");
 
   const handleDecode = useCallback(

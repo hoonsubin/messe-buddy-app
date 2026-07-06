@@ -1,25 +1,45 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import type {
+  FormSchema,
+  Milestone,
+  MilestoneProgress,
+  PBRecord,
+  PreBoardingCheckItem,
+  Resource,
+  Session,
+} from "../../types/index.ts";
+import { MISSION_TYPE, USER_ROLE } from "../../types/index.ts";
 import {
-  useLocation,
-  useNavigate,
-  useParams,
-} from "react-router-dom";
-import type { Milestone, MilestoneProgress } from "../../types/index.ts";
-import { USER_ROLE } from "../../types/index.ts";
-import { usePlayerInviteToken } from "../usePlayerInviteToken.ts";
+  type BuddyProfileDraft,
+  emptyBuddyProfileDraft,
+} from "../../types/buddyPicker.ts";
+import type { AddResourceInput } from "../../types/resourceInputs.ts";
 import { computeProgress } from "../../use-cases/computeProgress.ts";
 import { useActiveProfile } from "../useActiveProfile.ts";
-import { useSession } from "../useSession.ts";
 import { useGmMilestoneEditor } from "../useGmMilestoneEditor.ts";
 import { useGmMissionEditor } from "../useGmMissionEditor.ts";
-import { useProgressGamemaker } from "../useProgress/index.ts";
-import { useBuddyProfile } from "../useBuddyProfile.ts";
+import { useGmProgressView } from "../useGmProgressView.ts";
+import { useQuery } from "../useQuery.ts";
+import { useAdapter } from "../../adapters/useAdapter.ts";
+import { devBackendTrace } from "../../store/devBackendTrace.ts";
 import {
-  type AddResourceInput,
-  useResources,
-} from "../useResources.ts";
-import { usePreBoardingChecklist } from "../usePreBoardingChecklist.ts";
-import { usePlayerTemplates } from "../usePlayerTemplates.ts";
+  fetchBuddy,
+  fetchJourney,
+  fetchPlayerById,
+  fetchPlayerResources,
+  fetchSessionMeta,
+  fetchTemplates,
+} from "../../store/queryFetchers.ts";
+import { queryKeys } from "../../store/queryKeys.ts";
+import { useQueryClient } from "../../store/useQueryClient.ts";
+import { applyTemplateToPlayer } from "../../use-cases/applyTemplateToPlayer.ts";
+import { exportTemplate } from "../../use-cases/exportTemplate.ts";
+import {
+  ensureUniqueResourceKey,
+  generateResourceKey,
+} from "../../utils/resourceKey.ts";
+import { makeId } from "../../utils/id.ts";
 import type { PlayerDetailTabKey } from "../../components/gamemaker/player-detail/constants.ts";
 import {
   readAppliedTemplate,
@@ -47,6 +67,8 @@ export const useGmPlayerDetailPage = () => {
   const navInviteToken =
     (location.state as PlayerDetailNavState | null)?.inviteToken ?? "";
   const identity = useActiveProfile(homeSid, USER_ROLE.GAMEMAKER);
+  const adapter = useAdapter();
+  const client = useQueryClient();
 
   const routeTab = parsePlayerDetailTab(location.pathname);
   const isScanMode = routeTab === "scan";
@@ -67,62 +89,371 @@ export const useGmPlayerDetailPage = () => {
     navigate(playerDetailTabPath(homeSid, playerId, tab));
   }, [navigate, homeSid, playerId, tab]);
 
-  const {
-    session,
-    milestones,
-    missions,
-    error: sessionError,
-    loading: sessionLoading,
-    refresh: refreshSession,
-    uploadBackground,
-    updateMapNodeScale,
-  } = useSession(homeSid, { role: "gamemaker", playerId });
+  useEffect(() => {
+    if (homeSid) devBackendTrace.setActiveScope(homeSid);
+  }, [homeSid]);
+
+  const sessionMeta = useQuery(
+    homeSid ? queryKeys.sessionMeta(homeSid) : null,
+    fetchSessionMeta(homeSid),
+    { enabled: !!homeSid },
+  );
+
+  const journey = useQuery(
+    homeSid && playerId
+      ? queryKeys.journey(homeSid, playerId)
+      : null,
+    fetchJourney(homeSid, playerId),
+    { enabled: !!homeSid && !!playerId },
+  );
+
+  const session = sessionMeta.data ?? null;
+  const milestones = journey.data?.milestones ?? [];
+  const missions = journey.data?.missions ?? [];
+  const sessionLoading = sessionMeta.isInitialLoading || journey.isInitialLoading;
+  const sessionError = sessionMeta.error ?? journey.error;
+
+  const refreshSession = useCallback(() => {
+    client.invalidateQuery([
+      queryKeys.sessionMeta(homeSid),
+      queryKeys.journey(homeSid, playerId),
+      queryKeys.gmRoster(homeSid),
+    ]);
+  }, [client, homeSid, playerId]);
+
+  const updateSession = useCallback(
+    async (
+      patch: Partial<Omit<Session, keyof PBRecord | "bgImageUrl">> & {
+        readonly bgImageUrl?: string | File;
+      },
+    ) => {
+      const updated = await adapter.updateSession(homeSid, patch);
+      client.patchQuery(queryKeys.sessionMeta(homeSid), () => updated);
+      return updated;
+    },
+    [adapter, client, homeSid],
+  );
+
+  const uploadBackground = useCallback(
+    async (file: File) => {
+      const updated = await updateSession({ bgImageUrl: file });
+      return { displayUrl: updated.bgImageUrl };
+    },
+    [updateSession],
+  );
+
+  const updateMapNodeScale = useCallback(
+    async (scale: number) => {
+      await updateSession({ mapNodeScale: scale });
+    },
+    [updateSession],
+  );
 
   const milestoneEditor = useGmMilestoneEditor(milestones);
   const missionEditor = useGmMissionEditor(missions);
 
-  const gmProgress = useProgressGamemaker({
-    sid: homeSid,
+  const gmProgress = useGmProgressView(
+    homeSid,
+    playerId,
     milestones,
     missions,
-    validatorUid: identity?.uid,
-  });
-
-  useEffect(() => {
-    if (playerId) gmProgress.handlePlayerSelect(playerId);
-    // gmProgress is a fresh object every render; handlePlayerSelect is the
-    // only thing used here and is itself stable (useCallback([], [])), so
-    // depending on the whole object would refire this on every unrelated
-    // gmProgress change (e.g. loading/players updates).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playerId, gmProgress.handlePlayerSelect]);
+    identity?.uid,
+  );
 
   useEffect(() => {
     if (playerId) gmProgress.refresh();
-    // Same reasoning as above: depending on the whole gmProgress object here
-    // would re-trigger refresh() on every state change it causes, looping.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerId, gmProgress.refresh]);
 
-  const inviteToken = usePlayerInviteToken(playerId, {
-    listToken: gmProgress.selectedPlayer?.inviteToken,
-    navToken: navInviteToken,
-  });
+  const playerQuery = useQuery(
+    playerId ? queryKeys.playerId(playerId) : null,
+    fetchPlayerById(playerId),
+    { enabled: !!playerId },
+  );
 
-  const buddyProfile = useBuddyProfile(homeSid, playerId, {
-    role: "gamemaker",
-  });
-  const gmResources = useResources(homeSid, {
-    role: "gamemaker",
-    playerId,
-  });
-  const preBoardingChecklist = usePreBoardingChecklist(homeSid, session);
-  const {
-    templates,
-    applying: applyingTemplate,
-    applyTemplate,
-    saveAsTemplate,
-  } = usePlayerTemplates(homeSid, playerId);
+  const inviteToken = useMemo(() => {
+    const fromList = gmProgress.selectedPlayer?.inviteToken ?? "";
+    if (fromList.length >= 8) return fromList;
+    const fetched = playerQuery.data?.inviteToken ?? "";
+    if (fetched.length >= 8) return fetched;
+    if (navInviteToken.length >= 8) return navInviteToken;
+    return fromList || fetched || navInviteToken;
+  }, [
+    gmProgress.selectedPlayer?.inviteToken,
+    navInviteToken,
+    playerQuery.data?.inviteToken,
+  ]);
+
+  const buddyQuery = useQuery(
+    playerId ? queryKeys.buddy(playerId) : null,
+    fetchBuddy(playerId),
+    { enabled: !!playerId },
+  );
+
+  const [buddyDraft, setBuddyDraft] = useState<BuddyProfileDraft>(() =>
+    emptyBuddyProfileDraft(homeSid)
+  );
+
+  useEffect(() => {
+    const profile = buddyQuery.data;
+    if (profile) {
+      setBuddyDraft({
+        sessionId: profile.sessionId,
+        name: profile.name,
+        role: profile.role,
+        email: profile.email ?? "",
+        phone: profile.phone ?? "",
+        tenure: profile.tenure ?? "",
+        contactUrl: profile.contactUrl ?? "",
+        quote: profile.quote,
+        avatarUrl: profile.avatarUrl,
+      });
+    } else if (!buddyQuery.isInitialLoading) {
+      setBuddyDraft(emptyBuddyProfileDraft(homeSid));
+    }
+  }, [buddyQuery.data, buddyQuery.isInitialLoading, homeSid]);
+
+  const upsertBuddy = useCallback(async () => {
+    if (!playerId) return;
+    await adapter.upsertBuddyProfile(playerId, buddyDraft);
+    client.invalidateQuery(queryKeys.buddy(playerId));
+  }, [adapter, buddyDraft, client, playerId]);
+
+  const buddyProfile = {
+    role: "gamemaker" as const,
+    buddyDraft,
+    savedBuddy: buddyQuery.data ?? null,
+    setBuddyDraft,
+    upsertBuddy,
+    loading: buddyQuery.isInitialLoading,
+    error: buddyQuery.error,
+    refresh: () => client.invalidateQuery(queryKeys.buddy(playerId)),
+  };
+
+  const resourcesQuery = useQuery(
+    homeSid && playerId
+      ? queryKeys.resources(homeSid, playerId)
+      : null,
+    fetchPlayerResources(homeSid, playerId, false),
+    { enabled: !!homeSid && !!playerId },
+  );
+
+  const refreshResources = useCallback(() => {
+    if (homeSid && playerId) {
+      client.invalidateQuery(queryKeys.resources(homeSid, playerId));
+    }
+  }, [client, homeSid, playerId]);
+
+  const slugKey = useCallback(
+    async (title: string): Promise<string> => {
+      const existing = await adapter.listLibraryResources();
+      const keys = new Set(existing.map((r) => r.resourceKey));
+      return ensureUniqueResourceKey(generateResourceKey(title), keys);
+    },
+    [adapter],
+  );
+
+  const addResource = useCallback(
+    async (data: AddResourceInput) => {
+      if (!playerId) throw new Error("playerId required to attach resources");
+      const lib = await adapter.createLibraryResource({
+        resourceKey: await slugKey(data.title),
+        title: data.title,
+        type: data.type,
+        url: data.url,
+        description: data.description,
+      });
+      const msId = data.milestoneId;
+      if (!msId) throw new Error("milestoneId required to attach resources");
+      await adapter.attachMilestoneResource({
+        sessionId: homeSid,
+        playerId,
+        milestoneId: msId,
+        libraryResourceId: lib.id,
+        isVisibleToPlayer: data.isVisibleToPlayer,
+      });
+      refreshResources();
+    },
+    [adapter, homeSid, playerId, refreshResources, slugKey],
+  );
+
+  const updateResource = useCallback(
+    async (
+      resourceId: string,
+      patch: Partial<Omit<Resource, "id" | "created" | "updated">>,
+    ) => {
+      const libFields: Array<
+        keyof Pick<
+          Resource,
+          "title" | "type" | "url" | "description" | "resourceKey"
+        >
+      > = ["title", "type", "url", "description", "resourceKey"];
+      const libPatch = Object.fromEntries(
+        libFields
+          .filter((key) => patch[key] !== undefined)
+          .map((key) => [key, patch[key]]),
+      ) as Partial<
+        Pick<Resource, "title" | "type" | "url" | "description" | "resourceKey">
+      >;
+      if (Object.keys(libPatch).length > 0) {
+        await adapter.updateLibraryResource(resourceId, libPatch);
+      }
+      const { isVisibleToPlayer } = patch;
+      if (isVisibleToPlayer !== undefined && playerId) {
+        const attachments = await adapter.listMilestoneResources(playerId);
+        const match = attachments.find((mr) =>
+          mr.libraryResourceId === resourceId
+        );
+        if (match) {
+          await adapter.updateMilestoneResource(match.id, {
+            isVisibleToPlayer,
+          });
+        }
+      }
+      refreshResources();
+    },
+    [adapter, playerId, refreshResources],
+  );
+
+  const deleteResource = useCallback(
+    async (resourceId: string) => {
+      if (playerId) {
+        const attachments = await adapter.listMilestoneResources(playerId);
+        for (const mr of attachments) {
+          if (mr.libraryResourceId === resourceId) {
+            await adapter.detachMilestoneResource(mr.id);
+          }
+        }
+      }
+      await adapter.deleteLibraryResource(resourceId);
+      refreshResources();
+    },
+    [adapter, playerId, refreshResources],
+  );
+
+  const toggleVisibility = useCallback(
+    async (resourceId: string, visible: boolean) => {
+      await updateResource(resourceId, { isVisibleToPlayer: visible });
+    },
+    [updateResource],
+  );
+
+  const gmResources = {
+    role: "gamemaker" as const,
+    resources: resourcesQuery.data ?? [],
+    loading: resourcesQuery.isInitialLoading,
+    error: resourcesQuery.error,
+    refresh: refreshResources,
+    addResource,
+    updateResource,
+    deleteResource,
+    toggleVisibility,
+  };
+
+  const [preBoardingItems, setPreBoardingItems] = useState<
+    ReadonlyArray<PreBoardingCheckItem>
+  >([]);
+
+  useEffect(() => {
+    if (session) setPreBoardingItems(session.preBoardingChecks);
+  }, [session]);
+
+  const persistPreBoarding = useCallback(
+    (next: ReadonlyArray<PreBoardingCheckItem>) => {
+      setPreBoardingItems(next);
+      void adapter.updateSession(homeSid, { preBoardingChecks: next }).then(
+        (updated) => {
+          client.patchQuery(queryKeys.sessionMeta(homeSid), () => updated);
+        },
+      );
+    },
+    [adapter, client, homeSid],
+  );
+
+  const preBoardingChecklist = {
+    items: preBoardingItems,
+    onToggle: (id: string) => {
+      persistPreBoarding(
+        preBoardingItems.map((item) =>
+          item.id === id ? { ...item, checked: !item.checked } : item
+        ),
+      );
+    },
+    onAdd: (label: string) => {
+      persistPreBoarding([
+        ...preBoardingItems,
+        { id: makeId(), label, checked: false },
+      ]);
+    },
+    onMarkAllDone: () => {
+      persistPreBoarding(
+        preBoardingItems.map((item) => ({ ...item, checked: true })),
+      );
+    },
+  };
+
+  const templatesQuery = useQuery(queryKeys.templates(), fetchTemplates());
+  const templates = templatesQuery.data ?? [];
+  const [applyingTemplate, setApplyingTemplate] = useState(false);
+
+  const applyTemplate = useCallback(
+    async (templateName: string): Promise<void> => {
+      const t = templates.find((tpl) => tpl.name === templateName);
+      if (!t) return;
+      setApplyingTemplate(true);
+      try {
+        await applyTemplateToPlayer(homeSid, playerId, t, adapter);
+        refreshSession();
+      } finally {
+        setApplyingTemplate(false);
+      }
+    },
+    [adapter, homeSid, playerId, refreshSession, templates],
+  );
+
+  const saveAsTemplate = useCallback(
+    async (
+      name: string,
+      input: {
+        readonly milestones: ReadonlyArray<Milestone>;
+        readonly missions: typeof missions;
+        readonly resources: ReadonlyArray<Resource>;
+      },
+    ): Promise<void> => {
+      const formMissions = input.missions.filter(
+        (m) => m.type === MISSION_TYPE.FORM,
+      );
+      const schemaResults = await Promise.all(
+        formMissions.map((m) => adapter.getFormSchema(m.id).catch(() => null)),
+      );
+      const schemas = schemaResults.filter(
+        (s): s is FormSchema => s !== null,
+      );
+      const [library, attachments] = await Promise.all([
+        adapter.listLibraryResources(),
+        adapter.listMilestoneResources(playerId),
+      ]);
+      const visibilityByLib = new Map(
+        input.resources.map((r) => [r.id, r.isVisibleToPlayer]),
+      );
+      const milestoneResources = attachments.map((mr) => ({
+        ...mr,
+        isVisibleToPlayer: visibilityByLib.get(mr.libraryResourceId) ??
+          mr.isVisibleToPlayer,
+      }));
+      const tpl = exportTemplate(
+        name,
+        input.milestones,
+        input.missions,
+        schemas,
+        milestoneResources,
+        library,
+      );
+      await adapter.saveTemplate(tpl);
+      client.invalidateQuery(queryKeys.templates());
+    },
+    [adapter, client, playerId],
+  );
 
   const [appliedTemplate, setAppliedTemplate] = useState<string | null>(() =>
     readAppliedTemplate(playerId)

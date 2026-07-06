@@ -1,11 +1,10 @@
 import { useState } from "react";
-import type { BuddySelection, TemplateExport } from "../../types/index.ts";
+import type { BuddyProfile, BuddySelection, TemplateExport } from "../../types/index.ts";
 import {
   defaultBuddySelection,
   isBuddySelectionValid,
 } from "../../types/buddyPicker.ts";
 import type { CreateOnboardingJourneyInput } from "../../use-cases/createOnboardingJourney.ts";
-import { useBuddyPickerOptions } from "../../hooks/useBuddyPickerOptions.ts";
 import { BottomSheet } from "../shared/BottomSheet.tsx";
 import Button from "../shared/Button.tsx";
 import { BUTTON_VARIANT } from "../shared/types.ts";
@@ -18,6 +17,8 @@ type WizardStep = 1 | 2 | 3;
 interface OnboardingJourneyModalProps {
   readonly sessionId: string;
   readonly templates: ReadonlyArray<TemplateExport>;
+  readonly buddyOptions: ReadonlyArray<BuddyProfile>;
+  readonly buddyLoading: boolean;
   readonly loading: boolean;
   readonly onSubmit: (input: CreateOnboardingJourneyInput) => void;
   readonly onClose: () => void;
@@ -32,6 +33,8 @@ const STEP_TITLES: Record<WizardStep, string> = {
 const OnboardingJourneyModal = ({
   sessionId,
   templates,
+  buddyOptions,
+  buddyLoading,
   loading,
   onSubmit,
   onClose,
@@ -40,11 +43,6 @@ const OnboardingJourneyModal = ({
   const [playerName, setPlayerName] = useState("");
   const [buddy, setBuddy] = useState<BuddySelection | null>(null);
   const [templateName, setTemplateName] = useState<string | null>(null);
-
-  const {
-    options: buddyOptions,
-    loading: buddyLoading,
-  } = useBuddyPickerOptions(sessionId, true);
 
   const trimmedName = playerName.trim();
   const canContinueStep1 = trimmedName.length > 0;

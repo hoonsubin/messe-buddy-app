@@ -133,6 +133,7 @@ const PlayerCockpitPage = () => {
           mission={m.popupMission}
           playerId={m.player.id}
           sessionId={m.sessionId}
+          qrSecret={m.qrSecret ?? m.sessionId}
           progressEvent={m.progress.progressEvents.find((e) =>
             e.missionId === m.popupMission!.id
           ) ?? null}

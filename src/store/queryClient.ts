@@ -68,9 +68,7 @@ export const createQueryClient = (): QueryClient => {
     if (
       entry?.data !== undefined && entry.status === "success" && !entry.stale
     ) {
-      const ageMs = entry.fetchedAt !== null
-        ? Date.now() - entry.fetchedAt
-        : 0;
+      const ageMs = entry.fetchedAt !== null ? Date.now() - entry.fetchedAt : 0;
       devBackendTrace.queryHit(key, ageMs);
       return entry.data;
     }
@@ -126,7 +124,7 @@ export const createQueryClient = (): QueryClient => {
     };
   };
 
-  const subscribe = (key: string, listener: () => void): (() => void) => {
+  const subscribe = (key: string, listener: () => void): () => void => {
     let set = listeners.get(key);
     if (!set) {
       set = new Set();

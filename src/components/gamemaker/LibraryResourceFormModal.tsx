@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { LibraryResource } from "../../types/index.ts";
-import type { LibraryResourceInput } from "../../hooks/useLibraryResources.ts";
+import type { LibraryResourceInput } from "../../types/resourceInputs.ts";
 import { parseLibraryTags } from "../../utils/libraryTags.ts";
 import FreeformTagInput from "../shared/FreeformTagInput.tsx";
 import Button from "../shared/Button.tsx";

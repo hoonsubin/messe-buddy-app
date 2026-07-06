@@ -4,26 +4,7 @@ import type {
   Player,
   PlayerProgress,
   ProgressEvent,
-} from "../../types/index.ts";
-
-export interface UseProgressPlayerOptions {
-  readonly mode: "player";
-  readonly playerId: string;
-  readonly milestones: ReadonlyArray<Milestone>;
-  readonly missions: ReadonlyArray<Mission>;
-}
-
-export interface UseProgressGamemakerOptions {
-  readonly mode: "gamemaker";
-  readonly sid: string;
-  readonly milestones: ReadonlyArray<Milestone>;
-  readonly missions: ReadonlyArray<Mission>;
-  readonly validatorUid?: string;
-}
-
-export type UseProgressOptions =
-  | UseProgressPlayerOptions
-  | UseProgressGamemakerOptions;
+} from "../types/index.ts";
 
 export interface UseProgressPlayerResult {
   readonly mode: "player";
@@ -64,3 +45,5 @@ export interface UseProgressGamemakerResult {
   ) => Promise<void>;
   readonly handleReject: (playerId: string, missionId: string) => Promise<void>;
 }
+
+export type { Milestone, Mission };

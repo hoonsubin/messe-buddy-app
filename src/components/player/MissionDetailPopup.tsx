@@ -59,6 +59,7 @@ interface MissionDetailPopupProps {
   readonly mission: Mission;
   readonly playerId: string;
   readonly sessionId: string;
+  readonly qrSecret: string;
   readonly progressEvent?: ProgressEvent | null;
   readonly markSelfComplete: () => Promise<void>;
   readonly markPending: () => Promise<void>;
@@ -206,6 +207,7 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
               playerId={props.playerId}
               missionId={mission.id}
               sessionId={props.sessionId}
+              qrSecret={props.qrSecret}
               mission={mission}
               onValidated={props.onValidated}
             />

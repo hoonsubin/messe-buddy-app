@@ -6,7 +6,7 @@ import type {
   Mission,
   Resource,
 } from "../../types/index.ts";
-import type { AddResourceInput } from "../../hooks/useResources.ts";
+import type { AddResourceInput } from "../../types/resourceInputs.ts";
 import type { StoredDraft } from "../../utils/draftStorage.ts";
 import {
   clearStoredDraft,
