@@ -7,8 +7,9 @@ import {
   defaultBuddySelection,
   emptyBuddyProfileDraft,
 } from "../../types/buddyPicker.ts";
+import { useMemo } from "react";
 import { cn } from "../../utils/cn.ts";
-import SelectCard from "../patterns/SelectCard.tsx";
+import SelectCardList from "../shared/SelectCardList.tsx";
 import BuddyAssignmentFields from "./BuddyAssignmentFields.tsx";
 
 type BuddyMode = "existing" | "new";
@@ -48,6 +49,30 @@ const BuddyPicker = ({
     ? value.draft
     : emptyBuddyProfileDraft(sessionId);
 
+  const buddyItems = useMemo(
+    () =>
+      options.map((profile) => {
+        const contact = [profile.email, profile.phone].filter(Boolean).join(
+          " · ",
+        );
+        return {
+          id: profile.id,
+          title: profile.name,
+          subtitle: profile.role,
+          tertiary: contact || undefined,
+          testId: `oj-buddy-option-${profile.id}`,
+          selected: value?.kind === "existing" &&
+            value.buddyProfileId === profile.id,
+          onSelect: () =>
+            onChange({
+              kind: "existing" as const,
+              buddyProfileId: profile.id,
+            }),
+        };
+      }),
+    [options, value, onChange],
+  );
+
   return (
     <div className="oj-buddy-picker">
       {canPickExisting && (
@@ -82,37 +107,7 @@ const BuddyPicker = ({
       {loading && options.length === 0
         ? <p className="oj-buddy-picker__loading">Loading buddies…</p>
         : mode === "existing" && canPickExisting
-        ? (
-          <div
-            className="select-card-list"
-            role="radiogroup"
-            aria-label="Existing buddy"
-          >
-            {options.map((profile) => {
-              const selected = value?.kind === "existing" &&
-                value.buddyProfileId === profile.id;
-              const contact = [profile.email, profile.phone].filter(Boolean)
-                .join(
-                  " · ",
-                );
-              return (
-                <SelectCard
-                  key={profile.id}
-                  selected={selected}
-                  testId={`oj-buddy-option-${profile.id}`}
-                  title={profile.name}
-                  subtitle={profile.role}
-                  tertiary={contact || undefined}
-                  onSelect={() =>
-                    onChange({
-                      kind: "existing",
-                      buddyProfileId: profile.id,
-                    })}
-                />
-              );
-            })}
-          </div>
-        )
+        ? <SelectCardList ariaLabel="Existing buddy" items={buddyItems} />
         : (
           <BuddyAssignmentFields
             draft={draft}

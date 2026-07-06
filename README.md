@@ -98,6 +98,20 @@ Copy [`.env.example`](.env.example) to `.env`. Key variables:
 
 Documents in [`consume-docs/`](consume-docs/) are chunked, embedded, and stored in pgvector. The `file-watcher` service watches that directory continuously — just add, edit, or remove a file and changes are picked up automatically.
 
+### Milestone templates
+
+Templates are portable journey blueprints: milestones, missions, form schemas, and resource bindings. They are stored in PocketBase (`templates` collection) and shared across all Game Maker workspaces.
+
+**Start from scratch** (no template selected in the onboarding wizard) applies the bundled default from [`src/constants/defaultOnboardingTemplate.ts`](src/constants/defaultOnboardingTemplate.ts) — one milestone and a profile form mission tagged `onboardingProfile` (used by the player tutorial). Profile form fields live in [`src/constants/profileFormFields.ts`](src/constants/profileFormFields.ts).
+
+**Change the default scratch journey** — edit `defaultOnboardingTemplate.ts` (and `profileFormFields.ts` if the form changes). The shape is `TemplateExport` ([`src/types/exports.ts`](src/types/exports.ts)); `importTemplate` remaps milestone/mission links via `_milestoneOrder` / `_missionOrder`.
+
+**Add a reusable template from the UI** — on a player's detail page, build milestones and missions, then use **Save as template**. That calls `exportTemplate` and stores the result in the company template library. New players can pick it in the onboarding wizard (step 3) or on the customize tab.
+
+**Apply a template to an existing player** — player detail → customize tab → choose a template (replaces that player's milestones, missions, and attachments).
+
+For import/export mechanics and constraints, see [`SPECS.md`](SPECS.md) (Templates) and [`src/use-cases/importTemplate.ts`](src/use-cases/importTemplate.ts).
+
 ---
 
 ## Model Providers

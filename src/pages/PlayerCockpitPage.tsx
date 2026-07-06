@@ -1,7 +1,7 @@
 import { MdArrowBack } from "react-icons/md";
 import { usePlayerCockpitPage } from "./player-cockpit/usePlayerCockpitPage.ts";
-import { Button } from "../components/ui/index.ts";
-import { BUTTON_VARIANT } from "../components/ui/types.ts";
+import { Button } from "../components/shared/index.ts";
+import { BUTTON_VARIANT } from "../components/shared/types.ts";
 import ConfirmDialog from "../components/shared/ConfirmDialog.tsx";
 import RouteTabBar from "../components/shared/RouteTabBar.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
@@ -94,6 +94,7 @@ const PlayerCockpitPage = () => {
         playerName={m.player.name}
         onNext={m.handleTutorialNext}
         onSkip={m.handleTutorialSkip}
+        nextDisabled={m.tutorialNextDisabled}
       />
 
       <ConfirmDialog

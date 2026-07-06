@@ -1,7 +1,7 @@
 import { MdLogout, MdPerson } from "react-icons/md";
-import Avatar from "../ui/Avatar.tsx";
-import IconButton from "../ui/IconButton.tsx";
-import { ICON_BUTTON_VARIANT } from "../ui/types.ts";
+import Avatar from "./Avatar.tsx";
+import IconButton from "./IconButton.tsx";
+import { ICON_BUTTON_VARIANT } from "./types.ts";
 
 interface TopBarProps {
   readonly playerName: string;

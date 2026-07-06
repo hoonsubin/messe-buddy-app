@@ -118,8 +118,10 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     name: string,
     gameMakerUid: string,
     gmRecoveryKey: string,
+    id?: string,
   ): Promise<Session> => {
     let record = await pb.collection("sessions").create({
+      ...(id ? { id } : {}),
       name,
       gameMakerId: gameMakerUid,
       gmRecoveryKey,
@@ -193,6 +195,7 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
   const invitePlayer = async (
     sessionId: string,
     data: { readonly name?: string; readonly jobTitle?: string },
+    id?: string,
   ): Promise<Player> => {
     const inviteToken = generateInviteToken();
     const today = new Date().toISOString().split("T")[0] ?? "";
@@ -200,6 +203,7 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     // claimPlayer assigns real identity fields (SPECS: no uid until claim).
     const pendingId = `pending_${inviteToken}`;
     const record = await pb.collection("players").create({
+      ...(id ? { id } : {}),
       sessionId,
       inviteToken,
       uid: pendingId,

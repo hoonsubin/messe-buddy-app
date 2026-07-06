@@ -57,10 +57,9 @@ flowchart TB
 | Layer | Location | Responsibility |
 |-------|----------|----------------|
 | 0 | `src/styles/` | Tokens, reset, utilities, BEM blocks |
-| 1 | `src/components/ui/` | Thin typed wrappers over BEM classes |
-| 2 | `src/components/patterns/` | Cross-route UX (modals, chrome, toasts) |
-| 3 | `src/components/{gamemaker,player,form,qr,tutorial}/` | Feature-specific UI |
-| 4 | `src/pages/` | Data wiring + layout composition (< 200 lines) |
+| 1 | `src/components/shared/` | Primitives + cross-route UX (buttons, modals, chrome) |
+| 2 | `src/components/{gamemaker,player,form,qr,tutorial}/` | Feature-specific UI |
+| 3 | `src/pages/` | Data wiring + layout composition (< 200 lines) |
 
 ---
 
@@ -110,12 +109,12 @@ Each primitive has a matching CSS file under `src/styles/components/`. The React
 
 ---
 
-## UI primitives (Layer 1)
+## Shared components (Layer 1)
 
-Implemented in `src/components/ui/`. Import via barrel:
+Implemented in `src/components/shared/`. Import via barrel:
 
 ```ts
-import { Button, Card, Input, IconButton, Avatar } from "../components/ui/index.ts";
+import { Button, Card, Input, IconButton, Avatar } from "../components/shared/index.ts";
 ```
 
 ### Button
@@ -133,10 +132,10 @@ import { Button, Card, Input, IconButton, Avatar } from "../components/ui/index.
 ### Card
 
 ```tsx
-<Card padding="md">…</Card>
+<Card padded={false}>…</Card>
 ```
 
-Maps to `.card` with optional padding modifiers.
+Maps to `.card` with optional `.card--flush`.
 
 ### Input / Textarea
 
@@ -174,16 +173,17 @@ Maps to `.avatar` block. Replaces ad-hoc `topbar__avatar` inline styles.
 
 ---
 
-## Patterns (Layer 2)
+## Overlay & chrome components
 
 Cross-cutting components that compose primitives.
 
-| Pattern | Location | Notes |
-|---------|----------|-------|
+| Component | Location | Notes |
+|-----------|----------|-------|
 | `TopBar` | [`shared/TopBar.tsx`](../src/components/shared/TopBar.tsx) | Uses `Avatar`, `IconButton`; rename to `AppTopBar` planned |
-| `Toast` | [`patterns/Toast.tsx`](../src/components/patterns/Toast.tsx) | CSS in `shared.css` |
-| `Modal` | [`patterns/Modal.tsx`](../src/components/patterns/Modal.tsx) | Centered dialogs |
-| `BottomSheet` | [`patterns/BottomSheet.tsx`](../src/components/patterns/BottomSheet.tsx) | Drag handle, backdrop |
+| `Toast` | [`shared/Toast.tsx`](../src/components/shared/Toast.tsx) | CSS in `shared.css` |
+| `Modal` | [`shared/Modal.tsx`](../src/components/shared/Modal.tsx) | Centered dialogs |
+| `BottomSheet` | [`shared/BottomSheet.tsx`](../src/components/shared/BottomSheet.tsx) | Drag handle, backdrop |
+| `SelectCard` / `SelectCardList` | [`shared/SelectCard.tsx`](../src/components/shared/SelectCard.tsx), [`SelectCardList.tsx`](../src/components/shared/SelectCardList.tsx) | Radio card groups |
 | `ConfirmDialog` | [`shared/ConfirmDialog.tsx`](../src/components/shared/ConfirmDialog.tsx) | Wraps `Modal` |
 
 ---
@@ -245,7 +245,7 @@ Landing uses `data-role` + `--color-role-*` tokens (no inline HSL in TSX).
 ## Adding a new screen
 
 1. Check `design-tokens.md` component catalog — reuse before creating
-2. Compose from `ui/` + `patterns/`
+2. Compose from `shared/`
 3. Domain logic in `src/components/{domain}/`
 4. Page file wires hooks + adapter calls only
 5. New shared styles → appropriate `src/styles/components/*.css` file
@@ -257,5 +257,5 @@ Landing uses `data-role` + `--color-role-*` tokens (no inline HSL in TSX).
 
 - [`design-tokens.md`](design-tokens.md) — color, type, spacing values
 - [`src/styles/tokens.css`](../src/styles/tokens.css) — runtime token source
-- [`src/components/ui/index.ts`](../src/components/ui/index.ts) — primitive exports
+- [`src/components/shared/index.ts`](../src/components/shared/index.ts) — shared component exports
 - [`AGENTS.md`](../AGENTS.md) — stack, routes, constraints

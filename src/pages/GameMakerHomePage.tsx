@@ -10,7 +10,7 @@ import { usePlayerTemplates } from "../hooks/usePlayerTemplates.ts";
 import type { CreateOnboardingJourneyInput } from "../use-cases/createOnboardingJourney.ts";
 import TopBar from "../components/shared/TopBar.tsx";
 import RouteTabBar from "../components/shared/RouteTabBar.tsx";
-import Toast from "../components/patterns/Toast.tsx";
+import Toast from "../components/shared/Toast.tsx";
 import OnboardingJourneyModal from "../components/gamemaker/OnboardingJourneyModal.tsx";
 import GmPlayersTab from "../components/gamemaker/GmPlayersTab.tsx";
 import ResourceLibraryTab from "../components/gamemaker/ResourceLibraryTab.tsx";

@@ -1,11 +1,6 @@
-import Button from "../ui/Button.tsx";
-import { BUTTON_VARIANT } from "../ui/types.ts";
-import {
-  Modal,
-  ModalActions,
-  ModalDescription,
-  ModalTitle,
-} from "../patterns/Modal.tsx";
+import Button from "./Button.tsx";
+import { BUTTON_VARIANT } from "./types.ts";
+import { Modal, ModalActions, ModalDescription, ModalTitle } from "./Modal.tsx";
 
 interface ConfirmDialogProps {
   readonly isOpen: boolean;

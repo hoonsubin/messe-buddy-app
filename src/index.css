@@ -7,14 +7,12 @@
 @import "./styles/layouts/page.css";
 @import "./styles/layouts/landing.css";
 
-/* Layer 1 — UI primitives */
+/* Layer 1 — shared (primitives + chrome) */
 @import "./styles/components/button.css";
 @import "./styles/components/card.css";
 @import "./styles/components/form.css";
 @import "./styles/components/icon-button.css";
 @import "./styles/components/avatar.css";
-
-/* Layer 2 — patterns (chrome) */
 @import "./styles/components/topbar.css";
 @import "./styles/components/modal.css";
 @import "./styles/components/bottom-sheet.css";

@@ -1,5 +1,5 @@
-import Button from "../ui/Button.tsx";
-import { BUTTON_VARIANT } from "../ui/types.ts";
+import Button from "../shared/Button.tsx";
+import { BUTTON_VARIANT } from "../shared/types.ts";
 
 interface ConfirmSheetProps {
   readonly onKeepEditing: () => void;

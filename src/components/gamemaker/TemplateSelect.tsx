@@ -28,12 +28,18 @@ const TemplateSelect = (props: TemplateSelectProps) => (
       <option value="" disabled>
         {props.applying ? "Applying…" : "Choose a template…"}
       </option>
-      {props.templates.map((t) => (
-        <option key={t.name} value={t.name}>
-          {t.name} · {t.milestones.length} milestones · {t.missions.length}{" "}
-          missions
-        </option>
-      ))}
+      {props.templates.map((t) => {
+        const missionCount = t.milestones.reduce(
+          (n, ms) => n + ms.missions.length,
+          0,
+        );
+        return (
+          <option key={t.name} value={t.name}>
+            {t.name} · {t.milestones.length} milestones · {missionCount}{" "}
+            missions
+          </option>
+        );
+      })}
     </select>
 
     <button

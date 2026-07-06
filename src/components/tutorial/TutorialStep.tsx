@@ -8,6 +8,7 @@ interface TutorialStepProps {
   readonly playerName?: string;
   readonly onNext: () => void;
   readonly onSkip: () => void;
+  readonly nextDisabled?: boolean;
 }
 
 /** Returns the first name from a full name string, or falls back to the full string. */
@@ -82,6 +83,7 @@ const TutorialStep = (props: TutorialStepProps) => {
           type="button"
           className="btn btn--primary"
           onClick={props.onNext}
+          disabled={props.nextDisabled}
         >
           {props.step.ctaLabel}
         </button>

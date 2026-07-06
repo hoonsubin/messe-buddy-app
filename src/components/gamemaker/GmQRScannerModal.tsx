@@ -8,11 +8,11 @@ import {
   parseValidationToken,
   validationPathFromToken,
 } from "../../utils/qrUrl.ts";
-import Button from "../ui/Button.tsx";
-import { BUTTON_VARIANT } from "../ui/types.ts";
-import IconButton from "../ui/IconButton.tsx";
-import { Modal, ModalDescription, ModalTitle } from "../patterns/Modal.tsx";
-import { MODAL_VARIANT } from "../patterns/types.ts";
+import Button from "../shared/Button.tsx";
+import { BUTTON_VARIANT } from "../shared/types.ts";
+import IconButton from "../shared/IconButton.tsx";
+import { Modal, ModalDescription, ModalTitle } from "../shared/Modal.tsx";
+import { MODAL_VARIANT } from "../shared/types.ts";
 
 type ScanState = "idle" | "scanning" | "success" | "invalid" | "error";
 

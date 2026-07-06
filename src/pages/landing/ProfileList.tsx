@@ -1,5 +1,5 @@
 import type { CachedIdentity } from "../../types/index.ts";
-import { Button } from "../../components/ui/index.ts";
+import { Button } from "../../components/shared/index.ts";
 import ProfileCard from "./ProfileCard.tsx";
 
 interface ProfileListProps {

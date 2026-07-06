@@ -25,6 +25,7 @@ interface TutorialOverlayProps {
   readonly playerName?: string;
   readonly onNext: () => void;
   readonly onSkip: () => void;
+  readonly nextDisabled?: boolean;
 }
 
 const SCROLL_SETTLE_MS = 350;
@@ -178,6 +179,7 @@ export const TutorialOverlayWithStep = (props: TutorialOverlayProps) => {
         playerName={props.playerName}
         onNext={props.onNext}
         onSkip={props.onSkip}
+        nextDisabled={props.nextDisabled}
       />
     </>
   );

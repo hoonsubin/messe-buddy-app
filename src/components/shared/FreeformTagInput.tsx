@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
-import Button from "../ui/Button.tsx";
-import { BUTTON_VARIANT } from "../ui/types.ts";
-import { Input } from "../ui/Input.tsx";
+import Button from "./Button.tsx";
+import { BUTTON_VARIANT } from "./types.ts";
+import { Input } from "./Input.tsx";
 import TagBadge from "./TagBadge.tsx";
 import { normalizeTag } from "../../utils/libraryTags.ts";
 

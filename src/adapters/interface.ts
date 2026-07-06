@@ -32,6 +32,7 @@ export interface AppAdapter {
     name: string,
     gameMakerUid: string,
     gmRecoveryKey: string,
+    id?: string,
   ): Promise<Session>;
   updateSession(
     sessionId: string,
@@ -48,6 +49,7 @@ export interface AppAdapter {
   invitePlayer(
     sessionId: string,
     data: { readonly name?: string; readonly jobTitle?: string },
+    id?: string,
   ): Promise<Player>;
   updatePlayer(
     playerId: string,

@@ -1,14 +1,9 @@
 import { useState } from "react";
-import Button from "../ui/Button.tsx";
-import { BUTTON_VARIANT } from "../ui/types.ts";
-import { Input } from "../ui/Input.tsx";
-import {
-  Modal,
-  ModalActions,
-  ModalDescription,
-  ModalTitle,
-} from "../patterns/Modal.tsx";
-import { MODAL_VARIANT } from "../patterns/types.ts";
+import Button from "./Button.tsx";
+import { BUTTON_VARIANT } from "./types.ts";
+import { Input } from "./Input.tsx";
+import { Modal, ModalActions, ModalDescription, ModalTitle } from "./Modal.tsx";
+import { MODAL_VARIANT } from "./types.ts";
 
 interface NameCaptureModalProps {
   readonly onSubmit: (name: string) => void;
