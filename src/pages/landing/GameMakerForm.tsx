@@ -1,5 +1,5 @@
 import { MdClose } from "react-icons/md";
-import { Button, IconButton, Input } from "../../components/ui/index.ts";
+import { Button, IconButton, Input } from "../../components/shared/index.ts";
 
 interface GameMakerFormProps {
   readonly sessionName: string;

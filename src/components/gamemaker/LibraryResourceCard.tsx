@@ -1,8 +1,8 @@
 import type { LibraryResource } from "../../types/index.ts";
 import { parseLibraryTags } from "../../utils/libraryTags.ts";
 import TagBadge from "../shared/TagBadge.tsx";
-import Button from "../ui/Button.tsx";
-import { BUTTON_VARIANT } from "../ui/types.ts";
+import Button from "../shared/Button.tsx";
+import { BUTTON_VARIANT } from "../shared/types.ts";
 
 interface LibraryResourceCardProps {
   readonly resource: LibraryResource;

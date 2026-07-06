@@ -14,7 +14,7 @@ import {
   saveStoredDraft,
 } from "../../utils/draftStorage.ts";
 import ConfirmSheet from "./ConfirmSheet.tsx";
-import { BottomSheet } from "../patterns/BottomSheet.tsx";
+import { BottomSheet } from "../shared/BottomSheet.tsx";
 import MissionEditorView from "./MissionEditorView.tsx";
 import MissionListView from "./MissionListView.tsx";
 import ResourcesEditor from "./ResourcesEditor.tsx";

@@ -109,7 +109,7 @@ error strings, framework lifecycle gotchas. Follow up with official docs / pkg.g
 
 ## Quick links
 
-[`src/components/ui/index.ts`](src/components/ui/index.ts) ·
+[`src/components/shared/index.ts`](src/components/shared/index.ts) ·
 [`src/styles/tokens.css`](src/styles/tokens.css) ·
 [`src/utils/qrPayload.ts`](src/utils/qrPayload.ts) ·
 [`src/adapters/interface.ts`](src/adapters/interface.ts) ·

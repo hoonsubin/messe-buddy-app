@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { MdClose } from "react-icons/md";
 import { DEMO_PROFILES } from "../../hooks/useLandingFlow.ts";
 import type { CachedIdentity } from "../../types/index.ts";
-import { IconButton } from "../../components/ui/index.ts";
+import { IconButton } from "../../components/shared/index.ts";
 import ConfirmDialog from "../../components/shared/ConfirmDialog.tsx";
 import { cn } from "../../utils/cn.ts";
 import { landingRoleFor, profileInitials, roleLabel } from "./landingUtils.ts";

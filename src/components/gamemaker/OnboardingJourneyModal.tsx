@@ -6,10 +6,10 @@ import {
 } from "../../types/buddyPicker.ts";
 import type { CreateOnboardingJourneyInput } from "../../use-cases/createOnboardingJourney.ts";
 import { useBuddyPickerOptions } from "../../hooks/useBuddyPickerOptions.ts";
-import { BottomSheet } from "../patterns/BottomSheet.tsx";
-import Button from "../ui/Button.tsx";
-import { BUTTON_VARIANT } from "../ui/types.ts";
-import { Input } from "../ui/Input.tsx";
+import { BottomSheet } from "../shared/BottomSheet.tsx";
+import Button from "../shared/Button.tsx";
+import { BUTTON_VARIANT } from "../shared/types.ts";
+import { Input } from "../shared/Input.tsx";
 import BuddyPicker from "./BuddyPicker.tsx";
 import TemplateRadioList from "./TemplateRadioList.tsx";
 

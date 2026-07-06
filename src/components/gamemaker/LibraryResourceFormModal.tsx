@@ -3,16 +3,16 @@ import type { LibraryResource } from "../../types/index.ts";
 import type { LibraryResourceInput } from "../../hooks/useLibraryResources.ts";
 import { parseLibraryTags } from "../../utils/libraryTags.ts";
 import FreeformTagInput from "../shared/FreeformTagInput.tsx";
-import Button from "../ui/Button.tsx";
-import { BUTTON_VARIANT } from "../ui/types.ts";
-import { Input, Textarea } from "../ui/Input.tsx";
+import Button from "../shared/Button.tsx";
+import { BUTTON_VARIANT } from "../shared/types.ts";
+import { Input, Textarea } from "../shared/Input.tsx";
 import {
   Modal,
   ModalActions,
   ModalDescription,
   ModalTitle,
-} from "../patterns/Modal.tsx";
-import { MODAL_VARIANT } from "../patterns/types.ts";
+} from "../shared/Modal.tsx";
+import { MODAL_VARIANT } from "../shared/types.ts";
 
 interface LibraryResourceFormModalProps {
   readonly mode: "create" | "edit";

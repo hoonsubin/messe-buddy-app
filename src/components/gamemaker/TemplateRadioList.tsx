@@ -1,5 +1,5 @@
 import type { TemplateExport } from "../../types/index.ts";
-import SelectCard from "../patterns/SelectCard.tsx";
+import SelectCardList from "../shared/SelectCardList.tsx";
 
 interface TemplateRadioListProps {
   readonly templates: ReadonlyArray<TemplateExport>;
@@ -12,35 +12,34 @@ const TemplateRadioList = ({
   value,
   onChange,
 }: TemplateRadioListProps) => (
-  <div
-    className="select-card-list"
-    role="radiogroup"
-    aria-label="Starting template"
-  >
-    <SelectCard
-      selected={value === null}
-      testId="oj-template-scratch"
-      title="Start from scratch"
-      subtitle="Includes a profile mission to get started — customize the journey on the player page"
-      onSelect={() => onChange(null)}
-    />
-    {templates.map((template) => {
-      const milestoneCount = template.milestones.length;
-      const missionCount = template.missions.length;
-      return (
-        <SelectCard
-          key={template.name}
-          selected={value === template.name}
-          testId={`oj-template-option-${template.name}`}
-          title={template.name}
-          subtitle={`${milestoneCount} milestone${
+  <SelectCardList
+    ariaLabel="Starting template"
+    items={[
+      {
+        id: "scratch",
+        title: "Start from scratch",
+        subtitle:
+          "Includes a profile mission to get started — customize the journey on the player page",
+        testId: "oj-template-scratch",
+        selected: value === null,
+        onSelect: () => onChange(null),
+      },
+      ...templates.map((template) => {
+        const milestoneCount = template.milestones.length;
+        const missionCount = template.missions.length;
+        return {
+          id: template.name,
+          title: template.name,
+          subtitle: `${milestoneCount} milestone${
             milestoneCount === 1 ? "" : "s"
-          } · ${missionCount} mission${missionCount === 1 ? "" : "s"}`}
-          onSelect={() => onChange(template.name)}
-        />
-      );
-    })}
-  </div>
+          } · ${missionCount} mission${missionCount === 1 ? "" : "s"}`,
+          testId: `oj-template-option-${template.name}`,
+          selected: value === template.name,
+          onSelect: () => onChange(template.name),
+        };
+      }),
+    ]}
+  />
 );
 
 export default TemplateRadioList;

@@ -10,17 +10,17 @@ import {
 import { marked } from "marked";
 import type { Mission, ProgressEvent } from "../../types/index.ts";
 import { MISSION_TYPE } from "../../types/index.ts";
-import Button from "../ui/Button.tsx";
-import { BUTTON_VARIANT } from "../ui/types.ts";
-import IconButton from "../ui/IconButton.tsx";
+import Button from "../shared/Button.tsx";
+import { BUTTON_VARIANT } from "../shared/types.ts";
+import IconButton from "../shared/IconButton.tsx";
 import {
   Modal,
   ModalBody,
   ModalFooter,
   ModalHeader,
   ModalTitle,
-} from "../patterns/Modal.tsx";
-import { MODAL_VARIANT } from "../patterns/types.ts";
+} from "../shared/Modal.tsx";
+import { MODAL_VARIANT } from "../shared/types.ts";
 import TagBadge from "../shared/TagBadge.tsx";
 import XpBadge from "../shared/XpBadge.tsx";
 import ValidationDisplay from "./ValidationDisplay.tsx";

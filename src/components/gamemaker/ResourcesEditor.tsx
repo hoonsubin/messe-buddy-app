@@ -8,7 +8,7 @@ import {
 import type { PBRecord, Resource } from "../../types/index.ts";
 import type { ResourceType } from "../../types/index.ts";
 import { RESOURCE_TYPE } from "../../types/index.ts";
-import { Modal } from "../patterns/Modal.tsx";
+import { Modal } from "../shared/Modal.tsx";
 
 interface ResourcesEditorProps {
   readonly resources: ReadonlyArray<Resource>;

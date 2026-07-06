@@ -16,8 +16,8 @@ Mobile-first. Primary smoke viewport: **390×844** (iPhone-class). Admin desktop
 | UI primitive CSS | [`src/styles/components/button.css`](../src/styles/components/button.css) etc. | BEM blocks for Button, Card, Form, Avatar |
 | Pattern / domain CSS | [`src/styles/components/`](../src/styles/components/), [`src/styles/layouts/`](../src/styles/layouts/) | One focused file per domain or pattern |
 | Import manifest | [`src/index.css`](../src/index.css) | Fonts + ordered `@import` only |
-| React primitives | [`src/components/ui/`](../src/components/ui/) | Typed wrappers over BEM classes |
-| Pages | `src/pages/**` | Compose primitives + patterns; < 200 lines |
+| React components | [`src/components/shared/`](../src/components/shared/) | Primitives + cross-route UX |
+| Pages | `src/pages/**` | Compose primitives + shared; < 200 lines |
 
 ### CSS file import order (in [`src/index.css`](../src/index.css))
 
@@ -240,7 +240,7 @@ Reuse these before creating new components. Paths relative to `src/components/`.
 
 | Class / component | Variants | When to use |
 |-------------------|----------|-------------|
-| [`Button`](../src/components/ui/Button.tsx) | `primary`, `secondary`, `ghost`, `destructive`, `fullWidth` | Preferred over raw `.btn` |
+| [`Button`](../src/components/shared/Button.tsx) | `primary`, `secondary`, `ghost`, `destructive`, `fullWidth` | Preferred over raw `.btn` |
 | `.btn` | — | Base; prefer `Button` component |
 | `.btn--primary` | — | Primary CTA (join, create, submit) |
 | `.btn--secondary` | — | Secondary actions, "Use template" |
@@ -283,8 +283,8 @@ Reuse these before creating new components. Paths relative to `src/components/`.
 
 | Pattern | Classes | Components |
 |---------|---------|------------|
-| Center modal | `.modal-backdrop`, `.modal`, `.modal__*` | [`Modal`](../src/components/patterns/Modal.tsx) — prefer component |
-| Bottom sheet | `.bottom-sheet-*`, `.sheet-*`, `.select-card*` | [`BottomSheet`](../src/components/patterns/BottomSheet.tsx), [`SelectCard`](../src/components/patterns/SelectCard.tsx) |
+| Center modal | `.modal-backdrop`, `.modal`, `.modal__*` | [`Modal`](../src/components/shared/Modal.tsx) — prefer component |
+| Bottom sheet | `.bottom-sheet-*`, `.sheet-*`, `.select-card*` | [`BottomSheet`](../src/components/shared/BottomSheet.tsx), [`SelectCard`](../src/components/shared/SelectCard.tsx) |
 | Select card | `.select-card`, `.select-card-list` | Tappable bordered option (wizard buddy/template steps) |
 | Recovery key (legacy CSS aliases) | `.recovery-modal__*` | Use `Modal variant="narrow"` |
 | Confirm sheet | `.sheet-confirm` | [`ConfirmSheet`](../src/components/gamemaker/ConfirmSheet.tsx) |

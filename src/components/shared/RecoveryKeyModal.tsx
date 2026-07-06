@@ -1,13 +1,13 @@
 import { useState } from "react";
-import Button from "../ui/Button.tsx";
-import { BUTTON_VARIANT } from "../ui/types.ts";
+import Button from "./Button.tsx";
+import { BUTTON_VARIANT } from "./types.ts";
 import {
   Modal,
   ModalDescription,
   ModalKeyBlock,
   ModalTitle,
-} from "../patterns/Modal.tsx";
-import { MODAL_VARIANT } from "../patterns/types.ts";
+} from "./Modal.tsx";
+import { MODAL_VARIANT } from "./types.ts";
 
 interface RecoveryKeyModalProps {
   readonly recoveryKey: string;
