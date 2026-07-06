@@ -1,6 +1,7 @@
 import type { AppAdapter } from "../adapters/interface.ts";
 import type { BuddyProfile, BuddySelection } from "../types/index.ts";
 import { buddyDraftToProfileFields } from "../types/buddyPicker.ts";
+import { applyDefaultOnboardingJourney } from "./applyDefaultOnboardingJourney.ts";
 import { importTemplate } from "./importTemplate.ts";
 import { invitePlayer } from "./invitePlayer.ts";
 
@@ -84,6 +85,8 @@ export const createOnboardingJourney = async (
     }
     await importTemplate(template, player.id, adapter);
     appliedTemplateName = template.name;
+  } else {
+    await applyDefaultOnboardingJourney(player.id, adapter);
   }
 
   return {

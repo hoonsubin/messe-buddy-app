@@ -1,4 +1,5 @@
 import mapBackground from "../../assets/map-background.jpg";
+import { PROFILE_FORM_FIELDS } from "../../constants/profileFormFields.ts";
 import type {
   BuddyProfile,
   FormSchema,
@@ -150,7 +151,7 @@ export const MOCK_MISSIONS: ReadonlyArray<Mission> = [
       "Set your preferred name, role, and department so your team can get to know you.\n\nAnswer a few questions about your skills, interests, and learning goals. Uploading a photo is optional but encouraged. You can also set your communication preferences here.",
     type: "form",
     xpValue: 10,
-    tags: ["mandatory"],
+    tags: ["mandatory", "onboardingProfile"],
     order: 0,
     isInCurrentMissions: true,
     validationMethod: "selfApprove",
@@ -666,96 +667,7 @@ export const MOCK_FORM_SCHEMAS: ReadonlyArray<FormSchema> = [
   {
     ...pb("schema_profile"),
     missionId: "mission_m1_profile",
-    fields: [
-      {
-        id: "preferredName",
-        label: "Preferred Name",
-        type: "text",
-        required: true,
-        placeholder: "What should we call you?",
-      },
-      {
-        id: "pronouns",
-        label: "Pronouns",
-        type: "text",
-        required: false,
-        placeholder: "e.g. she/her, he/him, they/them",
-      },
-      {
-        id: "role",
-        label: "Job Title",
-        type: "text",
-        required: true,
-        placeholder: "e.g. Product Manager",
-      },
-      {
-        id: "department",
-        label: "Department",
-        type: "select",
-        required: true,
-        options: [
-          "Exhibition Services",
-          "Marketing",
-          "IT & Digitalisation",
-          "Finance",
-          "HR & Organisation",
-          "Event Management",
-          "Sales",
-          "Legal",
-          "Facility Management",
-          "Communications",
-        ],
-      },
-      {
-        id: "startDate",
-        label: "Start Date",
-        type: "text",
-        required: true,
-        placeholder: "e.g. 2026-06-16",
-      },
-      {
-        id: "location",
-        label: "Primary Work Location",
-        type: "text",
-        required: false,
-        placeholder: "e.g. Building A, Floor 2",
-      },
-      {
-        id: "languages",
-        label: "Languages",
-        type: "text",
-        required: false,
-        placeholder: "e.g. German, English",
-      },
-      {
-        id: "skillsConfident",
-        label: "Skills I'm confident in",
-        type: "textarea",
-        required: false,
-        placeholder: "Skills you'd be happy to share with colleagues",
-      },
-      {
-        id: "learningGoals",
-        label: "Learning goals for my first 3 months",
-        type: "textarea",
-        required: false,
-        placeholder: "What do you most want to learn or develop?",
-      },
-      {
-        id: "workArrangement",
-        label: "Work arrangement",
-        type: "multiSelect",
-        required: false,
-        options: ["Mostly in the office", "Mostly remote", "Hybrid"],
-      },
-      {
-        id: "interests",
-        label: "Interests & hobbies",
-        type: "text",
-        required: false,
-        placeholder: "Anything you'd like colleagues to know about you",
-      },
-    ],
+    fields: [...PROFILE_FORM_FIELDS],
   },
 ];
 

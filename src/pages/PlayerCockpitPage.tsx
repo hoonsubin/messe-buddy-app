@@ -94,6 +94,7 @@ const PlayerCockpitPage = () => {
         playerName={m.player.name}
         onNext={m.handleTutorialNext}
         onSkip={m.handleTutorialSkip}
+        nextDisabled={m.tutorialNextDisabled}
       />
 
       <ConfirmDialog

@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { PLACEHOLDER_STEPS } from "../components/tutorial/TutorialOverlay.tsx";
-import type { PBRecord, Player } from "../types/index.ts";
+import type { Mission, PBRecord, Player } from "../types/index.ts";
 
-// Profile Setup mission ID from mock data - used for tutorial final-step routing.
-const PROFILE_MISSION_ID = "mission_m1_profile";
-
-// The 0-based index of the Profile step within PLACEHOLDER_STEPS.
-const PROFILE_STEP_INDEX = 4;
+/** 0-based index of the profile step within PLACEHOLDER_STEPS. */
+export const PROFILE_STEP_INDEX = 4;
 
 // sessionStorage keys for tutorial state.
 const TUTORIAL_FORM_KEY = "mb_tutorial_form_pending";
 const TUTORIAL_STEP_KEY = "mb_tutorial_step";
+
+export interface UseTutorialOptions {
+  readonly onboardingProfileMission: Mission | null;
+  readonly onLaunchTutorialMission: (missionId: string) => void;
+  readonly missionsReady: boolean;
+}
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -41,6 +43,7 @@ interface UseTutorialResult {
   readonly tutorialStep: number;
   readonly showTutorial: boolean;
   readonly showSkipConfirm: boolean;
+  readonly tutorialNextDisabled: boolean;
   readonly handleTutorialNext: () => void;
   readonly handleTutorialSkip: () => void;
   readonly handleSkipConfirm: () => void;
@@ -53,7 +56,7 @@ interface UseTutorialResult {
  * Responsibilities:
  * - Reads tutorial state from sessionStorage on mount (handles page reloads
  *   and form round-trips)
- * - Advances steps, navigates to /form on the profile step
+ * - Advances steps, delegates profile-step launch to cockpit routing
  * - Shows/hides the skip-confirm dialog
  * - Persists tutorialComplete on skip
  */
@@ -62,12 +65,15 @@ export const useTutorial = (
   updatePlayer: (
     patch: Partial<Omit<Player, keyof PBRecord>>,
   ) => Promise<Player>,
-  sessionId: string,
+  _sessionId: string,
+  options: UseTutorialOptions,
 ): UseTutorialResult => {
-  const navigate = useNavigate();
   const [tutorialStep, setTutorialStep] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
+
+  const tutorialNextDisabled = tutorialStep === PROFILE_STEP_INDEX &&
+    (!options.missionsReady || options.onboardingProfileMission === null);
 
   // Restore tutorial state once per player load.
   // sessionStorage is a synchronous external store that must be read in an
@@ -98,10 +104,15 @@ export const useTutorial = (
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player?.id]);
 
+  const { missionsReady, onboardingProfileMission, onLaunchTutorialMission } =
+    options;
+
   const handleTutorialNext = useCallback(() => {
     if (tutorialStep === PROFILE_STEP_INDEX) {
-      sessionStorage.setItem(TUTORIAL_FORM_KEY, "1");
-      navigate(`/form/${sessionId}/${PROFILE_MISSION_ID}`);
+      if (!missionsReady) return;
+      const mission = onboardingProfileMission;
+      if (!mission) return;
+      onLaunchTutorialMission(mission.id);
       return;
     }
 
@@ -110,7 +121,12 @@ export const useTutorial = (
 
     setTutorialStep(nextStep);
     persistStep(nextStep);
-  }, [tutorialStep, navigate, sessionId]);
+  }, [
+    tutorialStep,
+    missionsReady,
+    onboardingProfileMission,
+    onLaunchTutorialMission,
+  ]);
 
   const handleTutorialSkip = useCallback(() => {
     setShowSkipConfirm(true);
@@ -135,6 +151,7 @@ export const useTutorial = (
     tutorialStep,
     showTutorial,
     showSkipConfirm,
+    tutorialNextDisabled,
     handleTutorialNext,
     handleTutorialSkip,
     handleSkipConfirm,

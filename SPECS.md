@@ -512,10 +512,9 @@ The Player's primary view - read-only. Components in render order:
 
 **Tutorial flow (sequential, non-skippable):**
 
-- Step 1 → highlights Current Missions → launches Mission 1 (Profile Setup Form)
-- Profile Form submitted (`autoApproved`) → `profileComplete = true`
-- Step 2 → explains the Milestone Map · Step 3 → Buddy Card · Step 4 → Resources
-- `tutorialComplete = true` → Player has free access
+- Step 1 → Welcome · Step 2 → Milestone Map · Step 3 → Buddy Card · Step 4 → AI policy assistant · Step 5 → highlights Current Missions → launches the mission tagged `onboardingProfile` (Profile Setup Form)
+- Profile Form submitted (`autoApproved`) → `profileComplete = true` and `tutorialComplete = true`
+- Skip → `tutorialComplete = true` without profile completion
 
 ### Quality-of-life features (supporting the core loop)
 
@@ -819,7 +818,7 @@ QRScannerView                         [/gamemaker/:sessionId/scan]
 
 ```ts
 type MissionType = "text" | "link" | "form";
-type MissionTag = "mandatory" | "needsApproval" | "urgent" | "overdue";
+type MissionTag = "mandatory" | "needsApproval" | "urgent" | "overdue" | "onboardingProfile";
 type ValidationMethod = "gmApprove" | "selfApprove" | "qr" | "peerScan"; // per-mission; form missions ignore this
 type ProgressStatus =
   | "pending"
@@ -1292,5 +1291,6 @@ or delete existing rows.** Open questions use `Status: open`; settled items use
 | D-ARCH-5 | 2026-07-05 | decided | Any GM may create, edit, and delete `templates` and `library_resources` | Shared company onboarding ops; no ACL in prototype (C-03) |
 | D-NAMING-1 | 2026-07-05 | decided | UI user types = `gamemaker` \| `player` (`UserRole`); PB onboarding entity = `players` / domain `Player`; **no `role` field on `players` rows** | Aligns code with product language; removes legacy hire/role overload |
 | D-NAMING-2 | 2026-07-05 | decided | Purge **hire** from routes, hooks, filenames, and docs. Use **player** consistently (`useGmPlayers`, `/player/:playerId`, `PlayerDetailPage`). Adapter: `invitePlayer`, `claimPlayer`. | Cleans up legacy one-session-per-hire implementation naming |
+| D-ONBOARDING-DEFAULT | 2026-07-06 | decided | Seed blank-player journeys via bundled `DEFAULT_ONBOARDING_TEMPLATE` + `importTemplate`; identify profile mission with `onboardingProfile` tag instead of hardcoded IDs | Reuses import pipeline; tag is stable across PocketBase IDs and GM templates; tutorial and form logic share one resolver |
 
 Diagram index: [`docs/README.md`](docs/README.md)

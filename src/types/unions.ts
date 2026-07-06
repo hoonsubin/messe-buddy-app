@@ -13,6 +13,7 @@ export const MISSION_TAG = {
   NEEDS_APPROVAL: "needsApproval",
   URGENT: "urgent",
   OVERDUE: "overdue",
+  ONBOARDING_PROFILE: "onboardingProfile",
 } as const;
 export type MissionTag = (typeof MISSION_TAG)[keyof typeof MISSION_TAG];
 

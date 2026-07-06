@@ -21,7 +21,7 @@ const TemplateRadioList = ({
       selected={value === null}
       testId="oj-template-scratch"
       title="Start from scratch"
-      subtitle="Empty journey — add milestones on the player page"
+      subtitle="Includes a profile mission to get started — customize the journey on the player page"
       onSelect={() => onChange(null)}
     />
     {templates.map((template) => {

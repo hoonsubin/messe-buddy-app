@@ -19,6 +19,7 @@ import { useResources } from "../../hooks/useResources.ts";
 import { useTutorial } from "../../hooks/useTutorial.ts";
 import { useChat } from "../../hooks/useChat.ts";
 import type { UseChatWithAvailability } from "../../hooks/useChat.ts";
+import { findOnboardingProfileMission } from "../../utils/onboardingMission.ts";
 import type { PlayerTabKey } from "./constants.ts";
 import { TUTORIAL_FORM_KEY } from "./constants.ts";
 
@@ -43,6 +44,7 @@ export interface PlayerCockpitPageModel {
   readonly handleTutorialSkip: () => void;
   readonly handleSkipConfirm: () => void;
   readonly handleSkipCancel: () => void;
+  readonly tutorialNextDisabled: boolean;
   readonly selectedMilestoneId: string | null;
   readonly setSelectedMilestoneId: (id: string | null) => void;
   readonly selectedMilestone: Milestone | undefined;
@@ -116,15 +118,12 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     return player;
   }, [player, identity?.isDemo]);
 
-  const {
-    tutorialStep,
-    showTutorial,
-    showSkipConfirm,
-    handleTutorialNext,
-    handleTutorialSkip,
-    handleSkipConfirm,
-    handleSkipCancel,
-  } = useTutorial(tutorialPlayer, updatePlayer, sessionId);
+  const onboardingProfileMission = useMemo(
+    () => findOnboardingProfileMission(milestones, missions),
+    [milestones, missions],
+  );
+
+  const missionsReady = !sessionLoading;
 
   const [tab, setTab] = useState<PlayerTabKey>("dashboard");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(
@@ -144,7 +143,7 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
         event?.status === "completed";
 
       if (mission.type === MISSION_TYPE.FORM && !isCompleted) {
-        if (fromTutorial && showTutorial) {
+        if (fromTutorial) {
           sessionStorage.setItem(TUTORIAL_FORM_KEY, "1");
         }
         navigate(`/form/${sessionId}/${missionId}`);
@@ -152,8 +151,23 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
         setPopupMission(mission);
       }
     },
-    [missions, progress.progressEvents, navigate, showTutorial, sessionId],
+    [missions, progress.progressEvents, navigate, sessionId],
   );
+
+  const {
+    tutorialStep,
+    showTutorial,
+    showSkipConfirm,
+    tutorialNextDisabled,
+    handleTutorialNext,
+    handleTutorialSkip,
+    handleSkipConfirm,
+    handleSkipCancel,
+  } = useTutorial(tutorialPlayer, updatePlayer, sessionId, {
+    onboardingProfileMission,
+    missionsReady,
+    onLaunchTutorialMission: (id) => handleMissionClick(id, true),
+  });
 
   const currentMissions = missions.filter((m) => m.isInCurrentMissions);
   const selectedMilestone = selectedMilestoneId !== null
@@ -247,6 +261,7 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
       handleTutorialSkip,
       handleSkipConfirm,
       handleSkipCancel,
+      tutorialNextDisabled,
       selectedMilestoneId,
       setSelectedMilestoneId,
       selectedMilestone,

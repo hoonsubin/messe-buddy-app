@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { FormSchema, PBRecord, Player } from "../types/index.ts";
+import type { FormSchema, Mission, PBRecord, Player } from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
-
-const PROFILE_MISSION_ID = "mission_m1_profile";
+import { isOnboardingProfileMission } from "../utils/onboardingMission.ts";
 
 interface UseFormMissionOptions {
   readonly player: Player | null;
@@ -33,12 +32,16 @@ export interface UseFormMissionResult {
 export const useFormMission = (
   _sessionId: string,
   missionId: string | undefined,
-  missions: ReadonlyArray<{ id: string; title: string; body?: string }>,
+  missions: ReadonlyArray<
+    Pick<Mission, "id" | "title" | "body" | "tags">
+  >,
   options: UseFormMissionOptions,
 ): UseFormMissionResult => {
   const adapter = useAdapter();
   const { player, updatePlayer, markAutoApproved } = options;
   const mission = missions.find((m) => m.id === missionId) ?? null;
+  const isProfileMission = mission !== null &&
+    isOnboardingProfileMission(mission);
 
   const [formSchema, setFormSchema] = useState<FormSchema | null>(null);
   const [loading, setLoading] = useState(!!missionId);
@@ -74,11 +77,11 @@ export const useFormMission = (
   }, [adapter, missionId, refreshKey]);
 
   // ── Profile form pre-population (PLR-1) ────────────────────────────────────
-  // When the player opens the profile mission, pre-fill from their Player record.
-  // Game Maker-seeded fields (name, job title, department) surface here so the
-  // confirms and augments rather than typing everything from scratch.
+  // When the player opens the onboarding profile mission, pre-fill from their
+  // Player record. GM-seeded fields surface here so the player confirms rather
+  // than typing everything from scratch.
   const initialValues = useMemo<Record<string, string>>(() => {
-    if (missionId !== PROFILE_MISSION_ID || !player) {
+    if (!isProfileMission || !player) {
       return {} as Record<string, string>;
     }
     return {
@@ -95,7 +98,7 @@ export const useFormMission = (
       skillsConfident: (player.skillsConfident ?? []).join(", "),
       catchUpAreas: (player.skillsDevelop ?? []).join(", "),
     };
-  }, [missionId, player]);
+  }, [isProfileMission, player]);
 
   const submitForm = useCallback(
     async (values: Record<string, string>) => {
@@ -105,7 +108,7 @@ export const useFormMission = (
 
       await markAutoApproved(missionId, { formResponse: values });
 
-      if (missionId === PROFILE_MISSION_ID) {
+      if (isProfileMission) {
         const patch: Record<string, unknown> = {
           profileComplete: true,
           tutorialComplete: true,
@@ -119,7 +122,6 @@ export const useFormMission = (
           patch["pronouns"] = values.pronouns || undefined;
         }
         if (values.role) patch["jobTitle"] = values.role;
-        // department fix (PLR-1): was silently dropped before
         if (values.department !== undefined) {
           patch["department"] = values.department || undefined;
         }
@@ -153,7 +155,7 @@ export const useFormMission = (
         );
       }
     },
-    [markAutoApproved, missionId, player, updatePlayer],
+    [markAutoApproved, isProfileMission, missionId, player, updatePlayer],
   );
 
   return {
