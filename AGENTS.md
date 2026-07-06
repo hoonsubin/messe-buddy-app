@@ -8,6 +8,7 @@ design docs — read those first.
 | [`README.md`](README.md) | Stack, quick start, Docker, env vars, model providers |
 | [`SPECS.md`](SPECS.md) | Product behavior, routes, constraints (C-*), data model, Decision Log |
 | [`plans/production-implementation-plans.md`](plans/production-implementation-plans.md) | Code vs spec gap, ARCH tasks, smoke tests, handoff |
+| [`plans/pages-and-data-refactor.md`](plans/pages-and-data-refactor.md) | Approved flat pages + FLUX query store migration |
 | [`design/design-tokens.md`](design/design-tokens.md) | Colors, spacing, typography, UI verification checklist |
 | [`design/component-architecture.md`](design/component-architecture.md) | Layer model, primitives, patterns, CSS layout rules |
 | [`docs/pb-schema.md`](docs/pb-schema.md) | PocketBase collections |
@@ -51,7 +52,7 @@ Read **SPECS.md** before architectural decisions. Read **design/** before new UI
 - No `enum` — [`src/types/unions.ts`](src/types/unions.ts) pattern (also C-12 in SPECS).
 - Domain fields `readonly`; arrays `ReadonlyArray<T>`; mutations via adapter only.
 - `interface` for objects; `type` for unions/aliases. Barrel: [`src/types/index.ts`](src/types/index.ts).
-- `deno fmt` on `src/` only. Pages **< 200 lines** — extract to `src/components/` or `src/utils/`.
+- `deno fmt` on `src/` only. **Seven flat page files** in `src/pages/` — extract UI to `src/components/`; data to `hooks/pages/` + `store/` (see `design/component-architecture.md`).
 - Prefer Mermaid or HTML wireframes over ASCII diagrams in agent output.
 
 ### React hooks (agent-authored code)
