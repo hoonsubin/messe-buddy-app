@@ -3,35 +3,39 @@ import {
   useLocation,
   useNavigate,
   useParams,
-  useSearchParams,
 } from "react-router-dom";
 import type { Milestone, MilestoneProgress } from "../../types/index.ts";
 import { USER_ROLE } from "../../types/index.ts";
-import { usePlayerInviteToken } from "../../hooks/usePlayerInviteToken.ts";
+import { usePlayerInviteToken } from "../usePlayerInviteToken.ts";
 import { computeProgress } from "../../use-cases/computeProgress.ts";
-import { useActiveProfile } from "../../hooks/useActiveProfile.ts";
-import { useSession } from "../../hooks/useSession.ts";
-import { useGmMilestoneEditor } from "../../hooks/useGmMilestoneEditor.ts";
-import { useGmMissionEditor } from "../../hooks/useGmMissionEditor.ts";
-import { useProgressGamemaker } from "../../hooks/useProgress/index.ts";
-import { useBuddyProfile } from "../../hooks/useBuddyProfile.ts";
+import { useActiveProfile } from "../useActiveProfile.ts";
+import { useSession } from "../useSession.ts";
+import { useGmMilestoneEditor } from "../useGmMilestoneEditor.ts";
+import { useGmMissionEditor } from "../useGmMissionEditor.ts";
+import { useProgressGamemaker } from "../useProgress/index.ts";
+import { useBuddyProfile } from "../useBuddyProfile.ts";
 import {
   type AddResourceInput,
   useResources,
-} from "../../hooks/useResources.ts";
-import { usePreBoardingChecklist } from "../../hooks/usePreBoardingChecklist.ts";
-import { usePlayerTemplates } from "../../hooks/usePlayerTemplates.ts";
-import type { PlayerDetailTabKey } from "./constants.ts";
+} from "../useResources.ts";
+import { usePreBoardingChecklist } from "../usePreBoardingChecklist.ts";
+import { usePlayerTemplates } from "../usePlayerTemplates.ts";
+import type { PlayerDetailTabKey } from "../../components/gamemaker/player-detail/constants.ts";
 import {
   readAppliedTemplate,
   writeAppliedTemplate,
-} from "./playerDetailStorage.ts";
+} from "../../utils/playerDetailStorage.ts";
+import {
+  parsePlayerDetailTab,
+  playerDetailScanPath,
+  playerDetailTabPath,
+} from "../../utils/routeTabs.ts";
 
 type PlayerDetailNavState = {
   readonly inviteToken?: string;
 };
 
-export const usePlayerDetailPage = () => {
+export const useGmPlayerDetailPage = () => {
   const { sessionId, playerId: routePlayerId } = useParams<{
     sessionId: string;
     playerId: string;
@@ -40,16 +44,28 @@ export const usePlayerDetailPage = () => {
   const playerId = routePlayerId ?? "";
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams] = useSearchParams();
   const navInviteToken =
     (location.state as PlayerDetailNavState | null)?.inviteToken ?? "";
   const identity = useActiveProfile(homeSid, USER_ROLE.GAMEMAKER);
 
-  const [tab, setTab] = useState<PlayerDetailTabKey>(
-    searchParams.get("journey") === "1" || searchParams.get("new") === "1"
-      ? "customize"
-      : "analytics",
+  const routeTab = parsePlayerDetailTab(location.pathname);
+  const isScanMode = routeTab === "scan";
+  const tab: PlayerDetailTabKey = routeTab === "scan" ? "customize" : routeTab;
+
+  const setTab = useCallback(
+    (key: PlayerDetailTabKey) => {
+      navigate(playerDetailTabPath(homeSid, playerId, key));
+    },
+    [navigate, homeSid, playerId],
   );
+
+  const openScanner = useCallback(() => {
+    navigate(playerDetailScanPath(homeSid, playerId));
+  }, [navigate, homeSid, playerId]);
+
+  const closeScanner = useCallback(() => {
+    navigate(playerDetailTabPath(homeSid, playerId, tab));
+  }, [navigate, homeSid, playerId, tab]);
 
   const {
     session,
@@ -62,7 +78,6 @@ export const usePlayerDetailPage = () => {
     updateMapNodeScale,
   } = useSession(homeSid, { role: "gamemaker", playerId });
 
-  const [scannerOpen, setScannerOpen] = useState(false);
   const milestoneEditor = useGmMilestoneEditor(milestones);
   const missionEditor = useGmMissionEditor(missions);
 
@@ -404,8 +419,9 @@ export const usePlayerDetailPage = () => {
     missionEditor,
     isDirty,
     isSaving,
-    scannerOpen,
-    setScannerOpen,
+    isScanMode,
+    openScanner,
+    closeScanner,
     showAddTemplate,
     setShowAddTemplate,
     creatingTemplate,
@@ -428,4 +444,4 @@ export const usePlayerDetailPage = () => {
   };
 };
 
-export type PlayerDetailPageModel = ReturnType<typeof usePlayerDetailPage>;
+export type GmPlayerDetailPageModel = ReturnType<typeof useGmPlayerDetailPage>;

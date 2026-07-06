@@ -10,7 +10,7 @@ import TopBar from "../components/shared/TopBar.tsx";
 import FetchErrorPanel from "../components/shared/FetchErrorPanel.tsx";
 import FormShell from "../components/form/FormShell.tsx";
 
-const FormPage = () => {
+const PlayerFormPage = () => {
   const { sessionId: routeSessionId, missionId } = useParams<{
     sessionId: string;
     missionId: string;
@@ -119,7 +119,7 @@ const FormPage = () => {
     return (
       <div
         data-testid="form-page"
-        data-page="form"
+        data-page="player-form"
         style={{
           display: "flex",
           alignItems: "center",
@@ -154,7 +154,7 @@ const FormPage = () => {
     return (
       <div
         data-testid="form-page"
-        data-page="form"
+        data-page="player-form"
         style={{
           display: "flex",
           alignItems: "center",
@@ -173,7 +173,7 @@ const FormPage = () => {
     return (
       <div
         data-testid="form-page"
-        data-page="form"
+        data-page="player-form"
         style={{
           display: "flex",
           flexDirection: "column",
@@ -206,7 +206,7 @@ const FormPage = () => {
     return (
       <div
         data-testid="form-page"
-        data-page="form"
+        data-page="player-form"
         style={{
           display: "flex",
           flexDirection: "column",
@@ -236,7 +236,7 @@ const FormPage = () => {
   return (
     <div
       data-testid="form-page"
-      data-page="form"
+      data-page="player-form"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -295,4 +295,4 @@ const FormPage = () => {
   );
 };
 
-export default FormPage;
+export default PlayerFormPage;

@@ -1,8 +1,8 @@
 import { useMemo } from "react";
-import type { ClaimStatus, Milestone, Mission } from "../../types/index.ts";
-import type { TemplateExport } from "../../types/exports.ts";
-import TemplateSelect from "../../components/gamemaker/TemplateSelect.tsx";
-import MilestoneMapEditor from "../../components/gamemaker/MilestoneMapEditor.tsx";
+import type { ClaimStatus, Milestone, Mission } from "../../../types/index.ts";
+import type { TemplateExport } from "../../../types/exports.ts";
+import TemplateSelect from "../TemplateSelect.tsx";
+import MilestoneMapEditor from "../MilestoneMapEditor.tsx";
 import PlayerDetailSection from "./PlayerDetailSection.tsx";
 import PlayerInviteAccordion from "./PlayerInviteAccordion.tsx";
 

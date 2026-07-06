@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAdapter } from "../../adapters/useAdapter.ts";
-import { writeAppliedTemplate } from "../../pages/player-detail/playerDetailStorage.ts";
+import { writeAppliedTemplate } from "../../utils/playerDetailStorage.ts";
 import { computeProgress } from "../../use-cases/computeProgress.ts";
 import {
   createOnboardingJourney as createOnboardingJourneyUseCase,

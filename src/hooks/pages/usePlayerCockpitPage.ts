@@ -20,7 +20,6 @@ import { useTutorial } from "../../hooks/useTutorial.ts";
 import { useChat } from "../../hooks/useChat.ts";
 import type { UseChatWithAvailability } from "../../hooks/useChat.ts";
 import { findOnboardingProfileMission } from "../../utils/onboardingMission.ts";
-import type { PlayerTabKey } from "./constants.ts";
 import {
   TUTORIAL_FORM_KEY,
   TUTORIAL_STEP_KEY,
@@ -31,8 +30,6 @@ export interface PlayerCockpitPageModel {
   readonly identity: CachedIdentity;
   readonly player: NonNullable<ReturnType<typeof useResolvedPlayer>["player"]>;
   readonly isLoading: boolean;
-  readonly tab: PlayerTabKey;
-  readonly setTab: (tab: PlayerTabKey) => void;
   readonly milestones: ReturnType<typeof useSession>["milestones"];
   readonly missions: ReturnType<typeof useSession>["missions"];
   readonly session: ReturnType<typeof useSession>["session"];
@@ -128,7 +125,6 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
 
   const missionsReady = !sessionLoading;
 
-  const [tab, setTab] = useState<PlayerTabKey>("dashboard");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(
     null,
   );
@@ -248,8 +244,6 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
       identity,
       player,
       isLoading,
-      tab,
-      setTab,
       milestones,
       missions,
       session,

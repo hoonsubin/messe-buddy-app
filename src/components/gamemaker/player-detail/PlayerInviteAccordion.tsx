@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MdExpandLess, MdExpandMore, MdPersonAdd } from "react-icons/md";
-import type { ClaimStatus } from "../../types/index.ts";
-import SessionInviteCard from "../../components/gamemaker/SessionInviteCard.tsx";
+import type { ClaimStatus } from "../../../types/index.ts";
+import SessionInviteCard from "../SessionInviteCard.tsx";
 
 interface PlayerInviteAccordionProps {
   readonly playerFirstName: string;

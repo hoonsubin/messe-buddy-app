@@ -1,5 +1,5 @@
-import type { BuddyProfileDraft, Player } from "../../types/index.ts";
-import BuddyAssignmentForm from "../../components/gamemaker/BuddyAssignmentForm.tsx";
+import type { BuddyProfileDraft, Player } from "../../../types/index.ts";
+import BuddyAssignmentForm from "../BuddyAssignmentForm.tsx";
 
 interface PlayerBuddyTabProps {
   readonly players: ReadonlyArray<Player>;

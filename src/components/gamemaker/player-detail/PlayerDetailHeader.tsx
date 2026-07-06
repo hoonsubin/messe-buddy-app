@@ -1,5 +1,5 @@
 import { MdArrowBack, MdQrCodeScanner } from "react-icons/md";
-import { Button } from "../../components/shared/index.ts";
+import { Button } from "../../shared/index.ts";
 
 interface PlayerDetailHeaderProps {
   readonly playerName: string;

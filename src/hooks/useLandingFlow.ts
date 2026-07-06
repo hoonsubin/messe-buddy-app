@@ -31,7 +31,6 @@ export interface UseLandingFlowResult {
   readonly gmName: string;
   readonly status: LandingStatus;
   readonly errorMessage: string;
-  readonly toast: string | null;
   readonly setWorkspacePanelOpen: (open: boolean) => void;
   readonly setSessionCode: (v: string) => void;
   readonly setInviteToken: (v: string) => void;
@@ -112,18 +111,6 @@ export const useLandingFlow = (): UseLandingFlowResult => {
   const [gmName, setGmName] = useState("");
   const [status, setStatus] = useState<LandingStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
-
-  // ── Toast (from sessionStorage on mount — set by cockpit pages) ──────────
-  const [toast, setToast] = useState<string | null>(null);
-  useEffect(() => {
-    const msg = sessionStorage.getItem("mb_landing_toast");
-    if (!msg) return;
-    sessionStorage.removeItem("mb_landing_toast");
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync sessionStorage once on mount
-    setToast(msg);
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, []);
 
   const resetError = useCallback(() => {
     setErrorMessage("");
@@ -283,7 +270,6 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     gmName,
     status,
     errorMessage,
-    toast,
     setWorkspacePanelOpen,
     setSessionCode,
     setInviteToken,

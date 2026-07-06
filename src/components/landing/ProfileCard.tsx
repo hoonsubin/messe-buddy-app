@@ -2,8 +2,8 @@ import { useCallback, useState } from "react";
 import { MdClose } from "react-icons/md";
 import { DEMO_PROFILES } from "../../constants/demoInstance.ts";
 import type { CachedIdentity } from "../../types/index.ts";
-import { IconButton } from "../../components/shared/index.ts";
-import ConfirmDialog from "../../components/shared/ConfirmDialog.tsx";
+import { IconButton } from "../shared/index.ts";
+import ConfirmDialog from "../shared/ConfirmDialog.tsx";
 import { cn } from "../../utils/cn.ts";
 import { landingRoleFor, profileInitials, roleLabel } from "./landingUtils.ts";
 

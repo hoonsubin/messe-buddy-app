@@ -4,10 +4,10 @@ import type {
   Mission,
   Player,
   ProgressEvent,
-} from "../../types/index.ts";
-import PlayerAnalytics from "../../components/gamemaker/PlayerAnalytics.tsx";
-import IsometricMilestoneMap from "../../components/player/IsometricMilestoneMap.tsx";
-import PendingApprovalsPanel from "../../components/gamemaker/PendingApprovalsPanel.tsx";
+} from "../../../types/index.ts";
+import PlayerAnalytics from "../PlayerAnalytics.tsx";
+import IsometricMilestoneMap from "../../player/IsometricMilestoneMap.tsx";
+import PendingApprovalsPanel from "../PendingApprovalsPanel.tsx";
 import PlayerDetailSection from "./PlayerDetailSection.tsx";
 
 interface PlayerAnalyticsTabProps {

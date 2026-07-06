@@ -1,5 +1,6 @@
 import { MdArrowBack } from "react-icons/md";
-import { usePlayerCockpitPage } from "./player-cockpit/usePlayerCockpitPage.ts";
+import { useLocation, useParams } from "react-router-dom";
+import { usePlayerCockpitPage } from "../hooks/pages/usePlayerCockpitPage.ts";
 import { Button } from "../components/shared/index.ts";
 import { BUTTON_VARIANT } from "../components/shared/types.ts";
 import ConfirmDialog from "../components/shared/ConfirmDialog.tsx";
@@ -11,13 +12,18 @@ import {
   PLACEHOLDER_STEPS,
   TutorialOverlayWithStep,
 } from "../components/tutorial/TutorialOverlay.tsx";
-import { PLAYER_TABS, type PlayerTabKey } from "./player-cockpit/constants.ts";
-import PlayerCockpitToolbar from "./player-cockpit/PlayerCockpitToolbar.tsx";
+import { playerCockpitTabsForSession } from "../components/player/constants.ts";
+import { parsePlayerCockpitTab } from "../utils/routeTabs.ts";
+import PlayerCockpitToolbar from "../components/player/PlayerCockpitToolbar.tsx";
 import PlayerDashboardView, {
   PlayerAssistantView,
-} from "./player-cockpit/PlayerDashboardView.tsx";
+} from "../components/player/PlayerDashboardView.tsx";
 
 const PlayerCockpitPage = () => {
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const sid = sessionId ?? "";
+  const location = useLocation();
+  const tab = parsePlayerCockpitTab(location.pathname);
   const result = usePlayerCockpitPage();
 
   if (result.status === "no-identity") {
@@ -118,9 +124,7 @@ const PlayerCockpitPage = () => {
       />
 
       <RouteTabBar
-        tabs={PLAYER_TABS}
-        activeKey={m.tab}
-        onChange={(key) => m.setTab(key as PlayerTabKey)}
+        tabs={playerCockpitTabsForSession(sid)}
         ariaLabel="Player views"
       />
 
@@ -156,7 +160,7 @@ const PlayerCockpitPage = () => {
         />
       )}
 
-      {m.tab === "dashboard" && (
+      {tab === "dashboard" && (
         <PlayerDashboardView
           playerName={m.player.name}
           isLoading={m.isLoading}
@@ -175,7 +179,7 @@ const PlayerCockpitPage = () => {
         />
       )}
 
-      {m.tab === "assistant" && (
+      {tab === "assistant" && (
         <PlayerAssistantView
           messages={m.chat.messages}
           isStreaming={m.chat.isStreaming}

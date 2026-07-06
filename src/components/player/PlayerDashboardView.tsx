@@ -6,11 +6,11 @@ import type {
   MilestoneProgress,
   Resource,
 } from "../../types/index.ts";
-import ChatPanel from "../../components/player/ChatPanel.tsx";
-import MilestoneMapViewer from "../../components/player/MilestoneMapViewer.tsx";
-import CurrentMissionsList from "../../components/player/CurrentMissionsList.tsx";
-import ResourcesSection from "../../components/player/ResourcesSection.tsx";
-import BuddyCard from "../../components/player/BuddyCard.tsx";
+import ChatPanel from "./ChatPanel.tsx";
+import MilestoneMapViewer from "./MilestoneMapViewer.tsx";
+import CurrentMissionsList from "./CurrentMissionsList.tsx";
+import ResourcesSection from "./ResourcesSection.tsx";
+import BuddyCard from "./BuddyCard.tsx";
 import type { ChatMessage } from "../../hooks/useChat.ts";
 
 interface PlayerDashboardViewProps {

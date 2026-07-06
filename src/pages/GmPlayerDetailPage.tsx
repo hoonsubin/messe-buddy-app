@@ -1,26 +1,31 @@
 import TopBar from "../components/shared/TopBar.tsx";
 import RouteTabBar from "../components/shared/RouteTabBar.tsx";
-import {
-  type PlayerDetailTabKey,
-  visiblePlayerDetailTabs,
-} from "./player-detail/constants.ts";
-import { usePlayerDetailPage } from "./player-detail/usePlayerDetailPage.ts";
-import PlayerDetailHeader from "./player-detail/PlayerDetailHeader.tsx";
-import PlayerAnalyticsTab from "./player-detail/PlayerAnalyticsTab.tsx";
-import PlayerCustomizeTab from "./player-detail/PlayerCustomizeTab.tsx";
-import PlayerBuddyTab from "./player-detail/PlayerBuddyTab.tsx";
-import PlayerPreboardingTab from "./player-detail/PlayerPreboardingTab.tsx";
-import PlayerDetailOverlays from "./player-detail/PlayerDetailOverlays.tsx";
+import { playerDetailTabsForPlayer } from "../components/gamemaker/player-detail/constants.ts";
+import { useGmPlayerDetailPage } from "../hooks/pages/useGmPlayerDetailPage.ts";
+import PlayerDetailHeader from "../components/gamemaker/player-detail/PlayerDetailHeader.tsx";
+import PlayerAnalyticsTab from "../components/gamemaker/player-detail/PlayerAnalyticsTab.tsx";
+import PlayerCustomizeTab from "../components/gamemaker/player-detail/PlayerCustomizeTab.tsx";
+import PlayerBuddyTab from "../components/gamemaker/player-detail/PlayerBuddyTab.tsx";
+import PlayerPreboardingTab from "../components/gamemaker/player-detail/PlayerPreboardingTab.tsx";
+import PlayerDetailOverlays from "../components/gamemaker/player-detail/PlayerDetailOverlays.tsx";
+import GmPlayerScanView from "../components/gamemaker/player-detail/GmPlayerScanView.tsx";
 
-const PlayerDetailPage = () => {
-  const vm = usePlayerDetailPage();
-  const tabs = visiblePlayerDetailTabs({ showAnalytics: vm.showAnalyticsTab });
+const GmPlayerDetailPage = () => {
+  const vm = useGmPlayerDetailPage();
+
+  if (vm.isScanMode) {
+    return <GmPlayerScanView vm={vm} />;
+  }
+
+  const tabs = playerDetailTabsForPlayer(vm.homeSid, vm.playerId, {
+    showAnalytics: vm.showAnalyticsTab,
+  });
 
   return (
     <div
       className="player-detail"
       data-testid="player-detail-page"
-      data-page="player-detail"
+      data-page="gm-player-detail"
     >
       <TopBar
         playerName={vm.identity?.name ?? "Game Master"}
@@ -30,13 +35,11 @@ const PlayerDetailPage = () => {
       <PlayerDetailHeader
         playerName={vm.playerName}
         onBack={() => vm.navigate(`/gamemaker/${vm.homeSid}`)}
-        onScan={() => vm.setScannerOpen(true)}
+        onScan={vm.openScanner}
       />
 
       <RouteTabBar
         tabs={tabs}
-        activeKey={vm.activeTab}
-        onChange={(key) => vm.setTab(key as PlayerDetailTabKey)}
         ariaLabel="Player views"
         testIdPrefix="player-detail-tab"
       />
@@ -84,7 +87,7 @@ const PlayerDetailPage = () => {
           onResetToGrid={vm.milestoneEditor.handleResetToGrid}
           onUploadBackground={(file) => void vm.uploadBackground(file)}
           onMapNodeScaleChange={(scale) => void vm.updateMapNodeScale(scale)}
-          onOpenScanner={() => vm.setScannerOpen(true)}
+          onOpenScanner={vm.openScanner}
         />
       )}
 
@@ -114,4 +117,4 @@ const PlayerDetailPage = () => {
   );
 };
 
-export default PlayerDetailPage;
+export default GmPlayerDetailPage;

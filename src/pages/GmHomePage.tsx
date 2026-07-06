@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { MdArrowBack } from "react-icons/md";
 import { USER_ROLE } from "../types/index.ts";
 import { useActiveProfile } from "../hooks/useActiveProfile.ts";
@@ -8,20 +8,20 @@ import { useSessionExists } from "../hooks/useSessionExists.ts";
 import { useGmPlayers } from "../hooks/useProgress/gmPlayers.ts";
 import { usePlayerTemplates } from "../hooks/usePlayerTemplates.ts";
 import type { CreateOnboardingJourneyInput } from "../use-cases/createOnboardingJourney.ts";
+import { parseGmHomeTab } from "../utils/routeTabs.ts";
 import TopBar from "../components/shared/TopBar.tsx";
 import RouteTabBar from "../components/shared/RouteTabBar.tsx";
 import Toast from "../components/shared/Toast.tsx";
 import OnboardingJourneyModal from "../components/gamemaker/OnboardingJourneyModal.tsx";
 import GmPlayersTab from "../components/gamemaker/GmPlayersTab.tsx";
 import ResourceLibraryTab from "../components/gamemaker/ResourceLibraryTab.tsx";
-import {
-  GM_HOME_TABS,
-  type GmHomeTabKey,
-} from "../components/gamemaker/gmHomeConstants.ts";
+import { gmHomeTabsForSession } from "../components/gamemaker/gmHomeConstants.ts";
 
-const GameMakerHomePage = () => {
+const GmHomePage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const sid = sessionId ?? "";
+  const location = useLocation();
+  const tab = parseGmHomeTab(location.pathname);
   const navigate = useNavigate();
   const { removeProfile } = useIdentity();
   const identity = useActiveProfile(sid, USER_ROLE.GAMEMAKER);
@@ -31,7 +31,6 @@ const GameMakerHomePage = () => {
   const { checking: checkingSession, missing: sessionMissing } =
     useSessionExists(sid);
 
-  const [tab, setTab] = useState<GmHomeTabKey>("players");
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardKey, setWizardKey] = useState(0);
   const [creating, setCreating] = useState(false);
@@ -60,7 +59,7 @@ const GameMakerHomePage = () => {
         .then(({ playerId, inviteToken }) => {
           setWizardOpen(false);
           setCreating(false);
-          navigate(`/gamemaker/${sid}/player/${playerId}?journey=1`, {
+          navigate(`/gamemaker/${sid}/player/${playerId}/customize`, {
             state: { inviteToken },
           });
         })
@@ -86,7 +85,7 @@ const GameMakerHomePage = () => {
     <div
       className="gm-home"
       data-testid="gamemaker-home-page"
-      data-page="gamemaker-home"
+      data-page="gm-home"
     >
       <TopBar
         playerName={identity?.name ?? "Game Master"}
@@ -108,9 +107,7 @@ const GameMakerHomePage = () => {
       </div>
 
       <RouteTabBar
-        tabs={GM_HOME_TABS}
-        activeKey={tab}
-        onChange={(key) => setTab(key as GmHomeTabKey)}
+        tabs={gmHomeTabsForSession(sid)}
         ariaLabel="Game Maker workspace"
         testIdPrefix="gm-home-tab"
       />
@@ -155,4 +152,4 @@ const GameMakerHomePage = () => {
   );
 };
 
-export default GameMakerHomePage;
+export default GmHomePage;

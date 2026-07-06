@@ -1,12 +1,11 @@
-import Toast from "../../components/shared/Toast.tsx";
-import ConfirmDialog from "../../components/shared/ConfirmDialog.tsx";
-import NameCaptureModal from "../../components/shared/NameCaptureModal.tsx";
-import MissionBottomSheet from "../../components/gamemaker/MissionBottomSheet.tsx";
-import GmQRScannerModal from "../../components/gamemaker/GmQRScannerModal.tsx";
-import type { PlayerDetailPageModel } from "./usePlayerDetailPage.ts";
+import Toast from "../../shared/Toast.tsx";
+import ConfirmDialog from "../../shared/ConfirmDialog.tsx";
+import NameCaptureModal from "../../shared/NameCaptureModal.tsx";
+import MissionBottomSheet from "../MissionBottomSheet.tsx";
+import type { GmPlayerDetailPageModel } from "../../../hooks/pages/useGmPlayerDetailPage.ts";
 
 interface PlayerDetailOverlaysProps {
-  readonly vm: PlayerDetailPageModel;
+  readonly vm: GmPlayerDetailPageModel;
 }
 
 const PlayerDetailOverlays = ({ vm }: PlayerDetailOverlaysProps) => {
@@ -57,13 +56,6 @@ const PlayerDetailOverlays = ({ vm }: PlayerDetailOverlaysProps) => {
         onDeleteResource={(id) => void vm.gmResources.deleteResource(id)}
         onToggleResourceVisibility={(id, visible) =>
           void vm.gmResources.toggleVisibility(id, visible)}
-      />
-
-      <GmQRScannerModal
-        isOpen={vm.scannerOpen}
-        sessionId={vm.homeSid}
-        playerId={vm.playerId}
-        onClose={() => vm.setScannerOpen(false)}
       />
 
       {vm.showAddTemplate && (

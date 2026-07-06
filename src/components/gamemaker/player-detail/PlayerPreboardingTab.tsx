@@ -1,5 +1,5 @@
-import type { PreBoardingCheckItem } from "../../types/index.ts";
-import PreBoardingChecklist from "../../components/gamemaker/PreBoardingChecklist.tsx";
+import type { PreBoardingCheckItem } from "../../../types/index.ts";
+import PreBoardingChecklist from "../PreBoardingChecklist.tsx";
 
 interface PlayerPreboardingTabProps {
   readonly playerFirstName: string;
