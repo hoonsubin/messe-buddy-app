@@ -85,9 +85,14 @@ const pushEvent = (event: DevTraceEvent): void => {
   const detail = Object.entries(event.detail)
     .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
     .join(" ");
-  console.debug(
-    `[mb:trace:${event.sessionId}] ${event.kind}${detail ? ` ${detail}` : ""}`,
-  );
+  const message = `[mb:trace:${event.sessionId}] ${event.kind}${
+    detail ? ` ${detail}` : ""
+  }`;
+  if (event.kind === "query:fetch" || event.kind === "mutation:done") {
+    console.info(message);
+  } else {
+    console.debug(message);
+  }
 };
 
 const emit = (

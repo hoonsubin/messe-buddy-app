@@ -266,7 +266,8 @@ export const useGmHomePage = (): UseGmHomePageResult => {
     tab,
     identity,
     players,
-    loading: gmRoster.isInitialLoading,
+    loading: gmRoster.isInitialLoading ||
+      (gmRoster.data === undefined && !gmRoster.error),
     checkingSession: sessionMeta.isInitialLoading,
     sessionMissing: !sessionMeta.isInitialLoading && !!sessionMeta.error,
     templates: templatesQuery.data ?? [],

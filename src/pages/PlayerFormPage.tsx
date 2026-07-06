@@ -29,7 +29,11 @@ const PlayerFormPage = () => {
   useEffect(() => {
     if (vm.status !== "ready" || !readyFormSchema || !initialValues) return;
 
-    const nextKey = formInitKey(missionId, readyFormSchema.fields, initialValues);
+    const nextKey = formInitKey(
+      missionId,
+      readyFormSchema.fields,
+      initialValues,
+    );
     if (lastFormInitKeyRef.current === nextKey) return;
     lastFormInitKeyRef.current = nextKey;
 

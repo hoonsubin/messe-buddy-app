@@ -55,6 +55,7 @@ export const FIELD_TYPE = {
   TEXTAREA: "textarea",
   SELECT: "select",
   MULTI_SELECT: "multiSelect",
+  DATE: "date",
 } as const;
 export type FieldType = (typeof FIELD_TYPE)[keyof typeof FIELD_TYPE];
 

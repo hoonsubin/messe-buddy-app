@@ -21,8 +21,13 @@ import { isOnboardingProfileMission } from "../../utils/onboardingMission.ts";
 import type { UseProgressPlayerResult } from "../progressTypes.ts";
 
 export interface UsePlayerFormPageResult {
-  readonly status: "no-identity" | "loading" | "session-error" | "form-error" |
-    "no-schema" | "ready";
+  readonly status:
+    | "no-identity"
+    | "loading"
+    | "session-error"
+    | "form-error"
+    | "no-schema"
+    | "ready";
   readonly sessionId: string;
   readonly identity: NonNullable<ReturnType<typeof useActiveProfile>>;
   readonly player: Player | null;
@@ -70,9 +75,7 @@ export const usePlayerFormPage = (): UsePlayerFormPageResult => {
   );
 
   const journey = useQuery(
-    sessionId && playerId
-      ? queryKeys.journey(sessionId, playerId)
-      : null,
+    sessionId && playerId ? queryKeys.journey(sessionId, playerId) : null,
     fetchJourney(sessionId, playerId),
     { enabled: !!sessionId && !!playerId },
   );
@@ -215,7 +218,8 @@ export const usePlayerFormPage = (): UsePlayerFormPageResult => {
 
   if (!identity) return { status: "no-identity" } as UsePlayerFormPageResult;
 
-  const sessionLoading = sessionMeta.isInitialLoading || playerQuery.isInitialLoading ||
+  const sessionLoading = sessionMeta.isInitialLoading ||
+    playerQuery.isInitialLoading ||
     journey.isInitialLoading;
   const formLoading = formSchemaQuery.isInitialLoading;
 

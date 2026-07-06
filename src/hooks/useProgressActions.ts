@@ -13,8 +13,9 @@ export const useProgressActions = (playerId: string) => {
   const patchEvent = useCallback(
     (event: ProgressEvent) => {
       if (!progressKey) return;
-      client.patchQuery<ReadonlyArray<ProgressEvent>>(progressKey, (prev) =>
-        mergeProgressEvent(prev, event)
+      client.patchQuery<ReadonlyArray<ProgressEvent>>(
+        progressKey,
+        (prev) => mergeProgressEvent(prev, event),
       );
     },
     [client, progressKey],

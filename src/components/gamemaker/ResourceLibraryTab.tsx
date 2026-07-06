@@ -93,18 +93,20 @@ const ResourceLibraryTab = ({
             Company-wide · shared across all GMs
           </p>
         </div>
-        <button
-          type="button"
-          className="btn btn--primary gm-home__header-btn"
-          data-testid="add-library-resource-btn"
-          onClick={() => {
-            setEditing(null);
-            setFormMode("create");
-          }}
-        >
-          <MdAdd size={18} aria-hidden="true" />
-          Add resource
-        </button>
+        {resources.length > 0 && (
+          <button
+            type="button"
+            className="btn btn--primary gm-home__header-btn"
+            data-testid="add-library-resource-btn"
+            onClick={() => {
+              setEditing(null);
+              setFormMode("create");
+            }}
+          >
+            <MdAdd size={18} aria-hidden="true" />
+            Add resource
+          </button>
+        )}
       </header>
 
       {loading && resources.length === 0

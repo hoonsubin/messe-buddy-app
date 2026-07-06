@@ -129,6 +129,7 @@ export const useTutorial = (
   ]);
 
   const handleTutorialSkip = useCallback(() => {
+    setShowTutorial(false);
     setShowSkipConfirm(true);
   }, []);
 
@@ -145,7 +146,10 @@ export const useTutorial = (
 
   const handleSkipCancel = useCallback(() => {
     setShowSkipConfirm(false);
-  }, []);
+    if (player && !player.tutorialComplete) {
+      setShowTutorial(true);
+    }
+  }, [player]);
 
   return {
     tutorialStep,

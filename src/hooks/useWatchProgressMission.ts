@@ -26,8 +26,9 @@ export const useWatchProgressMission = (
       missionId,
       (event) => {
         const key = queryKeys.progress(playerId);
-        client.patchQuery<ReadonlyArray<ProgressEvent>>(key, (prev) =>
-          mergeProgressEvent(prev, event)
+        client.patchQuery<ReadonlyArray<ProgressEvent>>(
+          key,
+          (prev) => mergeProgressEvent(prev, event),
         );
         devBackendTrace.sseEvent(playerId, missionId);
         onUpdate(event);

@@ -26,6 +26,7 @@ const MilestoneNode = (props: MilestoneNodeProps) => {
   const fillHeight = Math.max(MIN_FILL, props.progressPercent);
   const pct = Math.round(props.progressPercent * 100);
   const mCount = props.missionCount ?? 0;
+  const missionCountLabel = mCount === 1 ? "1 mission" : `${mCount} missions`;
 
   return (
     <button
@@ -78,9 +79,9 @@ const MilestoneNode = (props: MilestoneNodeProps) => {
         className={`milestone-node__pill${
           mCount === 0 ? " milestone-node__pill--empty" : ""
         }`}
-        aria-label={`${mCount} missions`}
+        aria-label={missionCountLabel}
       >
-        {mCount} missions
+        {missionCountLabel}
       </span>
     </button>
   );

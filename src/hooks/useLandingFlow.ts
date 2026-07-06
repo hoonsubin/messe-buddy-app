@@ -45,7 +45,14 @@ export interface UseLandingFlowResult {
   readonly resetError: () => void;
 }
 
-// ── Hook ─────────────────────────────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+/** GM-assigned display name from invite lookup (skip internal placeholders). */
+const inviteDisplayName = (name: string | undefined): string | null => {
+  const trimmed = name?.trim();
+  if (!trimmed || trimmed.startsWith("pending_")) return null;
+  return trimmed;
+};
 
 export const useLandingFlow = (): UseLandingFlowResult => {
   const navigate = useNavigate();
@@ -150,6 +157,8 @@ export const useLandingFlow = (): UseLandingFlowResult => {
         setVerifiedInviteToken(inviteTokenFromUrl);
         setSessionCode(routeSessionId);
         setInviteToken(inviteTokenFromUrl);
+        const displayName = inviteDisplayName(player.name);
+        if (displayName) setPlayerName(displayName);
         setEmployeeStep("name");
         setStatus("idle");
       } catch {
@@ -182,6 +191,8 @@ export const useLandingFlow = (): UseLandingFlowResult => {
       }
       setVerifiedSessionId(sid);
       setVerifiedInviteToken(token);
+      const displayName = inviteDisplayName(player.name);
+      if (displayName) setPlayerName(displayName);
       setEmployeeStep("name");
       setStatus("idle");
     } catch {

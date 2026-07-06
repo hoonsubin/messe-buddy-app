@@ -11,32 +11,36 @@ const PlayerDetailHeader = ({
   playerName,
   onBack,
   onScan,
-}: PlayerDetailHeaderProps) => (
-  <div className="player-detail__header">
-    <Button
-      type="button"
-      variant="ghost"
-      className="player-detail__header-btn"
-      onClick={onBack}
-    >
-      <MdArrowBack size={16} />
-      <span className="player-detail-header__back-label">All players</span>
-    </Button>
+}: PlayerDetailHeaderProps) => {
+  const firstName = playerName.trim().split(/\s+/)[0] || playerName;
 
-    <div className="player-detail__header-title">
-      {playerName}'s Onboarding Process
+  return (
+    <div className="player-detail__header">
+      <Button
+        type="button"
+        variant="ghost"
+        className="player-detail__header-btn"
+        onClick={onBack}
+      >
+        <MdArrowBack size={16} />
+        <span className="player-detail-header__back-label">All players</span>
+      </Button>
+
+      <div className="player-detail__header-title">
+        {firstName}'s Onboarding
+      </div>
+
+      <Button
+        type="button"
+        variant="ghost"
+        className="player-detail__header-btn"
+        onClick={onScan}
+      >
+        <MdQrCodeScanner size={16} />
+        <span className="player-detail-header__scan-label">Scan QR</span>
+      </Button>
     </div>
-
-    <Button
-      type="button"
-      variant="ghost"
-      className="player-detail__header-btn"
-      onClick={onScan}
-    >
-      <MdQrCodeScanner size={16} />
-      <span className="player-detail-header__scan-label">Scan QR</span>
-    </Button>
-  </div>
-);
+  );
+};
 
 export default PlayerDetailHeader;

@@ -76,6 +76,7 @@ const GmPlayerDetailPage = () => {
           applyingTemplate={vm.applyingTemplate}
           draftMilestones={vm.draftMilestonesAsMilestones}
           missions={vm.missions}
+          milestoneProgress={vm.milestoneProgress}
           bgImageUrl={vm.bgImageUrl}
           mapNodeScale={vm.mapNodeScale}
           onSelectTemplate={vm.handleUseTemplate}

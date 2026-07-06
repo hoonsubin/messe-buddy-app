@@ -1,5 +1,10 @@
 import { useMemo } from "react";
-import type { ClaimStatus, Milestone, Mission } from "../../../types/index.ts";
+import type {
+  ClaimStatus,
+  Milestone,
+  MilestoneProgress,
+  Mission,
+} from "../../../types/index.ts";
 import type { TemplateExport } from "../../../types/exports.ts";
 import TemplateSelect from "../TemplateSelect.tsx";
 import MilestoneMapEditor from "../MilestoneMapEditor.tsx";
@@ -16,6 +21,7 @@ interface PlayerCustomizeTabProps {
   readonly applyingTemplate: boolean;
   readonly draftMilestones: ReadonlyArray<Milestone>;
   readonly missions: ReadonlyArray<Mission>;
+  readonly milestoneProgress: ReadonlyArray<MilestoneProgress>;
   readonly bgImageUrl: string;
   readonly mapNodeScale: number;
   readonly onSelectTemplate: (name: string) => void;
@@ -40,6 +46,7 @@ const PlayerCustomizeTab = ({
   applyingTemplate,
   draftMilestones,
   missions,
+  milestoneProgress,
   bgImageUrl,
   mapNodeScale,
   onSelectTemplate,
@@ -91,6 +98,7 @@ const PlayerCustomizeTab = ({
           <MilestoneMapEditor
             milestones={draftMilestones}
             missionCounts={missionCounts}
+            milestoneProgress={milestoneProgress}
             bgImageUrl={bgImageUrl}
             mapNodeScale={mapNodeScale}
             onMilestoneClick={onSelectMilestone}

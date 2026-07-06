@@ -143,7 +143,7 @@ const GmPlayersTab = ({
           </button>
         </div>
       )
-      : loading && players.length === 0
+      : loading
       ? <p className="gm-home__loading">Loading players…</p>
       : players.length === 0
       ? (

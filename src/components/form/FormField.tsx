@@ -57,7 +57,6 @@ const FormField = (props: FormFieldProps) => {
           className="form-input"
           value={value}
           placeholder={field.placeholder}
-          required={field.required}
           onChange={(e) => onChange(e.target.value)}
           rows={4}
         />
@@ -68,7 +67,6 @@ const FormField = (props: FormFieldProps) => {
           id={`input-${field.id}`}
           className="form-input"
           value={value}
-          required={field.required}
           onChange={(e) => onChange(e.target.value)}
         >
           <option value="">- select -</option>
@@ -131,16 +129,26 @@ const FormField = (props: FormFieldProps) => {
         </div>
       )}
 
+      {field.type === "date" && (
+        <input
+          id={`input-${field.id}`}
+          className="form-input"
+          type="date"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )}
+
       {field.type !== "textarea" &&
         field.type !== "select" &&
-        field.type !== "multiSelect" && (
+        field.type !== "multiSelect" &&
+        field.type !== "date" && (
         <input
           id={`input-${field.id}`}
           className="form-input"
           type="text"
           value={value}
           placeholder={field.placeholder}
-          required={field.required}
           onChange={(e) => onChange(e.target.value)}
         />
       )}

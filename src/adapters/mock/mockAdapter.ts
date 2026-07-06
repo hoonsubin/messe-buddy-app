@@ -37,7 +37,10 @@ type ProgressCallback = (event: ProgressEvent) => void;
 const subscriptions = new Map<string, Set<ProgressCallback>>();
 
 type SessionPlayerCallback = (player: Player) => void;
-const sessionPlayerSubscriptions = new Map<string, Set<SessionPlayerCallback>>();
+const sessionPlayerSubscriptions = new Map<
+  string,
+  Set<SessionPlayerCallback>
+>();
 
 type SessionProgressCallback = (event: ProgressEvent) => void;
 const sessionProgressSubscriptions = new Map<
@@ -67,7 +70,10 @@ const notifySessionPlayer = (sessionId: string, player: Player): void => {
   for (const cb of subs) cb(player);
 };
 
-const notifySessionProgress = (sessionId: string, event: ProgressEvent): void => {
+const notifySessionProgress = (
+  sessionId: string,
+  event: ProgressEvent,
+): void => {
   const subs = sessionProgressSubscriptions.get(sessionId);
   if (!subs) return;
   for (const cb of subs) cb(event);

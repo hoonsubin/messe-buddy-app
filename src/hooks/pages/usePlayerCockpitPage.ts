@@ -111,9 +111,7 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
   );
 
   const journey = useQuery(
-    sessionId && playerId
-      ? queryKeys.journey(sessionId, playerId)
-      : null,
+    sessionId && playerId ? queryKeys.journey(sessionId, playerId) : null,
     fetchJourney(sessionId, playerId),
     { enabled: !!sessionId && !!playerId },
   );
@@ -131,9 +129,7 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
   );
 
   const resourcesQuery = useQuery(
-    sessionId && playerId
-      ? queryKeys.resources(sessionId, playerId)
-      : null,
+    sessionId && playerId ? queryKeys.resources(sessionId, playerId) : null,
     fetchPlayerResources(sessionId, playerId, true),
     { enabled: !!sessionId && !!playerId },
   );
@@ -193,7 +189,8 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     [milestones, missions],
   );
 
-  const missionsReady = !journey.isInitialLoading && !sessionMeta.isInitialLoading;
+  const missionsReady = !journey.isInitialLoading &&
+    !sessionMeta.isInitialLoading;
 
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(
     null,
@@ -267,7 +264,8 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     return milestones[0] ?? null;
   })();
 
-  const isLoading = sessionMeta.isInitialLoading || playerQuery.isInitialLoading ||
+  const isLoading = sessionMeta.isInitialLoading ||
+    playerQuery.isInitialLoading ||
     journey.isInitialLoading;
 
   const buddy = buddyQuery.data ?? null;

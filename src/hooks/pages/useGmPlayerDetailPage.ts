@@ -103,9 +103,7 @@ export const useGmPlayerDetailPage = () => {
   );
 
   const journey = useQuery(
-    homeSid && playerId
-      ? queryKeys.journey(homeSid, playerId)
-      : null,
+    homeSid && playerId ? queryKeys.journey(homeSid, playerId) : null,
     fetchJourney(homeSid, playerId),
     { enabled: !!homeSid && !!playerId },
   );
@@ -113,7 +111,8 @@ export const useGmPlayerDetailPage = () => {
   const session = sessionMeta.data ?? null;
   const milestones = journey.data?.milestones ?? [];
   const missions = journey.data?.missions ?? [];
-  const sessionLoading = sessionMeta.isInitialLoading || journey.isInitialLoading;
+  const sessionLoading = sessionMeta.isInitialLoading ||
+    journey.isInitialLoading;
   const sessionError = sessionMeta.error ?? journey.error;
 
   const refreshSession = useCallback(() => {
@@ -234,9 +233,7 @@ export const useGmPlayerDetailPage = () => {
   };
 
   const resourcesQuery = useQuery(
-    homeSid && playerId
-      ? queryKeys.resources(homeSid, playerId)
-      : null,
+    homeSid && playerId ? queryKeys.resources(homeSid, playerId) : null,
     fetchPlayerResources(homeSid, playerId, false),
     { enabled: !!homeSid && !!playerId },
   );
@@ -692,6 +689,16 @@ export const useGmPlayerDetailPage = () => {
     missionEditor.clearSelectedMission();
     milestoneEditor.setSelectedMilestone(null);
   }, [missionEditor, milestoneEditor]);
+
+  // Fresh player route (e.g. post-wizard redirect) must not leave a sheet open.
+  useEffect(() => {
+    closeMilestoneEditor();
+  }, [playerId, closeMilestoneEditor]);
+
+  // Scan mode replaces the map — dismiss any open milestone sheet first.
+  useEffect(() => {
+    if (isScanMode) closeMilestoneEditor();
+  }, [isScanMode, closeMilestoneEditor]);
 
   // Project unsaved edits into the mission list the sheet renders:
   //   1. filter to the currently-open milestone,

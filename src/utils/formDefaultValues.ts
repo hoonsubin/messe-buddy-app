@@ -18,4 +18,6 @@ export const formInitKey = (
   fields: ReadonlyArray<FieldSchema>,
   initialValues: Record<string, string>,
 ): string =>
-  `${missionId}:${fields.map((f) => f.id).join("|")}:${JSON.stringify(initialValues)}`;
+  `${missionId}:${fields.map((f) => f.id).join("|")}:${
+    JSON.stringify(initialValues)
+  }`;

@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import type { FieldSchema } from "../types/index.ts";
-import {
-  buildFormDefaultValues,
-  formInitKey,
-} from "./formDefaultValues.ts";
+import { buildFormDefaultValues, formInitKey } from "./formDefaultValues.ts";
 
 const fields = [
-  { id: "preferredName", label: "Preferred Name", type: "text", required: true },
+  {
+    id: "preferredName",
+    label: "Preferred Name",
+    type: "text",
+    required: true,
+  },
   { id: "role", label: "Job Title", type: "text", required: true },
 ] satisfies ReadonlyArray<FieldSchema>;
 

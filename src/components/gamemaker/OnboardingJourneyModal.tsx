@@ -1,5 +1,9 @@
 import { useState } from "react";
-import type { BuddyProfile, BuddySelection, TemplateExport } from "../../types/index.ts";
+import type {
+  BuddyProfile,
+  BuddySelection,
+  TemplateExport,
+} from "../../types/index.ts";
 import {
   defaultBuddySelection,
   isBuddySelectionValid,

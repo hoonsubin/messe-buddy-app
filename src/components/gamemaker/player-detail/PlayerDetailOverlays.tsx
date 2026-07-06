@@ -14,49 +14,44 @@ const PlayerDetailOverlays = ({ vm }: PlayerDetailOverlaysProps) => {
     (resource) => resource.milestoneId === milestoneId,
   );
 
+  const openMilestone = vm.milestoneEditor.selectedMilestone;
+
   return (
     <>
-      <MissionBottomSheet
-        isOpen={vm.milestoneEditor.selectedMilestone !== null}
-        milestone={vm.milestoneEditor.selectedMilestone}
-        missions={vm.sheetMissions}
-        activeMissionId={vm.missionEditor.selectedMissionId}
-        draft={vm.missionEditor.activeDraftMission}
-        isDirty={vm.isDirty}
-        isSaving={vm.isSaving}
-        sessionId={vm.homeSid}
-        milestoneResources={milestoneResources}
-        onMissionSelect={vm.missionEditor.handleMissionSelect}
-        onDraftChange={vm.missionEditor.handleDraftChange}
-        onRename={(newName) =>
-          vm.milestoneEditor.selectedMilestone
-            ? vm.milestoneEditor.handleRenameMilestone(
-              vm.milestoneEditor.selectedMilestone.id,
-              newName,
-            )
-            : undefined}
-        onSave={() => void vm.handleSave()}
-        onDiscard={vm.handleDiscard}
-        onAddMission={() =>
-          vm.milestoneEditor.selectedMilestone
-            ? vm.missionEditor.handleAddMission(
-              vm.milestoneEditor.selectedMilestone.id,
-            )
-            : undefined}
-        onDeleteMission={vm.handleDeleteMission}
-        onReorderMission={vm.missionEditor.handleMissionReorder}
-        onClose={vm.closeMilestoneEditor}
-        onAddResource={(data) =>
-          vm.handleAddResource({
-            ...data,
-            milestoneId: vm.milestoneEditor.selectedMilestone?.id,
-          })}
-        onUpdateResource={(id, patch) =>
-          void vm.gmResources.updateResource(id, patch)}
-        onDeleteResource={(id) => void vm.gmResources.deleteResource(id)}
-        onToggleResourceVisibility={(id, visible) =>
-          void vm.gmResources.toggleVisibility(id, visible)}
-      />
+      {openMilestone !== null && (
+        <MissionBottomSheet
+          isOpen
+          milestone={openMilestone}
+          missions={vm.sheetMissions}
+          activeMissionId={vm.missionEditor.selectedMissionId}
+          draft={vm.missionEditor.activeDraftMission}
+          isDirty={vm.isDirty}
+          isSaving={vm.isSaving}
+          sessionId={vm.homeSid}
+          milestoneResources={milestoneResources}
+          onMissionSelect={vm.missionEditor.handleMissionSelect}
+          onDraftChange={vm.missionEditor.handleDraftChange}
+          onRename={(newName) =>
+            vm.milestoneEditor.handleRenameMilestone(openMilestone.id, newName)}
+          onSave={() => void vm.handleSave()}
+          onDiscard={vm.handleDiscard}
+          onAddMission={() =>
+            vm.missionEditor.handleAddMission(openMilestone.id)}
+          onDeleteMission={vm.handleDeleteMission}
+          onReorderMission={vm.missionEditor.handleMissionReorder}
+          onClose={vm.closeMilestoneEditor}
+          onAddResource={(data) =>
+            vm.handleAddResource({
+              ...data,
+              milestoneId: openMilestone.id,
+            })}
+          onUpdateResource={(id, patch) =>
+            void vm.gmResources.updateResource(id, patch)}
+          onDeleteResource={(id) => void vm.gmResources.deleteResource(id)}
+          onToggleResourceVisibility={(id, visible) =>
+            void vm.gmResources.toggleVisibility(id, visible)}
+        />
+      )}
 
       {vm.showAddTemplate && (
         <NameCaptureModal

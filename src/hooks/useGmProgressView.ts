@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Milestone, Mission, Player, ProgressEvent } from "../types/index.ts";
+import type {
+  Milestone,
+  Mission,
+  Player,
+  ProgressEvent,
+} from "../types/index.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { computeProgress } from "../use-cases/computeProgress.ts";
 import { fetchGmRoster } from "../store/queryFetchers.ts";
