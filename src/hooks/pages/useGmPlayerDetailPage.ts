@@ -20,6 +20,7 @@ import { useActiveProfile } from "../useActiveProfile.ts";
 import { useGmMilestoneEditor } from "../useGmMilestoneEditor.ts";
 import { useGmMissionEditor } from "../useGmMissionEditor.ts";
 import { useGmProgressView } from "../useGmProgressView.ts";
+import { useGmRosterRealtime } from "../useGmRosterRealtime.ts";
 import { useQuery } from "../useQuery.ts";
 import { useAdapter } from "../../adapters/useAdapter.ts";
 import { devBackendTrace } from "../../store/devBackendTrace.ts";
@@ -92,6 +93,8 @@ export const useGmPlayerDetailPage = () => {
   useEffect(() => {
     if (homeSid) devBackendTrace.setActiveScope(homeSid);
   }, [homeSid]);
+
+  useGmRosterRealtime(homeSid, !!homeSid);
 
   const sessionMeta = useQuery(
     homeSid ? queryKeys.sessionMeta(homeSid) : null,

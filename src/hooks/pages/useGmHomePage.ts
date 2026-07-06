@@ -11,6 +11,7 @@ import type {
   LibraryResourceInput,
   LibraryResourcePatch,
 } from "../../types/resourceInputs.ts";
+import { useGmRosterRealtime } from "../useGmRosterRealtime.ts";
 import { useActiveProfile } from "../useActiveProfile.ts";
 import { clearActiveUid, useIdentity } from "../useIdentity.ts";
 import { useMutation } from "../useMutation.ts";
@@ -107,6 +108,8 @@ export const useGmHomePage = (): UseGmHomePageResult => {
     if (sid) devBackendTrace.setActiveScope(sid);
   }, [sid]);
 
+  useGmRosterRealtime(sid, !!sid);
+
   const sessionMeta = useQuery(
     sid ? queryKeys.sessionMeta(sid) : null,
     fetchSessionMeta(sid),
@@ -114,9 +117,9 @@ export const useGmHomePage = (): UseGmHomePageResult => {
   );
 
   const gmRoster = useQuery(
-    sid && tab === "players" ? queryKeys.gmRoster(sid) : null,
+    sid ? queryKeys.gmRoster(sid) : null,
     fetchGmRoster(sid),
-    { enabled: !!sid && tab === "players" },
+    { enabled: !!sid },
   );
 
   const templatesQuery = useQuery(

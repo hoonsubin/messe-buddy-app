@@ -1,27 +1,40 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { usePlayerFormPage } from "../hooks/pages/usePlayerFormPage.ts";
 import TopBar from "../components/shared/TopBar.tsx";
 import FetchErrorPanel from "../components/shared/FetchErrorPanel.tsx";
 import FormShell from "../components/form/FormShell.tsx";
+import {
+  buildFormDefaultValues,
+  formInitKey,
+} from "../utils/formDefaultValues.ts";
 
 const PlayerFormPage = () => {
   const navigate = useNavigate();
+  const { missionId = "" } = useParams<{
+    sessionId: string;
+    missionId: string;
+  }>();
   const vm = usePlayerFormPage();
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDraft, setIsDraft] = useState(false);
+  const lastFormInitKeyRef = useRef<string | null>(null);
+
+  const readyFormSchema = vm.status === "ready" ? vm.formSchema : null;
+  const initialValues = vm.status === "ready" ? vm.initialValues : null;
 
   useEffect(() => {
-    if (vm.status !== "ready") return;
-    const defaults: Record<string, string> = { ...vm.initialValues };
-    for (const field of vm.formSchema!.fields) {
-      if (!(field.id in defaults)) defaults[field.id] = "";
-    }
-    setValues(defaults);
-  }, [vm]);
+    if (vm.status !== "ready" || !readyFormSchema || !initialValues) return;
+
+    const nextKey = formInitKey(missionId, readyFormSchema.fields, initialValues);
+    if (lastFormInitKeyRef.current === nextKey) return;
+    lastFormInitKeyRef.current = nextKey;
+
+    setValues(buildFormDefaultValues(initialValues, readyFormSchema.fields));
+  }, [vm.status, readyFormSchema, initialValues, missionId]);
 
   const handleFieldChange = useCallback(
     (fieldId: string, value: string) => {

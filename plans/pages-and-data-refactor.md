@@ -240,113 +240,142 @@ Already superseded by `applyTemplateIfBlank` + `applyTemplateToNewPlayer`.
 
 ## Migration phases
 
+### Phase index
+
+| Phase | Name | Source | Status |
+|-------|------|--------|--------|
+| **1** | Store + dead code removal | Refactor plan | Pending |
+| **2** | Flat pages, routes, QR consolidation | Refactor plan | Pending |
+| **3** | Query migration + hook retirement | Refactor plan | In progress (page hooks migrated; legacy hooks deleted) |
+| **4** | Verify + guard (refactor) | Refactor plan | Pending |
+| **5** | Blockers — smoke remediation | Playwright 2026-07-06 | **5.1 done** |
+| **6** | Realtime — GM live sync | Playwright dual-tab 2026-07-06 | **6.1–6.3 done**; 6.4 pending |
+| **7** | Functional gaps — smoke remediation | Playwright + smoke test doc | Pending |
+| **8** | UX polish — smoke remediation | Same | Pending |
+| **9** | Smoke verification + CI | Phase 5–8 exit gate | Pending |
+
+**Recommended execution order:** 5 → 6 → 7 → 8 → 4 (refactor guards) → 9.
+
+**Legacy smoke IDs → phase tasks:** ST-P1-1 = **5.1** · ST-RT-1…4 = **6.1…6.4** · ST-P2-1…4 = **7.1…7.4** · ST-P3-1…11 = **8.1…8.11**
+
 ### Phase 1 — Store + dead code removal
 
-- [ ] `store/` + `hooks/useQuery.ts` / `useMutation.ts` + unit tests (coalesce, invalidate, loading semantics)
-- [ ] `store/devBackendTrace.ts` — ring buffer, console sink, `window.__MB_DEV_TRACE__`; emit from `queryClient` (`fetch`, `coalesce`, `hit`, `invalidate`, `patch`)
-- [ ] Mount `QueryProvider` in `App.tsx`
-- [ ] `git rm` dead use-case stubs + `useScrollCollapse.ts`
-- [ ] Centralize tutorial storage keys
+- [ ] **1.1** `store/` + `hooks/useQuery.ts` / `useMutation.ts` + unit tests (coalesce, invalidate, loading semantics)
+- [ ] **1.2** `store/devBackendTrace.ts` — ring buffer, console sink, `window.__MB_DEV_TRACE__`; emit from `queryClient`
+- [ ] **1.3** Mount `QueryProvider` in `App.tsx`
+- [ ] **1.4** `git rm` dead use-case stubs + `useScrollCollapse.ts`
+- [ ] **1.5** Centralize tutorial storage keys
 
 ### Phase 2 — Flat pages, routes, QR consolidation
 
-- [ ] Seven page files; router paths per table above
-- [ ] `RouteTabBar` → `NavLink`; derive active pane from pathname; drop `?journey=1`
-- [ ] Move subfolder UI to `components/`; move page hooks to `hooks/pages/`
-- [ ] Extract `QrScanPanel`; delete `QRScannerView` + orphaned scan route
-- [ ] Merge `RootRedirect` into `LandingPage`
-- [ ] Shared layouts in `components/layout/` (`PlayerSessionLayout`, `GmWorkspaceLayout`) to dedupe `App.tsx` wrappers
+- [ ] **2.1** Seven page files; router paths per table above
+- [ ] **2.2** `RouteTabBar` → `NavLink`; derive active pane from pathname; drop `?journey=1`
+- [ ] **2.3** Move subfolder UI to `components/`; move page hooks to `hooks/pages/`
+- [ ] **2.4** Extract `QrScanPanel`; delete `QRScannerView` + orphaned scan route
+- [ ] **2.5** Merge `RootRedirect` into `LandingPage`
+- [ ] **2.6** Shared layouts in `components/layout/` (`PlayerSessionLayout`, `GmWorkspaceLayout`)
 
 ### Phase 3 — Query migration + hook retirement
 
 Pilot first — proves the store before bulk migration:
 
-- [ ] `useValidationPage` + thin `ValidationPage` → verify ≤ 5 PB reads, no flicker
+- [ ] **3.1** `useValidationPage` + thin `ValidationPage` → verify ≤ 5 PB reads, no flicker
 
-Then remaining page hooks; **delete legacy hooks as each page migrates** (do not leave parallel paths):
+Then remaining page hooks; **delete legacy hooks as each page migrates**:
 
-- [ ] `usePlayerCockpitPage` — lift `QRDisplay` props
-- [ ] `useGmHomePage` — lift `ResourceLibraryTab` + `OnboardingJourneyModal` data; `gmRoster` + lazy `libraryResources`
-- [ ] `useGmPlayerDetailPage` — editor saves → `invalidateQuery`; delete `refreshSession` calls
-- [ ] `usePlayerFormPage`
-- [ ] `useLandingPage` (wrap `useLandingFlow` actions; orphan check via `sessionMeta`)
+- [ ] **3.2** `usePlayerCockpitPage` — lift `QRDisplay` props
+- [ ] **3.3** `useGmHomePage` — lift `ResourceLibraryTab` + `OnboardingJourneyModal`; `gmRoster` + lazy `libraryResources`
+- [ ] **3.4** `useGmPlayerDetailPage` — editor saves → `invalidateQuery`; delete `refreshSession` calls
+- [ ] **3.5** `usePlayerFormPage`
+- [ ] **3.6** `useLandingPage` (wrap `useLandingFlow`; orphan check via `sessionMeta`)
+- [ ] **3.7** Delete all hooks listed in **Deletions** section
+- [ ] **3.8** SSE patches `progress:{playerId}` in store; trace `sse:subscribe` / `sse:event`
+- [ ] **3.9** `useMutation` emits `mutation:*` events; optional adapter trace wrapper
 
-- [ ] Delete all hooks listed in **Deletions** section
-- [ ] SSE patches `progress:{playerId}` in store; trace `sse:subscribe` / `sse:event`
-- [ ] `useMutation` emits `mutation:*` events; optional thin adapter trace wrapper until legacy hooks are gone
+### Phase 4 — Verify + guard (refactor)
 
-### Phase 4 — Verify + guard
+- [ ] **4.1** CI/lint: no `useAdapter` in `src/components/` (adapter boundary)
+- [ ] **4.2** Document trace in README dev section: `localStorage.mb_dev_trace`, `__MB_DEV_TRACE__.getLog(sessionId)`
+- [ ] **4.3** Update `data-page` attributes and smoke paths (design-tokens §10)
+- [ ] **4.4** `deno task build`, `deno task lint`
 
-- [ ] CI/lint: no `useAdapter` in `src/components/` (adapter boundary)
-- [ ] Document trace in README dev section: enable/disable via `localStorage.mb_dev_trace`, inspect via `__MB_DEV_TRACE__.getLog(sessionId)`
-- [ ] Update `data-page` attributes and smoke paths (design-tokens §10)
-- [ ] `deno task build`, `deno task lint`
+### Phase 5 — Blockers (smoke remediation)
 
-### Phase 5 — Smoke test remediation
+Ship before PocketBase onboarding demo.
 
-Source: Playwright smoke runs 2026-07-06 (mock adapter + live PocketBase), plus
-[`plans/MesseBuddy_Smoke_Test_2026-07-06.md`](MesseBuddy_Smoke_Test_2026-07-06.md).
-Phase 3 query migration is functionally complete; this phase closes gaps found in
-end-to-end testing.
+- [x] **5.1** Player form infinite re-render on `/form/:id/:missionId` — `Maximum update depth exceeded`; submit never persisted *(done 2026-07-06: `formInitKey` + `buildFormDefaultValues` in `PlayerFormPage.tsx`; memoized `useDerivedPlayerProgress`; `src/utils/formDefaultValues.test.ts`)*
 
-#### P1 — Blockers (ship before PB onboarding demo)
+### Phase 6 — Realtime GM live sync
 
-| ID | Issue | Root cause (suspected) | Fix |
-|----|-------|------------------------|-----|
-| ST-P1-1 | **Player form infinite re-render** on `/form/:id/:missionId` — `Maximum update depth exceeded`; Submit never persists; `progress_events` stay at 0 on PB | `PlayerFormPage.tsx` `useEffect` depends on entire `vm` object; `usePlayerFormPage` returns a new object every render (incl. unstable `progress` handle) → `setValues` loop | Narrow effect deps to `vm.status`, `vm.initialValues`, `vm.formSchema?.id` (or schema field ids hash). Optionally memoize hook return with `useMemo`. Add `usePlayerFormPage.test.ts`: mount hook, assert no re-render storm. Re-smoke: profile submit → `progress_events` count ≥ 1, XP 10/10 on cockpit |
+Dual-tab smoke (PocketBase): GM tab open **without reload** while player/validator acts elsewhere.
 
-#### P2 — Functional gaps (wrong data / dead UI)
+**Findings (2026-07-06):**
 
-| ID | Issue | Root cause (suspected) | Fix |
-|----|-------|------------------------|-----|
-| ST-P2-1 | **GM Customize map shows 0%** while player cockpit / analytics show real % | `useGmPlayerDetailPage` `milestoneProgress` may fall back to `computeProgress("", …)` or journey map nodes ignore `milestoneProgress` percent | Trace `milestoneProgress` → `JourneyMap` / node badge props on customize tab; ensure claimed players always use `gmProgress.selectedPlayerProgress.milestoneProgress`. Add test fixture with 50% milestone + assert map label |
-| ST-P2-2 | **Ghost milestone dialog** after scratch-template wizard — unlabeled `dialog` "Milestone" in a11y tree, invisible, persists across tabs | `useGmMilestoneEditor` / wizard handoff leaves `selectedMilestone` set without opening visible sheet | After `applyTemplateToNewPlayer` redirect, call `milestoneEditor.setSelectedMilestone(null)` or don't auto-select first milestone. Guard `MissionBottomSheet` render: `selectedMilestone && sheetOpen`. Playwright: post-wizard DOM has no stray `dialog` without `aria-label` |
-| ST-P2-3 | **Milestone-scoped resources stub** — library resources never surface to player search | `milestone_resources` join not wired; milestone Resources tab is placeholder | Track separately if out of sprint scope; minimum fix: player resource search queries `libraryResources` + attached `resources:{sessionId}:{playerId}`; milestone tab copy explains "attach from library on Customize" |
-| ST-P2-4 | **`/llm/health/readiness` 502** polled every ~10s | Health route misconfigured; chat `/llm` works | Fix proxy route or stop gating UI on readiness until route exists; downgrade poll to dev-only or remove if unused |
+| Flow | Observer | Realtime? |
+|------|----------|-----------|
+| Player claims via `/join/...` | GM Players roster | **No** — PB updates; GM stuck on "Not joined yet" until reload |
+| GM confirms QR mission | Player QR wait (`QRDisplay` → PB subscribe) | **Yes** — dismisses ~1s |
+| GM confirms QR mission | GM roster % / analytics | **No** — unchanged until reload |
 
-#### P3 — UX polish (no data loss)
+**Root cause:** `progress:{playerId}` is SSE-patched on the player path only. `gmRoster:{sessionId}` is fetch-on-mount + same-tab `invalidateQuery`. No PB subscribe on `players` or session-scoped `progress_events` for GM views.
 
-| ID | Issue | Fix |
-|----|-------|-----|
-| ST-P3-1 | **GM home empty-state flash** — "No players yet" before roster loads | Gate empty state on `gmRoster.isInitialLoading`; show skeleton/spinner until first fetch settles. Pattern: `loading \|\| players.length > 0 \|\| showEmpty` |
-| ST-P3-2 | **Layered modals on first login** — tutorial + skip confirmation both visible; backdrop blocks tutorial | Serialize: tutorial skip opens confirm only after tutorial modal unmounts, or use single modal with inline confirm step (`PlayerCockpitPage` tutorial flow) |
-| ST-P3-3 | **Milestone bottom sheet blocks map toolbar** (QR scanner) until closed | Raise toolbar z-index above sheet, or collapse sheet when scan mode opens (`/scan` route already exists — ensure toolbar stays reachable) |
-| ST-P3-4 | **Empty-state CTA duplication** — Resource library shows "Add resource" twice; Players header CTA absent until first player | Align patterns: header CTA always visible on both tabs, or center-only on both. Pick one rule in `GmHomePage.tsx` |
-| ST-P3-5 | **Grammar: "1 missions"** | Singular/plural in journey map node badge (`components/gamemaker/JourneyMap` or node renderer) |
-| ST-P3-6 | **Player name entered twice** — GM sets name in wizard; join flow asks again | Prefill join Step 2 from invite token lookup (`player.name` from `getPlayerByInviteToken`); allow edit, don't force re-type |
-| ST-P3-7 | **Start Date free text** — accepts garbage | `type="date"` or validate ISO in `FormShell` / schema field type handler |
-| ST-P3-8 | **Truncated player-detail header** on 390px | `text-overflow: ellipsis` → allow wrap or shorten copy ("Jamie's onboarding") in `GmPlayerDetailPage` header |
-| ST-P3-9 | **Silent required-field validation** on profile form | Surface `errors[fieldId]` under each field (hook already sets them; ensure `FormShell` renders inline errors, not only native focus) |
-| ST-P3-10 | **React `[TIMESTAMP]` profiler spam** at info level | Dev-only: disable React Profiler wrapper in `main.tsx` unless `localStorage.mb_react_profiler === "1"` |
-| ST-P3-11 | **`mb:trace` only at `console.debug`** | Add `console.info` for `query:fetch` + `mutation:done` in `devBackendTrace.ts` (keep verbose coalesce at debug) |
+- [x] **6.1** PB subscribe on `players` (`sessionId = …`) → `patchGmRosterFromPlayer` in `useGmHomePage` via `useGmRosterRealtime`
+- [x] **6.2** PB subscribe on `progress_events` → `patchGmRosterFromProgressEvent`; wired in `useGmHomePage` + `useGmPlayerDetailPage`
+- [x] **6.3** GM Analytics tab appears without reload when first event arrives (follows **6.2** — `showAnalyticsTab` reads `gmRoster` cache)
+- [ ] **6.4** Playwright dual-context spec: claim + QR validate; GM DOM updates within 10s without `page.reload()`
 
-#### Info — documented behaviour (no code change unless product disagrees)
+### Phase 7 — Functional gaps (smoke remediation)
 
-| ID | Note |
-|----|------|
-| ST-INFO-1 | Mock adapter resets progress on full `page.goto` reload — expected; PB persists (verified) |
-| ST-INFO-2 | GM QR simulate picks first global QR mission, not milestone-specific — document or scope simulate to active milestone |
-| ST-INFO-3 | Delete dead `src/pages/player-detail/usePlayerDetailPage.ts` if still present after Phase 2 |
+- [ ] **7.1** GM Customize map shows 0% while cockpit/analytics show real % — trace `milestoneProgress` → journey map nodes; ensure claimed players use `gmProgress.selectedPlayerProgress.milestoneProgress`; test at 50% milestone
+- [ ] **7.2** Ghost milestone dialog after scratch-template wizard — clear `selectedMilestone` on wizard redirect; guard `MissionBottomSheet` mount; Playwright: no stray unlabeled `dialog` post-wizard
+- [ ] **7.3** Milestone-scoped resources stub — wire library → milestone attach → player search, or improve empty-state copy *(optional sprint)*
+- [ ] **7.4** `/llm/health/readiness` 502 — fix proxy or stop UI gating / polling *(optional sprint)*
 
-#### Phase 5 verification checklist
+### Phase 8 — UX polish (smoke remediation)
 
-Run against **both** adapters:
+- [ ] **8.1** GM home empty-state flash — gate on `gmRoster.isInitialLoading`; skeleton until first fetch settles
+- [ ] **8.2** Layered modals on first login — serialize tutorial + skip confirmation (`PlayerCockpitPage`)
+- [ ] **8.3** Milestone bottom sheet blocks map toolbar — z-index or auto-close on `/scan`
+- [ ] **8.4** Empty-state CTA duplication — align Players vs Resource library header/center CTAs in `GmHomePage.tsx`
+- [ ] **8.5** Grammar: "1 missions" → singular/plural on journey map node badge
+- [ ] **8.6** Player name entered twice on join — prefill from invite token `player.name`
+- [ ] **8.7** Start Date free text — `type="date"` or ISO validation in `FormShell`
+- [ ] **8.8** Truncated player-detail header on 390px — wrap or shorter title copy
+- [ ] **8.9** Silent required-field validation on profile form — render inline `errors[fieldId]` in `FormShell`
+- [ ] **8.10** React `[TIMESTAMP]` profiler spam — gate Profiler behind `localStorage.mb_react_profiler`
+- [ ] **8.11** `mb:trace` only at `console.debug` — promote `query:fetch` + `mutation:done` to `console.info`
 
-1. **PB path:** create workspace → wizard → join → profile submit → reload → XP persists
-2. **Mock path:** `sess_mmt2026` QR validation → customize % matches cockpit %
-3. **GM home:** no empty-state flash on cold load
-4. **Post-wizard:** no ghost milestone dialog in accessibility tree
-5. **Console:** 0 `Maximum update depth` / 0 unhandled errors
-6. **`__MB_DEV_TRACE__.getLog(sessionId)`:** profile submit shows `mutation:done` + `query:invalidate` for `progress:*`
-7. **design-tokens §10:** 390×844 screenshots for fixed flows
+#### Documented behaviour (no change unless product disagrees)
 
-#### Phase 5 task order (recommended)
+| Note | Detail |
+|------|--------|
+| Mock reload | Mock adapter resets progress on full `page.goto`; PB persists (verified) |
+| QR simulate scope | GM simulate picks first global QR mission, not milestone-specific |
+| Dead file | Delete `src/pages/player-detail/usePlayerDetailPage.ts` if still present |
+
+### Phase 9 — Smoke verification + CI
+
+Exit gate for Phases 5–8. Run against **mock** and **live PocketBase**.
+
+- [ ] **9.1** PB: create workspace → wizard → join → profile submit → reload → XP persists
+- [ ] **9.2** PB dual-tab: GM home open → player claims → roster updates within 10s without reload
+- [ ] **9.3** PB dual-tab: GM view open → QR confirm elsewhere → GM progress updates within 10s; player QR dismisses within 10s
+- [ ] **9.4** Mock: `sess_mmt2026` QR flow → customize % matches cockpit % at partial progress
+- [ ] **9.5** GM home: no empty-state flash on cold load
+- [ ] **9.6** Post-wizard: no ghost milestone dialog in accessibility tree
+- [ ] **9.7** Console: 0 `Maximum update depth` / 0 unhandled errors
+- [ ] **9.8** Dev trace: profile submit shows `mutation:done` + `query:invalidate` for `progress:*`
+- [ ] **9.9** design-tokens §10: 390×844 screenshots for fixed flows
+- [ ] **9.10** Phase **4.4** green: `deno task build`, `deno task lint`
+
+**Dual-tab quick checks:**
 
 ```
-ST-P1-1  →  ST-P2-1  →  ST-P2-2  →  ST-P3-1, ST-P3-2, ST-P3-9
-         →  ST-P3-5, ST-P3-6, ST-P3-7, ST-P3-8  →  ST-P3-4
-         →  ST-P2-3, ST-P2-4 (if in sprint)  →  ST-P3-10, ST-P3-11
-         →  Phase 5 verification checklist
+□ Tab A: GM home on /gamemaker/:id
+□ Tab B: player /join → Tab A roster pending → active within 10s
+□ Tab A: GM home or player detail
+□ Tab B: GM QR confirm → Tab A progress/analytics within 10s
+□ Tab B: player QR wait dismisses within 10s
 ```
 
 ---

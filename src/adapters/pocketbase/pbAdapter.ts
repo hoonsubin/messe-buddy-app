@@ -416,6 +416,54 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     };
   };
 
+  const subscribeSessionPlayers = (
+    sessionId: string,
+    callback: (player: Player) => void,
+  ): () => void => {
+    let unsubscribe: (() => Promise<void>) | null = null;
+    let cancelled = false;
+    void pb.collection("players").subscribe(
+      "*",
+      (e) => {
+        const record = e.record as RecordModel;
+        if (record.sessionId !== sessionId) return;
+        callback(marshalPlayer(pb, record));
+      },
+      { filter: pb.filter("sessionId = {:sessionId}", { sessionId }) },
+    ).then((unsub) => {
+      if (cancelled) void unsub();
+      else unsubscribe = unsub;
+    });
+    return () => {
+      cancelled = true;
+      if (unsubscribe) void unsubscribe();
+    };
+  };
+
+  const subscribeSessionProgressEvents = (
+    sessionId: string,
+    callback: (event: ProgressEvent) => void,
+  ): () => void => {
+    let unsubscribe: (() => Promise<void>) | null = null;
+    let cancelled = false;
+    void pb.collection("progress_events").subscribe(
+      "*",
+      (e) => {
+        const record = e.record as RecordModel;
+        if (record.sessionId !== sessionId) return;
+        callback(marshalProgressEvent(record));
+      },
+      { filter: pb.filter("sessionId = {:sessionId}", { sessionId }) },
+    ).then((unsub) => {
+      if (cancelled) void unsub();
+      else unsubscribe = unsub;
+    });
+    return () => {
+      cancelled = true;
+      if (unsubscribe) void unsubscribe();
+    };
+  };
+
   const getBuddyProfile = async (
     playerId: string,
   ): Promise<BuddyProfile | null> => {
@@ -616,6 +664,8 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     upsertProgressEvent,
     listProgressEvents,
     subscribeProgressEvent,
+    subscribeSessionPlayers,
+    subscribeSessionProgressEvents,
     getBuddyProfile,
     listBuddyProfiles,
     upsertBuddyProfile,

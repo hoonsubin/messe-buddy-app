@@ -32,18 +32,33 @@ export const useDerivedPlayerProgress = (
     );
   }, [playerId, milestones, missions, progressEvents]);
 
-  return {
-    mode: "player",
-    playerProgress,
-    progressEvents: progressEvents ?? [],
-    loading: progressLoading,
-    error: progressError,
-    refresh: refreshProgress,
-    markPending: actions.markPending,
-    markSelfComplete: actions.markSelfComplete,
-    markAutoApproved: async (missionId, patch) => {
-      await actions.markAutoApproved(missionId, patch);
-    },
-    watchMission: () => () => {},
-  };
+  return useMemo(
+    () => ({
+      mode: "player" as const,
+      playerProgress,
+      progressEvents: progressEvents ?? [],
+      loading: progressLoading,
+      error: progressError,
+      refresh: refreshProgress,
+      markPending: actions.markPending,
+      markSelfComplete: actions.markSelfComplete,
+      markAutoApproved: async (
+        missionId: string,
+        patch?: Parameters<typeof actions.markAutoApproved>[1],
+      ) => {
+        await actions.markAutoApproved(missionId, patch);
+      },
+      watchMission: () => () => {},
+    }),
+    [
+      actions.markAutoApproved,
+      actions.markPending,
+      actions.markSelfComplete,
+      playerProgress,
+      progressError,
+      progressEvents,
+      progressLoading,
+      refreshProgress,
+    ],
+  );
 };
