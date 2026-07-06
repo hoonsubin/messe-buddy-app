@@ -1,160 +1,183 @@
 # Pages & Data Layer Refactor
 
 **Status:** Approved (2026-07-06)  
-**Companion:** [`design/component-architecture.md`](../design/component-architecture.md) (authoring rules), [`SPECS.md`](../SPECS.md) (product constraints)
+**Companion:** [`design/component-architecture.md`](../design/component-architecture.md), [`SPECS.md`](../SPECS.md)
 
-This plan consolidates two approved changes:
-
-1. **Flat `pages/`** — seven page files, no subfolders; tabs and wizards are in-page state, not separate page files.
-2. **FLUX query store** — keyed reads with dedup and invalidation; page hooks in `hooks/pages/` (no `view-models/` folder).
-
-The validation-page flicker and repeated PocketBase calls are symptoms of the current **mega-page + independent fetch hooks** pattern. This refactor addresses the root cause.
+This refactor delivers a **smaller** codebase with **one path per concern**: seven flat page composers, six page hooks, one query store, and presentational components only. It is not additive — legacy fetch hooks, duplicate scan surfaces, and parallel roster pipelines are **deleted**, not wrapped.
 
 ---
 
-## Problem summary
+## Problems (symptoms → root cause)
 
 | Symptom | Root cause |
 |---------|------------|
-| Validation UI flicker | `useSession` + decode effect reset `loading` / `payload` in parallel |
-| Repeated PB log lines | No request coalescing; `useSession` bundles session + milestones + missions for every consumer |
-| `playerId` cascade | `useSession({ playerId })` refetches unscoped → scoped when player resolves |
-| Tab pages over-fetch | All hooks mount on parent even when only one tab is visible |
+| Validation UI flicker | `useValidationConfirm` resets state while `useSession` refetches in parallel |
+| Repeated PB log lines | ~18 independent `useEffect` fetch hooks; no coalescing |
+| `playerId` cascade | `useSession` runs unscoped → scoped when player resolves |
+| Tab over-fetch | `useState` tabs mount all hooks; library tab fetches even when hidden |
+| GM home ↔ player detail double-fetch | `useGmPlayers` and `useProgressGamemaker` both call `listPlayers` + N× `listProgressEvents` |
+| Component adapter calls | `QRDisplay`, `ResourceLibraryTab`, `OnboardingJourneyModal` fetch directly |
 
 ---
 
-## Target: seven page files
-
-`src/pages/` contains **only** these `.tsx` files (no subfolders, no `.ts` helpers):
-
-| # | File | Route(s) | Internal state (not separate pages) |
-|---|------|----------|--------------------------------------|
-| 1 | `LandingPage.tsx` | `/`, `/join/:sessionId` | Profile picker; GM create panel; join steps `code` → `name` |
-| 2 | `PlayerCockpitPage.tsx` | `/session/:sessionId`, `/session/:sessionId/assistant` | Dashboard / assistant tabs; tutorial overlay; session-missing branch |
-| 3 | `PlayerFormPage.tsx` | `/form/:sessionId/:missionId` | — (standalone full-screen flow) |
-| 4 | `GmHomePage.tsx` | `/gamemaker/:sessionId`, `/gamemaker/:sessionId/library` | Players / library tabs; onboarding journey wizard |
-| 5 | `GmPlayerDetailPage.tsx` | `/gamemaker/:sessionId/player/:playerId`, `.../customize`, `.../buddy`, `.../preboarding`, `.../scan` | Analytics / customize / buddy / pre-boarding tabs; QR scan mode |
-| 6 | `ValidationPage.tsx` | `/validate/:sessionId` | — (GM on player session; QR deep link) |
-| 7 | `NotFoundPage.tsx` | `*` | — |
-
-### Not separate page files
-
-| UI | Lives in | Reason |
-|----|----------|--------|
-| Wizard steps (join, onboarding journey, GM create) | Parent page | Linear sequence |
-| Tab panes (dashboard/assistant, players/library, GM player tabs) | Parent page | Same shell, URL segment for bookmark only |
-| Tutorial overlay, mission popup, milestone sidebar, mission bottom sheet | `components/` | Overlay / modal |
-| Loading, error, empty, unauthorized | Parent page branches | Data-state rendering |
-| `RootRedirect` | Router `loader` on `/` or `LandingPage` | Redirect only |
-
-### Files removed after migration
-
-- `pages/landing/*`, `pages/player-cockpit/*`, `pages/player-detail/*`
-- `RootRedirect.tsx`, `GameMakerHomePage.tsx`, `PlayerDetailPage.tsx`, `QRScannerView.tsx` (scan → `GmPlayerDetailPage`)
-
----
-
-## Route tree
+## Target architecture
 
 ```mermaid
 flowchart TB
-  subgraph public [Public]
-    L["/ LandingPage"]
-    J["/join/:sessionId LandingPage"]
-    V["/validate/:sessionId ValidationPage"]
+  subgraph L4 [pages — 7 files]
+    P[compose components + page hook]
   end
 
-  subgraph player [Player]
-    PC["/session/:sessionId PlayerCockpitPage"]
-    PCA["/session/:sessionId/assistant PlayerCockpitPage"]
-    PF["/form/:sessionId/:missionId PlayerFormPage"]
-  end
-
-  subgraph gm [Game Maker]
-    GH["/gamemaker/:sessionId GmHomePage"]
-    GHL["/gamemaker/:sessionId/library GmHomePage"]
-    GD["/gamemaker/:sessionId/player/:playerId GmPlayerDetailPage"]
-    GDT[".../customize | /buddy | /preboarding | /scan"]
-  end
-
-  NF["* NotFoundPage"]
-```
-
-**Router pattern:** multiple paths may render the **same** page component; active pane is derived from `useLocation()` / `useParams()`, not a new file.
-
-**Layouts (in `App.tsx`, not page files):** `RequireRole`, `DemoAwareAdapterProvider`, shared chrome wrappers.
-
----
-
-## Data layer
-
-### Architecture
-
-```mermaid
-flowchart LR
-  subgraph pages [pages/*.tsx]
-    P[View: compose components]
-  end
-
-  subgraph hooks [hooks/pages/*.ts]
-    H[Page hook: params → queries → actions]
+  subgraph L5 [hooks/pages — 6 files]
+    H[params → queries → actions]
   end
 
   subgraph store [store/]
-    QC[queryClient: keys, dedup, invalidate]
+    QC[queryClient: keys, dedup, invalidate, SSE patch]
   end
 
-  subgraph components [components/]
-    C[Presentational UI]
+  subgraph L3 [components/ — presentational only]
+    C[props in, callbacks out]
+  end
+
+  subgraph writes [use-cases/ + useMutation]
+    UC[adapter writes → invalidateQuery]
   end
 
   P --> H
   P --> C
   H --> QC
-  QC -->|fetch| Adapter[AppAdapter]
+  QC -->|read| Adapter[AppAdapter]
+  UC --> Adapter
+  UC --> QC
 ```
 
-- **No `view-models/` folder** — page hooks are the composition layer.
-- **Components never call `AppAdapter`** — adapter boundary unchanged (AGENTS.md).
-- **Writes:** `use-cases/` + `useMutation` → `invalidateQuery(keys)`.
-- **SSE:** `subscribeProgressEvent` patches progress cache in place.
+**Invariants after migration:**
 
-### Query keys
+1. **Reads** — only `hooks/pages/*` via `useQuery` → `store/`.
+2. **Writes** — `use-cases/*` + `useMutation` → `invalidateQuery(keys)`; no `refreshSession()` pattern.
+3. **SSE** — `subscribeProgressEvent` patches `progress:{playerId}` in the store; no standalone `useWatchMission`.
+4. **Components** — no `useAdapter`, no domain fetch hooks (CI grep enforced).
+5. **Tabs** — `NavLink` to real paths; no `useState` tab keys; drop `?journey=1` in favour of `/customize`.
+
+---
+
+## Pages & routes
+
+`src/pages/` — **seven** `.tsx` files only (no subfolders, no `.ts` helpers):
+
+| File | Route(s) | Pane from pathname |
+|------|----------|-------------------|
+| `LandingPage.tsx` | `/`, `/join/:sessionId` | Join wizard vs profile picker (includes active-uid redirect) |
+| `PlayerCockpitPage.tsx` | `/session/:id`, `…/assistant` | dashboard vs assistant |
+| `PlayerFormPage.tsx` | `/form/:id/:missionId` | — |
+| `GmHomePage.tsx` | `/gamemaker/:id`, `…/library` | players vs library |
+| `GmPlayerDetailPage.tsx` | `/gamemaker/:id/player/:pid`, `…/customize`, `…/buddy`, `…/preboarding`, `…/scan` | GM player tabs + full-page scan mode |
+| `ValidationPage.tsx` | `/validate/:id` | — |
+| `NotFoundPage.tsx` | `*` | — |
+
+Wizards, overlays, modals, and loading/error branches stay in `components/` — not separate pages.
+
+**QR scan — one UI, two hosts:** extract `components/qr/QrScanPanel.tsx` (camera + decode + navigate). Used by `GmPlayerDetailPage` scan mode (`/scan` path) only. Delete standalone `QRScannerView` and `/gamemaker/:sessionId/scan` (orphaned route — nothing navigates to it today).
+
+---
+
+## Data layer
+
+### Query keys (complete set)
 
 | Key | Fetcher | Invalidated by |
 |-----|---------|----------------|
-| `sessionMeta:{sessionId}` | `getSession` | `updateSession` |
+| `sessionMeta:{sessionId}` | `getSession` | `updateSession` (incl. pre-boarding checklist) |
 | `journey:{sessionId}:{playerId}` | `listMilestones` + `listMissions` | template apply, GM editor save, mission CRUD |
 | `player:uid:{uid}` | `getPlayer` | `updatePlayer` |
 | `player:id:{playerId}` | `getPlayerById` | same |
-| `progress:{playerId}` | `listProgressEvents` | `upsertProgressEvent`, SSE |
+| `progress:{playerId}` | `listProgressEvents` | `upsertProgressEvent`, SSE patch |
 | `buddy:{playerId}` | `getBuddyProfile` | `upsertBuddyProfile` |
 | `resources:{sessionId}:{playerId}` | `listResources` | resource CRUD |
 | `templates` | `listTemplates` | save/delete template |
-| `gmRoster:{sessionId}` | `listPlayers` + batched progress | invite, progress writes |
+| `gmRoster:{sessionId}` | `listPlayers` + batched `listProgressEvents` | invite, progress writes |
 | `formSchema:{missionId}` | `getFormSchema` | schema upsert |
 | `libraryResources` | `listLibraryResources` | library CRUD |
+| `buddyPicker:{sessionId}` | `listDistinctBuddyProfilesForPicker` | buddy upserts in session |
 
 **Rules:**
 
 1. Coalesce in-flight requests per key.
-2. `isInitialLoading` vs `isRefreshing` — background refresh must not hide stable UI (fixes validation flicker).
-3. Gate `journey:*` on resolved `playerId` — never unscoped-then-scoped refetch.
-4. Replace `useSession` bundle with `sessionMeta` + `journey` queries.
-5. Delete `useSessionExists` — use `sessionMeta` 404.
+2. `isInitialLoading` vs `isRefreshing` — stable UI on background refresh (fixes validation flicker).
+3. Gate `journey:*` on resolved `playerId` — never unscoped-then-scoped.
+4. `sessionMeta` 404 replaces `useSessionExists` (orphan detection on landing uses same key).
+5. `gmRoster` **replaces** `useGmPlayers` and `useProgressGamemaker` **reads** — one roster fetch, warm cache across GM home and player detail.
 
-### Query ownership per page
+### Page hooks (`hooks/pages/` — six files)
 
-| Page hook | Queries on mount / tab activate |
-|-----------|----------------------------------|
-| `useLandingPage` | Orphan check (optional); join/create on action only |
+| Hook | Queries (mount / tab activate) |
+|------|----------------------------------|
+| `useLandingPage` | `sessionMeta` per profile for orphan badges; join/create on action |
 | `usePlayerCockpitPage` | `player:uid`, `sessionMeta`, `journey`, `progress`, `buddy`, `resources` |
 | `usePlayerFormPage` | above + `formSchema:{missionId}` |
-| `useGmHomePage` | `sessionMeta`, `gmRoster`; `libraryResources` when library tab active |
-| `useGmPlayerDetailPage` | `sessionMeta`, `journey`, `buddy`, `resources`, `templates`, `gmRoster` slice |
-| `useValidationPage` | `sessionMeta`, decode token locally, then `journey`, `progress`, `player:id` |
+| `useGmHomePage` | `sessionMeta`, `gmRoster`; `libraryResources` + `buddyPicker` when library tab or wizard open |
+| `useGmPlayerDetailPage` | `sessionMeta`, `journey`, `buddy`, `resources`, `templates`, `gmRoster` slice, `player:id` |
+| `useValidationPage` | `sessionMeta` → local decode → `journey`, `progress`, `player:id` |
 
-Tab switches inside one page **do not** re-run mount queries if cache is warm.
+Each hook returns `{ data, isInitialLoading, isRefreshing, error, actions }`. Chat (`useChat`) and tutorial state stay inside `usePlayerCockpitPage` as ephemeral UI — no query keys.
+
+GM editor draft state (`useGmMilestoneEditor`, `useGmMissionEditor`) stays in-memory; saves go through `useMutation` → invalidate `journey:*`. Mission bottom-sheet autosave keeps `utils/draftStorage.ts` (local crash recovery only).
+
+---
+
+## Deletions (not wrappers)
+
+### Pages & routes
+
+- `RootRedirect.tsx` — logic moves into `LandingPage`
+- `GameMakerHomePage.tsx` → `GmHomePage.tsx`
+- `PlayerDetailPage.tsx` → `GmPlayerDetailPage.tsx`
+- `FormPage.tsx` → `PlayerFormPage.tsx`
+- `QRScannerView.tsx` + `/gamemaker/:sessionId/scan` route
+- `pages/landing/*`, `pages/player-cockpit/*`, `pages/player-detail/*`
+
+### Fetch hooks (delete entire files)
+
+| Hook | Replaced by |
+|------|-------------|
+| `useSession.ts` | `sessionMeta` + `journey` queries; GM session writes → `useMutation` |
+| `useSessionExists.ts` | `sessionMeta` 404 |
+| `useValidationConfirm.ts` | `useValidationPage` |
+| `useResolvedPlayer.ts` | `player:uid` query |
+| `useQRScanContext.ts` | `sessionMeta` + `gmRoster` + `journey` in page hook |
+| `usePlayerInviteToken.ts` | `inviteToken` field from `player:id` / `gmRoster` |
+| `useGmPlayers.ts` | `gmRoster` query |
+| `useProgress/gamemaker.ts` | `gmRoster` query + mutation actions |
+| `useProgress/gmPlayers.ts` | `gmRoster` query |
+| `useProgress/watchMission.ts` | SSE → `progress` cache patch |
+| `useProgress/player.ts` | `progress` query + mutation actions |
+| `useBuddyProfile.ts` | `buddy` query + mutation |
+| `useResources.ts` | `resources` query + mutation |
+| `useFormMission.ts` | `formSchema` query; submit logic in `usePlayerFormPage` |
+| `usePlayerTemplates.ts` | `templates` query + mutations in page hook |
+| `useLibraryResources.ts` | `libraryResources` query + mutations in `useGmHomePage` |
+| `useBuddyPickerOptions.ts` | `buddyPicker` query in `useGmHomePage` |
+| `usePreBoardingChecklist.ts` | `sessionMeta` read + `updateSession` mutation in page hook |
+| `useScrollCollapse.ts` | unused — delete |
+
+Delete `hooks/useProgress/` folder after migration (types move to `hooks/pages/types.ts` or `store/queryKeys.ts`).
+
+### Dead use-cases (git rm)
+
+- `applyDefaultOnboardingJourney.ts` + `.test.ts`
+- `applyScratchJourney.ts` + `.test.ts`
+
+Already superseded by `applyTemplateIfBlank` + `applyTemplateToNewPlayer`.
+
+### Component boundary fixes (lift fetch to page hook)
+
+| Component | Today | After |
+|-----------|-------|-------|
+| `QRDisplay` | `useSession` + `useWatchMission` | props: `qrSecret`, `onProgressUpdate` |
+| `ValidationDisplay` | `useWatchMission` | props: progress callback from page hook |
+| `ResourceLibraryTab` | `useLibraryResources` | props from `useGmHomePage` |
+| `OnboardingJourneyModal` | `useBuddyPickerOptions` | props from `useGmHomePage` |
 
 ---
 
@@ -163,68 +186,94 @@ Tab switches inside one page **do not** re-run mount queries if cache is warm.
 | From | To |
 |------|-----|
 | `pages/landing/*` | `components/landing/*` |
-| `pages/player-cockpit/*` | `components/player/*` |
-| `pages/player-detail/*` | `components/gamemaker/player-detail/*` |
-| `usePlayerCockpitPage.ts` etc. | `hooks/pages/usePlayerCockpitPage.ts` |
+| `pages/player-cockpit/*` (UI only) | `components/player/*` |
+| `pages/player-detail/*` (UI only) | `components/gamemaker/player-detail/*` |
+| `pages/*/use*Page.ts` | `hooks/pages/use*Page.ts` |
 | `playerDetailStorage.ts` | `utils/playerDetailStorage.ts` |
-| New | `store/queryClient.ts`, `store/queryKeys.ts`, `store/QueryProvider.tsx`, `hooks/useQuery.ts`, `hooks/useMutation.ts` |
+| `TUTORIAL_FORM_KEY` (duplicated) | `components/tutorial/constants.ts` (single source) |
+| New | `store/queryClient.ts`, `store/queryKeys.ts`, `store/QueryProvider.tsx`, `hooks/useQuery.ts`, `hooks/useMutation.ts`, `components/qr/QrScanPanel.tsx` |
+
+---
+
+## Client storage (consolidate, don't multiply)
+
+| Key | Fate |
+|-----|------|
+| `mb_identity`, `mb_active_uid` | Keep — identity only; pages use `useIdentity` exports, not raw strings |
+| `mb_player_template_{playerId}` | Keep as UI hint for "save to template" prompt; not authoritative (or add server field later) |
+| `mb_draft_{sessionId}_{missionId}` | Keep — GM mission bottom-sheet crash recovery |
+| `mb_tutorial_*` | Centralize in `components/tutorial/constants.ts` |
+| `mb_landing_toast` | **Delete** — read path exists, no writer |
 
 ---
 
 ## Migration phases
 
-### Phase 1 — Store scaffolding
+### Phase 1 — Store + dead code removal
 
-- [ ] Add `store/` + `hooks/useQuery.ts` / `useMutation.ts`
-- [ ] Implement keys: `sessionMeta`, `journey`, `progress`, `player:uid`, `player:id`
-- [ ] Unit tests: coalesce, invalidate, `isInitialLoading` / `isRefreshing`
-- [ ] Document in this file; no page migrations yet
+- [ ] `store/` + `hooks/useQuery.ts` / `useMutation.ts` + unit tests (coalesce, invalidate, loading semantics)
+- [ ] Mount `QueryProvider` in `App.tsx`
+- [ ] `git rm` dead use-case stubs + `useScrollCollapse.ts`
+- [ ] Centralize tutorial storage keys
 
-### Phase 2 — Flat pages + routes
+### Phase 2 — Flat pages, routes, QR consolidation
 
-- [ ] Create seven page stubs; wire router (multiple paths → same component where needed)
-- [ ] `RouteTabBar` → `NavLink` to real paths
-- [ ] Move subfolder UI to `components/`
-- [ ] Fold `QRScannerView` into `GmPlayerDetailPage` scan mode
-- [ ] Remove `RootRedirect`; active-uid redirect in router loader or `LandingPage`
-- [ ] Delete old page files and `pages/*/` subfolders
+- [ ] Seven page files; router paths per table above
+- [ ] `RouteTabBar` → `NavLink`; derive active pane from pathname; drop `?journey=1`
+- [ ] Move subfolder UI to `components/`; move page hooks to `hooks/pages/`
+- [ ] Extract `QrScanPanel`; delete `QRScannerView` + orphaned scan route
+- [ ] Merge `RootRedirect` into `LandingPage`
+- [ ] Shared layouts in `components/layout/` (`PlayerSessionLayout`, `GmWorkspaceLayout`) to dedupe `App.tsx` wrappers
 
-### Phase 3 — Page hooks + query migration
+### Phase 3 — Query migration + hook retirement
 
-- [ ] `hooks/pages/useValidationPage.ts` — pilot; verify PB ≤ 5 reads on load
-- [ ] `usePlayerCockpitPage`, `useGmHomePage`, `useGmPlayerDetailPage`, `usePlayerFormPage`, `useLandingPage`
-- [ ] Remove or thin-wrap: `useSession`, `useValidationConfirm`, `useSessionExists`
+Pilot first — proves the store before bulk migration:
 
-### Phase 4 — Layouts & guards
+- [ ] `useValidationPage` + thin `ValidationPage` → verify ≤ 5 PB reads, no flicker
 
-- [ ] Optional shared layouts: `PlayerSessionLayout`, `GmWorkspaceLayout`, `GmPlayerLayout` (in `components/layout/`)
-- [ ] Update Playwright smoke paths and `data-page` attributes
+Then remaining page hooks; **delete legacy hooks as each page migrates** (do not leave parallel paths):
 
-### Phase 5 — Hardening
+- [ ] `usePlayerCockpitPage` — lift `QRDisplay` props
+- [ ] `useGmHomePage` — lift `ResourceLibraryTab` + `OnboardingJourneyModal` data; `gmRoster` + lazy `libraryResources`
+- [ ] `useGmPlayerDetailPage` — editor saves → `invalidateQuery`; delete `refreshSession` calls
+- [ ] `usePlayerFormPage`
+- [ ] `useLandingPage` (wrap `useLandingFlow` actions; orphan check via `sessionMeta`)
 
-- [ ] Dev-only query log (one line per key)
-- [ ] GM roster N+1: batch via cache or future adapter helper
-- [ ] CI: `deno task build`, `deno task lint`, smoke checklist §10 design-tokens
+- [ ] Delete all hooks listed in **Deletions** section
+- [ ] SSE patches `progress:{playerId}` in store
+
+### Phase 4 — Verify + guard
+
+- [ ] CI/lint: no `useAdapter` in `src/components/` (adapter boundary)
+- [ ] Dev-only query log (one line per key fetch/invalidate)
+- [ ] Update `data-page` attributes and smoke paths (design-tokens §10)
+- [ ] `deno task build`, `deno task lint`
 
 ---
 
 ## Success metrics
 
-| Metric | Before (approx) | Target |
-|--------|-----------------|--------|
-| Files in `pages/` | 9 routes + 21 subfolder files | **7** `.tsx` only |
+| Metric | Before | Target |
+|--------|--------|--------|
+| Files in `pages/` | 30 (9 + 21 subfolder) | **7** `.tsx` |
+| Domain fetch hooks in `hooks/` | ~18 independent fetchers | **0** (only `useQuery`, `useMutation`, chat/tutorial ephemeral) |
+| Page hooks in `hooks/pages/` | 0 | **6** |
+| QR scan surfaces | 3 (page + modal + validation) | **1** component, 2 hosts |
+| GM roster fetch pipelines | 2 (`useGmPlayers` + `useProgressGamemaker`) | **1** (`gmRoster` key) |
 | Validation PB reads on load | 15–20 | ≤ 5 |
 | Player cockpit mount reads | 10–14 | ≤ 7 |
 | Validation UI | Spinner ↔ card flicker | Stable card after first paint |
 | Tab change | Re-fetch all parent hooks | Cache hit, no spinner |
+| `useAdapter` in `components/` | 4 call sites | **0** |
 
 ---
 
 ## Out of scope
 
-- Server-side seed consolidation — see [`data-source-of-truth-consolidation.md`](data-source-of-truth-consolidation.md) (if present)
-- TanStack Query adoption — only if custom cache exceeds ~300 lines
-- MVVM / `view-models/` folder — rejected; `hooks/pages/` is sufficient
+- TanStack Query — only if custom cache exceeds ~300 lines
+- `view-models/` folder — rejected
+- Server-side seed consolidation (separate track)
+- `player.appliedTemplateName` server field — optional follow-up to drop `playerDetailStorage` localStorage
 
 ---
 
@@ -235,5 +284,10 @@ Tab switches inside one page **do not** re-run mount queries if cache is warm.
 | D-PAGE-1 | Seven page files max | Tabs, wizards, and state branches are not pages |
 | D-PAGE-2 | URLs for tabs, one component per shell | Deep links without file proliferation |
 | D-DATA-1 | FLUX query cache in `store/` | Dedup + invalidate fixes PB noise |
-| D-DATA-2 | Page hooks in `hooks/pages/` | Replaces `view-models/`; matches existing hook patterns |
-| D-DATA-3 | Split `useSession` | `sessionMeta` vs `journey` — consumers fetch only what they need |
+| D-DATA-2 | Page hooks in `hooks/pages/` | Single composition layer; no `view-models/` |
+| D-DATA-3 | Split `useSession` → delete, not wrap | `sessionMeta` + `journey` keys |
+| D-DATA-4 | `gmRoster` supersedes dual progress hooks | One roster path for GM home + player detail |
+| D-DATA-5 | Delete legacy hooks on migration | No split-brain parallel caches |
+| D-DATA-6 | Components never fetch | Props from page hooks; CI enforced |
+| D-QR-1 | One `QrScanPanel`, delete orphaned scan route | `QRScannerView` unused in navigation |
+| D-STORE-1 | SSE patches `progress` cache | Delete `useWatchMission` |
