@@ -62,5 +62,8 @@ Deno.test("applyDefaultSessionBackground does not overwrite an existing backgrou
 
   await applyDefaultSessionBackground("sess_test", FAKE_IMAGE_URL, adapter);
 
-  assert.equal(getSession().bgImageUrl, "https://example.invalid/gm-uploaded.jpg");
+  assert.equal(
+    getSession().bgImageUrl,
+    "https://example.invalid/gm-uploaded.jpg",
+  );
 });

@@ -29,5 +29,11 @@ export const applyTemplateIfBlank = async (
   const existing = await adapter.listMilestones(player.sessionId, { playerId });
   if (existing.length > 0) return;
 
-  await applyTemplateToNewPlayer(sessionId, playerId, template, adapter, options);
+  await applyTemplateToNewPlayer(
+    sessionId,
+    playerId,
+    template,
+    adapter,
+    options,
+  );
 };

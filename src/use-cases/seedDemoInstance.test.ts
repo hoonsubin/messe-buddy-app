@@ -265,8 +265,14 @@ const createFakeAdapter = () => {
 const FAKE_BG_IMAGE_URL = "https://example.invalid/map-background.jpg";
 
 Deno.test("seedDemoInstance reproduces the demo session, players, and progress", async () => {
-  const { adapter, sessions, players, progressEvents, buddyProfiles, templates } =
-    createFakeAdapter();
+  const {
+    adapter,
+    sessions,
+    players,
+    progressEvents,
+    buddyProfiles,
+    templates,
+  } = createFakeAdapter();
 
   await seedDemoInstance(adapter, { bgImageUrl: FAKE_BG_IMAGE_URL });
 
@@ -310,8 +316,14 @@ Deno.test("seedDemoInstance reproduces the demo session, players, and progress",
 });
 
 Deno.test("seedDemoInstance is idempotent", async () => {
-  const { adapter, sessions, players, progressEvents, buddyProfiles, templates } =
-    createFakeAdapter();
+  const {
+    adapter,
+    sessions,
+    players,
+    progressEvents,
+    buddyProfiles,
+    templates,
+  } = createFakeAdapter();
 
   await seedDemoInstance(adapter, { bgImageUrl: FAKE_BG_IMAGE_URL });
   await seedDemoInstance(adapter, { bgImageUrl: FAKE_BG_IMAGE_URL });

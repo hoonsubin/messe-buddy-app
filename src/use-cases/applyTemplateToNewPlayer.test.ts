@@ -116,8 +116,9 @@ const createStubAdapter = () => {
       return schema;
     },
     getFormSchema: async (missionId: string) => schemas.get(missionId) ?? null,
-    listLibraryResources: async (): Promise<ReadonlyArray<LibraryResource>> =>
-      [],
+    listLibraryResources: async (): Promise<
+      ReadonlyArray<LibraryResource>
+    > => [],
     attachMilestoneResource: async (
       data: Omit<MilestoneResource, keyof PBRecord>,
     ) => {
