@@ -8,8 +8,8 @@ import {
   DEMO_SESSION_NAME,
   type DemoPersona,
 } from "../constants/demoInstance.ts";
-import { applyDefaultOnboardingJourney } from "./applyDefaultOnboardingJourney.ts";
-import { applyDefaultSessionBackground } from "./applyDefaultSessionBackground.ts";
+import { DEFAULT_ONBOARDING_TEMPLATE } from "../constants/defaultOnboardingTemplate.ts";
+import { applyTemplateIfBlank } from "./applyTemplateIfBlank.ts";
 import { seedLibraryResources } from "./seedLibraryResources.ts";
 import { seedTemplates } from "./seedTemplates.ts";
 
@@ -18,6 +18,7 @@ const PROFILE_MISSION_TITLE = "Complete Your Profile";
 const applyPersona = async (
   adapter: AppAdapter,
   persona: DemoPersona,
+  bgImageUrl: string | undefined,
 ): Promise<void> => {
   const player = await adapter.invitePlayer(
     DEMO_SESSION_ID,
@@ -42,7 +43,13 @@ const applyPersona = async (
     workStyle: persona.workStyle,
   });
 
-  await applyDefaultOnboardingJourney(player.id, adapter);
+  await applyTemplateIfBlank(
+    DEMO_SESSION_ID,
+    player.id,
+    DEFAULT_ONBOARDING_TEMPLATE,
+    adapter,
+    { defaultTemplateBgImageUrl: bgImageUrl },
+  );
 
   if (persona.completedMissionTitles.length > 0) {
     const missions = await adapter.listMissions(DEMO_SESSION_ID, {
@@ -92,9 +99,12 @@ const applyPersona = async (
  * persona creation stay idempotent by bailing out once the demo session id
  * is found.
  *
- * `bgImageUrl`, if given, seeds the session's map background — pass a Vite
- * asset URL from the caller (e.g. mockAdapter.ts) since this file otherwise
- * stays free of binary asset imports so it's safe for Deno.test to import.
+ * `bgImageUrl`, if given, is threaded down to `applyTemplateIfBlank` for
+ * each persona — it's the same "applying the default template implies this
+ * background" rule `applyTemplateToNewPlayer` centralizes for the live GM
+ * flow, not a separate seed-only mechanism. Passed in as a plain string
+ * (rather than imported here) so this file stays free of binary asset
+ * imports and safe for Deno.test to import.
  */
 export const seedDemoInstance = async (
   adapter: AppAdapter,
@@ -119,15 +129,8 @@ export const seedDemoInstance = async (
   await adapter.updateSession(DEMO_SESSION_ID, {
     preBoardingChecks: DEMO_PRE_BOARDING_CHECKS,
   });
-  if (options?.bgImageUrl) {
-    await applyDefaultSessionBackground(
-      DEMO_SESSION_ID,
-      options.bgImageUrl,
-      adapter,
-    );
-  }
 
   for (const persona of DEMO_PERSONAS) {
-    await applyPersona(adapter, persona);
+    await applyPersona(adapter, persona, options?.bgImageUrl);
   }
 };

@@ -1,11 +1,9 @@
 import type { AppAdapter } from "../adapters/interface.ts";
 import type { BuddyProfile, BuddySelection } from "../types/index.ts";
 import { buddyDraftToProfileFields } from "../types/buddyPicker.ts";
-import { DEFAULT_ONBOARDING_TEMPLATE } from "../constants/defaultOnboardingTemplate.ts";
 import { DEFAULT_SESSION_BACKGROUND_URL } from "../constants/defaultSessionBackground.ts";
-import { applyDefaultSessionBackground } from "./applyDefaultSessionBackground.ts";
-import { applyScratchJourney } from "./applyScratchJourney.ts";
-import { importTemplate } from "./importTemplate.ts";
+import { SCRATCH_JOURNEY_TEMPLATE } from "../constants/scratchJourneyTemplate.ts";
+import { applyTemplateToNewPlayer } from "./applyTemplateToNewPlayer.ts";
 import { invitePlayer } from "./invitePlayer.ts";
 
 export interface CreateOnboardingJourneyInput {
@@ -86,17 +84,17 @@ export const createOnboardingJourney = async (
     if (!template) {
       throw new Error(`Template not found: ${input.templateName}`);
     }
-    await importTemplate(template, player.id, adapter);
+    await applyTemplateToNewPlayer(sessionId, player.id, template, adapter, {
+      defaultTemplateBgImageUrl: DEFAULT_SESSION_BACKGROUND_URL,
+    });
     appliedTemplateName = template.name;
-    if (template.name === DEFAULT_ONBOARDING_TEMPLATE.name) {
-      await applyDefaultSessionBackground(
-        sessionId,
-        DEFAULT_SESSION_BACKGROUND_URL,
-        adapter,
-      );
-    }
   } else {
-    await applyScratchJourney(player.id, adapter);
+    await applyTemplateToNewPlayer(
+      sessionId,
+      player.id,
+      SCRATCH_JOURNEY_TEMPLATE,
+      adapter,
+    );
   }
 
   return {

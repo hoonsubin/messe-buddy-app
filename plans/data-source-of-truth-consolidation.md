@@ -328,3 +328,46 @@ Work top-down; each task unblocks the next.
   - `deno check`/`deno test` on all touched/new files: same 4 pre-existing
     unrelated errors, 14/14 tests pass (2 new:
     `applyDefaultSessionBackground.test.ts`).
+- 2026-07-06 (later still) — Hoon flagged a real architecture-drift risk:
+  several "default use case" files were doing nothing a live GM action
+  didn't already do, just replayed with hardcoded data — the exact shape
+  that silently diverges over time. Diagnosis confirmed it concretely:
+  `applyDefaultOnboardingJourney.ts` and `applyScratchJourney.ts` were
+  byte-for-byte identical (same idempotency guard) except which template
+  constant they imported, and `applyDefaultOnboardingJourney` had *zero*
+  production callers left (only `seedDemoInstance` + its own test) since
+  "start from scratch" was rewired to `applyScratchJourney` last turn — the
+  demo persona's journey path and the real GM-picks-a-template path had
+  already forked into two hand-synced implementations. Proof this had
+  already caused a real bug: the background-image side effect from the
+  prior entry had to be added to `createOnboardingJourney.ts` *and*
+  separately to `seedDemoInstance.ts` via a bolted-on options param, because
+  there was no single function both could call. A third near-duplicate
+  (pre-existing, not something this session added) also turned up:
+  `applyTemplateToPlayer.ts`, used by the player-detail "re-apply template"
+  feature, silently ignored `sessionId` (prefixed `_sessionId`, unused) and
+  never triggered the background rule either.
+  - Consolidated to two layers: `applyTemplateToNewPlayer.ts` (unguarded —
+    `importTemplate` + the one place that decides "does this template imply
+    a session-level side effect," currently the background-image rule) and
+    `applyTemplateIfBlank.ts` (the idempotency guard, parameterized by
+    template, for seed/fixture code that may run more than once).
+  - `createOnboardingJourney.ts` (both branches), `applyTemplateToPlayer.ts`
+    (re-apply — now actually uses `sessionId`, and as a result picks up the
+    background rule it never had), and `seedDemoInstance.ts` all call these
+    same two functions instead of each having their own copy.
+  - Deleted (emptied, per the sandbox's delete restriction — `git rm`
+    still needed): `applyDefaultOnboardingJourney.ts`/`.test.ts`,
+    `applyScratchJourney.ts`/`.test.ts`. Replaced by
+    `applyTemplateIfBlank.test.ts` (same assertions, run against both
+    templates through the one function) and `applyTemplateToNewPlayer.test.ts`
+    (new — specifically covers the background-side-effect wiring: fires
+    only for `DEFAULT_ONBOARDING_TEMPLATE` with a URL given, never for
+    `SCRATCH_JOURNEY_TEMPLATE`).
+  - Deliberately not "fixed everywhere": `seedLibraryResources.ts`'s
+    dedupe-by-`resourceKey` logic and `seedDemoInstance.ts`'s persona
+    orchestration (`invitePlayer` → `updatePlayer` → journey → progress →
+    buddy) stay as-is — ordinary fixture-building with no production
+    equivalent to duplicate, not the pattern being fixed here.
+  - `deno check`/`deno test` on every touched/new file: same 4 pre-existing
+    unrelated errors, 15/15 tests pass.

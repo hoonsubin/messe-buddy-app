@@ -23,7 +23,7 @@ import { seedDemoInstance } from "./seedDemoInstance.ts";
  * mockAdapter singleton) so each test starts from a clean slate. Mirrors the
  * relevant parts of mockAdapter.ts's behavior closely enough to exercise
  * seedDemoInstance's full call chain (createSession -> invitePlayer ->
- * applyDefaultOnboardingJourney -> upsertProgressEvent -> upsertBuddyProfile).
+ * applyTemplateIfBlank -> upsertProgressEvent -> upsertBuddyProfile).
  */
 const createFakeAdapter = () => {
   const sessions = new Map<string, Session>();

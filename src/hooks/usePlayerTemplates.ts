@@ -28,7 +28,7 @@ export interface UsePlayerTemplatesResult {
 }
 
 export const usePlayerTemplates = (
-  _sessionId: string,
+  sessionId: string,
   playerId: string,
 ): UsePlayerTemplatesResult => {
   const adapter = useAdapter();
@@ -45,12 +45,12 @@ export const usePlayerTemplates = (
       if (!t) return;
       setApplying(true);
       try {
-        await applyTemplateToPlayer(playerId, t, adapter);
+        await applyTemplateToPlayer(sessionId, playerId, t, adapter);
       } finally {
         setApplying(false);
       }
     },
-    [templates, playerId, adapter],
+    [templates, sessionId, playerId, adapter],
   );
 
   const saveAsTemplate = useCallback(
