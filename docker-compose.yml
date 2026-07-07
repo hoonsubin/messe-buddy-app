@@ -255,17 +255,35 @@ services:
       # it's certbot that waits on app's healthcheck below, not the other
       # way around.
     healthcheck:
-      # nginx on :80 answers (redirect to https, or the acme-challenge
-      # location) as soon as entrypoint.sh hands off to supervisord. This is
-      # what certbot's depends_on waits on, so it stops racing app's cold
-      # start instead of exhausting its own retry budget.
-      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:80/"]
+      # /api/health is proxied straight through to PocketBase (nginx.conf's
+      # ^/(api|_) location), so this only goes green once BOTH nginx and
+      # PocketBase are actually serving — not just nginx (which supervisord
+      # starts before pocketbase; see docker/supervisord.conf priorities).
+      # certbot and pb-seed both depend on this, so it's what stops them
+      # from racing app's cold start.
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:80/api/health"]
       interval: 5s
       timeout: 5s
-      retries: 20
-      start_period: 30s
+      retries: 30
+      start_period: 15s
     networks:
       - litellm-external
+
+  # -- PocketBase seed (one-shot) --
+  # Registers the shared library resources and template on every fresh compose stack.
+  pb-seed:
+    build:
+      context: .
+      dockerfile: docker/pb-seed/Dockerfile
+    container_name: messebuddy-pb-seed
+    environment:
+      PB_URL: http://app/
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - litellm-external
+    restart: on-failure:5
 
 volumes:
   pb_data:
