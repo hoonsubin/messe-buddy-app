@@ -11,6 +11,7 @@ import { useQueryClient } from "../store/useQueryClient.ts";
 import { encodeQRPayload } from "../utils/qrPayload.ts";
 import { buildValidationUrl } from "../utils/qrUrl.ts";
 import { pickFirstIncompleteQrMission } from "../utils/qrMissionPick.ts";
+import { useLiveQuery } from "./useLiveQuery.ts";
 import { useQuery } from "./useQuery.ts";
 
 export interface UseQrScanResult {
@@ -35,7 +36,7 @@ export const useQrScan = (
     { enabled: !!sessionId },
   );
 
-  const gmRoster = useQuery(
+  const gmRoster = useLiveQuery(
     sessionId ? queryKeys.gmRoster(sessionId) : null,
     fetchGmRoster(sessionId),
     { enabled: !!sessionId },
@@ -43,7 +44,7 @@ export const useQrScan = (
 
   const resolvedPlayerId = playerId ?? gmRoster.data?.players[0]?.id ?? "";
 
-  const journey = useQuery(
+  const journey = useLiveQuery(
     sessionId && resolvedPlayerId
       ? queryKeys.journey(sessionId, resolvedPlayerId)
       : null,
@@ -51,15 +52,21 @@ export const useQrScan = (
     { enabled: !!sessionId && !!resolvedPlayerId },
   );
 
-  const progress = useQuery(
+  const progress = useLiveQuery(
     resolvedPlayerId ? queryKeys.progress(resolvedPlayerId) : null,
     fetchProgress(resolvedPlayerId),
     { enabled: !!resolvedPlayerId },
   );
 
   const session = sessionMeta.data ?? null;
-  const players = gmRoster.data?.players ?? [];
-  const missions = journey.data?.missions ?? [];
+  const players = useMemo(
+    () => gmRoster.data?.players ?? [],
+    [gmRoster.data?.players],
+  );
+  const missions = useMemo(
+    () => journey.data?.missions ?? [],
+    [journey.data?.missions],
+  );
 
   const loading = sessionMeta.isInitialLoading || gmRoster.isInitialLoading ||
     (!!resolvedPlayerId &&

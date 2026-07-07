@@ -20,8 +20,8 @@ import { useActiveProfile } from "../useActiveProfile.ts";
 import { useGmMilestoneEditor } from "../useGmMilestoneEditor.ts";
 import { useGmMissionEditor } from "../useGmMissionEditor.ts";
 import { useGmProgressView } from "../useGmProgressView.ts";
-import { useGmRosterRealtime } from "../useGmRosterRealtime.ts";
 import { useStaleSessionRedirect } from "../useStaleSessionRedirect.ts";
+import { useLiveQuery } from "../useLiveQuery.ts";
 import { useQuery } from "../useQuery.ts";
 import { useAdapter } from "../../adapters/useAdapter.ts";
 import { devBackendTrace } from "../../store/devBackendTrace.ts";
@@ -96,23 +96,27 @@ export const useGmPlayerDetailPage = () => {
     if (homeSid) devBackendTrace.setActiveScope(homeSid);
   }, [homeSid]);
 
-  useGmRosterRealtime(homeSid, !!homeSid);
-
   const sessionMeta = useQuery(
     homeSid ? queryKeys.sessionMeta(homeSid) : null,
     fetchSessionMeta(homeSid),
     { enabled: !!homeSid },
   );
 
-  const journey = useQuery(
+  const journey = useLiveQuery(
     homeSid && playerId ? queryKeys.journey(homeSid, playerId) : null,
     fetchJourney(homeSid, playerId),
     { enabled: !!homeSid && !!playerId },
   );
 
   const session = sessionMeta.data ?? null;
-  const milestones = journey.data?.milestones ?? [];
-  const missions = journey.data?.missions ?? [];
+  const milestones = useMemo(
+    () => journey.data?.milestones ?? [],
+    [journey.data?.milestones],
+  );
+  const missions = useMemo(
+    () => journey.data?.missions ?? [],
+    [journey.data?.missions],
+  );
   const sessionLoading = sessionMeta.isInitialLoading ||
     journey.isInitialLoading;
   const sessionMissing = !sessionMeta.isInitialLoading && !!sessionMeta.error;
@@ -191,7 +195,7 @@ export const useGmPlayerDetailPage = () => {
     playerQuery.data?.inviteToken,
   ]);
 
-  const buddyQuery = useQuery(
+  const buddyQuery = useLiveQuery(
     playerId ? queryKeys.buddy(playerId) : null,
     fetchBuddy(playerId),
     { enabled: !!playerId },
@@ -201,10 +205,10 @@ export const useGmPlayerDetailPage = () => {
     emptyBuddyProfileDraft(homeSid)
   );
 
-  useEffect(() => {
+  const serverBuddyDraft = useMemo((): BuddyProfileDraft | null => {
     const profile = buddyQuery.data;
     if (profile) {
-      setBuddyDraft({
+      return {
         sessionId: profile.sessionId,
         name: profile.name,
         role: profile.role,
@@ -214,11 +218,19 @@ export const useGmPlayerDetailPage = () => {
         contactUrl: profile.contactUrl ?? "",
         quote: profile.quote,
         avatarUrl: profile.avatarUrl,
-      });
-    } else if (!buddyQuery.isInitialLoading) {
-      setBuddyDraft(emptyBuddyProfileDraft(homeSid));
+      };
     }
+    if (!buddyQuery.isInitialLoading) return emptyBuddyProfileDraft(homeSid);
+    return null;
   }, [buddyQuery.data, buddyQuery.isInitialLoading, homeSid]);
+
+  const buddySyncKey = buddyQuery.data?.updated ??
+    (!buddyQuery.isInitialLoading ? `empty:${homeSid}` : null);
+  const [syncedBuddyKey, setSyncedBuddyKey] = useState<string | null>(null);
+  if (buddySyncKey && buddySyncKey !== syncedBuddyKey && serverBuddyDraft) {
+    setSyncedBuddyKey(buddySyncKey);
+    setBuddyDraft(serverBuddyDraft);
+  }
 
   const upsertBuddy = useCallback(async () => {
     if (!playerId) return;
@@ -226,24 +238,38 @@ export const useGmPlayerDetailPage = () => {
     client.invalidateQuery(queryKeys.buddy(playerId));
   }, [adapter, buddyDraft, client, playerId]);
 
-  const buddyProfile = {
-    role: "gamemaker" as const,
-    buddyDraft,
-    savedBuddy: buddyQuery.data ?? null,
-    setBuddyDraft,
-    upsertBuddy,
-    loading: buddyQuery.isInitialLoading,
-    error: buddyQuery.error,
-    refresh: () => client.invalidateQuery(queryKeys.buddy(playerId)),
-  };
+  const refreshBuddy = useCallback(() => {
+    client.invalidateQuery(queryKeys.buddy(playerId));
+  }, [client, playerId]);
 
-  const resourcesQuery = useQuery(
+  const buddyProfile = useMemo(
+    () => ({
+      role: "gamemaker" as const,
+      buddyDraft,
+      savedBuddy: buddyQuery.data ?? null,
+      setBuddyDraft,
+      upsertBuddy,
+      loading: buddyQuery.isInitialLoading,
+      error: buddyQuery.error,
+      refresh: refreshBuddy,
+    }),
+    [
+      buddyDraft,
+      buddyQuery.data,
+      buddyQuery.error,
+      buddyQuery.isInitialLoading,
+      refreshBuddy,
+      upsertBuddy,
+    ],
+  );
+
+  const resourcesQuery = useLiveQuery(
     homeSid && playerId ? queryKeys.resources(homeSid, playerId) : null,
     fetchPlayerResources(homeSid, playerId, false),
     { enabled: !!homeSid && !!playerId },
   );
 
-  const libraryQuery = useQuery(
+  const libraryQuery = useLiveQuery(
     playerId ? queryKeys.libraryResources() : null,
     fetchLibraryResources(),
     { enabled: !!playerId },
@@ -380,28 +406,47 @@ export const useGmPlayerDetailPage = () => {
     [updateResource],
   );
 
-  const gmResources = {
-    role: "gamemaker" as const,
-    resources: resourcesQuery.data ?? [],
-    libraryResources: libraryQuery.data ?? [],
-    loading: resourcesQuery.isInitialLoading,
-    error: resourcesQuery.error,
-    refresh: refreshResources,
-    addResource,
-    updateResource,
-    deleteResource,
-    detachFromMilestone,
-    attachFromLibrary,
-    toggleVisibility,
-  };
+  const gmResources = useMemo(
+    () => ({
+      role: "gamemaker" as const,
+      resources: resourcesQuery.data ?? [],
+      libraryResources: libraryQuery.data ?? [],
+      loading: resourcesQuery.isInitialLoading,
+      error: resourcesQuery.error,
+      refresh: refreshResources,
+      addResource,
+      updateResource,
+      deleteResource,
+      detachFromMilestone,
+      attachFromLibrary,
+      toggleVisibility,
+    }),
+    [
+      addResource,
+      attachFromLibrary,
+      deleteResource,
+      detachFromMilestone,
+      libraryQuery.data,
+      refreshResources,
+      resourcesQuery.data,
+      resourcesQuery.error,
+      resourcesQuery.isInitialLoading,
+      toggleVisibility,
+      updateResource,
+    ],
+  );
 
   const [preBoardingItems, setPreBoardingItems] = useState<
     ReadonlyArray<PreBoardingCheckItem>
   >([]);
 
-  useEffect(() => {
-    if (session) setPreBoardingItems(session.preBoardingChecks);
-  }, [session]);
+  const [syncedPreBoardingSessionId, setSyncedPreBoardingSessionId] = useState<
+    string | null
+  >(null);
+  if (session && session.id !== syncedPreBoardingSessionId) {
+    setSyncedPreBoardingSessionId(session.id);
+    setPreBoardingItems(session.preBoardingChecks);
+  }
 
   const persistPreBoarding = useCallback(
     (next: ReadonlyArray<PreBoardingCheckItem>) => {
@@ -437,8 +482,11 @@ export const useGmPlayerDetailPage = () => {
     },
   };
 
-  const templatesQuery = useQuery(queryKeys.templates(), fetchTemplates());
-  const templates = templatesQuery.data ?? [];
+  const templatesQuery = useLiveQuery(queryKeys.templates(), fetchTemplates());
+  const templates = useMemo(
+    () => templatesQuery.data ?? [],
+    [templatesQuery.data],
+  );
   const [applyingTemplate, setApplyingTemplate] = useState(false);
 
   const applyTemplate = useCallback(

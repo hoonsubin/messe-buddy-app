@@ -19,6 +19,7 @@ import { useTutorial } from "../../hooks/useTutorial.ts";
 import { useChat } from "../../hooks/useChat.ts";
 import type { UseChatWithAvailability } from "../../hooks/useChat.ts";
 import { useMutation } from "../../hooks/useMutation.ts";
+import { useLiveQuery } from "../../hooks/useLiveQuery.ts";
 import { useQuery } from "../../hooks/useQuery.ts";
 import { devBackendTrace } from "../../store/devBackendTrace.ts";
 import {
@@ -115,25 +116,25 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     { enabled: !!sessionId },
   );
 
-  const journey = useQuery(
+  const journey = useLiveQuery(
     sessionId && playerId ? queryKeys.journey(sessionId, playerId) : null,
     fetchJourney(sessionId, playerId),
     { enabled: !!sessionId && !!playerId },
   );
 
-  const progressQuery = useQuery(
+  const progressQuery = useLiveQuery(
     playerId ? queryKeys.progress(playerId) : null,
     fetchProgress(playerId),
     { enabled: !!playerId },
   );
 
-  const buddyQuery = useQuery(
+  const buddyQuery = useLiveQuery(
     playerId ? queryKeys.buddy(playerId) : null,
     fetchBuddy(playerId),
     { enabled: !!playerId },
   );
 
-  const resourcesQuery = useQuery(
+  const resourcesQuery = useLiveQuery(
     sessionId && playerId ? queryKeys.resources(sessionId, playerId) : null,
     fetchPlayerResources(sessionId, playerId, true),
     { enabled: !!sessionId && !!playerId },
@@ -143,8 +144,14 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     if (playerId) client.invalidateQuery(queryKeys.progress(playerId));
   }, [client, playerId]);
 
-  const milestones = journey.data?.milestones ?? [];
-  const missions = journey.data?.missions ?? [];
+  const milestones = useMemo(
+    () => journey.data?.milestones ?? [],
+    [journey.data?.milestones],
+  );
+  const missions = useMemo(
+    () => journey.data?.missions ?? [],
+    [journey.data?.missions],
+  );
   const session = sessionMeta.data ?? null;
 
   const progress = useDerivedPlayerProgress(
@@ -193,14 +200,15 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     null,
   );
   const [popupMission, setPopupMission] = useState<Mission | null>(null);
+  const [prevCockpitTab, setPrevCockpitTab] = useState(cockpitTab);
+  if (prevCockpitTab !== cockpitTab) {
+    setPrevCockpitTab(cockpitTab);
+    setSelectedMilestoneId(null);
+  }
 
   const closeMilestoneSidebar = useCallback(() => {
     setSelectedMilestoneId(null);
   }, []);
-
-  useEffect(() => {
-    closeMilestoneSidebar();
-  }, [cockpitTab, closeMilestoneSidebar]);
 
   const handleMissionClick = useCallback(
     (missionId: string, fromTutorial = false) => {

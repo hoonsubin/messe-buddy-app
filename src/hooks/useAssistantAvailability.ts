@@ -39,10 +39,7 @@ export function useAssistantAvailability(enabled = true): boolean {
   const [available, setAvailable] = useState(false);
 
   useEffect(() => {
-    if (!enabled) {
-      setAvailable(false);
-      return;
-    }
+    if (!enabled) return;
 
     let cancelled = false;
     let consecutiveFailures = 0;

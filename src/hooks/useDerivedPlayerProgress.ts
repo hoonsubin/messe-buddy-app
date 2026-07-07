@@ -51,9 +51,7 @@ export const useDerivedPlayerProgress = (
       watchMission: () => () => {},
     }),
     [
-      actions.markAutoApproved,
-      actions.markPending,
-      actions.markSelfComplete,
+      actions,
       playerProgress,
       progressError,
       progressEvents,

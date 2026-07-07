@@ -104,18 +104,13 @@ export interface AppAdapter {
     >,
   ): Promise<ProgressEvent>;
   listProgressEvents(playerId: string): Promise<ReadonlyArray<ProgressEvent>>;
-  subscribeProgressEvent(
-    playerId: string,
-    missionId: string,
-    callback: (event: ProgressEvent) => void,
-  ): () => void;
-  subscribeSessionPlayers(
-    sessionId: string,
-    callback: (player: Player) => void,
-  ): () => void;
-  subscribeSessionProgressEvents(
-    sessionId: string,
-    callback: (event: ProgressEvent) => void,
+  subscribeCollection(
+    collection: string,
+    filter: string | undefined,
+    onEvent: (
+      action: "create" | "update" | "delete",
+      record: unknown,
+    ) => void,
   ): () => void;
 
   // BuddyProfiles

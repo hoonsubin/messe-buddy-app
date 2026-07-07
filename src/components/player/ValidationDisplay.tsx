@@ -27,7 +27,6 @@ const ValidationDisplay = (props: ValidationDisplayProps) => {
       }
     },
     method === "gmApprove",
-    sessionId,
   );
 
   return (

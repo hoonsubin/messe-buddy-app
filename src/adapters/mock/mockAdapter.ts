@@ -33,20 +33,59 @@ const libraryResources = new Map<string, LibraryResource>();
 const milestoneResources = new Map<string, MilestoneResource>();
 const templates = new Map<string, TemplateExport>();
 
-type ProgressCallback = (event: ProgressEvent) => void;
-const subscriptions = new Map<string, Set<ProgressCallback>>();
+type RealtimeAction = "create" | "update" | "delete";
+type CollectionCallback = (
+  action: RealtimeAction,
+  record: unknown,
+) => void;
+const collectionSubscriptions = new Map<string, Set<CollectionCallback>>();
 
-type SessionPlayerCallback = (player: Player) => void;
-const sessionPlayerSubscriptions = new Map<
-  string,
-  Set<SessionPlayerCallback>
->();
+const collectionTopicKey = (collection: string, filter?: string): string =>
+  `${collection}\0${filter ?? ""}`;
 
-type SessionProgressCallback = (event: ProgressEvent) => void;
-const sessionProgressSubscriptions = new Map<
-  string,
-  Set<SessionProgressCallback>
->();
+const unescapeFilterValue = (raw: string): string =>
+  raw.replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+
+const recordMatchesFilter = (record: unknown, filter?: string): boolean => {
+  if (!filter) return true;
+  const match = filter.match(/^(\w+)\s*=\s*"((?:\\.|[^"\\])*)"$/);
+  if (!match) return true;
+  const [, field, rawValue] = match;
+  const value = unescapeFilterValue(rawValue);
+  const rec = record as Record<string, unknown>;
+  return String(rec[field] ?? "") === value;
+};
+
+const notifyCollection = (
+  collection: string,
+  action: RealtimeAction,
+  record: unknown,
+): void => {
+  for (const [key, subs] of collectionSubscriptions) {
+    const sep = key.indexOf("\0");
+    const coll = key.slice(0, sep);
+    const filter = key.slice(sep + 1) || undefined;
+    if (coll !== collection) continue;
+    if (!recordMatchesFilter(record, filter)) continue;
+    for (const cb of subs) cb(action, record);
+  }
+};
+
+const notifySessionPlayer = (
+  _sessionId: string,
+  player: Player,
+  action: RealtimeAction = "update",
+): void => {
+  notifyCollection("players", action, player);
+};
+
+const notifySessionProgress = (
+  _sessionId: string,
+  event: ProgressEvent,
+  action: RealtimeAction = "update",
+): void => {
+  notifyCollection("progress_events", action, event);
+};
 
 const makeId = (): string =>
   Math.random().toString(36).slice(2, 17).padEnd(15, "0").slice(0, 15);
@@ -56,27 +95,6 @@ const now = (): string => new Date().toISOString();
 const makeRecord = (): PBRecord => {
   const t = now();
   return { id: makeId(), created: t, updated: t };
-};
-
-const notify = (key: string, event: ProgressEvent): void => {
-  const subs = subscriptions.get(key);
-  if (!subs) return;
-  for (const cb of subs) cb(event);
-};
-
-const notifySessionPlayer = (sessionId: string, player: Player): void => {
-  const subs = sessionPlayerSubscriptions.get(sessionId);
-  if (!subs) return;
-  for (const cb of subs) cb(player);
-};
-
-const notifySessionProgress = (
-  sessionId: string,
-  event: ProgressEvent,
-): void => {
-  const subs = sessionProgressSubscriptions.get(sessionId);
-  if (!subs) return;
-  for (const cb of subs) cb(event);
 };
 
 let currentGmUid = "uid_gamemaker_peter";
@@ -98,7 +116,6 @@ const simulateGmApproval = (key: string, gmUid?: string): void => {
       updated: now(),
     };
     progressEvents.set(key, approved);
-    notify(key, approved);
     if (approved.sessionId) notifySessionProgress(approved.sessionId, approved);
   }, 4000);
 };
@@ -270,7 +287,7 @@ const invitePlayer = async (
     languages: [],
   };
   players.set(player.id, player);
-  notifySessionPlayer(sessionId, player);
+  notifySessionPlayer(sessionId, player, "create");
   return player;
 };
 
@@ -314,6 +331,7 @@ const createMilestone = async (
   const record = makeRecord();
   const ms: Milestone = { ...record, ...data, id: data.id ?? record.id };
   milestones.set(ms.id, ms);
+  notifyCollection("milestones", "create", ms);
   return ms;
 };
 
@@ -326,12 +344,15 @@ const updateMilestone = async (
   if (!existing) throw new Error(`Milestone not found: ${milestoneId}`);
   const updated: Milestone = { ...existing, ...patch, updated: now() };
   milestones.set(milestoneId, updated);
+  notifyCollection("milestones", "update", updated);
   return updated;
 };
 
 const deleteMilestone = async (milestoneId: string): Promise<void> => {
   await Promise.resolve();
+  const existing = milestones.get(milestoneId);
   milestones.delete(milestoneId);
+  if (existing) notifyCollection("milestones", "delete", existing);
   for (const [id, mr] of milestoneResources) {
     if (mr.milestoneId === milestoneId) milestoneResources.delete(id);
   }
@@ -357,6 +378,7 @@ const createMission = async (
   const record = makeRecord();
   const mission: Mission = { ...record, ...data, id: data.id ?? record.id };
   missions.set(mission.id, mission);
+  notifyCollection("missions", "create", mission);
   return mission;
 };
 
@@ -369,12 +391,15 @@ const updateMission = async (
   if (!existing) throw new Error(`Mission not found: ${missionId}`);
   const updated: Mission = { ...existing, ...patch, updated: now() };
   missions.set(missionId, updated);
+  notifyCollection("missions", "update", updated);
   return updated;
 };
 
 const deleteMission = async (missionId: string): Promise<void> => {
   await Promise.resolve();
+  const existing = missions.get(missionId);
   missions.delete(missionId);
+  if (existing) notifyCollection("missions", "delete", existing);
   formSchemas.delete(missionId);
 };
 
@@ -393,6 +418,7 @@ const upsertFormSchema = async (
     ? { ...existing, fields, updated: now() }
     : { ...makeRecord(), missionId, fields };
   formSchemas.set(missionId, schema);
+  notifyCollection("form_schemas", existing ? "update" : "create", schema);
   return schema;
 };
 
@@ -417,7 +443,6 @@ const upsertProgressEvent = async (
   };
   const event: ProgressEvent = { ...base, ...patch, updated: now() };
   progressEvents.set(key, event);
-  notify(key, event);
   if (sessionId) notifySessionProgress(sessionId, event);
   if (event.status === "pendingApproval") simulateGmApproval(key);
   return event;
@@ -430,45 +455,22 @@ const listProgressEvents = async (
   return [...progressEvents.values()].filter((e) => e.playerId === playerId);
 };
 
-const subscribeProgressEvent = (
-  playerId: string,
-  missionId: string,
-  callback: (event: ProgressEvent) => void,
+const subscribeCollection = (
+  collection: string,
+  filter: string | undefined,
+  callback: (action: RealtimeAction, record: unknown) => void,
 ): () => void => {
-  const key = `${playerId}::${missionId}`;
-  let subs = subscriptions.get(key);
+  const key = collectionTopicKey(collection, filter);
+  let subs = collectionSubscriptions.get(key);
   if (!subs) {
     subs = new Set();
-    subscriptions.set(key, subs);
+    collectionSubscriptions.set(key, subs);
   }
   subs.add(callback);
-  return () => subs?.delete(callback);
-};
-
-const subscribeSessionPlayers = (
-  sessionId: string,
-  callback: (player: Player) => void,
-): () => void => {
-  let subs = sessionPlayerSubscriptions.get(sessionId);
-  if (!subs) {
-    subs = new Set();
-    sessionPlayerSubscriptions.set(sessionId, subs);
-  }
-  subs.add(callback);
-  return () => subs?.delete(callback);
-};
-
-const subscribeSessionProgressEvents = (
-  sessionId: string,
-  callback: (event: ProgressEvent) => void,
-): () => void => {
-  let subs = sessionProgressSubscriptions.get(sessionId);
-  if (!subs) {
-    subs = new Set();
-    sessionProgressSubscriptions.set(sessionId, subs);
-  }
-  subs.add(callback);
-  return () => subs?.delete(callback);
+  return () => {
+    subs?.delete(callback);
+    if (subs && subs.size === 0) collectionSubscriptions.delete(key);
+  };
 };
 
 const getBuddyProfile = async (
@@ -495,6 +497,11 @@ const upsertBuddyProfile = async (
     ? { ...existing, ...data, assignedToPlayerId: playerId, updated: now() }
     : { ...makeRecord(), ...data, assignedToPlayerId: playerId };
   buddyProfiles.set(playerId, profile);
+  notifyCollection(
+    "buddy_profiles",
+    existing ? "update" : "create",
+    profile,
+  );
   return profile;
 };
 
@@ -511,6 +518,7 @@ const createLibraryResource = async (
   await Promise.resolve();
   const resource: LibraryResource = { ...makeRecord(), ...data };
   libraryResources.set(resource.id, resource);
+  notifyCollection("library_resources", "create", resource);
   return resource;
 };
 
@@ -523,12 +531,15 @@ const updateLibraryResource = async (
   if (!existing) throw new Error(`Library resource not found: ${resourceId}`);
   const updated: LibraryResource = { ...existing, ...patch, updated: now() };
   libraryResources.set(resourceId, updated);
+  notifyCollection("library_resources", "update", updated);
   return updated;
 };
 
 const deleteLibraryResource = async (resourceId: string): Promise<void> => {
   await Promise.resolve();
+  const existing = libraryResources.get(resourceId);
   libraryResources.delete(resourceId);
+  if (existing) notifyCollection("library_resources", "delete", existing);
   for (const [id, mr] of milestoneResources) {
     if (mr.libraryResourceId === resourceId) milestoneResources.delete(id);
   }
@@ -551,6 +562,7 @@ const attachMilestoneResource = async (
   await Promise.resolve();
   const attachment: MilestoneResource = { ...makeRecord(), ...data };
   milestoneResources.set(attachment.id, attachment);
+  notifyCollection("milestone_resources", "create", attachment);
   return attachment;
 };
 
@@ -565,12 +577,15 @@ const updateMilestoneResource = async (
   }
   const updated: MilestoneResource = { ...existing, ...patch, updated: now() };
   milestoneResources.set(attachmentId, updated);
+  notifyCollection("milestone_resources", "update", updated);
   return updated;
 };
 
 const detachMilestoneResource = async (attachmentId: string): Promise<void> => {
   await Promise.resolve();
+  const existing = milestoneResources.get(attachmentId);
   milestoneResources.delete(attachmentId);
+  if (existing) notifyCollection("milestone_resources", "delete", existing);
 };
 
 const listResources = async (
@@ -588,12 +603,16 @@ const listTemplates = async (): Promise<ReadonlyArray<TemplateExport>> => {
 
 const saveTemplate = async (template: TemplateExport): Promise<void> => {
   await Promise.resolve();
+  const existing = templates.has(template.name);
   templates.set(template.name, template);
+  notifyCollection("templates", existing ? "update" : "create", template);
 };
 
 const deleteTemplate = async (name: string): Promise<void> => {
   await Promise.resolve();
+  const existing = templates.get(name);
   templates.delete(name);
+  if (existing) notifyCollection("templates", "delete", existing);
 };
 
 export const mockAdapter: AppAdapter = {
@@ -621,9 +640,7 @@ export const mockAdapter: AppAdapter = {
   upsertFormSchema,
   upsertProgressEvent,
   listProgressEvents,
-  subscribeProgressEvent,
-  subscribeSessionPlayers,
-  subscribeSessionProgressEvents,
+  subscribeCollection,
   getBuddyProfile,
   listBuddyProfiles,
   upsertBuddyProfile,

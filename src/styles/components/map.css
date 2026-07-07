@@ -148,13 +148,10 @@
   z-index: 1;
   font-size: 0.75rem;   /* 12px - minimum readable size on mobile */
   font-weight: var(--weight-semibold);
-  color: hsl(var(--color-card));
+  color: hsl(var(--color-fg));
   text-align: center;
   line-height: var(--leading-tight);
   padding: var(--space-1);
-  /* ensure readability on both filled and unfilled background */
-  text-shadow: 0 1px 3px hsl(var(--color-primary) / 0.8),
-               0 0 0.5rem hsl(var(--color-primary) / 0.6);
 }
 
 /* Legacy: keeping old .milestone-map for any remaining references */

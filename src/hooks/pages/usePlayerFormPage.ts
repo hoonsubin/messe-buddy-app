@@ -5,6 +5,7 @@ import { USER_ROLE } from "../../types/index.ts";
 import { useActiveProfile } from "../useActiveProfile.ts";
 import { useDerivedPlayerProgress } from "../useDerivedPlayerProgress.ts";
 import { useMutation } from "../useMutation.ts";
+import { useLiveQuery } from "../useLiveQuery.ts";
 import { useQuery } from "../useQuery.ts";
 import { useAdapter } from "../../adapters/useAdapter.ts";
 import { devBackendTrace } from "../../store/devBackendTrace.ts";
@@ -74,26 +75,32 @@ export const usePlayerFormPage = (): UsePlayerFormPageResult => {
     { enabled: !!sessionId },
   );
 
-  const journey = useQuery(
+  const journey = useLiveQuery(
     sessionId && playerId ? queryKeys.journey(sessionId, playerId) : null,
     fetchJourney(sessionId, playerId),
     { enabled: !!sessionId && !!playerId },
   );
 
-  const progressQuery = useQuery(
+  const progressQuery = useLiveQuery(
     playerId ? queryKeys.progress(playerId) : null,
     fetchProgress(playerId),
     { enabled: !!playerId },
   );
 
-  const formSchemaQuery = useQuery(
+  const formSchemaQuery = useLiveQuery(
     missionId ? queryKeys.formSchema(missionId) : null,
     fetchFormSchema(missionId ?? ""),
     { enabled: !!missionId },
   );
 
-  const milestones = journey.data?.milestones ?? [];
-  const missions = journey.data?.missions ?? [];
+  const milestones = useMemo(
+    () => journey.data?.milestones ?? [],
+    [journey.data?.milestones],
+  );
+  const missions = useMemo(
+    () => journey.data?.missions ?? [],
+    [journey.data?.missions],
+  );
   const mission = missions.find((m) => m.id === missionId) ?? null;
   const isProfileMission = mission !== null &&
     isOnboardingProfileMission(mission);

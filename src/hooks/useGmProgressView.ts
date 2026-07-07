@@ -11,7 +11,7 @@ import { fetchGmRoster } from "../store/queryFetchers.ts";
 import { mergeProgressEvent } from "../store/progressEvents.ts";
 import { queryKeys } from "../store/queryKeys.ts";
 import { useQueryClient } from "../store/useQueryClient.ts";
-import { useQuery } from "./useQuery.ts";
+import { useLiveQuery } from "./useLiveQuery.ts";
 import type { UseProgressGamemakerResult } from "./progressTypes.ts";
 
 export const useGmProgressView = (
@@ -29,26 +29,34 @@ export const useGmProgressView = (
     validatorUidRef.current = validatorUid;
   });
 
-  const gmRoster = useQuery(
+  const gmRoster = useLiveQuery(
     homeSid ? queryKeys.gmRoster(homeSid) : null,
     fetchGmRoster(homeSid),
     { enabled: !!homeSid },
   );
 
   const [selectedPlayerId, setSelectedPlayerId] = useState(routePlayerId);
-
-  useEffect(() => {
-    if (routePlayerId) setSelectedPlayerId(routePlayerId);
-  }, [routePlayerId]);
+  const [prevRoutePlayerId, setPrevRoutePlayerId] = useState(routePlayerId);
+  if (routePlayerId && routePlayerId !== prevRoutePlayerId) {
+    setPrevRoutePlayerId(routePlayerId);
+    setSelectedPlayerId(routePlayerId);
+  }
 
   const players = gmRoster.data?.players ?? [];
-  const allProgressEvents = gmRoster.data?.allProgressEvents ?? [];
+  const allProgressEvents = useMemo(
+    () => gmRoster.data?.allProgressEvents ?? [],
+    [gmRoster.data?.allProgressEvents],
+  );
 
   const selectedPlayer = players.find((p) => p.id === selectedPlayerId) ?? null;
 
-  const selectedPlayerEvents = selectedPlayer
-    ? allProgressEvents.filter((e) => e.playerId === selectedPlayer.id)
-    : [];
+  const selectedPlayerEvents = useMemo(
+    () =>
+      selectedPlayer
+        ? allProgressEvents.filter((e) => e.playerId === selectedPlayer.id)
+        : [],
+    [allProgressEvents, selectedPlayer],
+  );
 
   const selectedPlayerProgress = useMemo(() => {
     if (!selectedPlayer) return null;
@@ -85,7 +93,7 @@ export const useGmProgressView = (
       );
       client.patchQuery(queryKeys.progress(playerId), () => events);
     },
-    [client, homeSid],
+    [client, gmRoster, homeSid],
   );
 
   const completeMission = useCallback(

@@ -11,7 +11,7 @@ import type {
   LibraryResourceInput,
   LibraryResourcePatch,
 } from "../../types/resourceInputs.ts";
-import { useGmRosterRealtime } from "../useGmRosterRealtime.ts";
+import { useLiveQuery } from "../useLiveQuery.ts";
 import { useActiveProfile } from "../useActiveProfile.ts";
 import { clearActiveUid, useIdentity } from "../useIdentity.ts";
 import { useStaleSessionRedirect } from "../useStaleSessionRedirect.ts";
@@ -109,32 +109,30 @@ export const useGmHomePage = (): UseGmHomePageResult => {
     if (sid) devBackendTrace.setActiveScope(sid);
   }, [sid]);
 
-  useGmRosterRealtime(sid, !!sid);
-
   const sessionMeta = useQuery(
     sid ? queryKeys.sessionMeta(sid) : null,
     fetchSessionMeta(sid),
     { enabled: !!sid },
   );
 
-  const gmRoster = useQuery(
+  const gmRoster = useLiveQuery(
     sid ? queryKeys.gmRoster(sid) : null,
     fetchGmRoster(sid),
     { enabled: !!sid },
   );
 
-  const templatesQuery = useQuery(
+  const templatesQuery = useLiveQuery(
     queryKeys.templates(),
     fetchTemplates(),
   );
 
-  const libraryQuery = useQuery(
+  const libraryQuery = useLiveQuery(
     tab === "library" ? queryKeys.libraryResources() : null,
     fetchLibraryResources(),
     { enabled: tab === "library" },
   );
 
-  const buddyPickerQuery = useQuery(
+  const buddyPickerQuery = useLiveQuery(
     sid && wizardOpen ? queryKeys.buddyPicker(sid) : null,
     fetchBuddyPicker(sid),
     { enabled: !!sid && wizardOpen },
