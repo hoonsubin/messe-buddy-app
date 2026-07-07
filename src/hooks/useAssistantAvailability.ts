@@ -58,7 +58,8 @@ export function useAssistantAvailability(enabled = true): boolean {
         }
         consecutiveFailures += 1;
         if (
-          consecutiveFailures >= MAX_CONSECUTIVE_FAILURES && interval !== undefined
+          consecutiveFailures >= MAX_CONSECUTIVE_FAILURES &&
+          interval !== undefined
         ) {
           clearInterval(interval);
           interval = undefined;

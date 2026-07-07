@@ -47,17 +47,11 @@ const LandingPage = () => {
             Join your onboarding
           </p>
           <EmployeeForm
-            step={flow.employeeStep}
-            sessionCode={flow.sessionCode}
-            inviteToken={flow.inviteToken}
+            view={flow.joinView}
             playerName={flow.playerName}
-            verifiedSessionId={flow.verifiedSessionId}
             status={flow.status}
             errorMessage={flow.errorMessage}
-            onSessionChange={flow.setSessionCode}
-            onTokenChange={flow.setInviteToken}
             onNameChange={flow.setPlayerName}
-            onVerify={() => void flow.handleVerifySession()}
             onJoin={() => void flow.handleJoinSession()}
             onClose={() => navigate("/", { replace: true })}
           />

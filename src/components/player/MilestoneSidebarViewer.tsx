@@ -257,7 +257,10 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
                   rel="noopener noreferrer"
                   data-testid="milestone-resource-link"
                 >
-                  <span className="sidebar-resource-row__icon" aria-hidden="true">
+                  <span
+                    className="sidebar-resource-row__icon"
+                    aria-hidden="true"
+                  >
                     {typeIcon(resource.type)}
                   </span>
                   <span className="sidebar-resource-row__title">

@@ -349,7 +349,9 @@ export const useGmPlayerDetailPage = () => {
         playerId,
         milestoneId,
       );
-      const match = attachments.find((mr) => mr.libraryResourceId === resourceId);
+      const match = attachments.find((mr) =>
+        mr.libraryResourceId === resourceId
+      );
       if (match) await adapter.detachMilestoneResource(match.id);
       refreshResources();
     },
@@ -705,7 +707,14 @@ export const useGmPlayerDetailPage = () => {
     if (sessionError && !sessionLoading && !sessionMeta.error) {
       navigate(`/gamemaker/${homeSid}`, { replace: true });
     }
-  }, [homeSid, navigate, sessionError, sessionLoading, sessionMeta.error, sessionMissing]);
+  }, [
+    homeSid,
+    navigate,
+    sessionError,
+    sessionLoading,
+    sessionMeta.error,
+    sessionMissing,
+  ]);
 
   const playerName = gmProgress.selectedPlayer?.name || session?.name ||
     "Player";
