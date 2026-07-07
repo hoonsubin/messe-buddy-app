@@ -1,0 +1,49 @@
+import type {
+  Milestone,
+  Mission,
+  Player,
+  PlayerProgress,
+  ProgressEvent,
+} from "../types/index.ts";
+
+export interface UseProgressPlayerResult {
+  readonly mode: "player";
+  readonly playerProgress: PlayerProgress | null;
+  readonly progressEvents: ReadonlyArray<ProgressEvent>;
+  readonly loading: boolean;
+  readonly error: Error | null;
+  readonly refresh: () => void;
+  readonly markPending: (missionId: string) => Promise<void>;
+  readonly markSelfComplete: (missionId: string) => Promise<void>;
+  readonly markAutoApproved: (
+    missionId: string,
+    patch?: Partial<
+      Pick<ProgressEvent, "formResponse" | "validatedBy" | "validatedAt">
+    >,
+  ) => Promise<void>;
+  readonly watchMission: (
+    missionId: string,
+    onUpdate: (event: ProgressEvent) => void,
+  ) => () => void;
+}
+
+export interface UseProgressGamemakerResult {
+  readonly mode: "gamemaker";
+  readonly players: ReadonlyArray<Player>;
+  readonly selectedPlayerId: string;
+  readonly selectedPlayer: Player | null;
+  readonly selectedPlayerProgress: PlayerProgress | null;
+  readonly selectedPlayerEvents: ReadonlyArray<ProgressEvent>;
+  readonly pendingEvents: ReadonlyArray<ProgressEvent>;
+  readonly loading: boolean;
+  readonly error: Error | null;
+  readonly refresh: () => void;
+  readonly handlePlayerSelect: (playerId: string) => void;
+  readonly handleApprove: (
+    playerId: string,
+    missionId: string,
+  ) => Promise<void>;
+  readonly handleReject: (playerId: string, missionId: string) => Promise<void>;
+}
+
+export type { Milestone, Mission };

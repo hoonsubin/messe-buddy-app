@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   MdAdd,
   MdCloseFullscreen,
@@ -10,7 +10,8 @@ import {
   MdZoomIn,
   MdZoomOut,
 } from "react-icons/md";
-import type { Milestone } from "../../types/index.ts";
+import type { Milestone, MilestoneProgress } from "../../types/index.ts";
+import { MILESTONE_STATUS } from "../../types/index.ts";
 import MapViewport, { type MapViewportHandle } from "../shared/MapViewport.tsx";
 import MilestoneNode from "../shared/MilestoneNode.tsx";
 
@@ -27,6 +28,8 @@ const NODE_SCALE_STEP = 0.05;
 interface MilestoneMapEditorProps {
   readonly milestones: ReadonlyArray<Milestone>;
   readonly missionCounts?: Readonly<Record<string, number>>;
+  /** Live player progress for map node fill (GM customize / analytics). */
+  readonly milestoneProgress?: ReadonlyArray<MilestoneProgress>;
   readonly bgImageUrl: string;
   /** From Session.mapNodeScale — shared source of truth with the player map view. */
   readonly mapNodeScale: number;
@@ -91,6 +94,7 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
     bgImageUrl,
     milestones,
     missionCounts = {},
+    milestoneProgress = [],
     onNodeDrop,
     onAddMilestoneAt,
     onDelete,
@@ -98,6 +102,11 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
     onUploadBackground,
     onResetToGrid,
   } = props;
+
+  const progressByMilestoneId = useMemo(
+    () => new Map(milestoneProgress.map((mp) => [mp.milestoneId, mp])),
+    [milestoneProgress],
+  );
 
   // ── Viewport zoom ref ──────────────────────────────────────────────────────
   const viewportRef = useRef<MapViewportHandle>(null);
@@ -459,6 +468,7 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
                 ? { left: dragLeftPct, top: dragTopPct }
                 : { left: ms.xPercent, top: ms.yPercent };
 
+              const mp = progressByMilestoneId.get(ms.id);
               return (
                 <MilestoneNode
                   key={ms.id}
@@ -466,8 +476,8 @@ const MilestoneMapEditor = (props: MilestoneMapEditorProps) => {
                   label={ms.name}
                   xPercent={pos.left}
                   yPercent={pos.top}
-                  progressPercent={0}
-                  status="upcoming"
+                  progressPercent={mp?.percentComplete ?? 0}
+                  status={mp?.status ?? MILESTONE_STATUS.UPCOMING}
                   missionCount={missionCounts[ms.id] ?? 0}
                   className={[
                     isDragging ? "milestone-node--dragging" : "",

@@ -1,14 +1,40 @@
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { readActiveUid } from "../hooks/useIdentity.ts";
 import { useLandingFlow } from "../hooks/useLandingFlow.ts";
-import Toast from "../components/shared/Toast.tsx";
-import GameMakerForm from "./landing/GameMakerForm.tsx";
-import EmployeeForm from "./landing/EmployeeForm.tsx";
-import LandingShell from "./landing/LandingShell.tsx";
-import ProfileList from "./landing/ProfileList.tsx";
+import { USER_ROLE } from "../types/index.ts";
+import type { CachedIdentity } from "../types/index.ts";
+import GameMakerForm from "../components/landing/GameMakerForm.tsx";
+import EmployeeForm from "../components/landing/EmployeeForm.tsx";
+import LandingShell from "../components/landing/LandingShell.tsx";
+import ProfileList from "../components/landing/ProfileList.tsx";
+
+const readProfiles = (): ReadonlyArray<CachedIdentity> => {
+  try {
+    const raw = localStorage.getItem("mb_identity");
+    return raw ? (JSON.parse(raw) as CachedIdentity[]) : [];
+  } catch {
+    return [];
+  }
+};
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { sessionId: routeSessionId } = useParams<{ sessionId: string }>();
   const flow = useLandingFlow();
+  const isJoinRoute = Boolean(routeSessionId);
+
+  if (!isJoinRoute) {
+    const uid = readActiveUid();
+    if (uid) {
+      const match = readProfiles().find((p) => p.uid === uid);
+      if (match) {
+        const dest = match.role === USER_ROLE.PLAYER
+          ? `/session/${match.sessionId}`
+          : `/gamemaker/${match.sessionId}`;
+        return <Navigate to={dest} replace />;
+      }
+    }
+  }
 
   if (flow.isJoinRoute) {
     return (
@@ -21,22 +47,15 @@ const LandingPage = () => {
             Join your onboarding
           </p>
           <EmployeeForm
-            step={flow.employeeStep}
-            sessionCode={flow.sessionCode}
-            inviteToken={flow.inviteToken}
+            view={flow.joinView}
             playerName={flow.playerName}
-            verifiedSessionId={flow.verifiedSessionId}
             status={flow.status}
             errorMessage={flow.errorMessage}
-            onSessionChange={flow.setSessionCode}
-            onTokenChange={flow.setInviteToken}
             onNameChange={flow.setPlayerName}
-            onVerify={() => void flow.handleVerifySession()}
             onJoin={() => void flow.handleJoinSession()}
             onClose={() => navigate("/", { replace: true })}
           />
         </div>
-        <Toast message={flow.toast} />
       </LandingShell>
     );
   }
@@ -67,8 +86,6 @@ const LandingPage = () => {
           />
         )}
       </div>
-
-      <Toast message={flow.toast} />
     </LandingShell>
   );
 };

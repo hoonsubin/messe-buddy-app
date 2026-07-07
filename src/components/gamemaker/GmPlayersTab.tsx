@@ -1,5 +1,5 @@
 import { MdAdd, MdChevronRight } from "react-icons/md";
-import type { GmPlayerRow } from "../../hooks/useProgress/gmPlayers.ts";
+import type { GmPlayerRow } from "../../store/queryFetchers.ts";
 
 const statusOf = (p: GmPlayerRow): { label: string; className: string } => {
   if (!p.joined) {
@@ -143,7 +143,7 @@ const GmPlayersTab = ({
           </button>
         </div>
       )
-      : loading && players.length === 0
+      : loading
       ? <p className="gm-home__loading">Loading players…</p>
       : players.length === 0
       ? (

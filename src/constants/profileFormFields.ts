@@ -44,9 +44,8 @@ export const PROFILE_FORM_FIELDS: ReadonlyArray<FieldSchema> = [
   {
     id: "startDate",
     label: "Start Date",
-    type: "text",
+    type: "date",
     required: true,
-    placeholder: "e.g. 2026-06-16",
   },
   {
     id: "location",

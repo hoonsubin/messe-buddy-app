@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { USER_ROLE } from "../types/index.ts";
 import { useIdentity } from "../hooks/useIdentity.ts";
-import { useValidationConfirm } from "../hooks/useValidationConfirm.ts";
+import { useValidationPage } from "../hooks/pages/useValidationPage.ts";
 import FetchErrorPanel from "../components/shared/FetchErrorPanel.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
 
@@ -15,7 +15,7 @@ const ValidationPage = () => {
 
   const { profiles } = useIdentity();
 
-  const validation = useValidationConfirm(sid, token, undefined);
+  const validation = useValidationPage(sid, token);
 
   const identity = useMemo(() => {
     const gmId = validation.gameMakerId;

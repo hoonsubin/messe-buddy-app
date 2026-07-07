@@ -449,6 +449,19 @@
   gap: var(--space-1);
 }
 
+.landing-form-panel__hint,
+.landing-form-panel__status {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: hsl(var(--color-muted-fg));
+}
+
+.landing-form-panel__status {
+  text-align: center;
+  padding-block: var(--space-4);
+}
+
 .landing-form-panel[data-role="gamemaker"] .btn--primary {
   background: hsl(var(--color-role-gamemaker));
   border-color: hsl(var(--color-role-gamemaker));

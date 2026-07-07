@@ -36,7 +36,7 @@ const TemplateSelect = (props: TemplateSelectProps) => (
         return (
           <option key={t.name} value={t.name}>
             {t.name} · {t.milestones.length} milestones · {missionCount}{" "}
-            missions
+            mission{missionCount === 1 ? "" : "s"}
           </option>
         );
       })}

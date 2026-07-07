@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { CachedIdentity, UserRole } from "../types/index.ts";
-import { useIdentity } from "./useIdentity.ts";
+import { readActiveUid, useIdentity } from "./useIdentity.ts";
+import { resolveActiveProfile } from "./resolveActiveProfile.ts";
 
 /** Resolves the stored profile for a route session (and optional role). */
 export const useActiveProfile = (
@@ -11,11 +12,6 @@ export const useActiveProfile = (
 
   return useMemo(() => {
     if (!sessionId) return null;
-    if (role !== undefined) {
-      return profiles.find(
-        (p) => p.sessionId === sessionId && p.role === role,
-      ) ?? null;
-    }
-    return profiles.find((p) => p.sessionId === sessionId) ?? null;
+    return resolveActiveProfile(profiles, sessionId, role, readActiveUid());
   }, [profiles, sessionId, role]);
 };

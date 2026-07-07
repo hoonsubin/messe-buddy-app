@@ -9,6 +9,7 @@ import TagBadge from "../shared/TagBadge.tsx";
 
 interface CurrentMissionsListProps {
   readonly missions: ReadonlyArray<Mission>;
+  readonly journeyMissionCount: number;
   readonly progressEvents: ReadonlyArray<ProgressEvent>;
   readonly onMissionClick: (id: string) => void;
   readonly onMarkComplete: (id: string) => void;
@@ -34,6 +35,7 @@ const CurrentMissionsList = (props: CurrentMissionsListProps) => {
   );
 
   if (props.missions.length === 0) {
+    const journeyHasMissions = props.journeyMissionCount > 0;
     return (
       <section
         data-testid="current-missions-list"
@@ -42,7 +44,9 @@ const CurrentMissionsList = (props: CurrentMissionsListProps) => {
         <h2 className="section-label">Current Missions</h2>
         <div className="card current-missions__empty-card">
           <p className="current-missions__empty-text">
-            You're all caught up! No missions right now.
+            {journeyHasMissions
+              ? "You're all caught up! Explore your milestones on the map above."
+              : "No missions right now."}
           </p>
         </div>
       </section>

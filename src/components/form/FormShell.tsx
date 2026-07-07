@@ -20,6 +20,7 @@ const FormShell = (props: FormShellProps) => (
   <form
     className="form-shell"
     data-testid="form-shell"
+    noValidate
     onSubmit={(e) => {
       e.preventDefault();
       props.onSubmit();

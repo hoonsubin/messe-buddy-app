@@ -36,6 +36,18 @@ const templates = new Map<string, TemplateExport>();
 type ProgressCallback = (event: ProgressEvent) => void;
 const subscriptions = new Map<string, Set<ProgressCallback>>();
 
+type SessionPlayerCallback = (player: Player) => void;
+const sessionPlayerSubscriptions = new Map<
+  string,
+  Set<SessionPlayerCallback>
+>();
+
+type SessionProgressCallback = (event: ProgressEvent) => void;
+const sessionProgressSubscriptions = new Map<
+  string,
+  Set<SessionProgressCallback>
+>();
+
 const makeId = (): string =>
   Math.random().toString(36).slice(2, 17).padEnd(15, "0").slice(0, 15);
 
@@ -48,6 +60,21 @@ const makeRecord = (): PBRecord => {
 
 const notify = (key: string, event: ProgressEvent): void => {
   const subs = subscriptions.get(key);
+  if (!subs) return;
+  for (const cb of subs) cb(event);
+};
+
+const notifySessionPlayer = (sessionId: string, player: Player): void => {
+  const subs = sessionPlayerSubscriptions.get(sessionId);
+  if (!subs) return;
+  for (const cb of subs) cb(player);
+};
+
+const notifySessionProgress = (
+  sessionId: string,
+  event: ProgressEvent,
+): void => {
+  const subs = sessionProgressSubscriptions.get(sessionId);
   if (!subs) return;
   for (const cb of subs) cb(event);
 };
@@ -72,6 +99,7 @@ const simulateGmApproval = (key: string, gmUid?: string): void => {
     };
     progressEvents.set(key, approved);
     notify(key, approved);
+    if (approved.sessionId) notifySessionProgress(approved.sessionId, approved);
   }, 4000);
 };
 
@@ -242,6 +270,7 @@ const invitePlayer = async (
     languages: [],
   };
   players.set(player.id, player);
+  notifySessionPlayer(sessionId, player);
   return player;
 };
 
@@ -254,6 +283,7 @@ const updatePlayer = async (
   if (!existing) throw new Error(`Player not found: ${playerId}`);
   const updated: Player = { ...existing, ...patch, updated: now() };
   players.set(playerId, updated);
+  notifySessionPlayer(updated.sessionId, updated);
   return updated;
 };
 
@@ -388,6 +418,7 @@ const upsertProgressEvent = async (
   const event: ProgressEvent = { ...base, ...patch, updated: now() };
   progressEvents.set(key, event);
   notify(key, event);
+  if (sessionId) notifySessionProgress(sessionId, event);
   if (event.status === "pendingApproval") simulateGmApproval(key);
   return event;
 };
@@ -409,6 +440,32 @@ const subscribeProgressEvent = (
   if (!subs) {
     subs = new Set();
     subscriptions.set(key, subs);
+  }
+  subs.add(callback);
+  return () => subs?.delete(callback);
+};
+
+const subscribeSessionPlayers = (
+  sessionId: string,
+  callback: (player: Player) => void,
+): () => void => {
+  let subs = sessionPlayerSubscriptions.get(sessionId);
+  if (!subs) {
+    subs = new Set();
+    sessionPlayerSubscriptions.set(sessionId, subs);
+  }
+  subs.add(callback);
+  return () => subs?.delete(callback);
+};
+
+const subscribeSessionProgressEvents = (
+  sessionId: string,
+  callback: (event: ProgressEvent) => void,
+): () => void => {
+  let subs = sessionProgressSubscriptions.get(sessionId);
+  if (!subs) {
+    subs = new Set();
+    sessionProgressSubscriptions.set(sessionId, subs);
   }
   subs.add(callback);
   return () => subs?.delete(callback);
@@ -565,6 +622,8 @@ export const mockAdapter: AppAdapter = {
   upsertProgressEvent,
   listProgressEvents,
   subscribeProgressEvent,
+  subscribeSessionPlayers,
+  subscribeSessionProgressEvents,
   getBuddyProfile,
   listBuddyProfiles,
   upsertBuddyProfile,

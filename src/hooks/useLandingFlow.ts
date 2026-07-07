@@ -6,15 +6,18 @@ import {
   createGameMakerSession,
   joinSession,
 } from "../use-cases/joinSession.ts";
+import { claimPlayer, isClaimedPlayer } from "../use-cases/claimPlayer.ts";
 import type { CachedIdentity } from "../types/index.ts";
 import { USER_ROLE } from "../types/index.ts";
 import { DEMO_PROFILES } from "../constants/demoInstance.ts";
+import { parseInviteTokenFromSearch } from "../utils/inviteUrl.ts";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type LandingStatus = "idle" | "loading" | "error";
 
-export type EmployeeStep = "code" | "name";
+/** Join route UI — invite/QR links only; no manual token entry. */
+export type JoinView = "loading" | "missing_invite" | "claim_name";
 
 export interface UseLandingFlowResult {
   readonly profiles: ReadonlyArray<CachedIdentity>;
@@ -22,23 +25,16 @@ export interface UseLandingFlowResult {
   readonly orphanedUids: ReadonlySet<string>;
   readonly workspacePanelOpen: boolean;
   readonly isJoinRoute: boolean;
-  readonly employeeStep: EmployeeStep;
-  readonly verifiedSessionId: string;
-  readonly sessionCode: string;
-  readonly inviteToken: string;
+  readonly joinView: JoinView;
   readonly playerName: string;
   readonly sessionName: string;
   readonly gmName: string;
   readonly status: LandingStatus;
   readonly errorMessage: string;
-  readonly toast: string | null;
   readonly setWorkspacePanelOpen: (open: boolean) => void;
-  readonly setSessionCode: (v: string) => void;
-  readonly setInviteToken: (v: string) => void;
   readonly setPlayerName: (v: string) => void;
   readonly setSessionName: (v: string) => void;
   readonly setGmName: (v: string) => void;
-  readonly handleVerifySession: () => Promise<void>;
   readonly handleJoinSession: () => Promise<void>;
   readonly handleCreateGamemaker: () => Promise<void>;
   readonly handleResume: (identity: CachedIdentity) => void;
@@ -46,7 +42,17 @@ export interface UseLandingFlowResult {
   readonly resetError: () => void;
 }
 
-// ── Hook ─────────────────────────────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+/** GM-assigned display name from invite lookup (skip internal placeholders). */
+const inviteDisplayName = (name: string | undefined): string | null => {
+  const trimmed = name?.trim();
+  if (!trimmed || trimmed.startsWith("pending_")) return null;
+  return trimmed;
+};
+
+const inviteNotFoundMessage =
+  "Invite not found. Check the link from your Game Master and try again.";
 
 export const useLandingFlow = (): UseLandingFlowResult => {
   const navigate = useNavigate();
@@ -55,7 +61,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
   const [searchParams] = useSearchParams();
 
   const { sessionId: routeSessionId } = useParams<{ sessionId: string }>();
-  const inviteTokenFromUrl = searchParams.get("t") ?? "";
+  const inviteTokenFromUrl = parseInviteTokenFromSearch(searchParams);
   const isJoinRoute = Boolean(routeSessionId);
 
   // ── Seed demo profiles once on mount ──────────────────────────────────────
@@ -102,28 +108,17 @@ export const useLandingFlow = (): UseLandingFlowResult => {
 
   // ── Form state ────────────────────────────────────────────────────────────
   const [workspacePanelOpen, setWorkspacePanelOpenState] = useState(false);
-  const [employeeStep, setEmployeeStep] = useState<EmployeeStep>("code");
-  const [verifiedSessionId, setVerifiedSessionId] = useState("");
+  const [joinView, setJoinView] = useState<JoinView>(() => {
+    if (!routeSessionId) return "claim_name";
+    if (!inviteTokenFromUrl) return "missing_invite";
+    return "loading";
+  });
   const [verifiedInviteToken, setVerifiedInviteToken] = useState("");
-  const [sessionCode, setSessionCode] = useState(routeSessionId ?? "");
-  const [inviteToken, setInviteToken] = useState(inviteTokenFromUrl);
   const [playerName, setPlayerName] = useState("");
   const [sessionName, setSessionName] = useState("");
   const [gmName, setGmName] = useState("");
   const [status, setStatus] = useState<LandingStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
-
-  // ── Toast (from sessionStorage on mount — set by cockpit pages) ──────────
-  const [toast, setToast] = useState<string | null>(null);
-  useEffect(() => {
-    const msg = sessionStorage.getItem("mb_landing_toast");
-    if (!msg) return;
-    sessionStorage.removeItem("mb_landing_toast");
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync sessionStorage once on mount
-    setToast(msg);
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, []);
 
   const resetError = useCallback(() => {
     setErrorMessage("");
@@ -139,71 +134,63 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     }
   }, [resetError]);
 
-  // ── Invite link: verify token on /join/:sessionId?t= ─────────────────────
+  // ── Invite link / QR: auto-verify token on /join/:sessionId?t= ───────────
   useEffect(() => {
     if (!isJoinRoute || !routeSessionId || !inviteTokenFromUrl) return;
+
     let cancelled = false;
-    const verifyFromLink = async () => {
+    const processInvite = async () => {
+      setJoinView("loading");
       setStatus("loading");
       setErrorMessage("");
       try {
         const player = await adapter.getPlayerByInviteToken(inviteTokenFromUrl);
         if (cancelled) return;
         if (!player || player.sessionId !== routeSessionId) {
-          setEmployeeStep("code");
-          setSessionCode(routeSessionId);
-          setInviteToken(inviteTokenFromUrl);
+          setJoinView("missing_invite");
           setStatus("error");
-          setErrorMessage(
-            "Invite not found. Check the link from your Game Master and try again.",
-          );
+          setErrorMessage(inviteNotFoundMessage);
           return;
         }
-        setVerifiedSessionId(routeSessionId);
+
         setVerifiedInviteToken(inviteTokenFromUrl);
-        setSessionCode(routeSessionId);
-        setInviteToken(inviteTokenFromUrl);
-        setEmployeeStep("name");
+
+        if (isClaimedPlayer(player)) {
+          const { identity } = await claimPlayer(
+            inviteTokenFromUrl,
+            undefined,
+            adapter,
+          );
+          if (cancelled) return;
+          setIdentity(identity);
+          writeActiveUid(identity.uid);
+          navigate(`/session/${identity.sessionId}`, { replace: true });
+          return;
+        }
+
+        const displayName = inviteDisplayName(player.name);
+        if (displayName) setPlayerName(displayName);
+        setJoinView("claim_name");
         setStatus("idle");
       } catch {
         if (cancelled) return;
-        setEmployeeStep("code");
-        setSessionCode(routeSessionId);
-        setInviteToken(inviteTokenFromUrl);
+        setJoinView("missing_invite");
         setStatus("error");
-        setErrorMessage(
-          "Invite not found. Check the link from your Game Master and try again.",
-        );
+        setErrorMessage(inviteNotFoundMessage);
       }
     };
-    void verifyFromLink();
+    void processInvite();
     return () => {
       cancelled = true;
     };
-  }, [adapter, isJoinRoute, routeSessionId, inviteTokenFromUrl]);
-
-  const handleVerifySession = useCallback(async () => {
-    const sid = (sessionCode.trim() || routeSessionId || "").trim();
-    const token = inviteToken.trim();
-    if (!sid || !token) return;
-    setStatus("loading");
-    setErrorMessage("");
-    try {
-      const player = await adapter.getPlayerByInviteToken(token);
-      if (!player || player.sessionId !== sid) {
-        throw new Error("Invite not found for this session");
-      }
-      setVerifiedSessionId(sid);
-      setVerifiedInviteToken(token);
-      setEmployeeStep("name");
-      setStatus("idle");
-    } catch {
-      setStatus("error");
-      setErrorMessage(
-        "Invite not found. Check the link from your Game Master and try again.",
-      );
-    }
-  }, [adapter, sessionCode, inviteToken, routeSessionId]);
+  }, [
+    adapter,
+    isJoinRoute,
+    routeSessionId,
+    inviteTokenFromUrl,
+    setIdentity,
+    navigate,
+  ]);
 
   const handleJoinSession = useCallback(async () => {
     const name = playerName.trim();
@@ -224,7 +211,7 @@ export const useLandingFlow = (): UseLandingFlowResult => {
       const msg = e instanceof Error ? e.message : "";
       setErrorMessage(
         msg === "Invite not found"
-          ? "Invite not found. Check the link from your Game Master and try again."
+          ? inviteNotFoundMessage
           : "Could not join session. Please try again.",
       );
     }
@@ -274,23 +261,16 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     orphanedUids,
     workspacePanelOpen,
     isJoinRoute,
-    employeeStep,
-    verifiedSessionId,
-    sessionCode,
-    inviteToken,
+    joinView,
     playerName,
     sessionName,
     gmName,
     status,
     errorMessage,
-    toast,
     setWorkspacePanelOpen,
-    setSessionCode,
-    setInviteToken,
     setPlayerName,
     setSessionName,
     setGmName,
-    handleVerifySession,
     handleJoinSession,
     handleCreateGamemaker,
     handleResume,

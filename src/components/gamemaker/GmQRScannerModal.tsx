@@ -1,20 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdClose } from "react-icons/md";
-import { useQRScanContext } from "../../hooks/useQRScanContext.ts";
-import CameraFeed from "../qr/CameraFeed.tsx";
-import ValidationResult from "../qr/ValidationResult.tsx";
+import { useQrScan } from "../../hooks/useQrScan.ts";
 import {
   parseValidationToken,
   validationPathFromToken,
 } from "../../utils/qrUrl.ts";
-import Button from "../shared/Button.tsx";
-import { BUTTON_VARIANT } from "../shared/types.ts";
 import IconButton from "../shared/IconButton.tsx";
 import { Modal, ModalDescription, ModalTitle } from "../shared/Modal.tsx";
 import { MODAL_VARIANT } from "../shared/types.ts";
-
-type ScanState = "idle" | "scanning" | "success" | "invalid" | "error";
+import QrScanPanel, { type QrScanState } from "../qr/QrScanPanel.tsx";
 
 interface GmQRScannerModalProps {
   readonly isOpen: boolean;
@@ -25,12 +20,11 @@ interface GmQRScannerModalProps {
 
 const GmQRScannerModal = (props: GmQRScannerModalProps) => {
   const navigate = useNavigate();
-  const scanContext = useQRScanContext({
-    sessionId: props.sessionId,
-    playerId: props.playerId,
-  });
+  const scanContext = useQrScan(props.sessionId, props.playerId);
   const [cameraReady, setCameraReady] = useState(false);
-  const [validationState, setValidationState] = useState<ScanState>("scanning");
+  const [validationState, setValidationState] = useState<QrScanState>(
+    "scanning",
+  );
   const [errorMessage, setErrorMessage] = useState("");
   const cameraActive = props.isOpen && cameraReady;
 
@@ -62,19 +56,20 @@ const GmQRScannerModal = (props: GmQRScannerModalProps) => {
     setCameraReady(false);
   }, []);
 
-  const handleSimulate = useCallback(async () => {
-    try {
-      const url = await scanContext.buildSimulateScanUrl();
-      if (!url) {
+  const handleSimulate = useCallback(() => {
+    void scanContext.buildSimulateScanUrl()
+      .then((url) => {
+        if (!url) {
+          setValidationState("error");
+          setErrorMessage("No QR mission available to simulate.");
+          return;
+        }
+        handleDecode(url);
+      })
+      .catch(() => {
         setValidationState("error");
-        setErrorMessage("No QR mission available to simulate.");
-        return;
-      }
-      handleDecode(url);
-    } catch {
-      setValidationState("error");
-      setErrorMessage("Simulate scan failed. Please try again.");
-    }
+        setErrorMessage("Simulate scan failed. Please try again.");
+      });
   }, [handleDecode, scanContext]);
 
   const handleCancel = useCallback(() => {
@@ -118,46 +113,22 @@ const GmQRScannerModal = (props: GmQRScannerModalProps) => {
         Point the camera at a player&apos;s mission QR code.
       </ModalDescription>
 
-      <div className="qr-scanner-modal__viewport">
-        <CameraFeed
-          isActive={cameraActive}
-          onDecode={handleDecode}
-          onError={handleCameraError}
-        />
-      </div>
-
-      <ValidationResult
-        state={validationState}
-        errorMessage={errorMessage || undefined}
+      <QrScanPanel
+        cameraActive={cameraActive}
+        validationState={validationState}
+        errorMessage={errorMessage}
+        onDecode={handleDecode}
+        onCameraError={handleCameraError}
+        onStartCamera={() => {
+          setValidationState("scanning");
+          setErrorMessage("");
+          setCameraReady(true);
+        }}
+        onSimulateScan={handleSimulate}
+        showSimulate
+        showCameraControls
+        onCancel={handleCancel}
       />
-
-      <div className="qr-scanner-modal__actions">
-        <div className="qr-scanner-modal__row">
-          {!cameraActive && validationState !== "success" && (
-            <Button
-              variant={BUTTON_VARIANT.PRIMARY}
-              className="qr-scanner-modal__primary"
-              onClick={() => {
-                setValidationState("scanning");
-                setErrorMessage("");
-                setCameraReady(true);
-              }}
-            >
-              {validationState === "error" ? "Retry camera" : "Start camera"}
-            </Button>
-          )}
-          <Button variant={BUTTON_VARIANT.GHOST} onClick={handleCancel}>
-            Cancel
-          </Button>
-        </div>
-        <Button
-          variant={BUTTON_VARIANT.SECONDARY}
-          onClick={() => void handleSimulate()}
-          disabled={validationState === "success"}
-        >
-          Simulate Scan
-        </Button>
-      </div>
     </Modal>
   );
 };

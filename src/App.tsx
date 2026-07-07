@@ -1,66 +1,101 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AdapterContextProvider } from "./adapters/AdapterContext.tsx";
 import { DemoAwareAdapterProvider } from "./adapters/DemoAwareAdapterProvider.tsx";
+import { QueryProvider } from "./store/QueryProvider.tsx";
 import LandingPage from "./pages/LandingPage.tsx";
-import RootRedirect from "./pages/RootRedirect.tsx";
 import PlayerCockpitPage from "./pages/PlayerCockpitPage.tsx";
-import GameMakerHomePage from "./pages/GameMakerHomePage.tsx";
-import PlayerDetailPage from "./pages/PlayerDetailPage.tsx";
-import FormPage from "./pages/FormPage.tsx";
-import QRScannerView from "./pages/QRScannerView.tsx";
+import GmHomePage from "./pages/GmHomePage.tsx";
+import GmPlayerDetailPage from "./pages/GmPlayerDetailPage.tsx";
+import PlayerFormPage from "./pages/PlayerFormPage.tsx";
 import ValidationPage from "./pages/ValidationPage.tsx";
-import RequireRole from "./components/layout/RequireRole.tsx";
+import GmWorkspaceLayout from "./components/layout/GmWorkspaceLayout.tsx";
+import PlayerSessionLayout from "./components/layout/PlayerSessionLayout.tsx";
 import NotFoundPage from "./pages/NotFoundPage.tsx";
-import { USER_ROLE } from "./types/index.ts";
 
 const router = createBrowserRouter([
-  { path: "/", element: <RootRedirect /> },
+  { path: "/", element: <LandingPage /> },
+  { path: "/join/:sessionId", element: <LandingPage /> },
   {
     path: "/session/:sessionId",
     element: (
-      <RequireRole role={USER_ROLE.PLAYER}>
-        <DemoAwareAdapterProvider>
-          <PlayerCockpitPage />
-        </DemoAwareAdapterProvider>
-      </RequireRole>
+      <PlayerSessionLayout>
+        <PlayerCockpitPage />
+      </PlayerSessionLayout>
+    ),
+  },
+  {
+    path: "/session/:sessionId/assistant",
+    element: (
+      <PlayerSessionLayout>
+        <PlayerCockpitPage />
+      </PlayerSessionLayout>
+    ),
+  },
+  {
+    path: "/form/:sessionId/:missionId",
+    element: (
+      <PlayerSessionLayout>
+        <PlayerFormPage />
+      </PlayerSessionLayout>
     ),
   },
   {
     path: "/gamemaker/:sessionId",
     element: (
-      <RequireRole role={USER_ROLE.GAMEMAKER}>
-        <DemoAwareAdapterProvider>
-          <GameMakerHomePage />
-        </DemoAwareAdapterProvider>
-      </RequireRole>
+      <GmWorkspaceLayout>
+        <GmHomePage />
+      </GmWorkspaceLayout>
+    ),
+  },
+  {
+    path: "/gamemaker/:sessionId/library",
+    element: (
+      <GmWorkspaceLayout>
+        <GmHomePage />
+      </GmWorkspaceLayout>
     ),
   },
   {
     path: "/gamemaker/:sessionId/player/:playerId",
     element: (
-      <RequireRole role={USER_ROLE.GAMEMAKER}>
-        <DemoAwareAdapterProvider>
-          <PlayerDetailPage />
-        </DemoAwareAdapterProvider>
-      </RequireRole>
+      <GmWorkspaceLayout>
+        <GmPlayerDetailPage />
+      </GmWorkspaceLayout>
     ),
   },
   {
-    path: "/gamemaker/:sessionId/scan",
+    path: "/gamemaker/:sessionId/player/:playerId/customize",
     element: (
-      <RequireRole role={USER_ROLE.GAMEMAKER}>
-        <DemoAwareAdapterProvider>
-          <QRScannerView />
-        </DemoAwareAdapterProvider>
-      </RequireRole>
+      <GmWorkspaceLayout>
+        <GmPlayerDetailPage />
+      </GmWorkspaceLayout>
     ),
   },
   {
-    // Not wrapped in RequireRole: the sessionId here is the *player's* session,
-    // while a GM's cached identity is scoped to their own home session — the
-    // two never match, so RequireRole's exact-sessionId check always fails
-    // for this route. ValidationPage does its own authorization instead, by
-    // matching the player's gameMakerId against any locally stored GM identity.
+    path: "/gamemaker/:sessionId/player/:playerId/buddy",
+    element: (
+      <GmWorkspaceLayout>
+        <GmPlayerDetailPage />
+      </GmWorkspaceLayout>
+    ),
+  },
+  {
+    path: "/gamemaker/:sessionId/player/:playerId/preboarding",
+    element: (
+      <GmWorkspaceLayout>
+        <GmPlayerDetailPage />
+      </GmWorkspaceLayout>
+    ),
+  },
+  {
+    path: "/gamemaker/:sessionId/player/:playerId/scan",
+    element: (
+      <GmWorkspaceLayout>
+        <GmPlayerDetailPage />
+      </GmWorkspaceLayout>
+    ),
+  },
+  {
     path: "/validate/:sessionId",
     element: (
       <DemoAwareAdapterProvider>
@@ -68,24 +103,15 @@ const router = createBrowserRouter([
       </DemoAwareAdapterProvider>
     ),
   },
-  {
-    path: "/form/:sessionId/:missionId",
-    element: (
-      <RequireRole role={USER_ROLE.PLAYER}>
-        <DemoAwareAdapterProvider>
-          <FormPage />
-        </DemoAwareAdapterProvider>
-      </RequireRole>
-    ),
-  },
-  { path: "/join/:sessionId", element: <LandingPage /> },
   { path: "*", element: <NotFoundPage /> },
 ]);
 
 const App = () => {
   return (
     <AdapterContextProvider>
-      <RouterProvider router={router} />
+      <QueryProvider>
+        <RouterProvider router={router} />
+      </QueryProvider>
     </AdapterContextProvider>
   );
 };

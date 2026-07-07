@@ -5,19 +5,21 @@ import {
   MdClose,
   MdEdit,
 } from "react-icons/md";
-import type { PBRecord, Resource } from "../../types/index.ts";
+import type { LibraryResource, PBRecord, Resource } from "../../types/index.ts";
 import type { ResourceType } from "../../types/index.ts";
 import { RESOURCE_TYPE } from "../../types/index.ts";
 import { Modal } from "../shared/Modal.tsx";
 
 interface ResourcesEditorProps {
   readonly resources: ReadonlyArray<Resource>;
+  readonly libraryResources?: ReadonlyArray<LibraryResource>;
   readonly onAdd: (data: {
     readonly title: string;
     readonly type: ResourceType;
     readonly url: string;
     readonly isVisibleToPlayer: boolean;
   }) => void;
+  readonly onAttachFromLibrary?: (libraryResourceId: string) => void;
   readonly onUpdate: (
     resourceId: string,
     patch: Partial<Omit<Resource, keyof PBRecord>>,
@@ -45,6 +47,11 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
   // null = closed; "new" = adding; a Resource = editing that one.
   const [editing, setEditing] = useState<Resource | "new" | null>(null);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
+  const [attachOpen, setAttachOpen] = useState(false);
+
+  const attachableLibrary = (props.libraryResources ?? []).filter(
+    (lib) => !props.resources.some((r) => r.id === lib.id),
+  );
 
   const openAdd = () => {
     setDraft(emptyDraft);
@@ -141,9 +148,71 @@ const ResourcesEditor = (props: ResourcesEditorProps) => {
         ))}
       </ul>
 
-      <button type="button" className="btn btn--secondary" onClick={openAdd}>
-        + Add resource
-      </button>
+      <div className="core-flex-row core-gap-2 core-flex-wrap">
+        {props.onAttachFromLibrary && attachableLibrary.length > 0 && (
+          <button
+            type="button"
+            className="btn btn--secondary"
+            data-testid="attach-library-resource-btn"
+            onClick={() => setAttachOpen(true)}
+          >
+            Attach from library
+          </button>
+        )}
+        <button type="button" className="btn btn--secondary" onClick={openAdd}>
+          + Add resource
+        </button>
+      </div>
+
+      {attachOpen && props.onAttachFromLibrary && (
+        <Modal
+          open
+          onBackdropClick={() => setAttachOpen(false)}
+          aria-labelledby="attach-library-modal-title"
+          testId="attach-library-modal"
+          panelClassName="card resources-editor__modal"
+        >
+          <h3
+            id="attach-library-modal-title"
+            className="resources-editor__modal-title"
+          >
+            Attach from library
+          </h3>
+          <ul className="resources-editor__list">
+            {attachableLibrary.map((lib) => (
+              <li key={lib.id} className="card resources-editor__item">
+                <button
+                  type="button"
+                  className="resources-editor__edit-btn"
+                  data-testid="library-attach-option"
+                  onClick={() => {
+                    props.onAttachFromLibrary?.(lib.id);
+                    setAttachOpen(false);
+                  }}
+                >
+                  <span className="resources-editor__edit-text">
+                    <span className="resources-editor__edit-title">
+                      {lib.title}
+                    </span>
+                    <span className="resources-editor__edit-type">
+                      {lib.type}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="resources-editor__modal-actions">
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => setAttachOpen(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </Modal>
+      )}
 
       {editing !== null && (
         <Modal

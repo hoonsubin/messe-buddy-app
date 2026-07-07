@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   MdClose,
   MdLocationOn,
@@ -24,6 +24,7 @@ import { MODAL_VARIANT } from "../shared/types.ts";
 import TagBadge from "../shared/TagBadge.tsx";
 import XpBadge from "../shared/XpBadge.tsx";
 import ValidationDisplay from "./ValidationDisplay.tsx";
+import { isProgressValidated } from "../../store/progressEvents.ts";
 
 /** Derive visual badge config from mission type + validation method. */
 const getMethodBadge = (mission: Mission) => {
@@ -59,6 +60,7 @@ interface MissionDetailPopupProps {
   readonly mission: Mission;
   readonly playerId: string;
   readonly sessionId: string;
+  readonly qrSecret: string;
   readonly progressEvent?: ProgressEvent | null;
   readonly markSelfComplete: () => Promise<void>;
   readonly markPending: () => Promise<void>;
@@ -75,8 +77,20 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
   const [showValidation, setShowValidation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isCompleted = props.progressEvent?.status === "completed" ||
-    props.progressEvent?.status === "autoApproved";
+  const isCompleted = props.progressEvent?.status !== undefined &&
+    isProgressValidated(props.progressEvent.status);
+
+  const onValidatedRef = useRef(props.onValidated);
+  useEffect(() => {
+    onValidatedRef.current = props.onValidated;
+  });
+
+  // Close QR / pending-approval wait when progress cache updates (SSE or poll).
+  useEffect(() => {
+    if (isCompleted && showValidation) {
+      onValidatedRef.current();
+    }
+  }, [isCompleted, showValidation]);
 
   // ── Swipe-down to close ──────────────────────────────────────────────────
   const touchStartY = useRef<number | null>(null);
@@ -206,6 +220,7 @@ const MissionDetailPopup = (props: MissionDetailPopupProps) => {
               playerId={props.playerId}
               missionId={mission.id}
               sessionId={props.sessionId}
+              qrSecret={props.qrSecret}
               mission={mission}
               onValidated={props.onValidated}
             />

@@ -1,10 +1,35 @@
 import { useRef, useState } from "react";
-import { MdBolt, MdCheck, MdClose } from "react-icons/md";
-import type { Mission, ProgressEvent } from "../../types/index.ts";
+import {
+  MdAssignment,
+  MdBolt,
+  MdCheck,
+  MdClose,
+  MdDescription,
+  MdEditNote,
+  MdLink,
+  MdOpenInNew,
+  MdVideocam,
+} from "react-icons/md";
+import type { Mission, ProgressEvent, Resource } from "../../types/index.ts";
 
 const SWIPE_THRESHOLD_PX = 60;
 
 type SidebarTab = "missions" | "resources";
+
+const typeIcon = (type: string) => {
+  switch (type) {
+    case "document":
+      return <MdDescription size={18} aria-hidden="true" />;
+    case "guide":
+      return <MdAssignment size={18} aria-hidden="true" />;
+    case "video":
+      return <MdVideocam size={18} aria-hidden="true" />;
+    case "form":
+      return <MdEditNote size={18} aria-hidden="true" />;
+    default:
+      return <MdLink size={18} aria-hidden="true" />;
+  }
+};
 
 interface MilestoneSidebarViewerProps {
   readonly milestoneId: string;
@@ -12,6 +37,7 @@ interface MilestoneSidebarViewerProps {
   readonly xpThreshold: number;
   readonly currentXP: number;
   readonly missions: ReadonlyArray<Mission>;
+  readonly resources: ReadonlyArray<Resource>;
   readonly progressEvents: ReadonlyArray<ProgressEvent>;
   readonly onClose: () => void;
   readonly onMissionClick: (id: string) => void;
@@ -27,7 +53,6 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
     100,
   );
 
-  // Swipe-LEFT-to-close: sidebar is on the left, so swiping left (negative delta) closes it.
   const touchStartX = useRef<number | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -43,7 +68,6 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
 
   return (
     <>
-      {/* Backdrop - tap outside to close */}
       <div
         aria-hidden="true"
         onClick={props.onClose}
@@ -63,7 +87,6 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Header */}
         <div className="sidebar__header">
           <div>
             <p
@@ -88,7 +111,6 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
           </button>
         </div>
 
-        {/* XP progress */}
         <div style={{ padding: "var(--space-3) var(--space-4)" }}>
           <div
             className="progress-bar"
@@ -113,7 +135,6 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
           </div>
         </div>
 
-        {/* Tab switcher */}
         <div className="sidebar-tabs" role="tablist">
           <button
             type="button"
@@ -139,7 +160,6 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
           </button>
         </div>
 
-        {/* Tab body */}
         <div className="sidebar__body">
           {activeTab === "missions" && (
             <>
@@ -215,14 +235,41 @@ const MilestoneSidebarViewer = (props: MilestoneSidebarViewerProps) => {
           )}
 
           {activeTab === "resources" && (
-            <p
-              style={{
-                color: "hsl(var(--color-muted-fg))",
-                fontSize: "var(--text-sm)",
-              }}
-            >
-              Resources for this milestone will appear here in a future sprint.
-            </p>
+            <>
+              {props.resources.length === 0 && (
+                <p
+                  style={{
+                    color: "hsl(var(--color-muted-fg))",
+                    fontSize: "var(--text-sm)",
+                  }}
+                  data-testid="milestone-resources-empty"
+                >
+                  No resources for this milestone yet. Your Game Master can
+                  attach guides from the company library.
+                </p>
+              )}
+              {props.resources.map((resource) => (
+                <a
+                  key={resource.id}
+                  className="sidebar-resource-row"
+                  href={resource.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="milestone-resource-link"
+                >
+                  <span
+                    className="sidebar-resource-row__icon"
+                    aria-hidden="true"
+                  >
+                    {typeIcon(resource.type)}
+                  </span>
+                  <span className="sidebar-resource-row__title">
+                    {resource.title}
+                  </span>
+                  <MdOpenInNew size={14} aria-hidden="true" />
+                </a>
+              ))}
+            </>
           )}
         </div>
       </aside>

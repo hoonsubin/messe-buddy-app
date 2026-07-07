@@ -14,14 +14,23 @@ export const generateInviteToken = (): string => {
     .join("");
 };
 
+/** Read invite token from join URL search params (`?t=` per SPECS, `?token=` legacy). */
+export const parseInviteTokenFromSearch = (
+  searchParams: URLSearchParams,
+): string => {
+  const fromT = searchParams.get("t")?.trim();
+  if (fromT) return fromT;
+  return searchParams.get("token")?.trim() ?? "";
+};
+
 /**
  * Build the full invite URL for a player slot.
  * Resolves against window.location.origin so it works in both dev and prod.
- * Format: `<origin>/join/<sessionId>?token=<token>`
+ * Format: `<origin>/join/<sessionId>?t=<token>`
  */
 export const buildInviteUrl = (sessionId: string, token: string): string => {
   const origin = typeof window !== "undefined"
     ? window.location.origin
     : "http://localhost:5173";
-  return `${origin}/join/${sessionId}?token=${token}`;
+  return `${origin}/join/${sessionId}?t=${encodeURIComponent(token)}`;
 };

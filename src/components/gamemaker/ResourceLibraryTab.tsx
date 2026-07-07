@@ -1,31 +1,41 @@
 import { useCallback, useState } from "react";
 import { MdAdd } from "react-icons/md";
 import type { LibraryResource } from "../../types/index.ts";
-import {
-  type LibraryResourceInput,
-  useLibraryResources,
-} from "../../hooks/useLibraryResources.ts";
+import type {
+  LibraryResourceInput,
+  LibraryResourcePatch,
+} from "../../types/resourceInputs.ts";
 import ConfirmDialog from "../shared/ConfirmDialog.tsx";
 import FetchErrorPanel from "../shared/FetchErrorPanel.tsx";
 import LibraryResourceCard from "./LibraryResourceCard.tsx";
 import LibraryResourceFormModal from "./LibraryResourceFormModal.tsx";
 
 interface ResourceLibraryTabProps {
-  readonly active: boolean;
+  readonly resources: ReadonlyArray<LibraryResource>;
+  readonly tagSuggestions: ReadonlyArray<string>;
+  readonly loading: boolean;
+  readonly error: Error | null;
+  readonly refresh: () => void;
+  readonly createResource: (
+    data: LibraryResourceInput,
+  ) => Promise<LibraryResource>;
+  readonly updateResource: (
+    id: string,
+    patch: LibraryResourcePatch,
+  ) => Promise<LibraryResource>;
+  readonly deleteResource: (id: string) => Promise<void>;
 }
 
-const ResourceLibraryTab = ({ active }: ResourceLibraryTabProps) => {
-  const {
-    resources,
-    tagSuggestions,
-    loading,
-    error,
-    refresh,
-    createResource,
-    updateResource,
-    deleteResource,
-  } = useLibraryResources(active);
-
+const ResourceLibraryTab = ({
+  resources,
+  tagSuggestions,
+  loading,
+  error,
+  refresh,
+  createResource,
+  updateResource,
+  deleteResource,
+}: ResourceLibraryTabProps) => {
   const [formMode, setFormMode] = useState<"create" | "edit" | null>(null);
   const [editing, setEditing] = useState<LibraryResource | null>(null);
   const [saving, setSaving] = useState(false);
@@ -83,18 +93,20 @@ const ResourceLibraryTab = ({ active }: ResourceLibraryTabProps) => {
             Company-wide · shared across all GMs
           </p>
         </div>
-        <button
-          type="button"
-          className="btn btn--primary gm-home__header-btn"
-          data-testid="add-library-resource-btn"
-          onClick={() => {
-            setEditing(null);
-            setFormMode("create");
-          }}
-        >
-          <MdAdd size={18} aria-hidden="true" />
-          Add resource
-        </button>
+        {resources.length > 0 && (
+          <button
+            type="button"
+            className="btn btn--primary gm-home__header-btn"
+            data-testid="add-library-resource-btn"
+            onClick={() => {
+              setEditing(null);
+              setFormMode("create");
+            }}
+          >
+            <MdAdd size={18} aria-hidden="true" />
+            Add resource
+          </button>
+        )}
       </header>
 
       {loading && resources.length === 0

@@ -397,15 +397,65 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
   ): () => void => {
     let unsubscribe: (() => Promise<void>) | null = null;
     let cancelled = false;
+    // Single-field filter — compound playerId+missionId filters can miss PB realtime.
     void pb.collection("progress_events").subscribe(
       "*",
       (e) => {
         const record = e.record as RecordModel;
-        if (record.playerId === playerId && record.missionId === missionId) {
-          callback(marshalProgressEvent(record));
+        if (record.playerId !== playerId || record.missionId !== missionId) {
+          return;
         }
+        callback(marshalProgressEvent(record));
       },
-      { filter: progressKeyFilter(pb, playerId, missionId) },
+      { filter: pb.filter("playerId = {:playerId}", { playerId }) },
+    ).then((unsub) => {
+      if (cancelled) void unsub();
+      else unsubscribe = unsub;
+    });
+    return () => {
+      cancelled = true;
+      if (unsubscribe) void unsubscribe();
+    };
+  };
+
+  const subscribeSessionPlayers = (
+    sessionId: string,
+    callback: (player: Player) => void,
+  ): () => void => {
+    let unsubscribe: (() => Promise<void>) | null = null;
+    let cancelled = false;
+    void pb.collection("players").subscribe(
+      "*",
+      (e) => {
+        const record = e.record as RecordModel;
+        if (record.sessionId !== sessionId) return;
+        callback(marshalPlayer(pb, record));
+      },
+      { filter: pb.filter("sessionId = {:sessionId}", { sessionId }) },
+    ).then((unsub) => {
+      if (cancelled) void unsub();
+      else unsubscribe = unsub;
+    });
+    return () => {
+      cancelled = true;
+      if (unsubscribe) void unsubscribe();
+    };
+  };
+
+  const subscribeSessionProgressEvents = (
+    sessionId: string,
+    callback: (event: ProgressEvent) => void,
+  ): () => void => {
+    let unsubscribe: (() => Promise<void>) | null = null;
+    let cancelled = false;
+    void pb.collection("progress_events").subscribe(
+      "*",
+      (e) => {
+        const record = e.record as RecordModel;
+        if (record.sessionId !== sessionId) return;
+        callback(marshalProgressEvent(record));
+      },
+      { filter: pb.filter("sessionId = {:sessionId}", { sessionId }) },
     ).then((unsub) => {
       if (cancelled) void unsub();
       else unsubscribe = unsub;
@@ -616,6 +666,8 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     upsertProgressEvent,
     listProgressEvents,
     subscribeProgressEvent,
+    subscribeSessionPlayers,
+    subscribeSessionProgressEvents,
     getBuddyProfile,
     listBuddyProfiles,
     upsertBuddyProfile,

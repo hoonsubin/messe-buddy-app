@@ -8,7 +8,7 @@ export interface ClaimPlayerResult {
   readonly player: Player;
 }
 
-const hasCompleteClaimedIdentity = (player: Player): boolean =>
+export const isClaimedPlayer = (player: Player): boolean =>
   player.claimStatus === "claimed" &&
   !!player.uid &&
   !!player.recoveryKey &&
@@ -24,7 +24,7 @@ export const claimPlayer = async (
     throw new Error("Invite not found");
   }
 
-  if (hasCompleteClaimedIdentity(existing)) {
+  if (isClaimedPlayer(existing)) {
     const identity: CachedIdentity = {
       uid: existing.uid!,
       recoveryKey: existing.recoveryKey!,

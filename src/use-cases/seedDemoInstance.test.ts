@@ -190,6 +190,8 @@ const createFakeAdapter = () => {
     listProgressEvents: async (playerId) =>
       [...progressEvents.values()].filter((e) => e.playerId === playerId),
     subscribeProgressEvent: () => () => {},
+    subscribeSessionPlayers: () => () => {},
+    subscribeSessionProgressEvents: () => () => {},
     getBuddyProfile: async (playerId) => buddyProfiles.get(playerId) ?? null,
     listBuddyProfiles: async (sessionId) =>
       [...buddyProfiles.values()].filter((b) => b.sessionId === sessionId),

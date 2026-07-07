@@ -17,7 +17,7 @@ Mobile-first. Primary smoke viewport: **390×844** (iPhone-class). Admin desktop
 | Pattern / domain CSS | [`src/styles/components/`](../src/styles/components/), [`src/styles/layouts/`](../src/styles/layouts/) | One focused file per domain or pattern |
 | Import manifest | [`src/index.css`](../src/index.css) | Fonts + ordered `@import` only |
 | React components | [`src/components/shared/`](../src/components/shared/) | Primitives + cross-route UX |
-| Pages | `src/pages/**` | Compose primitives + shared; < 200 lines |
+| Pages | `src/pages/*.tsx` (7 files, flat) | Compose components; < 200 lines — see [`component-architecture.md`](component-architecture.md) |
 
 ### CSS file import order (in [`src/index.css`](../src/index.css))
 
@@ -318,28 +318,21 @@ Milestone positions use **percentage** coordinates (`xPercent` / `yPercent` 0–
 
 ## 8. Page composition map
 
-How routes assemble components (for regression scope). PR #17 replaced the legacy tab-based GM cockpit with separate route-based pages.
+How routes assemble components (regression scope). **Authoring rules:** [`component-architecture.md`](component-architecture.md). **Migration:** [`plans/pages-and-data-refactor.md`](../plans/pages-and-data-refactor.md).
 
-| Route | Page | Layout | Key components |
-|-------|------|--------|----------------|
-| `/`, `/join/:sessionId` | [`LandingPage`](../src/pages/LandingPage.tsx) | `LandingShell` + view switch | `RoleSelectView`, `JoinSessionView`, `CreateSessionView`, `TemplatesView`, `RecoverView`, modals |
-| `/session/:id` | [`PlayerCockpitPage`](../src/pages/PlayerCockpitPage.tsx) | `TopBar` + tab bar (Dashboard / AI Assistant) | `MilestoneMapViewer` (→ `IsometricMilestoneMap`), `MilestoneSidebarViewer`, `CurrentMissionsList`, `BuddyCard`, `ResourcesSection`, `ChatPanel`, `TutorialOverlay` |
-| `/gamemaker/:id` | [`GameMakerHomePage`](../src/pages/GameMakerHomePage.tsx) | `TopBar` + player list | Player cards, status indicators, **New onboarding journey** CTA, [`OnboardingJourneyModal`](../src/components/gamemaker/OnboardingJourneyModal.tsx) |
-| `/gamemaker/:id/player/:playerId` | [`PlayerDetailPage`](../src/pages/PlayerDetailPage.tsx) | `TopBar` + tab bar | **Customize:** `PlayerInviteAccordion` (pinned when invited), `TemplateSelect`, `MilestoneMapEditor` → [`MissionBottomSheet`](../src/components/gamemaker/MissionBottomSheet.tsx) (missions + milestone-scoped `ResourcesEditor`). **Analytics** (gated): `PlayerAnalytics`, read-only `IsometricMilestoneMap`. **Assign Buddy:** `BuddyAssignmentForm`. Tabs: `player-detail-tab-*` testids |
-| `/form/:sessionId/:missionId` | [`FormPage`](../src/pages/FormPage.tsx) | `TopBar` + `FormShell` | `FormField` per schema |
-| `/gamemaker/:sessionId/scan` | [`QRScannerView`](../src/pages/QRScannerView.tsx) | Full-screen `.qr-scanner` | `CameraFeed`, `ValidationResult` |
+Seven flat page files in `src/pages/`. Tabs and wizard steps are in-page state — not separate page files.
 
-### Landing view states
+| Route(s) | Page file | Panes / state (same file) | Key components |
+|----------|-----------|---------------------------|----------------|
+| `/`, `/join/:sessionId` | `LandingPage.tsx` | Profile picker; GM create panel; join steps `code` → `name` | `LandingShell`, `ProfileList`, `GameMakerForm`, `EmployeeForm` |
+| `/session/:id`, `/session/:id/assistant` | `PlayerCockpitPage.tsx` | Dashboard / AI Assistant tabs; tutorial overlay | `PlayerDashboardView`, `IsometricMilestoneMap`, `MilestoneSidebarViewer`, `TutorialOverlay`, `MissionDetailPopup` |
+| `/form/:sessionId/:missionId` | `PlayerFormPage.tsx` | — | `FormShell`, `FormField` |
+| `/gamemaker/:id`, `/gamemaker/:id/library` | `GmHomePage.tsx` | Players / library tabs; onboarding wizard | `GmPlayersTab`, `ResourceLibraryTab`, `OnboardingJourneyModal` |
+| `/gamemaker/:id/player/:playerId`, `.../customize`, `.../buddy`, `.../preboarding`, `.../scan` | `GmPlayerDetailPage.tsx` | Analytics / customize / buddy / pre-boarding tabs; scan mode | `PlayerAnalyticsTab`, `PlayerCustomizeTab`, `MissionBottomSheet`, `CameraFeed` |
+| `/validate/:sessionId` | `ValidationPage.tsx` | — | Confirm card, `FetchErrorPanel` |
+| `*` | `NotFoundPage.tsx` | — | — |
 
-| View | Subtitle copy (`landingCopy.ts`) | Primary actions |
-|------|----------------------------------|-----------------|
-| `role-select` | "Choose how you'd like to join" | New Employee / Admin / Recover |
-| `join` | "Enter your session code" | Join session |
-| `create` | "Create a new onboarding session" | Create / import / browse templates |
-| `templates` | (section label only) | TemplateLibrary + back |
-| `recover` | "Restore your progress" | Restore progress |
-
-Invite URL `/join/:sessionId` pre-fills join form — **no auto-submit**.
+Invite URL `/join/:sessionId` pre-fills join form — **no auto-submit**. Data wiring: `hooks/pages/` + `store/` (not in page markup).
 
 ---
 
@@ -380,12 +373,14 @@ Invite URL `/join/:sessionId` pre-fills join form — **no auto-submit**.
 
 After any UI change, verify on **390×844** (Playwright MCP, Firefox/iPhone 15 profile):
 
-1. **Landing** (`/`, `/join/:sessionId`): brand, grid bg, card max-width, all five views, modals after join/create.
-2. **Player cockpit** (`/session/:id` demo): TopBar, map visible, mission list scrolls, no clipped CTAs.
-3. **GM cockpit** (`/gamemaker/:id` demo): map + sidebar, bottom sheet opens, tabs switch.
-4. **Form** (`/form/:missionId`): TopBar + form fields + submit.
-5. Console: no errors. Screenshots → `.playwright-mcp/`.
-6. **Token drift:** new colours/spacing must extend `tokens.css`, not hardcode hex/rgb in TSX.
+1. **Landing** (`/`, `/join/:sessionId`): brand, grid bg, card max-width, picker, join steps, GM create panel.
+2. **Player cockpit** (`/session/:id`, `/session/:id/assistant` demo): TopBar, map visible, mission list scrolls, assistant tab.
+3. **GM home** (`/gamemaker/:id`, `/gamemaker/:id/library` demo): player list, library tab, wizard modal.
+4. **GM player detail** (`/gamemaker/:id/player/:pid`, tab paths, scan mode): map, bottom sheet, tabs.
+5. **Form** (`/form/:sessionId/:missionId`): TopBar + form fields + submit.
+6. **Validation** (`/validate/:sessionId?t=…`): confirm card stable (no flicker).
+7. Console: no errors. Screenshots → `.playwright-mcp/`.
+8. **Token drift:** new colours/spacing must extend `tokens.css`, not hardcode hex/rgb in TSX.
 
 ### Common regression patterns to reject
 
@@ -405,8 +400,8 @@ After any UI change, verify on **390×844** (Playwright MCP, Firefox/iPhone 15 p
 2. Reference via `var(--token)` in the appropriate component CSS file under [`src/styles/components/`](../src/styles/components/).
 3. Document semantic purpose in this file (section 2–6).
 4. If a new component is shared across ≥2 pages, place under `src/components/shared/`.
-5. Page-only UI stays under `src/pages/<page>/`.
+5. Page-only UI goes under `src/components/{domain}/` — not `src/pages/subfolders/`. See [`component-architecture.md`](component-architecture.md).
 
 ---
 
-*Last synced with codebase: 2026-06-29.*
+*Last synced with codebase: 2026-07-06.*

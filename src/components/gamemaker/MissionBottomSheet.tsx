@@ -2,11 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { MdArrowBack, MdClose, MdEditNote } from "react-icons/md";
 import type {
   DraftMission,
+  LibraryResource,
   Milestone,
   Mission,
   Resource,
 } from "../../types/index.ts";
-import type { AddResourceInput } from "../../hooks/useResources.ts";
+import type { AddResourceInput } from "../../types/resourceInputs.ts";
 import type { StoredDraft } from "../../utils/draftStorage.ts";
 import {
   clearStoredDraft,
@@ -56,6 +57,8 @@ interface MissionBottomSheetProps {
     resourceId: string,
     visible: boolean,
   ) => void;
+  readonly libraryResources?: ReadonlyArray<LibraryResource>;
+  readonly onAttachFromLibrary?: (libraryResourceId: string) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -84,6 +87,8 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
     onUpdateResource,
     onDeleteResource,
     onToggleResourceVisibility,
+    libraryResources,
+    onAttachFromLibrary,
   } = props;
 
   // ── View state ──────────────────────────────────────────────────────────────
@@ -352,8 +357,10 @@ const MissionBottomSheet = (props: MissionBottomSheetProps) => {
                   <h4 className="sheet-resources__title">Resources</h4>
                   <ResourcesEditor
                     resources={milestoneResources}
+                    libraryResources={libraryResources}
                     sessionId={sessionId}
                     onAdd={onAddResource}
+                    onAttachFromLibrary={onAttachFromLibrary}
                     onUpdate={onUpdateResource}
                     onDelete={onDeleteResource}
                     onToggleVisibility={onToggleResourceVisibility}
