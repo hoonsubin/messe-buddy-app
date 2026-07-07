@@ -26,6 +26,13 @@ class EmbeddingService:
                 json={
                     "model": self.config.model,
                     "input": texts,
+                    # Without this, Gemini (and most MRL-trained embedding
+                    # models) returns its native full-size vector regardless
+                    # of self.config.dimensions — the check below then just
+                    # fails after the fact instead of the API actually
+                    # producing the requested size. LiteLLM maps `dimensions`
+                    # to Gemini's `output_dimensionality`.
+                    "dimensions": self.config.dimensions,
                 },
             )
             resp.raise_for_status()

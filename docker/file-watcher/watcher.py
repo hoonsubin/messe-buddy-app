@@ -82,6 +82,12 @@ DOCS_DIR = os.getenv("DOCS_DIR", "/consume-docs")
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1500"))
 OVERLAP = int(os.getenv("OVERLAP", "150"))
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "gemini-embedding-2")
+# Must match the pgvector column's fixed dimension (see
+# docker/litellm-pgvector/prisma/schema.prisma) — without sending this as
+# `dimensions` on the /v1/embeddings request, Gemini (and most MRL-trained
+# embedding models) returns its native full-size vector regardless of what's
+# set here, and the pgvector INSERT below fails with a dimension mismatch.
+EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "1536"))
 
 SUPPORTED_EXTENSIONS = tuple(
     os.getenv(
@@ -416,6 +422,52 @@ def _insert_managed_vector_store_row() -> str:
         return "unregistered"
 
 
+def _delete_existing_virtual_key(alias: str) -> None:
+    """Delete any LiteLLM-side key already registered under ``alias`` before
+    minting a fresh one.
+
+    Without this, redeploying WITHOUT wiping litellm_db_data (e.g. a plain
+    restart, or `docker compose build --no-cache` followed by `up`, with no
+    `-v`) hits LiteLLM's unique-key_alias constraint on the very next
+    `/key/generate` call — "Key with alias 'messebuddy-pwa' already exists" —
+    because the DB-side key row from the previous boot is still there even
+    though the local /runtime/virtual_key file (deleted below) is not. That
+    error is unhandled by the caller, so the watcher container exits and
+    crash-loops under `restart: unless-stopped` until someone notices the
+    virtual key never lands and the chat feature silently has no auth.
+
+    `key_aliases` is a supported filter on POST /key/delete (added upstream
+    specifically for this alias-based cleanup use case), so this is a single
+    call — no need to /key/list and match tokens by hand. Best-effort: if
+    LiteLLM is an old build without `key_aliases` support, or there's simply
+    nothing to delete, this logs and moves on; /key/generate below is the
+    step that actually matters and still fails loudly if something's wrong.
+    """
+    try:
+        resp = requests.post(
+            f"{_LITELLM_URL}/key/delete",
+            headers={
+                "Authorization": f"Bearer {LITELLM_MASTER_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={"key_aliases": [alias]},
+            timeout=15,
+        )
+        if resp.ok:
+            log(f"  🗑️  Cleared any existing LiteLLM key(s) with alias '{alias}'")
+        else:
+            log(
+                f"  ⚠️  /key/delete for alias '{alias}' returned"
+                f" {resp.status_code}: {resp.text[:200]}"
+                " (continuing — /key/generate below will surface any real problem)"
+            )
+    except requests.RequestException as exc:
+        log(
+            f"  ⚠️  Could not reach LiteLLM to clear alias '{alias}': {exc}"
+            " (continuing — /key/generate below will surface any real problem)"
+        )
+
+
 def provision_virtual_key() -> None:
     """Mint the front-end virtual key and persist it to the shared
     /runtime volume for the app container's entrypoint to pick up.
@@ -432,6 +484,11 @@ def provision_virtual_key() -> None:
     if key_file.is_file():
         key_file.unlink()
         log("  🗑️  Removed stale virtual key file")
+
+    # And clear any LiteLLM-side key under this alias from a previous boot —
+    # see _delete_existing_virtual_key's docstring for why the file removal
+    # above isn't enough on its own.
+    _delete_existing_virtual_key(VIRTUAL_KEY_ALIAS)
 
     try:
         resp = requests.post(
@@ -567,7 +624,11 @@ def generate_embedding(text: str, max_retries: int = 3) -> list[float]:
                     "Authorization": f"Bearer {LITELLM_MASTER_KEY}",
                     "Content-Type": "application/json",
                 },
-                json={"model": EMBEDDING_MODEL, "input": [text]},
+                json={
+                    "model": EMBEDDING_MODEL,
+                    "input": [text],
+                    "dimensions": EMBEDDING_DIM,
+                },
                 timeout=60,
             )
             if _is_too_large_response(resp.status_code, resp.text):

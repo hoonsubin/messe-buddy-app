@@ -65,7 +65,7 @@ services:
       EMBEDDING__MODEL: ${EMBEDDING_MODEL:-gemini-embedding-2}
       EMBEDDING__BASE_URL: http://litellm:4000
       EMBEDDING__API_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
-      EMBEDDING__DIMENSIONS: ${EMBEDDING_DIM:-768}
+      EMBEDDING__DIMENSIONS: ${EMBEDDING_DIM:-1536}
       RERANK__ENABLED: ${RERANK_ENABLED:-true}
       RERANK__MODEL: ${RERANK_MODEL:-bge-reranker-v2-m3}
       RERANK__CANDIDATES: ${RERANK_CANDIDATES:-30}
@@ -162,6 +162,13 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-litellm}
       LITELLM_DB_HOST: litellm-db
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-gemini-embedding-2}
+      # Must match litellm-pgvector's EMBEDDING__DIMENSIONS below and the
+      # vector(N) column in docker/litellm-pgvector/prisma/schema.prisma —
+      # this is what actually gets sent as `dimensions` on the /v1/embeddings
+      # request (watcher.py), not just a label. Previously unset here, so
+      # Gemini always returned its native 3072-dim vector no matter what
+      # EMBEDDING_DIM was set to elsewhere.
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-1536}
       # Char-based chunking sized for reranker's 512-token vLLM batch limit (~3 chars/token worst case).
       CHUNK_SIZE: ${CHUNK_SIZE:-1500}
       OVERLAP: ${OVERLAP:-150}

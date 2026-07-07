@@ -30,7 +30,14 @@ model Embedding {
   id              String      @id @default(cuid())
   vector_store_id String
   content         String
-  embedding       Unsupported("vector(768)")
+  // Must match EMBEDDING_DIM in .env (both the actual API request dimension
+  // in docker/file-watcher/watcher.py and the validation-only setting in
+  // docker/litellm-pgvector/config.py) — pgvector columns are a fixed
+  // dimension, not env-configurable at runtime. Changing this requires a
+  // fresh vector_db_data volume: existing rows can't be cast to a new
+  // dimension, and content-hash tracking would otherwise skip re-embedding
+  // files that "already" have (wrong-dimension) embeddings on disk.
+  embedding       Unsupported("vector(1536)")
   metadata        Json?
   created_at      DateTime    @default(now())
   
