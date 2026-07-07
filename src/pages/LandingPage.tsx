@@ -1,4 +1,5 @@
 import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { isDemoBuild } from "../adapters/AdapterContextValue.ts";
 import { readActiveUid } from "../hooks/useIdentity.ts";
 import { useLandingFlow } from "../hooks/useLandingFlow.ts";
 import { USER_ROLE } from "../types/index.ts";
@@ -27,7 +28,7 @@ const LandingPage = () => {
     const uid = readActiveUid();
     if (uid) {
       const match = readProfiles().find((p) => p.uid === uid);
-      if (match) {
+      if (match && (isDemoBuild() || !match.isDemo)) {
         const dest = match.role === USER_ROLE.PLAYER
           ? `/session/${match.sessionId}`
           : `/gamemaker/${match.sessionId}`;

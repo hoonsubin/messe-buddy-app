@@ -10,7 +10,7 @@ const NotFoundPage = () => {
   const is404 = !error || error.status === 404;
 
   return (
-    <div className="not-found">
+    <div className="not-found" data-page="not-found">
       <MdErrorOutline
         size={48}
         aria-hidden="true"

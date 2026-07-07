@@ -1,13 +1,10 @@
 import { useCallback, useState } from "react";
 import { MdClose } from "react-icons/md";
-import { DEMO_PROFILES } from "../../constants/demoInstance.ts";
 import type { CachedIdentity } from "../../types/index.ts";
 import { IconButton } from "../shared/index.ts";
 import ConfirmDialog from "../shared/ConfirmDialog.tsx";
 import { cn } from "../../utils/cn.ts";
 import { landingRoleFor, profileInitials, roleLabel } from "./landingUtils.ts";
-
-const isDemoProfile = (uid: string) => DEMO_PROFILES.some((d) => d.uid === uid);
 
 interface ProfileCardProps {
   readonly identity: CachedIdentity;
@@ -22,7 +19,7 @@ const ProfileCard = ({
   onResume,
   onRemove,
 }: ProfileCardProps) => {
-  const demo = isDemoProfile(identity.uid);
+  const demo = identity.isDemo === true;
   const role = landingRoleFor(identity.role);
   const [confirmOpen, setConfirmOpen] = useState(false);
 

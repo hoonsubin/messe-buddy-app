@@ -47,7 +47,16 @@ const PlayerCockpitPage = () => {
     );
   }
 
-  if (result.status === "session-redirect") return null;
+  if (result.status === "session-redirect") {
+    return (
+      <div
+        className="page-state-center"
+        data-testid="player-cockpit-page"
+        data-page="player-cockpit"
+        aria-busy="true"
+      />
+    );
+  }
 
   const m = result.model;
 
