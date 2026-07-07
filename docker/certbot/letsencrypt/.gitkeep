@@ -1,0 +1,3 @@
+This directory is bind-mounted into the `certbot` service at /etc/letsencrypt.
+It's populated at runtime (ACME account + issued certs) and gitignored except
+for this placeholder, which just keeps the directory present after a clone.

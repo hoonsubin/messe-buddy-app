@@ -244,18 +244,18 @@ Already superseded by `applyTemplateIfBlank` + `applyTemplateToNewPlayer`.
 
 | Phase | Name | Source | Status |
 |-------|------|--------|--------|
-| **1** | Store + dead code removal | Refactor plan | Pending |
-| **2** | Flat pages, routes, QR consolidation | Refactor plan | Pending |
+| **1** | Store + dead code removal | Refactor plan | **Done** (audited 2026-07-07) |
+| **2** | Flat pages, routes, QR consolidation | Refactor plan | **Done** (audited 2026-07-07) |
 | **3** | Query migration + hook retirement | Refactor plan | **Done** (page hooks migrated; legacy hooks deleted) |
 | **4** | Verify + guard (refactor) | Refactor plan | **Done** (4.1–4.4) |
 | **5** | Blockers — smoke remediation | Playwright 2026-07-06 | **Done** (5.1) |
 | **6** | Realtime — GM + player live sync | Playwright 2026-07-06 | **Done** (6.1–6.5, **6.4** verified 2026-07-07) |
 | **7** | Functional gaps — smoke remediation | Playwright 2026-07-06 | **Done** (7.1–7.7) |
 | **8** | UX polish — smoke remediation | Playwright 2026-07-06 | **Done** (8.1–8.15) |
-| **9** | Smoke verification | Phase 5–8 exit gate | **Done** — fresh-identity Playwright MCP (2026-07-07); **8.15** retest after fix |
+| **9** | Smoke verification | Phase 5–8 exit gate | **Done** — incl. **9.4** mock parity (2026-07-07) |
 | **10** | E2E harness + CI gate | Smoke scripts 2026-07-06 | **Deferred** — no CI smoke; Playwright MCP + visual analysis instead |
 
-**Recommended execution order:** Phase **1–2** audit (checkboxes stale — most code merged) → **9.4** (mock path, optional).
+**Recommended execution order:** Refactor plan **complete** for Phases 1–9 smoke remediation. Remaining: Phase **1–2** were already merged (checkboxes synced 2026-07-07); optional backlog in **Out of scope** / `player.appliedTemplateName`.
 
 **Verification (no smoke CI):** Use **Playwright MCP** at 390×844 against a clean rebuild (`deno task dev:full` or Docker). Capture screenshots per `design/design-tokens.md` §10. Do **not** add new smoke scripts — `scripts/smoke-live.ts` was removed; trim stale references in README/plan as encountered.
 
@@ -274,24 +274,39 @@ Already superseded by `applyTemplateIfBlank` + `applyTemplateToNewPlayer`.
 
 **Fresh-identity visual smoke (2026-07-07 evening, Playwright MCP):** Cleared storage → GM **Alex Rivera** / **Smoke Visual 2026-07-07** → wizard → **Jordan Lee** → invite URL from GM card → claim → profile form → GM roster **3%** without reload. Screenshots: `.playwright-mcp/smoke-fresh-*.png`. Item 12 (AI Assistant tab) required closing sidebar first — **8.15** addresses this.
 
-**Manual smoke cross-ref:** [`MesseBuddy_Smoke_Test_2026-07-07.md`](MesseBuddy_Smoke_Test_2026-07-07.md)
+**Manual smoke cross-ref:** [`MesseBuddy_Smoke_Test_2026-07-07.md`](MesseBuddy_Smoke_Test_2026-07-07.md) — regressions #1–#2 fixed (**7.6**, **7.7**); re-verified on mock 2026-07-07 (milestone sheet opens, 50% parity **9.4**)
+
+### Phase 1–2 audit (2026-07-07)
+
+Codebase matches target architecture. Checkboxes were stale; all items verified present:
+
+| Item | Evidence |
+|------|----------|
+| `store/`, `useQuery`, `useMutation` | `src/store/queryClient.ts`, `src/hooks/useQuery.ts`, `*.test.ts` |
+| `QueryProvider` | `App.tsx` |
+| Dead hooks/use-cases removed | No `useSession`, `useProgress/`, `applyDefaultOnboardingJourney` |
+| 7 flat pages | `src/pages/*.tsx` (7 files, no subfolders) |
+| `QrScanPanel` | `src/components/qr/QrScanPanel.tsx`; scan route is per-player `/scan` only |
+| Layouts | `PlayerSessionLayout`, `GmWorkspaceLayout` |
+
+**Doc drift (non-blocking):** plan lists 6 page hooks; repo has 5 in `hooks/pages/` + `useLandingFlow` in `hooks/` (per **3.6**).
 
 ### Phase 1 — Store + dead code removal
 
-- [ ] **1.1** `store/` + `hooks/useQuery.ts` / `useMutation.ts` + unit tests (coalesce, invalidate, loading semantics)
-- [ ] **1.2** `store/devBackendTrace.ts` — ring buffer, console sink, `window.__MB_DEV_TRACE__`; emit from `queryClient`
-- [ ] **1.3** Mount `QueryProvider` in `App.tsx`
-- [ ] **1.4** `git rm` dead use-case stubs + `useScrollCollapse.ts`
-- [ ] **1.5** Centralize tutorial storage keys
+- [x] **1.1** `store/` + `hooks/useQuery.ts` / `useMutation.ts` + unit tests (`queryClient.test.ts`, `gmRosterPatch.test.ts`, `progressEvents.test.ts`)
+- [x] **1.2** `store/devBackendTrace.ts` — ring buffer, console sink, `window.__MB_DEV_TRACE__`; emit from `queryClient`
+- [x] **1.3** Mount `QueryProvider` in `App.tsx`
+- [x] **1.4** Dead use-case stubs removed (`applyDefaultOnboardingJourney`, `applyScratchJourney`); `useScrollCollapse.ts` deleted
+- [x] **1.5** Tutorial storage keys in `components/tutorial/constants.ts`
 
 ### Phase 2 — Flat pages, routes, QR consolidation
 
-- [ ] **2.1** Seven page files; router paths per table above
-- [ ] **2.2** `RouteTabBar` → `NavLink`; derive active pane from pathname; drop `?journey=1`
-- [ ] **2.3** Move subfolder UI to `components/`; move page hooks to `hooks/pages/`
-- [ ] **2.4** Extract `QrScanPanel`; delete `QRScannerView` + orphaned scan route
-- [ ] **2.5** Merge `RootRedirect` into `LandingPage`
-- [ ] **2.6** Shared layouts in `components/layout/` (`PlayerSessionLayout`, `GmWorkspaceLayout`)
+- [x] **2.1** Seven page files in `src/pages/`; router paths per table above
+- [x] **2.2** `RouteTabBar` → `NavLink`; active pane from pathname; no `?journey=1` in codebase
+- [x] **2.3** No `pages/*/` subfolders; page hooks in `hooks/pages/` (5) + `useLandingFlow` in `hooks/`
+- [x] **2.4** `components/qr/QrScanPanel.tsx`; `QRScannerView` + orphaned `/gamemaker/:id/scan` route deleted
+- [x] **2.5** `RootRedirect` merged into `LandingPage` (auto-redirect via `readActiveUid`)
+- [x] **2.6** `PlayerSessionLayout`, `GmWorkspaceLayout` in `components/layout/`
 
 ### Phase 3 — Query migration + hook retirement
 
@@ -404,7 +419,7 @@ Exit gate for Phases 5–8. Run against **mock** and **live PocketBase**. **No C
 | **9.1** | Workspace → wizard → join → profile → reload → XP | **Pass** | — |
 | **9.2** | Dual-tab claim + GM progress after form | **Pass** | — |
 | **9.3** | Dual-tab QR: GM % live + player QR dismiss | **Pass** | — |
-| **9.4** | Mock `sess_mmt2026` customize % vs cockpit | Not run | Mock path |
+| **9.4** | Mock `sess_mmt2026` customize % vs cockpit | **Pass** | GM + player both 50% on "Arrive & Get Set Up" (mock, 2026-07-07) |
 | **9.5** | GM home: no empty-state flash | **Pass** | — |
 | **9.6** | Post-wizard: no ghost milestone dialog | **Pass** | — |
 | **9.7** | Console: 0 depth / unhandled errors | **Pass** | — |
@@ -415,7 +430,7 @@ Exit gate for Phases 5–8. Run against **mock** and **live PocketBase**. **No C
 - [x] **9.1** PB onboarding happy path
 - [x] **9.2** PB dual-tab claim + progress
 - [x] **9.3** PB dual-tab QR — GM side + player dismiss
-- [ ] **9.4** Mock `sess_mmt2026` customize % vs cockpit — verify via Playwright MCP if mock path still used
+- [x] **9.4** Mock `sess_mmt2026` customize % vs cockpit — **Pass** Playwright MCP mock build: GM customize 50% = player cockpit 50% (`smoke-94-mock-percent-parity.png`)
 - [x] **9.5** GM empty-flash
 - [x] **9.6** Ghost dialog
 - [x] **9.7** Console critical errors (502 excluded — track under **7.4**)
@@ -503,7 +518,8 @@ Exit gate for Phases 5–8. Run against **mock** and **live PocketBase**. **No C
 | P3 | **4.x** | Refactor CI guards (adapter boundary) | M — **4.1–4.2, 4.4** done |
 | — | **9.9** | Playwright MCP visual pass (390×844) | **Done** 2026-07-07 |
 | — | **10.x** | Smoke CI | **Deferred** |
-| — | **1–2** | Original flat-page refactor (if not already merged) | L |
+| — | **9.4** | Mock customize % parity | **Done** 2026-07-07 |
+| — | **1–2** | Flat-page refactor | **Done** (audited 2026-07-07) |
 | — | **8.10** | Profiler spam | Closed (N/A) |
 
 **S** = small (≤ half day) · **M** = medium · **L** = large

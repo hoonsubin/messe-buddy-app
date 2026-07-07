@@ -45,3 +45,10 @@ __pycache__
 
 .pb-data
 .pb-server
+
+# ── Certbot (Let's Encrypt) ─────────────────────────────────────────────────
+# Bind-mounted into the `certbot` service so it survives `docker compose
+# down -v` — holds the ACME account key + issued certs, not app secrets, but
+# still shouldn't be committed (host-specific, regenerable, and large).
+docker/certbot/letsencrypt/*
+!docker/certbot/letsencrypt/.gitkeep

@@ -188,6 +188,19 @@ services:
   # and restart both this and `app` to point the whole stack at a new domain.
   # No-ops (idles) if PUBLIC_DOMAIN is unset, e.g. local/LAN dev — app then
   # falls back to its own self-signed cert as before.
+  #
+  # Waits on `app`'s healthcheck (nginx answering on :80) rather than starting
+  # blind: on a cold boot (fresh litellm-db/vector-db volumes) `app` can take
+  # well over certbot's ~150s HTTP-01 retry budget to come up, which used to
+  # make certbot give up and idle for 12h before trying again.
+  #
+  # /etc/letsencrypt is a host bind mount, NOT a named volume — `docker
+  # compose down -v` only removes named volumes, so this survives a full
+  # teardown/rebuild and a greenfield redeploy reuses the same ACME account +
+  # issued cert instead of re-requesting one. That matters because Let's
+  # Encrypt rate-limits duplicate certs for the same domain to 5/week;
+  # re-issuing on every `-v` teardown will eventually trip that limit and
+  # certbot will fail outright, not just slowly.
   certbot:
     build:
       context: ./docker/certbot
@@ -197,8 +210,11 @@ services:
       CERTBOT_EMAIL: ${CERTBOT_EMAIL:-}
     volumes:
       - certbot_webroot:/var/www/certbot
-      - certbot_letsencrypt:/etc/letsencrypt
+      - ./docker/certbot/letsencrypt:/etc/letsencrypt
       - nginx_ssl:/nginx_ssl
+    depends_on:
+      app:
+        condition: service_healthy
     restart: unless-stopped
 
   # -- App (PWA + PocketBase) --
@@ -235,7 +251,19 @@ services:
         condition: service_healthy
       # NOT certbot: certbot's HTTP-01 challenge needs this container's nginx
       # already answering on :80 (see docker/nginx.conf's acme-challenge
-      # location), so app must come up independently, not after certbot.
+      # location), so app must come up independently, not after certbot —
+      # it's certbot that waits on app's healthcheck below, not the other
+      # way around.
+    healthcheck:
+      # nginx on :80 answers (redirect to https, or the acme-challenge
+      # location) as soon as entrypoint.sh hands off to supervisord. This is
+      # what certbot's depends_on waits on, so it stops racing app's cold
+      # start instead of exhausting its own retry budget.
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:80/"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
     networks:
       - litellm-external
 
@@ -252,8 +280,9 @@ volumes:
     driver: local
   certbot_webroot:
     driver: local
-  certbot_letsencrypt:
-    driver: local
+  # certbot_letsencrypt is intentionally NOT a named volume — see the
+  # `certbot` service comment above. It's a bind mount to
+  # ./docker/certbot/letsencrypt (gitignored) so it survives `down -v`.
 
 networks:
   litellm-internal:
