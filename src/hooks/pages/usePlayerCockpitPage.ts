@@ -19,6 +19,7 @@ import { useTutorial } from "../../hooks/useTutorial.ts";
 import { useChat } from "../../hooks/useChat.ts";
 import type { UseChatWithAvailability } from "../../hooks/useChat.ts";
 import { useMutation } from "../../hooks/useMutation.ts";
+import { useLiveQuery } from "../../hooks/useLiveQuery.ts";
 import { useQuery } from "../../hooks/useQuery.ts";
 import { devBackendTrace } from "../../store/devBackendTrace.ts";
 import {
@@ -115,13 +116,13 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     { enabled: !!sessionId },
   );
 
-  const journey = useQuery(
+  const journey = useLiveQuery(
     sessionId && playerId ? queryKeys.journey(sessionId, playerId) : null,
     fetchJourney(sessionId, playerId),
     { enabled: !!sessionId && !!playerId },
   );
 
-  const progressQuery = useQuery(
+  const progressQuery = useLiveQuery(
     playerId ? queryKeys.progress(playerId) : null,
     fetchProgress(playerId),
     { enabled: !!playerId },

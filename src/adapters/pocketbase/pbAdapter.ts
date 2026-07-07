@@ -407,6 +407,10 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
           return marshalPlayer(pb, record);
         case "progress_events":
           return marshalProgressEvent(record);
+        case "milestones":
+          return marshalMilestone(record);
+        case "missions":
+          return marshalMission(record);
         default:
           return record;
       }

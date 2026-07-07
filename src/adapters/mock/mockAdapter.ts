@@ -361,6 +361,7 @@ const createMilestone = async (
   const record = makeRecord();
   const ms: Milestone = { ...record, ...data, id: data.id ?? record.id };
   milestones.set(ms.id, ms);
+  notifyCollection("milestones", "create", ms);
   return ms;
 };
 
@@ -373,12 +374,15 @@ const updateMilestone = async (
   if (!existing) throw new Error(`Milestone not found: ${milestoneId}`);
   const updated: Milestone = { ...existing, ...patch, updated: now() };
   milestones.set(milestoneId, updated);
+  notifyCollection("milestones", "update", updated);
   return updated;
 };
 
 const deleteMilestone = async (milestoneId: string): Promise<void> => {
   await Promise.resolve();
+  const existing = milestones.get(milestoneId);
   milestones.delete(milestoneId);
+  if (existing) notifyCollection("milestones", "delete", existing);
   for (const [id, mr] of milestoneResources) {
     if (mr.milestoneId === milestoneId) milestoneResources.delete(id);
   }
@@ -404,6 +408,7 @@ const createMission = async (
   const record = makeRecord();
   const mission: Mission = { ...record, ...data, id: data.id ?? record.id };
   missions.set(mission.id, mission);
+  notifyCollection("missions", "create", mission);
   return mission;
 };
 
@@ -416,12 +421,15 @@ const updateMission = async (
   if (!existing) throw new Error(`Mission not found: ${missionId}`);
   const updated: Mission = { ...existing, ...patch, updated: now() };
   missions.set(missionId, updated);
+  notifyCollection("missions", "update", updated);
   return updated;
 };
 
 const deleteMission = async (missionId: string): Promise<void> => {
   await Promise.resolve();
+  const existing = missions.get(missionId);
   missions.delete(missionId);
+  if (existing) notifyCollection("missions", "delete", existing);
   formSchemas.delete(missionId);
 };
 

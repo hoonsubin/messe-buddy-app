@@ -35,6 +35,29 @@ export const resolveRealtimeDeps = (
     ];
   }
 
+  if (queryKey.startsWith("journey:")) {
+    const parts = queryKey.split(":");
+    if (parts.length < 3) return [];
+    const playerId = parts.slice(2).join(":");
+    if (!playerId) return [];
+    const playerFilter = pbEqFilter("playerId", playerId);
+    return [
+      { collection: "milestones", filter: playerFilter },
+      { collection: "missions", filter: playerFilter },
+    ];
+  }
+
+  if (queryKey.startsWith("progress:")) {
+    const playerId = queryKey.slice("progress:".length);
+    if (!playerId) return [];
+    return [
+      {
+        collection: "progress_events",
+        filter: pbEqFilter("playerId", playerId),
+      },
+    ];
+  }
+
   return [];
 };
 

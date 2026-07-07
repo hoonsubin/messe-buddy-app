@@ -5,6 +5,7 @@ import { USER_ROLE } from "../../types/index.ts";
 import { useActiveProfile } from "../useActiveProfile.ts";
 import { useDerivedPlayerProgress } from "../useDerivedPlayerProgress.ts";
 import { useMutation } from "../useMutation.ts";
+import { useLiveQuery } from "../useLiveQuery.ts";
 import { useQuery } from "../useQuery.ts";
 import { useAdapter } from "../../adapters/useAdapter.ts";
 import { devBackendTrace } from "../../store/devBackendTrace.ts";
@@ -74,13 +75,13 @@ export const usePlayerFormPage = (): UsePlayerFormPageResult => {
     { enabled: !!sessionId },
   );
 
-  const journey = useQuery(
+  const journey = useLiveQuery(
     sessionId && playerId ? queryKeys.journey(sessionId, playerId) : null,
     fetchJourney(sessionId, playerId),
     { enabled: !!sessionId && !!playerId },
   );
 
-  const progressQuery = useQuery(
+  const progressQuery = useLiveQuery(
     playerId ? queryKeys.progress(playerId) : null,
     fetchProgress(playerId),
     { enabled: !!playerId },

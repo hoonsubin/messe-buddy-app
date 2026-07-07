@@ -12,6 +12,7 @@ import { queryKeys } from "../../store/queryKeys.ts";
 import { useQueryClient } from "../../store/useQueryClient.ts";
 import { decodeQRPayload, QRPayloadError } from "../../utils/qrPayload.ts";
 import { useMutation } from "../useMutation.ts";
+import { useLiveQuery } from "../useLiveQuery.ts";
 import { useQuery } from "../useQuery.ts";
 
 export type ValidationConfirmErrorKind =
@@ -117,11 +118,11 @@ export const useValidationPage = (
 
   const playerId = payload?.playerId ?? "";
 
-  const journey = useQuery(
+  const journey = useLiveQuery(
     payload ? queryKeys.journey(sessionId, playerId) : null,
     fetchJourney(sessionId, playerId),
   );
-  const progress = useQuery(
+  const progress = useLiveQuery(
     payload ? queryKeys.progress(playerId) : null,
     fetchProgress(playerId),
   );
