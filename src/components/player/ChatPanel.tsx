@@ -8,9 +8,11 @@ import type { ChatMessage } from "../../hooks/useChat.ts";
 import { renderMarkdown } from "../../utils/markdown.ts";
 
 const DEFAULT_PROMPTS: ReadonlyArray<string> = [
-  "How many vacation days do I get?",
-  "Can I work from home?",
-  "How do I expense a purchase?",
+  "How do I request vacation days and check my remaining balance?",
+  "Do I need to clock out when I visit the exhibition halls during work hours?",
+  "Welche Vorgaben gelten für die Erstellung und Änderung meines Passworts?",
+  "Am I allowed to bring my own coffee machine to the office?",
+  "Ab welchem Wert brauche ich eine Genehmigung, um ein Geschenk von einem Geschäftspartner anzunehmen?",
 ];
 
 const MAX_TEXTAREA_PX = 120;
