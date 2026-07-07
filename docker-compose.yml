@@ -66,7 +66,7 @@ services:
       EMBEDDING__BASE_URL: http://litellm:4000
       EMBEDDING__API_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
       EMBEDDING__DIMENSIONS: ${EMBEDDING_DIM:-1536}
-      RERANK__ENABLED: ${RERANK_ENABLED:-true}
+      RERANK__ENABLED: ${RERANK_ENABLED:-false}
       RERANK__MODEL: ${RERANK_MODEL:-bge-reranker-v2-m3}
       RERANK__CANDIDATES: ${RERANK_CANDIDATES:-30}
       HOST: "0.0.0.0"
