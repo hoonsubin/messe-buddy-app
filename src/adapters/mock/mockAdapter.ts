@@ -64,19 +64,66 @@ const notify = (key: string, event: ProgressEvent): void => {
   for (const cb of subs) cb(event);
 };
 
-const notifySessionPlayer = (sessionId: string, player: Player): void => {
+type RealtimeAction = "create" | "update" | "delete";
+type CollectionCallback = (
+  action: RealtimeAction,
+  record: unknown,
+) => void;
+const collectionSubscriptions = new Map<string, Set<CollectionCallback>>();
+
+const collectionTopicKey = (collection: string, filter?: string): string =>
+  `${collection}\0${filter ?? ""}`;
+
+const unescapeFilterValue = (raw: string): string =>
+  raw.replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+
+const recordMatchesFilter = (record: unknown, filter?: string): boolean => {
+  if (!filter) return true;
+  const match = filter.match(/^(\w+)\s*=\s*"((?:\\.|[^"\\])*)"$/);
+  if (!match) return true;
+  const [, field, rawValue] = match;
+  const value = unescapeFilterValue(rawValue);
+  const rec = record as Record<string, unknown>;
+  return String(rec[field] ?? "") === value;
+};
+
+const notifyCollection = (
+  collection: string,
+  action: RealtimeAction,
+  record: unknown,
+): void => {
+  for (const [key, subs] of collectionSubscriptions) {
+    const sep = key.indexOf("\0");
+    const coll = key.slice(0, sep);
+    const filter = key.slice(sep + 1) || undefined;
+    if (coll !== collection) continue;
+    if (!recordMatchesFilter(record, filter)) continue;
+    for (const cb of subs) cb(action, record);
+  }
+};
+
+const notifySessionPlayer = (
+  sessionId: string,
+  player: Player,
+  action: RealtimeAction = "update",
+): void => {
   const subs = sessionPlayerSubscriptions.get(sessionId);
-  if (!subs) return;
-  for (const cb of subs) cb(player);
+  if (subs) {
+    for (const cb of subs) cb(player);
+  }
+  notifyCollection("players", action, player);
 };
 
 const notifySessionProgress = (
   sessionId: string,
   event: ProgressEvent,
+  action: RealtimeAction = "update",
 ): void => {
   const subs = sessionProgressSubscriptions.get(sessionId);
-  if (!subs) return;
-  for (const cb of subs) cb(event);
+  if (subs) {
+    for (const cb of subs) cb(event);
+  }
+  notifyCollection("progress_events", action, event);
 };
 
 let currentGmUid = "uid_gamemaker_peter";
@@ -270,7 +317,7 @@ const invitePlayer = async (
     languages: [],
   };
   players.set(player.id, player);
-  notifySessionPlayer(sessionId, player);
+  notifySessionPlayer(sessionId, player, "create");
   return player;
 };
 
@@ -428,6 +475,24 @@ const listProgressEvents = async (
 ): Promise<ReadonlyArray<ProgressEvent>> => {
   await Promise.resolve();
   return [...progressEvents.values()].filter((e) => e.playerId === playerId);
+};
+
+const subscribeCollection = (
+  collection: string,
+  filter: string | undefined,
+  callback: (action: RealtimeAction, record: unknown) => void,
+): () => void => {
+  const key = collectionTopicKey(collection, filter);
+  let subs = collectionSubscriptions.get(key);
+  if (!subs) {
+    subs = new Set();
+    collectionSubscriptions.set(key, subs);
+  }
+  subs.add(callback);
+  return () => {
+    subs?.delete(callback);
+    if (subs && subs.size === 0) collectionSubscriptions.delete(key);
+  };
 };
 
 const subscribeProgressEvent = (
@@ -621,6 +686,7 @@ export const mockAdapter: AppAdapter = {
   upsertFormSchema,
   upsertProgressEvent,
   listProgressEvents,
+  subscribeCollection,
   subscribeProgressEvent,
   subscribeSessionPlayers,
   subscribeSessionProgressEvents,

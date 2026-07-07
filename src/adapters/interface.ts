@@ -104,6 +104,14 @@ export interface AppAdapter {
     >,
   ): Promise<ProgressEvent>;
   listProgressEvents(playerId: string): Promise<ReadonlyArray<ProgressEvent>>;
+  subscribeCollection(
+    collection: string,
+    filter: string | undefined,
+    onEvent: (
+      action: "create" | "update" | "delete",
+      record: unknown,
+    ) => void,
+  ): () => void;
   subscribeProgressEvent(
     playerId: string,
     missionId: string,

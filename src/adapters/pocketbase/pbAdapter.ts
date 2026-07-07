@@ -390,6 +390,51 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     return records.map(marshalProgressEvent);
   };
 
+  const subscribeCollection = (
+    collection: string,
+    filter: string | undefined,
+    callback: (
+      action: "create" | "update" | "delete",
+      record: unknown,
+    ) => void,
+  ): () => void => {
+    let unsubscribe: (() => Promise<void>) | null = null;
+    let cancelled = false;
+
+    const marshalRecord = (record: RecordModel): unknown => {
+      switch (collection) {
+        case "players":
+          return marshalPlayer(pb, record);
+        case "progress_events":
+          return marshalProgressEvent(record);
+        default:
+          return record;
+      }
+    };
+
+    void pb.collection(collection).subscribe(
+      "*",
+      (e) => {
+        const action = e.action;
+        if (
+          action !== "create" && action !== "update" && action !== "delete"
+        ) {
+          return;
+        }
+        callback(action, marshalRecord(e.record as RecordModel));
+      },
+      filter ? { filter } : undefined,
+    ).then((unsub) => {
+      if (cancelled) void unsub();
+      else unsubscribe = unsub;
+    });
+
+    return () => {
+      cancelled = true;
+      if (unsubscribe) void unsubscribe();
+    };
+  };
+
   const subscribeProgressEvent = (
     playerId: string,
     missionId: string,
@@ -665,6 +710,7 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     upsertFormSchema,
     upsertProgressEvent,
     listProgressEvents,
+    subscribeCollection,
     subscribeProgressEvent,
     subscribeSessionPlayers,
     subscribeSessionProgressEvents,

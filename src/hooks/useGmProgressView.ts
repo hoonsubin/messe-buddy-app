@@ -11,7 +11,7 @@ import { fetchGmRoster } from "../store/queryFetchers.ts";
 import { mergeProgressEvent } from "../store/progressEvents.ts";
 import { queryKeys } from "../store/queryKeys.ts";
 import { useQueryClient } from "../store/useQueryClient.ts";
-import { useQuery } from "./useQuery.ts";
+import { useLiveQuery } from "./useLiveQuery.ts";
 import type { UseProgressGamemakerResult } from "./progressTypes.ts";
 
 export const useGmProgressView = (
@@ -29,7 +29,7 @@ export const useGmProgressView = (
     validatorUidRef.current = validatorUid;
   });
 
-  const gmRoster = useQuery(
+  const gmRoster = useLiveQuery(
     homeSid ? queryKeys.gmRoster(homeSid) : null,
     fetchGmRoster(homeSid),
     { enabled: !!homeSid },
