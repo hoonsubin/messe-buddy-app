@@ -12,7 +12,7 @@ const DEFAULT_PROMPTS: ReadonlyArray<string> = [
   "Do I need to clock out when I visit the exhibition halls during work hours?",
   "Welche Vorgaben gelten für die Erstellung und Änderung meines Passworts?",
   "Am I allowed to bring my own coffee machine to the office?",
-  "Ab welchem Wert brauche ich eine Genehmigung, um ein Geschenk von einem Geschäftspartner anzunehmen?"
+  "Ab welchem Wert brauche ich eine Genehmigung, um ein Geschenk von einem Geschäftspartner anzunehmen?",
 ];
 
 const MAX_TEXTAREA_PX = 120;
