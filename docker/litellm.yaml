@@ -38,21 +38,6 @@ model_list:
       input_cost_per_token: 0.0000015
       output_cost_per_token: 0.000009
 
-  # ── HoonLabs upstream — Granite chat model (alternative to Gemini) ────────────
-  - model_name: granite-4.0-h-tiny
-    litellm_params:
-      model: litellm_proxy/ibm/granite-4.0-h-tiny
-      api_base: https://litellm.hoonlabs.xyz/v1
-      api_key: os.environ/LLM_SERVER_API_KEY
-      rpm: 500
-      tpm: 1000000
-    model_info:
-      mode: chat
-      max_input_tokens: 128000
-      max_output_tokens: 8192
-      input_cost_per_token: 0
-      output_cost_per_token: 0
-
   # Embedding: Gemini Embedding 2 (Google AI Studio)
   - model_name: gemini-embedding-2
     litellm_params:
@@ -67,39 +52,7 @@ model_list:
       input_cost_per_token: 0.0000002
       output_cost_per_token: 0
 
-  # ── HoonLabs upstream — Nomic Embedding (alternative to Gemini) ───────────────
-  - model_name: nomic-embed-text-v2-moe
-    litellm_params:
-      model: litellm_proxy/nomic-ai/embed-text-v2-moe
-      api_base: https://litellm.hoonlabs.xyz/v1
-      api_key: os.environ/LLM_SERVER_API_KEY
-      rpm: 500
-      tpm: 1000000
-    model_info:
-      mode: embedding
-      max_input_tokens: 512
-      input_cost_per_token: 0
-      output_cost_per_token: 0
-      # output dimension: 768
 
-  # Reranker: BGE Reranker v2 M3 (cross-encoder, used by the pgvector connector
-  # to re-rank retrieved chunks before they're injected into the prompt).
-  # NOTE: provider MUST be `hosted_vllm/` — it exposes LiteLLM's `/rerank`
-  # endpoint. The `openai/` provider does NOT support rerank. The upstream
-  # (litellm.hoonlabs.xyz) serves this model from a vLLM rerank runtime.
-  - model_name: bge-reranker-v2-m3
-    litellm_params:
-      model: hosted_vllm/gpustack/bge-reranker-v2-m3
-      api_base: https://litellm.hoonlabs.xyz/v1
-      api_key: os.environ/LLM_SERVER_API_KEY
-      rpm: 500
-      tpm: 1000000
-    model_info:
-      mode: rerank
-      max_input_tokens: 8192
-      # Hosted on litellm.hoonlabs.xyz (internal infrastructure) — cost tracked separately
-      input_cost_per_token: 0
-      output_cost_per_token: 0
 
 # ── Vector Store Registry ─────────────────────────────────────────────────────
 # Configured to use the litellm-pgvector connector service.

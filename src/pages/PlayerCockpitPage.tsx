@@ -96,6 +96,8 @@ const PlayerCockpitPage = () => {
       <RouteTabBar
         tabs={playerCockpitTabsForSession(sid)}
         ariaLabel="Player views"
+        testIdPrefix="player-cockpit-tab"
+        onTabActivate={() => m.closeMilestoneSidebar()}
       />
 
       {m.popupMission !== null && (
@@ -131,7 +133,7 @@ const PlayerCockpitPage = () => {
           progressEvents={m.progress.progressEvents}
           currentXP={m.msProgressEarnedXP}
           xpThreshold={m.selectedMilestone.xpThreshold}
-          onClose={() => m.setSelectedMilestoneId(null)}
+          onClose={m.closeMilestoneSidebar}
           onMissionClick={(id) => m.handleMissionClick(id)}
         />
       )}

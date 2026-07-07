@@ -1,5 +1,7 @@
 # Player milestone sidebar vs tab bar — layout options
 
+**Status:** **Option B approved** (2026-07-07) — see implementation tasks **8.15.1–8.15.7** in [`plans/pages-and-data-refactor.md`](../../plans/pages-and-data-refactor.md).
+
 **Context:** On 390×844, opening the milestone sidebar (`MilestoneSidebarViewer`) blocks taps on **Dashboard** / **AI Assistant** tabs — the overlay intercepts pointer events. User must close the sidebar (×) first.
 
 **Goal:** Let players read milestone missions/resources without trapping navigation.
@@ -54,7 +56,7 @@ Keep sidebar as a **left drawer**; tab bar stays **fixed and tappable** (`z-inde
 
 ---
 
-## Option B — Auto-dismiss sidebar on tab tap
+## Option B — Auto-dismiss sidebar on tab tap ✅ **Approved**
 
 Sidebar unchanged visually; tapping **Dashboard** / **AI Assistant** closes sidebar then navigates.
 
@@ -69,7 +71,7 @@ User taps "AI Assistant"
 | No z-index fight; clear mental model | Extra animation on every tab switch |
 | Sidebar can stay full-height | User loses sidebar context when peeking assistant |
 
-**Implementation:** `onTabClick` in `PlayerSessionLayout` calls `closeMilestoneSidebar()` before `navigate`.
+**Implementation:** `onTabActivate` on player `RouteTabBar` + `closeMilestoneSidebar()` in `usePlayerCockpitPage`; partial **A** z-index on `.player-cockpit .route-tab-bar`. **Not** `PlayerSessionLayout` (auth wrapper only).
 
 ---
 
@@ -118,15 +120,16 @@ Sidebar expands to **full viewport**; tab bar hidden until user taps **Back** or
 
 ## Recommendation
 
-| Priority | Option | When |
-|----------|--------|------|
-| **1 (ship fast)** | **A** or **B** | A if tabs should always work; B if sidebar should not persist across tabs |
-| **2 (polish)** | **C** | Align player milestone UX with GM sheet patterns |
-| **3 (defer)** | **D** | Only if product wants “milestone focus mode” |
+| Priority | Option | When | Status |
+|----------|--------|------|--------|
+| **1 (ship fast)** | **B** (+ partial **A** z-index) | Tabs work; sidebar does not persist across tabs | **Approved** |
+| **1 (alt)** | **A** alone | Tabs always tappable; sidebar may persist | Deferred |
+| **2 (polish)** | **C** | Align player milestone UX with GM sheet patterns | Deferred |
+| **3 (defer)** | **D** | Only if product wants “milestone focus mode” | Deferred |
 
-**Suggested decision:** **B + partial A** — raise tab bar `z-index` so taps register, and **close sidebar on tab navigation** so Assistant opens clean.
+**Decision (2026-07-07):** **B + partial A** — raise tab bar `z-index` so taps register, and **close sidebar on tab navigation** so Assistant opens clean.
 
-**Files likely touched:** `src/styles/components/sidebar.css`, `PlayerSessionLayout` / `PlayerCockpitPage`, `usePlayerCockpitPage` (`selectedMilestoneId`).
+**Files to touch:** `src/styles/components/player.css`, `RouteTabBar.tsx`, `PlayerCockpitPage.tsx`, `usePlayerCockpitPage.ts` (`selectedMilestoneId`); trim duplicate sidebar-tab rules from `shared.css`.
 
 ---
 
