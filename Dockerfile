@@ -92,7 +92,8 @@ RUN chmod +x /usr/local/bin/pocketbase-server
 COPY docker/nginx.conf /etc/nginx/sites-available/default.template
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY docker/reload-llm-key.sh /reload-llm-key.sh
+RUN chmod +x /entrypoint.sh /reload-llm-key.sh
 
 # PocketBase data directory (mount a named volume here in production)
 VOLUME ["/pb_data"]

@@ -65,7 +65,7 @@ services:
       EMBEDDING__MODEL: ${EMBEDDING_MODEL:-gemini-embedding-2}
       EMBEDDING__BASE_URL: http://litellm:4000
       EMBEDDING__API_KEY: ${LITELLM_MASTER_KEY:-sk-change-me-in-prod}
-      EMBEDDING__DIMENSIONS: ${EMBEDDING_DIM:-768}
+      EMBEDDING__DIMENSIONS: ${EMBEDDING_DIM:-1536}
       RERANK__ENABLED: ${RERANK_ENABLED:-true}
       RERANK__MODEL: ${RERANK_MODEL:-bge-reranker-v2-m3}
       RERANK__CANDIDATES: ${RERANK_CANDIDATES:-30}
@@ -162,6 +162,13 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-litellm}
       LITELLM_DB_HOST: litellm-db
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-gemini-embedding-2}
+      # Must match litellm-pgvector's EMBEDDING__DIMENSIONS below and the
+      # vector(N) column in docker/litellm-pgvector/prisma/schema.prisma —
+      # this is what actually gets sent as `dimensions` on the /v1/embeddings
+      # request (watcher.py), not just a label. Previously unset here, so
+      # Gemini always returned its native 3072-dim vector no matter what
+      # EMBEDDING_DIM was set to elsewhere.
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-1536}
       # Char-based chunking sized for reranker's 512-token vLLM batch limit (~3 chars/token worst case).
       CHUNK_SIZE: ${CHUNK_SIZE:-1500}
       OVERLAP: ${OVERLAP:-150}
@@ -188,6 +195,19 @@ services:
   # and restart both this and `app` to point the whole stack at a new domain.
   # No-ops (idles) if PUBLIC_DOMAIN is unset, e.g. local/LAN dev — app then
   # falls back to its own self-signed cert as before.
+  #
+  # Waits on `app`'s healthcheck (nginx answering on :80) rather than starting
+  # blind: on a cold boot (fresh litellm-db/vector-db volumes) `app` can take
+  # well over certbot's ~150s HTTP-01 retry budget to come up, which used to
+  # make certbot give up and idle for 12h before trying again.
+  #
+  # /etc/letsencrypt is a host bind mount, NOT a named volume — `docker
+  # compose down -v` only removes named volumes, so this survives a full
+  # teardown/rebuild and a greenfield redeploy reuses the same ACME account +
+  # issued cert instead of re-requesting one. That matters because Let's
+  # Encrypt rate-limits duplicate certs for the same domain to 5/week;
+  # re-issuing on every `-v` teardown will eventually trip that limit and
+  # certbot will fail outright, not just slowly.
   certbot:
     build:
       context: ./docker/certbot
@@ -197,8 +217,11 @@ services:
       CERTBOT_EMAIL: ${CERTBOT_EMAIL:-}
     volumes:
       - certbot_webroot:/var/www/certbot
-      - certbot_letsencrypt:/etc/letsencrypt
+      - ./docker/certbot/letsencrypt:/etc/letsencrypt
       - nginx_ssl:/nginx_ssl
+    depends_on:
+      app:
+        condition: service_healthy
     restart: unless-stopped
 
   # -- App (PWA + PocketBase) --
@@ -235,9 +258,39 @@ services:
         condition: service_healthy
       # NOT certbot: certbot's HTTP-01 challenge needs this container's nginx
       # already answering on :80 (see docker/nginx.conf's acme-challenge
-      # location), so app must come up independently, not after certbot.
+      # location), so app must come up independently, not after certbot —
+      # it's certbot that waits on app's healthcheck below, not the other
+      # way around.
+    healthcheck:
+      # /api/health is proxied straight through to PocketBase (nginx.conf's
+      # ^/(api|_) location), so this only goes green once BOTH nginx and
+      # PocketBase are actually serving — not just nginx (which supervisord
+      # starts before pocketbase; see docker/supervisord.conf priorities).
+      # certbot and pb-seed both depend on this, so it's what stops them
+      # from racing app's cold start.
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:80/api/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
     networks:
       - litellm-external
+
+  # -- PocketBase seed (one-shot) --
+  # Registers the shared library resources and template on every fresh compose stack.
+  pb-seed:
+    build:
+      context: .
+      dockerfile: docker/pb-seed/Dockerfile
+    container_name: messebuddy-pb-seed
+    environment:
+      PB_URL: http://app/
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - litellm-external
+    restart: on-failure:5
 
 volumes:
   pb_data:
@@ -252,8 +305,9 @@ volumes:
     driver: local
   certbot_webroot:
     driver: local
-  certbot_letsencrypt:
-    driver: local
+  # certbot_letsencrypt is intentionally NOT a named volume — see the
+  # `certbot` service comment above. It's a bind mount to
+  # ./docker/certbot/letsencrypt (gitignored) so it survives `down -v`.
 
 networks:
   litellm-internal:
