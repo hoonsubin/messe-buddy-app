@@ -63,6 +63,7 @@ export interface PlayerCockpitPageModel {
   readonly tutorialNextDisabled: boolean;
   readonly selectedMilestoneId: string | null;
   readonly setSelectedMilestoneId: (id: string | null) => void;
+  readonly closeMilestoneSidebar: () => void;
   readonly selectedMilestone: Milestone | undefined;
   readonly sidebarMissions: ReadonlyArray<Mission>;
   readonly msProgressEarnedXP: number;
@@ -192,6 +193,14 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     null,
   );
   const [popupMission, setPopupMission] = useState<Mission | null>(null);
+
+  const closeMilestoneSidebar = useCallback(() => {
+    setSelectedMilestoneId(null);
+  }, []);
+
+  useEffect(() => {
+    closeMilestoneSidebar();
+  }, [cockpitTab, closeMilestoneSidebar]);
 
   const handleMissionClick = useCallback(
     (missionId: string, fromTutorial = false) => {
@@ -337,6 +346,7 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
       tutorialNextDisabled,
       selectedMilestoneId,
       setSelectedMilestoneId,
+      closeMilestoneSidebar,
       selectedMilestone,
       sidebarMissions,
       msProgressEarnedXP,

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { isDemoBuild } from "../adapters/AdapterContextValue.ts";
 import { useAdapter } from "../adapters/useAdapter.ts";
 import { useIdentity, writeActiveUid } from "./useIdentity.ts";
 import {
@@ -64,9 +65,10 @@ export const useLandingFlow = (): UseLandingFlowResult => {
   const inviteTokenFromUrl = parseInviteTokenFromSearch(searchParams);
   const isJoinRoute = Boolean(routeSessionId);
 
-  // ── Seed demo profiles once on mount ──────────────────────────────────────
+  // ── Seed demo profiles once on mount (mock/static builds only — D-UX-1) ─
   const seeded = useRef(false);
   useEffect(() => {
+    if (!isDemoBuild()) return;
     if (seeded.current) return;
     seeded.current = true;
     for (const demo of DEMO_PROFILES) {
@@ -75,6 +77,11 @@ export const useLandingFlow = (): UseLandingFlowResult => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const visibleProfiles = useMemo(
+    () => isDemoBuild() ? profiles : profiles.filter((p) => !p.isDemo),
+    [profiles],
+  );
 
   // ── Orphan detection (P-17) ──────────────────────────────────────────────
   const [orphanedUids, setOrphanedUids] = useState<ReadonlySet<string>>(
@@ -251,13 +258,13 @@ export const useLandingFlow = (): UseLandingFlowResult => {
   }, [navigate]);
 
   const handleRemoveProfile = useCallback((uid: string) => {
-    const isDemoProfile = DEMO_PROFILES.some((d) => d.uid === uid);
-    if (isDemoProfile) return;
+    const profile = profiles.find((p) => p.uid === uid);
+    if (profile?.isDemo) return;
     removeProfile(uid);
-  }, [removeProfile]);
+  }, [profiles, removeProfile]);
 
   return {
-    profiles,
+    profiles: visibleProfiles,
     orphanedUids,
     workspacePanelOpen,
     isJoinRoute,

@@ -14,9 +14,16 @@ interface RouteTabBarProps {
   readonly ariaLabel: string;
   /** When set, each tab gets data-testid="{prefix}-{key}". */
   readonly testIdPrefix?: string;
+  /** Fired on tab click before navigation (e.g. close overlays). */
+  readonly onTabActivate?: (key: string) => void;
 }
 
-const RouteTabBar = ({ tabs, ariaLabel, testIdPrefix }: RouteTabBarProps) => (
+const RouteTabBar = ({
+  tabs,
+  ariaLabel,
+  testIdPrefix,
+  onTabActivate,
+}: RouteTabBarProps) => (
   <nav
     className="route-tab-bar"
     aria-label={ariaLabel}
@@ -29,6 +36,7 @@ const RouteTabBar = ({ tabs, ariaLabel, testIdPrefix }: RouteTabBarProps) => (
         role="tab"
         className={({ isActive }) =>
           cn("tab-bar__tab", isActive && "tab-bar__tab--active")}
+        onClick={() => onTabActivate?.(t.key)}
         {...(testIdPrefix !== undefined && {
           "data-testid": `${testIdPrefix}-${t.key}`,
         })}

@@ -10,6 +10,9 @@ export const resolveUseMockPb = (): boolean => {
   return import.meta.env.VITE_USE_MOCK_PB !== "false";
 };
 
+/** Demo picker cards + `DEMO_PROFILES` seeding — mock/static builds only (D-UX-1). */
+export const isDemoBuild = resolveUseMockPb;
+
 export const AdapterContext = createContext<AppAdapter>(
   resolveUseMockPb() ? mockAdapter : pbAdapter,
 );

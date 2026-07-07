@@ -229,44 +229,6 @@
   color: hsl(var(--color-primary));
 }
 
-/* ── Sidebar tabs ────────────────────────────────────────────────────────── */
-.sidebar-tabs {
-  display: flex;
-  flex-shrink: 0;
-  border-block-end: 1px solid hsl(var(--color-border));
-}
-
-.sidebar-tab {
-  flex: 1;
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: hsl(var(--color-muted-fg));
-  background: none;
-  border: none;
-  border-block-end: 2px solid transparent;
-  cursor: pointer;
-  transition: color var(--duration-fast), border-color var(--duration-fast);
-}
-
-.sidebar-tab--active {
-  color: hsl(var(--color-primary));
-  border-block-end-color: hsl(var(--color-primary));
-}
-
-/* ── Sidebar mission row (compact - inside sidebar tabs) ─────────────────── */
-.sidebar-mission-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) 0;
-  border-block-end: 1px solid hsl(var(--color-border));
-}
-
-.sidebar-mission-row:last-child {
-  border-block-end: none;
-}
-
 /* ── Mission card ────────────────────────────────────────────────────────── */
 .mission-card {
   display: flex;

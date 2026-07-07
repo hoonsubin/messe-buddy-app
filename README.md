@@ -80,8 +80,10 @@ Disable with `localStorage.removeItem("mb_dev_trace")`. See `src/store/devBacken
 Regression checks use **Playwright MCP** at **390×844** (iPhone 15) with visual screenshots — not CI smoke scripts. After a clean rebuild:
 
 1. Reset PB if needed: delete `server/pb_data/` and restart `deno task dev:full`
-2. Walk GM + player flows per `design/design-tokens.md` §10
-3. Optional headless script: `SMOKE_BASE_URL=http://127.0.0.1:5173 deno run -A --node-modules-dir=auto scripts/smoke-live.ts`
+2. Walk the seven shells per [`design/design-tokens.md`](design/design-tokens.md) §10 — use `[data-page]` on each route to confirm the correct page composer mounted
+3. Save screenshots to `.playwright-mcp/` (e.g. `smoke-814-landing-no-demo.png`)
+
+Mock-only daily dev (`deno task dev`, `VITE_USE_MOCK_PB=true`) can use demo profiles on landing; PocketBase mode (`deno task dev:full`) must not show DEMO picker cards (**8.14**).
 
 
 ```sh

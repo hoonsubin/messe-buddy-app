@@ -47,7 +47,16 @@ const PlayerCockpitPage = () => {
     );
   }
 
-  if (result.status === "session-redirect") return null;
+  if (result.status === "session-redirect") {
+    return (
+      <div
+        className="page-state-center"
+        data-testid="player-cockpit-page"
+        data-page="player-cockpit"
+        aria-busy="true"
+      />
+    );
+  }
 
   const m = result.model;
 
@@ -96,6 +105,8 @@ const PlayerCockpitPage = () => {
       <RouteTabBar
         tabs={playerCockpitTabsForSession(sid)}
         ariaLabel="Player views"
+        testIdPrefix="player-cockpit-tab"
+        onTabActivate={() => m.closeMilestoneSidebar()}
       />
 
       {m.popupMission !== null && (
@@ -131,7 +142,7 @@ const PlayerCockpitPage = () => {
           progressEvents={m.progress.progressEvents}
           currentXP={m.msProgressEarnedXP}
           xpThreshold={m.selectedMilestone.xpThreshold}
-          onClose={() => m.setSelectedMilestoneId(null)}
+          onClose={m.closeMilestoneSidebar}
           onMissionClick={(id) => m.handleMissionClick(id)}
         />
       )}

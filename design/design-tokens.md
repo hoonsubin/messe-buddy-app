@@ -373,14 +373,19 @@ Invite URL `/join/:sessionId` pre-fills join form — **no auto-submit**. Data w
 
 After any UI change, verify on **390×844** (Playwright MCP, Firefox/iPhone 15 profile):
 
-1. **Landing** (`/`, `/join/:sessionId`): brand, grid bg, card max-width, picker, join steps, GM create panel.
-2. **Player cockpit** (`/session/:id`, `/session/:id/assistant` demo): TopBar, map visible, mission list scrolls, assistant tab.
-3. **GM home** (`/gamemaker/:id`, `/gamemaker/:id/library` demo): player list, library tab, wizard modal.
-4. **GM player detail** (`/gamemaker/:id/player/:pid`, tab paths, scan mode): map, bottom sheet, tabs.
-5. **Form** (`/form/:sessionId/:missionId`): TopBar + form fields + submit.
-6. **Validation** (`/validate/:sessionId?t=…`): confirm card stable (no flicker).
-7. Console: no errors. Screenshots → `.playwright-mcp/`.
-8. **Token drift:** new colours/spacing must extend `tokens.css`, not hardcode hex/rgb in TSX.
+| Route | `data-page` | Checklist |
+|-------|-------------|-----------|
+| `/`, `/join/:sessionId` | `landing` | Brand, grid bg, card max-width, picker (mock only), join steps, GM create panel |
+| `/session/:id`, `…/assistant` | `player-cockpit` | TopBar, map, mission list scrolls, assistant tab; sidebar tab dismiss (**8.15**) |
+| `/gamemaker/:id`, `…/library` | `gm-home` | Player list, library tab, wizard modal |
+| `/gamemaker/:id/player/:pid` (+ tabs, `/scan`) | `gm-player-detail` | Map, bottom sheet, tabs |
+| `/form/:sessionId/:missionId` | `player-form` | TopBar + form fields + submit |
+| `/validate/:sessionId?t=…` | `validation` | Confirm card stable (no flicker) |
+| `*` (unknown path) | `not-found` | 404 copy + Go home |
+
+1. Confirm `[data-page]` matches the table for the route under test.
+2. Console: no errors. Screenshots → `.playwright-mcp/`.
+3. **Token drift:** new colours/spacing must extend `tokens.css`, not hardcode hex/rgb in TSX.
 
 ### Common regression patterns to reject
 
@@ -404,4 +409,4 @@ After any UI change, verify on **390×844** (Playwright MCP, Firefox/iPhone 15 p
 
 ---
 
-*Last synced with codebase: 2026-07-06.*
+*Last synced with codebase: 2026-07-07.*

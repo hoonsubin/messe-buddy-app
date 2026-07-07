@@ -247,42 +247,32 @@ Already superseded by `applyTemplateIfBlank` + `applyTemplateToNewPlayer`.
 | **1** | Store + dead code removal | Refactor plan | Pending |
 | **2** | Flat pages, routes, QR consolidation | Refactor plan | Pending |
 | **3** | Query migration + hook retirement | Refactor plan | **Done** (page hooks migrated; legacy hooks deleted) |
-| **4** | Verify + guard (refactor) | Refactor plan | Pending |
+| **4** | Verify + guard (refactor) | Refactor plan | **Done** (4.1–4.4) |
 | **5** | Blockers — smoke remediation | Playwright 2026-07-06 | **Done** (5.1) |
 | **6** | Realtime — GM + player live sync | Playwright 2026-07-06 | **Done** (6.1–6.5, **6.4** verified 2026-07-07) |
 | **7** | Functional gaps — smoke remediation | Playwright 2026-07-06 | **Done** (7.1–7.7) |
-| **8** | UX polish — smoke remediation | Playwright 2026-07-06 | **Done** (8.1–8.13); **8.14–8.15** open |
-| **9** | Smoke verification | Phase 5–8 exit gate | **Done** — `smoke-live.ts` 16/16 + fresh-identity Playwright MCP (2026-07-07) |
+| **8** | UX polish — smoke remediation | Playwright 2026-07-06 | **Done** (8.1–8.15) |
+| **9** | Smoke verification | Phase 5–8 exit gate | **Done** — fresh-identity Playwright MCP (2026-07-07); **8.15** retest after fix |
 | **10** | E2E harness + CI gate | Smoke scripts 2026-07-06 | **Deferred** — no CI smoke; Playwright MCP + visual analysis instead |
 
-**Recommended execution order:** **8.14** (demo gate) → **8.15** (sidebar wireframe decision + implement) → **4** (docs/guards) → Phases **1–2** if not merged.
+**Recommended execution order:** Phase **1–2** audit (checkboxes stale — most code merged) → **9.4** (mock path, optional).
 
-**Verification (no smoke CI):** Use **Playwright MCP** at 390×844 against a clean rebuild (`deno task dev:full` or Docker). Capture screenshots per `design/design-tokens.md` §10. Optional script: `scripts/smoke-live.ts` for headless regression only.
+**Verification (no smoke CI):** Use **Playwright MCP** at 390×844 against a clean rebuild (`deno task dev:full` or Docker). Capture screenshots per `design/design-tokens.md` §10. Do **not** add new smoke scripts — `scripts/smoke-live.ts` was removed; trim stale references in README/plan as encountered.
 
 **Legacy smoke IDs → phase tasks:** ST-P1-1 = **5.1** · ST-RT-1…4 = **6.1…6.4** · ST-P2-1…4 = **7.1…7.4** · ST-P3-1…11 = **8.1…8.11**
 
 ### Smoke baseline (Playwright, PocketBase)
 
-**Environment:** `http://127.0.0.1:5173` · `useMockPb: false` · iPhone 15 (390×844) · `scripts/smoke-live.ts` + Playwright MCP visual pass
+**Environment:** `http://127.0.0.1:5173` · `useMockPb: false` · iPhone 15 (390×844) · Playwright MCP visual pass only
 
 | Persona | Pass | Fail / open | Notes |
 |---------|------|-------------|-------|
-| **Landing** | Home renders; GM workspace create | Demo profiles after mount (**8.14**) | Cleared `localStorage` still gets DEMO cards from `useLandingFlow` |
+| **Landing** | Home renders; GM workspace create | — | Demo cards gated to mock builds (**8.14**) |
 | **Game Master** | Roster, wizard, milestone sheet (**7.6**), live progress, empty library (**8.4**), invite QR/link | — | Fresh workspace verified |
-| **Player** | Invite URL → name → claim; form; resource search; map sidebar; multi-device reopen | Sidebar blocks tab bar (**8.15**) | Join simplified (**8.13**) |
+| **Player** | Invite URL → name → claim; form; resource search; map sidebar; tab bar with sidebar open (**8.15**) | Demo profiles on PB landing (**8.14**) | Join simplified (**8.13**) |
 | **Validation / QR** | GM roster % after form (realtime) | Camera scan untestable headless | Simulate not re-run |
 
-**`smoke-live.ts` (2026-07-07):** **16/16**
-
-**Fresh-identity visual smoke (2026-07-07 evening, Playwright MCP):** Cleared storage → GM **Alex Rivera** / **Smoke Visual 2026-07-07** → wizard → **Jordan Lee** → invite URL from GM card → claim → profile form → GM roster **3%** without reload. Screenshots: `.playwright-mcp/smoke-fresh-*.png`.
-
-**Prior headless runs:**
-
-| Run | Score | Failures |
-|-----|-------|----------|
-| `smoke-live.ts` #1 (pre-fix) | 7/10 | `7.7` storm, `8.5` grammar (TemplateSelect), `fatal` join flow |
-| `smoke-live.ts` #2 | 13/16 | `8.5`, `6.4.progress` (baseline after submit), QR not in list |
-| `smoke-live.ts` #3 | **16/16** | — |
+**Fresh-identity visual smoke (2026-07-07 evening, Playwright MCP):** Cleared storage → GM **Alex Rivera** / **Smoke Visual 2026-07-07** → wizard → **Jordan Lee** → invite URL from GM card → claim → profile form → GM roster **3%** without reload. Screenshots: `.playwright-mcp/smoke-fresh-*.png`. Item 12 (AI Assistant tab) required closing sidebar first — **8.15** addresses this.
 
 **Manual smoke cross-ref:** [`MesseBuddy_Smoke_Test_2026-07-07.md`](MesseBuddy_Smoke_Test_2026-07-07.md)
 
@@ -321,7 +311,7 @@ Pilot first — proves the store before bulk migration:
 
 - [x] **4.1** CI/lint: no `useAdapter` in `src/components/` — verified (0 call sites)
 - [x] **4.2** Document trace in README dev section — see **Dev backend trace** in README
-- [ ] **4.3** Update `data-page` attributes and smoke paths (design-tokens §10) — verify via Playwright MCP
+- [x] **4.3** `data-page` on all seven shells + design-tokens §10 table — Playwright MCP 2026-07-07; added `not-found`; `PlayerCockpitPage` session-redirect shell keeps `data-page`
 - [x] **4.4** `deno task build`, `deno task lint` — build green; lint warnings pre-existing
 
 ### Phase 5 — Blockers (smoke remediation)
@@ -350,9 +340,9 @@ Dual-tab smoke (PocketBase): GM tab open **without reload** while player/validat
 - [x] **6.1** PB subscribe on `players` (`sessionId = …`) → `patchGmRosterFromPlayer` via `useGmRosterRealtime`
 - [x] **6.2** PB subscribe on `progress_events` → `patchGmRosterFromProgressEvent`; wired in `useGmHomePage` + `useGmPlayerDetailPage`
 - [x] **6.3** GM Analytics tab appears without reload when first event arrives
-- [x] **6.4** Playwright dual-context spec: claim + form progress + QR validate; GM DOM updates without `page.reload()` — `scripts/smoke-live.ts` **16/16** (2026-07-07)
+- [x] **6.4** Playwright dual-context: claim + form progress + QR validate; GM DOM updates without `page.reload()` — verified 2026-07-07 (historical `smoke-live.ts` run; script since removed)
 - [x] **6.5** Player QR wait dismisses within 10s after GM confirm — session-scoped SSE + progress poll + popup auto-close on `isCompleted`; **simulate scan picks first incomplete QR mission** (`pickFirstIncompleteQrMission`); unblocks **9.3**
-  - **Verify:** `smoke-phase9.ts` `9.3.qr-player-dismiss` green on 3 consecutive runs
+  - **Verify:** Playwright MCP dual-tab QR flow; player popup dismisses within 10s after GM confirm
   - **Files:** `src/hooks/useWatchProgressMission.ts`, `src/hooks/useQrScan.ts`, `src/utils/qrMissionPick.ts`, `src/components/player/MissionDetailPopup.tsx`, `src/adapters/pocketbase/pbAdapter.ts`
 
 ### Phase 7 — Functional gaps (smoke remediation)
@@ -362,13 +352,13 @@ Dual-tab smoke (PocketBase): GM tab open **without reload** while player/validat
 - [x] **7.3** Milestone-scoped resources — GM attach from library + detach (milestone sheet); player milestone sidebar Resources tab + search empty-state copy
   - **Files:** `ResourcesEditor.tsx`, `MilestoneSidebarViewer.tsx`, `useGmPlayerDetailPage.ts`, `ResourcesSection.tsx`
 - [x] **7.4** `/llm/health/readiness` 502 — poll only on assistant tab; stop after consecutive failures (`useAssistantAvailability`, `useChat`, `usePlayerCockpitPage`)
-  - **Acceptance:** 0 console 502 on `/session/:id` dashboard load when LiteLLM not running — `smoke-live.ts` `7.4.no-llm-502-dashboard` pass
+  - **Acceptance:** 0 console 502 on `/session/:id` dashboard load when LiteLLM not running
 - [x] **7.5** Scratch journey empty mission list — `CurrentMissionsList` shows caught-up card with map hint when `journeyMissionCount > 0` and no current missions
 - [x] **7.6** Milestone editor won't open (2026-07-07 regression #1) — `closeMilestoneEditor` effect depended on unstable editor hook identity; fixed with ref-stable close on `playerId` / `isScanMode` only (`useGmPlayerDetailPage.ts`)
-  - **Verify:** `smoke-live.ts` `7.6.milestone-sheet-opens`
+  - **Verify:** Playwright MCP — milestone sheet opens on map node tap
   - **Source:** [`MesseBuddy_Smoke_Test_2026-07-07.md`](MesseBuddy_Smoke_Test_2026-07-07.md) regression #1
 - [x] **7.7** Stale `mb_identity` request storm (2026-07-07 regression #2) — `useQuery` subscribe re-fetched on every cache notify; `fetchQuery` now caches errors until `invalidateQuery`
-  - **Verify:** `smoke-live.ts` `7.7.stale-identity-storm` (&lt; 20 session fetches in 2.5s)
+  - **Verify:** Dev trace — &lt; 20 session fetches in 2.5s with stale identity
   - **Files:** `src/store/queryClient.ts`, `src/hooks/useQuery.ts`
   - **Follow-up:** auto-clear identity + redirect on session 404 — `useStaleSessionRedirect` on GM home, GM player detail, player cockpit
 
@@ -378,14 +368,16 @@ Dual-tab smoke (PocketBase): GM tab open **without reload** while player/validat
 - [x] **8.2** Layered modals on first login — hide tutorial when skip confirm opens; restore on cancel (`useTutorial`)
 - [x] **8.3** Milestone bottom sheet on `/scan` — auto-close on scan route (`useGmPlayerDetailPage`); `G.7.scan-sheet` pass
 - [x] **8.4** Empty-state CTA duplication — header “Add resource” hidden when library empty (`ResourceLibraryTab`); **verified** on fresh PB workspace (Playwright MCP `smoke-fresh-11-library-empty.png`)
-- [x] **8.5** Grammar: "1 missions" → singular/plural (`MilestoneNode`, `TemplateSelect`); `smoke-live.ts` `8.5.grammar` pass
+- [x] **8.5** Grammar: "1 missions" → singular/plural (`MilestoneNode`, `TemplateSelect`)
 - [x] **8.6** Player name prefill from invite token (`useLandingFlow`); claimed revisit auto-links to cockpit (multi-device)
 - [x] **8.13** Join flow — remove manual “Step 1 of 2 — invite link”; `/join/:sessionId?t=` or QR only (`useLandingFlow`, `EmployeeForm`, `inviteUrl.ts`)
-- [ ] **8.14** **Demo profiles only in static/mock builds** — gate `DEMO_PROFILES` seeding + picker cards behind `useMockPb` / `window.__MB_CONFIG__.useMockPb === true` (GitHub Pages, no backend). **Not** shown when PocketBase adapter is active (`dev:full`, Docker, production PB).
-  - **Files:** `useLandingFlow.ts`, `ProfileCard.tsx`, `demoInstance.ts` (optional `isDemoBuild()` helper in `AdapterContextValue.ts`)
-- [ ] **8.15** Player milestone sidebar vs tab bar — open sidebar blocks Dashboard / AI Assistant taps at 390×844
-  - **Wireframe options:** [`design/wireframes/player-sidebar-tab-bar-options.md`](../design/wireframes/player-sidebar-tab-bar-options.md) (recommend **B** auto-dismiss on tab + **A** z-index, or **C** bottom sheet)
-  - **Smoke:** Playwright MCP — tab click fails until sidebar closed (`smoke-fresh` session)
+- [x] **8.14** **Demo profiles only in static/mock builds** — gate `DEMO_PROFILES` seeding + picker cards behind `isDemoBuild()` (`resolveUseMockPb` / `window.__MB_CONFIG__.useMockPb`). Hidden on PocketBase adapter (`dev:full`, Docker, production PB).
+  - **Files:** `AdapterContextValue.ts` (`isDemoBuild`), `useLandingFlow.ts` (seed + `visibleProfiles` filter), `LandingPage.tsx` (skip demo auto-redirect), `ProfileCard.tsx` (`identity.isDemo`)
+  - **Verify:** Playwright MCP — cleared storage on PB → landing shows "No saved profiles", no DEMO cards
+- [x] **8.15** Player milestone sidebar vs tab bar — **Option B** (auto-dismiss on tab tap + partial A z-index) — **done 2026-07-07**
+  - **Decision:** [`design/wireframes/player-sidebar-tab-bar-options.md`](../design/wireframes/player-sidebar-tab-bar-options.md) Option **B**
+  - **Delivered:** `player.css` z-index 51 on `.route-tab-bar`; `closeMilestoneSidebar` + tab effect in `usePlayerCockpitPage`; `onTabActivate` on `RouteTabBar`; duplicate sidebar-tab CSS removed from `shared.css`
+  - **Verified:** Playwright MCP `.playwright-mcp/smoke-815-*.png` — AI Assistant reachable with sidebar open
 - [x] **8.7** Start Date — `FIELD_TYPE.DATE` + `<input type="date">`; `P.3.start-date` pass
 - [x] **8.8** Truncated player-detail header — `{firstName}'s Onboarding` + smaller title font
 - [x] **8.9** Inline required-field validation — `FormShell noValidate` + app `validate()`; `P.4.inline-validation` pass
@@ -399,17 +391,13 @@ Dual-tab smoke (PocketBase): GM tab open **without reload** while player/validat
 |------|--------|
 | Mock reload | Mock adapter resets progress on full `page.goto`; PB persists (verified) |
 | QR simulate scope | GM simulate picks first global QR mission, not milestone-specific |
-| Dead file | Delete `src/pages/player-detail/usePlayerDetailPage.ts` if still present |
+| Dead file | `src/pages/player-detail/usePlayerDetailPage.ts` — already deleted |
+| Sidebar CSS dup | `.sidebar-tab*` duplicated in `shared.css` and `sidebar.css` — **trimmed** in **8.15.5** |
+| Smoke scripts | `scripts/smoke-live.ts` / `smoke-phase9.ts` removed — do not recreate; verify via Playwright MCP only |
 
 ### Phase 9 — Smoke verification
 
-Exit gate for Phases 5–8. Run against **mock** and **live PocketBase**. **No CI gate** — primary verification is Playwright MCP + visual analysis (design-tokens §10).
-
-**Scripts:**
-
-```bash
-SMOKE_BASE_URL=http://127.0.0.1:5173 deno run -A --node-modules-dir=auto scripts/smoke-live.ts
-```
+Exit gate for Phases 5–8. Run against **mock** and **live PocketBase**. **No CI gate** — primary verification is Playwright MCP + visual analysis (design-tokens §10). No headless smoke script in repo (`scripts/` = `generate-package-json.ts`, `check_python.py` only).
 
 | ID | Check | PB status (2026-07-07) | Blocker |
 |----|-------|------------------------|---------|
@@ -432,7 +420,7 @@ SMOKE_BASE_URL=http://127.0.0.1:5173 deno run -A --node-modules-dir=auto scripts
 - [x] **9.6** Ghost dialog
 - [x] **9.7** Console critical errors (502 excluded — track under **7.4**)
 - [x] **9.8** Dev trace
-- [x] **9.9** Visual regression (390×844) — **Done** 2026-07-07 fresh-identity Playwright MCP; open follow-ups **8.14**, **8.15**
+- [x] **9.9** Visual regression (390×844) — **Done** 2026-07-07; **8.14–8.15** verified
 - [x] **9.10** Build green
 
 **Dual-tab quick checks:**
@@ -441,7 +429,7 @@ SMOKE_BASE_URL=http://127.0.0.1:5173 deno run -A --node-modules-dir=auto scripts
 ☑ Tab A: GM home → Tab B: /join → Tab A roster active within 10s
 ☑ Tab B: profile form → Tab A GM % updates
 ☑ Tab B: player QR wait → Tab A GM confirm → Tab B popup dismisses within 10s
-☑ `smoke-live.ts` green (16/16, 2026-07-07)
+☑ Fresh-identity Playwright MCP pass (2026-07-07); **8.15** retest after sidebar fix
 ```
 
 ### 2026-07-07 manual smoke → plan mapping
@@ -455,8 +443,8 @@ SMOKE_BASE_URL=http://127.0.0.1:5173 deno run -A --node-modules-dir=auto scripts
 | 2026-07-06 #4 | `/llm/health/readiness` 502 | **7.4** | Dashboard path quiet; assistant tab may still 502 when open |
 | 2026-07-06 #5 | Library empty CTA dup | **8.4** | **Pass** — fresh workspace, single CTA |
 | 2026-07-06 #6–10 | Grammar, prefill, date, header, validation | **8.5–8.9** | **Pass** (`smoke-live.ts` + visual) |
-| Fresh visual | Demo profiles on landing with PB | **8.14** | **Open** — seed only for mock/static |
-| Fresh visual | Sidebar blocks tab bar | **8.15** | **Open** — see wireframe |
+| Fresh visual | Demo profiles on landing with PB | **8.14** | **Fixed** — `isDemoBuild()` gate |
+| Fresh visual | Sidebar blocks tab bar | **8.15** | **Fixed** — Option B verified MCP |
 | Fresh visual | Join manual token step removed | **8.13** | **Done** |
 | Fresh visual | Multi-device invite reopen | — | **Pass** — auto cockpit + 10 XP |
 | Fresh visual | GM milestone sheet | **7.6** | **Pass** |
@@ -484,22 +472,19 @@ SMOKE_BASE_URL=http://127.0.0.1:5173 deno run -A --node-modules-dir=auto scripts
 | 12 | AI Assistant tab | Pass after closing sidebar | `smoke-fresh-14` |
 | 13 | App console errors | 0 (excluding test harness on `about:blank`) | `smoke-fresh-console-errors.log` |
 
-**Open blockers (user perspective):**
+**Open blockers (user perspective):** None from Phases 5–8 smoke remediation.
 
-1. **8.14** — `useLandingFlow` seeds `DEMO_PROFILES` on every landing mount even with PocketBase; pollutes fresh identity and smoke baselines.
-2. **8.15** — Milestone sidebar overlay intercepts tab bar; user cannot switch to AI Assistant until sidebar closed ([wireframe](../design/wireframes/player-sidebar-tab-bar-options.md)).
-
-**Not tested / N/A:** GM camera QR scan (headless); `/llm/health/readiness` 502 on this pass; mock-only `sess_mmt2026` path (**9.4**).
+**Not tested / N/A:** GM camera QR scan (headless); `/llm/health/readiness` 502 on assistant tab when LiteLLM down; mock-only `sess_mmt2026` path (**9.4**).
 
 ### Phase 10 — E2E harness + CI gate
 
 **Deferred** — project uses Playwright MCP with visual analysis instead of CI smoke scripts.
 
-- [~] **10.1** Wire `scripts/smoke-live.ts` into CI — **won't do** (per product decision 2026-07-07)
-- [~] **10.2** Extend smoke-live persona cases — optional local only
-- [~] **10.3** ESLint in smoke scripts — optional
-- [ ] **10.4** Document verification in README: Playwright MCP, clean PB reset, optional `smoke-live.ts`
-- [x] **10.5** Phase 9 exit: **7.3**, **8.4**, **9.9** visual verify on fresh PB build; **8.14–8.15** remain
+- [~] **10.1** Wire headless smoke into CI — **won't do** (per product decision 2026-07-07); `smoke-live.ts` removed from repo
+- [~] **10.2** Extend headless persona cases — **won't do** (no script)
+- [~] **10.3** ESLint in smoke scripts — **N/A**
+- [x] **10.4** Document verification in README: Playwright MCP, clean PB reset; removed stale `smoke-live.ts` command
+- [x] **10.5** Phase 9 exit: **7.3**, **8.4**, **9.9** visual verify on fresh PB build; **8.14–8.15** done
 
 #### Remaining work by priority
 
@@ -509,11 +494,13 @@ SMOKE_BASE_URL=http://127.0.0.1:5173 deno run -A --node-modules-dir=auto scripts
 | P1 | **7.7** | Stale identity request storm | S — **done** |
 | P1 | **7.4** | Stop or fix `/llm/health/readiness` 502 polling | S — **done** |
 | P1 | **8.12** | Scan QR `aria-label` on mobile header | S — **done** |
-| P2 | **6.4** | Playwright dual-context CI spec | M — **done** (`smoke-live.ts`) |
-| P1 | **8.14** | Gate demo profiles to mock/static builds only | S |
-| P2 | **8.15** | Sidebar vs tab bar UX (wireframe decision) | S–M |
+| P2 | **6.4** | Playwright dual-context verification | M — **done** (MCP / historical headless) |
+| P1 | **8.14** | Gate demo profiles to mock/static builds only | S — **done** |
+| P1 | **8.15** | Sidebar auto-dismiss on tab (Option B + z-index) | S — **done** |
 | P2 | **8.4** | Verify library empty CTA on fresh PB | S — **done** |
-| P3 | **4.x** | Refactor CI guards (adapter boundary, docs) | M |
+| P3 | **4.3** | `data-page` + design-tokens §10 verify | S — **done** |
+| P3 | **10.4** | README verification docs | S — **done** |
+| P3 | **4.x** | Refactor CI guards (adapter boundary) | M — **4.1–4.2, 4.4** done |
 | — | **9.9** | Playwright MCP visual pass (390×844) | **Done** 2026-07-07 |
 | — | **10.x** | Smoke CI | **Deferred** |
 | — | **1–2** | Original flat-page refactor (if not already merged) | L |
@@ -567,3 +554,4 @@ SMOKE_BASE_URL=http://127.0.0.1:5173 deno run -A --node-modules-dir=auto scripts
 | D-DEV-1 | Session-scoped `devBackendTrace` in dev | One sink for query/adapter/SSE; replaces hook `console.log`; validates read budgets |
 | D-UX-1 | Demo profiles (`DEMO_PROFILES`) only when `useMockPb === true` | Static/GitHub Pages demo without backend; PocketBase deployments must not inject Sofia/Peter picker cards |
 | D-UX-2 | Join claim via invite/QR URL only — no manual workspace + token fields | SPECS capability URL; unclaimed → name; claimed → hydrate + cockpit |
+| D-UX-3 | Player milestone sidebar: **Option B** on tab navigation | Auto-dismiss `selectedMilestoneId` + raise `.route-tab-bar` z-index above scrim; drawer UX unchanged; approved 2026-07-07 |
