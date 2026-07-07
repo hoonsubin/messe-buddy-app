@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as QRCode from "qrcode";
 import { useWatchProgressMission } from "../../hooks/useWatchProgressMission.ts";
+import { isProgressValidated } from "../../store/progressEvents.ts";
 import { encodeQRPayload } from "../../utils/qrPayload.ts";
 import { buildValidationUrl } from "../../utils/qrUrl.ts";
 
@@ -20,11 +21,17 @@ const QRDisplay = (props: QRDisplayProps) => {
   const { playerId, missionId, sessionId, qrSecret, xpValue, onValidated } =
     props;
 
-  useWatchProgressMission(playerId, missionId, (event) => {
-    if (event.status === "completed" || event.status === "autoApproved") {
-      onValidated();
-    }
-  });
+  useWatchProgressMission(
+    playerId,
+    missionId,
+    (event) => {
+      if (isProgressValidated(event.status)) {
+        onValidated();
+      }
+    },
+    true,
+    sessionId,
+  );
 
   useEffect(() => {
     let cancelled = false;

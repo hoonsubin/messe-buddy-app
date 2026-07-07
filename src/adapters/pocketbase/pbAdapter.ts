@@ -397,15 +397,17 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
   ): () => void => {
     let unsubscribe: (() => Promise<void>) | null = null;
     let cancelled = false;
+    // Single-field filter — compound playerId+missionId filters can miss PB realtime.
     void pb.collection("progress_events").subscribe(
       "*",
       (e) => {
         const record = e.record as RecordModel;
-        if (record.playerId === playerId && record.missionId === missionId) {
-          callback(marshalProgressEvent(record));
+        if (record.playerId !== playerId || record.missionId !== missionId) {
+          return;
         }
+        callback(marshalProgressEvent(record));
       },
-      { filter: progressKeyFilter(pb, playerId, missionId) },
+      { filter: pb.filter("playerId = {:playerId}", { playerId }) },
     ).then((unsub) => {
       if (cancelled) void unsub();
       else unsubscribe = unsub;

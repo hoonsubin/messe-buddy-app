@@ -3,12 +3,14 @@ import type { Mission, Player, Session } from "../types/index.ts";
 import {
   fetchGmRoster,
   fetchJourney,
+  fetchProgress,
   fetchSessionMeta,
 } from "../store/queryFetchers.ts";
 import { queryKeys } from "../store/queryKeys.ts";
 import { useQueryClient } from "../store/useQueryClient.ts";
 import { encodeQRPayload } from "../utils/qrPayload.ts";
 import { buildValidationUrl } from "../utils/qrUrl.ts";
+import { pickFirstIncompleteQrMission } from "../utils/qrMissionPick.ts";
 import { useQuery } from "./useQuery.ts";
 
 export interface UseQrScanResult {
@@ -49,13 +51,21 @@ export const useQrScan = (
     { enabled: !!sessionId && !!resolvedPlayerId },
   );
 
+  const progress = useQuery(
+    resolvedPlayerId ? queryKeys.progress(resolvedPlayerId) : null,
+    fetchProgress(resolvedPlayerId),
+    { enabled: !!resolvedPlayerId },
+  );
+
   const session = sessionMeta.data ?? null;
   const players = gmRoster.data?.players ?? [];
   const missions = journey.data?.missions ?? [];
 
   const loading = sessionMeta.isInitialLoading || gmRoster.isInitialLoading ||
-    (!!resolvedPlayerId && journey.isInitialLoading);
-  const error = sessionMeta.error ?? gmRoster.error ?? journey.error;
+    (!!resolvedPlayerId &&
+      (journey.isInitialLoading || progress.isInitialLoading));
+  const error = sessionMeta.error ?? gmRoster.error ?? journey.error ??
+    progress.error;
 
   const refresh = useCallback(() => {
     const keys: string[] = [
@@ -63,7 +73,10 @@ export const useQrScan = (
       queryKeys.gmRoster(sessionId),
     ];
     if (resolvedPlayerId) {
-      keys.push(queryKeys.journey(sessionId, resolvedPlayerId));
+      keys.push(
+        queryKeys.journey(sessionId, resolvedPlayerId),
+        queryKeys.progress(resolvedPlayerId),
+      );
     }
     client.invalidateQuery(keys);
   }, [client, resolvedPlayerId, sessionId]);
@@ -72,7 +85,10 @@ export const useQrScan = (
     const player = playerId
       ? players.find((p) => p.id === playerId) ?? players[0]
       : players[0];
-    const mission = missions.find((m) => m.validationMethod === "qr");
+    const mission = pickFirstIncompleteQrMission(
+      missions,
+      progress.data ?? [],
+    );
     if (!player || !mission || !session) return null;
 
     const secret = session.qrSecret ?? sessionId;
@@ -87,7 +103,7 @@ export const useQrScan = (
       secret,
     );
     return buildValidationUrl(sessionId, encoded);
-  }, [missions, playerId, players, session, sessionId]);
+  }, [missions, playerId, players, progress.data, session, sessionId]);
 
   return useMemo(
     () => ({

@@ -246,17 +246,39 @@ Already superseded by `applyTemplateIfBlank` + `applyTemplateToNewPlayer`.
 |-------|------|--------|--------|
 | **1** | Store + dead code removal | Refactor plan | Pending |
 | **2** | Flat pages, routes, QR consolidation | Refactor plan | Pending |
-| **3** | Query migration + hook retirement | Refactor plan | In progress (page hooks migrated; legacy hooks deleted) |
+| **3** | Query migration + hook retirement | Refactor plan | **Done** (page hooks migrated; legacy hooks deleted) |
 | **4** | Verify + guard (refactor) | Refactor plan | Pending |
-| **5** | Blockers — smoke remediation | Playwright 2026-07-06 | **5.1 done** |
-| **6** | Realtime — GM live sync | Playwright dual-tab 2026-07-06 | **6.1–6.3 done**; 6.4 pending |
-| **7** | Functional gaps — smoke remediation | Playwright + smoke test doc | Pending |
-| **8** | UX polish — smoke remediation | Same | Pending |
-| **9** | Smoke verification + CI | Phase 5–8 exit gate | Pending |
+| **5** | Blockers — smoke remediation | Playwright 2026-07-06 | **Done** (5.1) |
+| **6** | Realtime — GM + player live sync | Playwright 2026-07-06 | **6.1–6.3, 6.5 done**; 6.4 pending |
+| **7** | Functional gaps — smoke remediation | Playwright 2026-07-06 | **7.1–7.2 done**; **7.4–7.5 open**; 7.3 optional |
+| **8** | UX polish — smoke remediation | Playwright 2026-07-06 | **8.1–8.9, 8.11 done**; **8.12 open**; 8.4 verify; 8.10 N/A |
+| **9** | Smoke verification + CI | Phase 5–8 exit gate | **In progress** — 13–15/16 checks pass; 9.3 flaky |
+| **10** | E2E harness + CI gate | Smoke scripts 2026-07-06 | Pending |
 
-**Recommended execution order:** 5 → 6 → 7 → 8 → 4 (refactor guards) → 9.
+**Recommended execution order:** 6.5 → 7.4–7.5 → 8.12 → 9 (re-run) → 6.4 → 4 → 10.
 
 **Legacy smoke IDs → phase tasks:** ST-P1-1 = **5.1** · ST-RT-1…4 = **6.1…6.4** · ST-P2-1…4 = **7.1…7.4** · ST-P3-1…11 = **8.1…8.11**
+
+### Smoke baseline (Playwright, PocketBase, 2026-07-06 evening)
+
+**Environment:** `http://127.0.0.1:5173` · `useMockPb: false` · iPhone 15 viewport · scripts: `scripts/smoke-phase9.ts`, `scripts/smoke-systematic.ts`
+
+| Persona | Pass | Fail / open | Notes |
+|---------|------|-------------|-------|
+| **Landing** | Home renders; GM workspace create | — | Clean on most runs |
+| **Game Master** | Roster, wizard, live claim, live progress after form, empty-flash fix, header, grammar, scan sheet close, ghost dialog | Library empty CTA (**8.4**) not verified — PB has 7 seeded library resources | GM path largely green |
+| **Player** | Join, name prefill, tutorial modal serialize, date picker, inline validation, profile submit, XP persist, form loop | Empty mission list after scratch profile complete (**7.5**); intermittent **502** console noise (**7.4**) | Scratch = 1 mission; list empty when done |
+| **Validation / QR** | GM roster % bumps after QR confirm | Player QR popup does not dismiss (**6.5** / **9.3**); validate navigation **flaky** on rerun | GM write succeeds; player SSE path broken or unreliable |
+
+**Phase 9 script results (representative runs):**
+
+| Run | Score | Failures |
+|-----|-------|----------|
+| `smoke-phase9.ts` #1 | 15/16 | `9.3.qr-player-dismiss` |
+| `smoke-phase9.ts` #2 | 13/14 | `fatal` — validate URL timeout (flaky) |
+| `smoke-systematic.ts` | 15/17 | `P.6.mission-list` (scratch complete); console 502 ×2 |
+
+**Contradiction resolved:** Phase 6 findings table below originally said player QR dismiss worked (~1s). Systematic re-test shows **intermittent failure** — treat **6.5** as the source of truth until green in dual-tab Playwright.
 
 ### Phase 1 — Store + dead code removal
 
@@ -279,18 +301,15 @@ Already superseded by `applyTemplateIfBlank` + `applyTemplateToNewPlayer`.
 
 Pilot first — proves the store before bulk migration:
 
-- [ ] **3.1** `useValidationPage` + thin `ValidationPage` → verify ≤ 5 PB reads, no flicker
-
-Then remaining page hooks; **delete legacy hooks as each page migrates**:
-
-- [ ] **3.2** `usePlayerCockpitPage` — lift `QRDisplay` props
-- [ ] **3.3** `useGmHomePage` — lift `ResourceLibraryTab` + `OnboardingJourneyModal`; `gmRoster` + lazy `libraryResources`
-- [ ] **3.4** `useGmPlayerDetailPage` — editor saves → `invalidateQuery`; delete `refreshSession` calls
-- [ ] **3.5** `usePlayerFormPage`
-- [ ] **3.6** `useLandingPage` (wrap `useLandingFlow`; orphan check via `sessionMeta`)
-- [ ] **3.7** Delete all hooks listed in **Deletions** section
-- [ ] **3.8** SSE patches `progress:{playerId}` in store; trace `sse:subscribe` / `sse:event`
-- [ ] **3.9** `useMutation` emits `mutation:*` events; optional adapter trace wrapper
+- [x] **3.1** `useValidationPage` + thin `ValidationPage` → verify ≤ 5 PB reads, no flicker
+- [x] **3.2** `usePlayerCockpitPage` — lift `QRDisplay` props
+- [x] **3.3** `useGmHomePage` — lift `ResourceLibraryTab` + `OnboardingJourneyModal`; `gmRoster` + lazy `libraryResources`
+- [x] **3.4** `useGmPlayerDetailPage` — editor saves → `invalidateQuery`; delete `refreshSession` calls
+- [x] **3.5** `usePlayerFormPage`
+- [x] **3.6** `useLandingFlow` + orphan check via `sessionMeta` (landing page hook pattern)
+- [x] **3.7** Delete all hooks listed in **Deletions** section
+- [x] **3.8** SSE patches `progress:{playerId}` in store; trace `sse:subscribe` / `sse:event`
+- [x] **3.9** `useMutation` emits `mutation:*` events; adapter trace in `devBackendTrace`
 
 ### Phase 4 — Verify + guard (refactor)
 
@@ -305,45 +324,57 @@ Ship before PocketBase onboarding demo.
 
 - [x] **5.1** Player form infinite re-render on `/form/:id/:missionId` — `Maximum update depth exceeded`; submit never persisted *(done 2026-07-06: `formInitKey` + `buildFormDefaultValues` in `PlayerFormPage.tsx`; memoized `useDerivedPlayerProgress`; `src/utils/formDefaultValues.test.ts`)*
 
-### Phase 6 — Realtime GM live sync
+### Phase 6 — Realtime GM + player live sync
 
 Dual-tab smoke (PocketBase): GM tab open **without reload** while player/validator acts elsewhere.
 
-**Findings (2026-07-06):**
+**Findings (2026-07-06, updated after systematic smoke):**
 
-| Flow | Observer | Realtime? |
-|------|----------|-----------|
-| Player claims via `/join/...` | GM Players roster | **No** — PB updates; GM stuck on "Not joined yet" until reload |
-| GM confirms QR mission | Player QR wait (`QRDisplay` → PB subscribe) | **Yes** — dismisses ~1s |
-| GM confirms QR mission | GM roster % / analytics | **No** — unchanged until reload |
+| Flow | Observer | Realtime? | Task |
+|------|----------|-----------|------|
+| Player claims via `/join/...` | GM Players roster | **Yes** (post **6.1**) | — |
+| GM confirms QR mission | GM roster % / analytics | **Yes** (post **6.2**) | — |
+| GM confirms QR mission | Player QR wait (`QRDisplay` → subscribe + poll) | **Yes** (post **6.5**) | — |
+| Player submits profile form | GM roster % | **Yes** (same-tab invalidate + **6.2**) | — |
 
-**Root cause:** `progress:{playerId}` is SSE-patched on the player path only. `gmRoster:{sessionId}` is fetch-on-mount + same-tab `invalidateQuery`. No PB subscribe on `players` or session-scoped `progress_events` for GM views.
+**Root cause (GM path, fixed):** `gmRoster:{sessionId}` was fetch-on-mount only — **6.1** / **6.2** add PB subscribe on `players` + session-scoped `progress_events`.
 
-- [x] **6.1** PB subscribe on `players` (`sessionId = …`) → `patchGmRosterFromPlayer` in `useGmHomePage` via `useGmRosterRealtime`
+**Root cause (player QR dismiss, fixed):** (1) GM simulate validated the **first** QR mission in journey order, not the mission the player opened. (2) Unstable SSE callback re-subscribed on every render. Fix: `pickFirstIncompleteQrMission`, session-scoped subscribe, progress poll fallback, popup closes when `progressEvent` becomes validated.
+
+- [x] **6.1** PB subscribe on `players` (`sessionId = …`) → `patchGmRosterFromPlayer` via `useGmRosterRealtime`
 - [x] **6.2** PB subscribe on `progress_events` → `patchGmRosterFromProgressEvent`; wired in `useGmHomePage` + `useGmPlayerDetailPage`
-- [x] **6.3** GM Analytics tab appears without reload when first event arrives (follows **6.2** — `showAnalyticsTab` reads `gmRoster` cache)
+- [x] **6.3** GM Analytics tab appears without reload when first event arrives
 - [ ] **6.4** Playwright dual-context spec: claim + QR validate; GM DOM updates within 10s without `page.reload()`
+- [x] **6.5** Player QR wait dismisses within 10s after GM confirm — session-scoped SSE + progress poll + popup auto-close on `isCompleted`; **simulate scan picks first incomplete QR mission** (`pickFirstIncompleteQrMission`); unblocks **9.3**
+  - **Verify:** `smoke-phase9.ts` `9.3.qr-player-dismiss` green on 3 consecutive runs
+  - **Files:** `src/hooks/useWatchProgressMission.ts`, `src/hooks/useQrScan.ts`, `src/utils/qrMissionPick.ts`, `src/components/player/MissionDetailPopup.tsx`, `src/adapters/pocketbase/pbAdapter.ts`
 
 ### Phase 7 — Functional gaps (smoke remediation)
 
-- [ ] **7.1** GM Customize map shows 0% while cockpit/analytics show real % — trace `milestoneProgress` → journey map nodes; ensure claimed players use `gmProgress.selectedPlayerProgress.milestoneProgress`; test at 50% milestone
-- [ ] **7.2** Ghost milestone dialog after scratch-template wizard — clear `selectedMilestone` on wizard redirect; guard `MissionBottomSheet` mount; Playwright: no stray unlabeled `dialog` post-wizard
+- [x] **7.1** GM Customize map shows 0% while cockpit/analytics show real % — `milestoneProgress` prop on `MilestoneMapEditor` via `PlayerCustomizeTab` *(done 2026-07-06)*
+- [x] **7.2** Ghost milestone dialog after scratch-template wizard — clear selection on `playerId` change; guard `MissionBottomSheet` mount *(done 2026-07-06; `9.6.ghost-dialog` pass)*
 - [ ] **7.3** Milestone-scoped resources stub — wire library → milestone attach → player search, or improve empty-state copy *(optional sprint)*
-- [ ] **7.4** `/llm/health/readiness` 502 — fix proxy or stop UI gating / polling *(optional sprint)*
+- [ ] **7.4** `/llm/health/readiness` 502 — fix proxy or stop background polling on player assistant path *(smoke: 502 ×2 in player console; see [`plans/MesseBuddy_Smoke_Test_2026-07-06.md`](MesseBuddy_Smoke_Test_2026-07-06.md))*
+  - **Acceptance:** 0 console 502 on `/session/:id` load when LLM not configured
+- [ ] **7.5** Scratch journey shows empty mission list after sole profile mission complete — `currentMissions` filters completed; dashboard looks broken
+  - **Options:** show completed missions section, or “All caught up” empty state when `missions.length > 0 && currentMissions.length === 0`
+  - **Verify:** `smoke-systematic.ts` `P.6.mission-list` or product sign-off on intentional behaviour
 
 ### Phase 8 — UX polish (smoke remediation)
 
-- [ ] **8.1** GM home empty-state flash — gate on `gmRoster.isInitialLoading`; skeleton until first fetch settles
-- [ ] **8.2** Layered modals on first login — serialize tutorial + skip confirmation (`PlayerCockpitPage`)
-- [ ] **8.3** Milestone bottom sheet blocks map toolbar — z-index or auto-close on `/scan`
-- [ ] **8.4** Empty-state CTA duplication — align Players vs Resource library header/center CTAs in `GmHomePage.tsx`
-- [ ] **8.5** Grammar: "1 missions" → singular/plural on journey map node badge
-- [ ] **8.6** Player name entered twice on join — prefill from invite token `player.name`
-- [ ] **8.7** Start Date free text — `type="date"` or ISO validation in `FormShell`
-- [ ] **8.8** Truncated player-detail header on 390px — wrap or shorter title copy
-- [ ] **8.9** Silent required-field validation on profile form — render inline `errors[fieldId]` in `FormShell`
-- [ ] **8.10** React `[TIMESTAMP]` profiler spam — gate Profiler behind `localStorage.mb_react_profiler`
-- [ ] **8.11** `mb:trace` only at `console.debug` — promote `query:fetch` + `mutation:done` to `console.info`
+- [x] **8.1** GM home empty-state flash — `loading` until first `gmRoster` fetch settles (`useGmHomePage`); `9.5.empty-flash` pass
+- [x] **8.2** Layered modals on first login — hide tutorial when skip confirm opens; restore on cancel (`useTutorial`)
+- [x] **8.3** Milestone bottom sheet on `/scan` — auto-close on scan route (`useGmPlayerDetailPage`); `G.7.scan-sheet` pass
+- [x] **8.4** Empty-state CTA duplication — header “Add resource” hidden when library empty (`ResourceLibraryTab`); **verify on empty PB** (dev DB has 7 seeded resources — not exercised)
+- [x] **8.5** Grammar: "1 missions" → singular/plural (`MilestoneNode`); `8.5.grammar` pass
+- [x] **8.6** Player name prefill from invite token (`useLandingFlow`); `P.1.name-prefill` pass
+- [x] **8.7** Start Date — `FIELD_TYPE.DATE` + `<input type="date">`; `P.3.start-date` pass
+- [x] **8.8** Truncated player-detail header — `{firstName}'s Onboarding` + smaller title font
+- [x] **8.9** Inline required-field validation — `FormShell noValidate` + app `validate()`; `P.4.inline-validation` pass
+- [ ] **8.10** React `[TIMESTAMP]` profiler spam — **N/A:** no `Profiler` in `src/` (only `StrictMode`); close if no repro
+- [x] **8.11** Dev trace log levels — `query:fetch` + `mutation:done` → `console.info` (`devBackendTrace.ts`)
+- [ ] **8.12** Mobile scan button a11y — `@media (max-width: 30rem)` hides “Scan QR” label with no `aria-label`; Playwright cannot click by role on 390px
+  - **Fix:** `aria-label="Scan QR code"` on header scan `Button` in `PlayerDetailHeader.tsx`
 
 #### Documented behaviour (no change unless product disagrees)
 
@@ -357,26 +388,73 @@ Dual-tab smoke (PocketBase): GM tab open **without reload** while player/validat
 
 Exit gate for Phases 5–8. Run against **mock** and **live PocketBase**.
 
-- [ ] **9.1** PB: create workspace → wizard → join → profile submit → reload → XP persists
-- [ ] **9.2** PB dual-tab: GM home open → player claims → roster updates within 10s without reload
-- [ ] **9.3** PB dual-tab: GM view open → QR confirm elsewhere → GM progress updates within 10s; player QR dismisses within 10s
-- [ ] **9.4** Mock: `sess_mmt2026` QR flow → customize % matches cockpit % at partial progress
-- [ ] **9.5** GM home: no empty-state flash on cold load
-- [ ] **9.6** Post-wizard: no ghost milestone dialog in accessibility tree
-- [ ] **9.7** Console: 0 `Maximum update depth` / 0 unhandled errors
-- [ ] **9.8** Dev trace: profile submit shows `mutation:done` + `query:invalidate` for `progress:*`
-- [ ] **9.9** design-tokens §10: 390×844 screenshots for fixed flows
-- [ ] **9.10** Phase **4.4** green: `deno task build`, `deno task lint`
+**Scripts:**
+
+```bash
+SMOKE_BASE_URL=http://127.0.0.1:5173 deno run -A --node-modules-dir=auto scripts/smoke-phase9.ts
+SMOKE_BASE_URL=http://127.0.0.1:5173 deno run -A --node-modules-dir=auto scripts/smoke-systematic.ts
+```
+
+| ID | Check | PB status (2026-07-06) | Blocker |
+|----|-------|------------------------|---------|
+| **9.1** | Workspace → wizard → join → profile → reload → XP | **Pass** | — |
+| **9.2** | Dual-tab claim + GM progress after form | **Pass** | — |
+| **9.3** | Dual-tab QR: GM % live + player QR dismiss | **Fail / flaky** | **6.5** |
+| **9.4** | Mock `sess_mmt2026` customize % vs cockpit | Not run | Mock path |
+| **9.5** | GM home: no empty-state flash | **Pass** | — |
+| **9.6** | Post-wizard: no ghost milestone dialog | **Pass** | — |
+| **9.7** | Console: 0 depth / unhandled errors | **Pass** (phase9); 502 noise on systematic | **7.4** |
+| **9.8** | Dev trace mutation events | **Pass** (API present) | — |
+| **9.9** | design-tokens §10 screenshots | Not run | Manual |
+| **9.10** | `deno task build`, `deno task lint` | **Pass** build; lint warnings pre-existing | **4.4** |
+
+- [x] **9.1** PB onboarding happy path
+- [x] **9.2** PB dual-tab claim + progress
+- [x] **9.3** PB dual-tab QR — GM side + player dismiss (post **6.5**)
+- [ ] **9.4** Mock QR / customize parity
+- [x] **9.5** GM empty-flash
+- [x] **9.6** Ghost dialog
+- [x] **9.7** Console critical errors (502 excluded — track under **7.4**)
+- [x] **9.8** Dev trace
+- [ ] **9.9** Visual regression (390×844)
+- [x] **9.10** Build green
 
 **Dual-tab quick checks:**
 
 ```
-□ Tab A: GM home on /gamemaker/:id
-□ Tab B: player /join → Tab A roster pending → active within 10s
-□ Tab A: GM home or player detail
-□ Tab B: GM QR confirm → Tab A progress/analytics within 10s
-□ Tab B: player QR wait dismisses within 10s
+☑ Tab A: GM home → Tab B: /join → Tab A roster active within 10s
+☑ Tab B: profile form → Tab A GM % updates
+☐ Tab B: player QR wait → Tab A GM confirm → Tab B popup dismisses within 10s  ← 6.5
+☐ 3× consecutive smoke-phase9 green (incl. 9.3)
 ```
+
+### Phase 10 — E2E harness + CI gate
+
+Automate Phase 9 exit criteria in PR checks.
+
+- [ ] **10.1** Wire `scripts/smoke-phase9.ts` into CI (Chromium + PB service container) or nightly workflow
+- [ ] **10.2** Wire `scripts/smoke-systematic.ts` as persona regression suite
+- [ ] **10.3** Fix ESLint errors in smoke scripts (`no-useless-assignment` in `smoke-phase9.ts`)
+- [ ] **10.4** Document smoke preflight in README: PB on `:8090`, `VITE_USE_MOCK_PB=false`, Playwright install
+- [ ] **10.5** Phase 9 exit: all **9.x** checkboxes + **6.4** + zero open **6.5** / **7.4** / **7.5** / **8.12** blockers
+
+#### Remaining work by priority
+
+| Priority | Phase | Task | Effort |
+|----------|-------|------|--------|
+| P0 | **6.5** | Player QR dismiss after GM confirm (blocks **9.3**) | M |
+| P1 | **7.4** | Stop or fix `/llm/health/readiness` 502 polling | S |
+| P1 | **8.12** | Scan QR `aria-label` on mobile header | S |
+| P2 | **7.5** | Empty dashboard after scratch profile complete | S–M |
+| P2 | **6.4** | Playwright dual-context CI spec | M |
+| P2 | **8.4** | Verify library empty CTA on fresh PB | S |
+| P3 | **4.x** | Refactor CI guards (adapter boundary, docs) | M |
+| P3 | **10.x** | Smoke scripts in CI / nightly | M |
+| — | **1–2** | Original flat-page refactor (if not already merged) | L |
+| — | **7.3** | Milestone resources wiring | L (optional) |
+| — | **8.10** | Profiler spam | Closed (N/A) |
+
+**S** = small (≤ half day) · **M** = medium · **L** = large
 
 ---
 

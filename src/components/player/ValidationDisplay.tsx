@@ -1,5 +1,6 @@
 import type { Mission } from "../../types/index.ts";
 import { useWatchProgressMission } from "../../hooks/useWatchProgressMission.ts";
+import { isProgressValidated } from "../../store/progressEvents.ts";
 import QRDisplay from "./QRDisplay.tsx";
 import PendingApprovalDisplay from "./PendingApprovalDisplay.tsx";
 
@@ -21,11 +22,12 @@ const ValidationDisplay = (props: ValidationDisplayProps) => {
     playerId,
     missionId,
     (event) => {
-      if (event.status === "completed" || event.status === "autoApproved") {
+      if (isProgressValidated(event.status)) {
         onValidated();
       }
     },
     method === "gmApprove",
+    sessionId,
   );
 
   return (
