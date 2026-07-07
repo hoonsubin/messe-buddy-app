@@ -184,6 +184,7 @@ export const useChatStream = (appContext?: string): UseChatReturn => {
         const decoder = new TextDecoder();
         let buffer = "";
         let streamDone = false;
+        let accumulated = "";
 
         while (!streamDone && !controller.signal.aborted) {
           const { done, value } = await reader.read();
@@ -192,6 +193,7 @@ export const useChatStream = (appContext?: string): UseChatReturn => {
           const parsed = drainSSE(buffer);
           buffer = parsed.rest;
           if (parsed.delta && mountedRef.current) {
+            accumulated += parsed.delta;
             appendToLast(parsed.delta);
           }
           if (parsed.done) streamDone = true;
@@ -201,8 +203,7 @@ export const useChatStream = (appContext?: string): UseChatReturn => {
 
         // If the model returned nothing, surface a gentle note rather than an
         // empty bubble.
-        const last = messagesRef.current[messagesRef.current.length - 1];
-        if (last && last.role === "assistant" && last.content === "") {
+        if (accumulated === "") {
           finishLast({
             content:
               "I didn't get a response. Please rephrase or try again shortly.",
