@@ -16,7 +16,6 @@ import { LLM_BASE_URL } from "../config/llm.ts";
 
 const CHECK_TIMEOUT_MS = 4000;
 const RECHECK_INTERVAL_MS = 45_000;
-const MAX_CONSECUTIVE_FAILURES = 2;
 
 async function checkReadiness(): Promise<boolean> {
   const controller = new AbortController();
@@ -42,33 +41,30 @@ export function useAssistantAvailability(enabled = true): boolean {
     if (!enabled) return;
 
     let cancelled = false;
-    let consecutiveFailures = 0;
-    let interval: ReturnType<typeof setInterval> | undefined;
 
+    // Keep polling on the fixed interval for as long as this hook is
+    // mounted - a transient blip (e.g. an nginx reload from
+    // reload-llm-key.sh, or a slow cold start) must not permanently pin the
+    // session to mock mode. An earlier version stopped polling after two
+    // consecutive failures, which meant a couple of bad checks near session
+    // start silently locked the assistant into mock for the rest of the
+    // visit, with no way to recover short of a full page reload - the app
+    // looked like it "wasn't communicating with the LLM endpoint" even once
+    // the backend was healthy again. Polling forever costs one small fetch
+    // every RECHECK_INTERVAL_MS; that's cheap compared to a self-healing
+    // assistant.
     const run = () => {
       void checkReadiness().then((ok) => {
         if (cancelled) return;
         setAvailable(ok);
-        if (ok) {
-          consecutiveFailures = 0;
-          return;
-        }
-        consecutiveFailures += 1;
-        if (
-          consecutiveFailures >= MAX_CONSECUTIVE_FAILURES &&
-          interval !== undefined
-        ) {
-          clearInterval(interval);
-          interval = undefined;
-        }
       });
     };
 
     run();
-    interval = setInterval(run, RECHECK_INTERVAL_MS);
+    const interval = setInterval(run, RECHECK_INTERVAL_MS);
     return () => {
       cancelled = true;
-      if (interval !== undefined) clearInterval(interval);
+      clearInterval(interval);
     };
   }, [enabled]);
 
