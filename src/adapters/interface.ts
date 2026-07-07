@@ -112,19 +112,6 @@ export interface AppAdapter {
       record: unknown,
     ) => void,
   ): () => void;
-  subscribeProgressEvent(
-    playerId: string,
-    missionId: string,
-    callback: (event: ProgressEvent) => void,
-  ): () => void;
-  subscribeSessionPlayers(
-    sessionId: string,
-    callback: (player: Player) => void,
-  ): () => void;
-  subscribeSessionProgressEvents(
-    sessionId: string,
-    callback: (event: ProgressEvent) => void,
-  ): () => void;
 
   // BuddyProfiles
   listBuddyProfiles(sessionId: string): Promise<ReadonlyArray<BuddyProfile>>;

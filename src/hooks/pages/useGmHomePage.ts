@@ -121,18 +121,18 @@ export const useGmHomePage = (): UseGmHomePageResult => {
     { enabled: !!sid },
   );
 
-  const templatesQuery = useQuery(
+  const templatesQuery = useLiveQuery(
     queryKeys.templates(),
     fetchTemplates(),
   );
 
-  const libraryQuery = useQuery(
+  const libraryQuery = useLiveQuery(
     tab === "library" ? queryKeys.libraryResources() : null,
     fetchLibraryResources(),
     { enabled: tab === "library" },
   );
 
-  const buddyPickerQuery = useQuery(
+  const buddyPickerQuery = useLiveQuery(
     sid && wizardOpen ? queryKeys.buddyPicker(sid) : null,
     fetchBuddyPicker(sid),
     { enabled: !!sid && wizardOpen },

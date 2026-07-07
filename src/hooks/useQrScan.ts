@@ -36,7 +36,7 @@ export const useQrScan = (
     { enabled: !!sessionId },
   );
 
-  const gmRoster = useQuery(
+  const gmRoster = useLiveQuery(
     sessionId ? queryKeys.gmRoster(sessionId) : null,
     fetchGmRoster(sessionId),
     { enabled: !!sessionId },

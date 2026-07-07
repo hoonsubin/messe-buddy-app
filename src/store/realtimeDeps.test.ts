@@ -19,7 +19,8 @@ Deno.test("resolveRealtimeDeps maps gmRoster to session-scoped topics", () => {
 });
 
 Deno.test("resolveRealtimeDeps returns empty for unknown keys", () => {
-  assert.deepEqual(resolveRealtimeDeps("templates"), []);
+  assert.deepEqual(resolveRealtimeDeps("sessionMeta:s1"), []);
+  assert.deepEqual(resolveRealtimeDeps("player:uid:u1"), []);
 });
 
 Deno.test("resolveRealtimeDeps maps journey to player-scoped milestones and missions", () => {
@@ -45,5 +46,36 @@ Deno.test("resolveRealtimeDeps maps progress to player-scoped progress_events", 
   assert.deepEqual(deps, [{
     collection: "progress_events",
     filter: pbEqFilter("playerId", playerId),
+  }]);
+});
+
+Deno.test("resolveRealtimeDeps maps templates and libraryResources globally", () => {
+  assert.deepEqual(resolveRealtimeDeps("templates"), [{
+    collection: "templates",
+  }]);
+  assert.deepEqual(resolveRealtimeDeps("libraryResources"), [{
+    collection: "library_resources",
+  }]);
+});
+
+Deno.test("resolveRealtimeDeps maps buddy, resources, and formSchema keys", () => {
+  assert.deepEqual(resolveRealtimeDeps("buddy:player_sofia"), [{
+    collection: "buddy_profiles",
+    filter: pbEqFilter("assignedToPlayerId", "player_sofia"),
+  }]);
+  assert.deepEqual(resolveRealtimeDeps("buddyPicker:sess_1"), [{
+    collection: "buddy_profiles",
+    filter: pbEqFilter("sessionId", "sess_1"),
+  }]);
+  assert.deepEqual(resolveRealtimeDeps("resources:sess_1:player_sofia"), [
+    {
+      collection: "milestone_resources",
+      filter: pbEqFilter("playerId", "player_sofia"),
+    },
+    { collection: "library_resources" },
+  ]);
+  assert.deepEqual(resolveRealtimeDeps("formSchema:mission_1"), [{
+    collection: "form_schemas",
+    filter: pbEqFilter("missionId", "mission_1"),
   }]);
 });

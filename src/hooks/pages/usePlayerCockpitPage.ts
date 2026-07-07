@@ -128,13 +128,13 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     { enabled: !!playerId },
   );
 
-  const buddyQuery = useQuery(
+  const buddyQuery = useLiveQuery(
     playerId ? queryKeys.buddy(playerId) : null,
     fetchBuddy(playerId),
     { enabled: !!playerId },
   );
 
-  const resourcesQuery = useQuery(
+  const resourcesQuery = useLiveQuery(
     sessionId && playerId ? queryKeys.resources(sessionId, playerId) : null,
     fetchPlayerResources(sessionId, playerId, true),
     { enabled: !!sessionId && !!playerId },

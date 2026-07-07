@@ -21,6 +21,7 @@ import { useGmMilestoneEditor } from "../useGmMilestoneEditor.ts";
 import { useGmMissionEditor } from "../useGmMissionEditor.ts";
 import { useGmProgressView } from "../useGmProgressView.ts";
 import { useStaleSessionRedirect } from "../useStaleSessionRedirect.ts";
+import { useLiveQuery } from "../useLiveQuery.ts";
 import { useQuery } from "../useQuery.ts";
 import { useAdapter } from "../../adapters/useAdapter.ts";
 import { devBackendTrace } from "../../store/devBackendTrace.ts";
@@ -101,7 +102,7 @@ export const useGmPlayerDetailPage = () => {
     { enabled: !!homeSid },
   );
 
-  const journey = useQuery(
+  const journey = useLiveQuery(
     homeSid && playerId ? queryKeys.journey(homeSid, playerId) : null,
     fetchJourney(homeSid, playerId),
     { enabled: !!homeSid && !!playerId },
@@ -188,7 +189,7 @@ export const useGmPlayerDetailPage = () => {
     playerQuery.data?.inviteToken,
   ]);
 
-  const buddyQuery = useQuery(
+  const buddyQuery = useLiveQuery(
     playerId ? queryKeys.buddy(playerId) : null,
     fetchBuddy(playerId),
     { enabled: !!playerId },
@@ -234,13 +235,13 @@ export const useGmPlayerDetailPage = () => {
     refresh: () => client.invalidateQuery(queryKeys.buddy(playerId)),
   };
 
-  const resourcesQuery = useQuery(
+  const resourcesQuery = useLiveQuery(
     homeSid && playerId ? queryKeys.resources(homeSid, playerId) : null,
     fetchPlayerResources(homeSid, playerId, false),
     { enabled: !!homeSid && !!playerId },
   );
 
-  const libraryQuery = useQuery(
+  const libraryQuery = useLiveQuery(
     playerId ? queryKeys.libraryResources() : null,
     fetchLibraryResources(),
     { enabled: !!playerId },
@@ -434,7 +435,7 @@ export const useGmPlayerDetailPage = () => {
     },
   };
 
-  const templatesQuery = useQuery(queryKeys.templates(), fetchTemplates());
+  const templatesQuery = useLiveQuery(queryKeys.templates(), fetchTemplates());
   const templates = templatesQuery.data ?? [];
   const [applyingTemplate, setApplyingTemplate] = useState(false);
 

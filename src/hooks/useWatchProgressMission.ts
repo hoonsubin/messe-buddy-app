@@ -6,6 +6,7 @@ import {
   isProgressValidated,
   mergeProgressEvent,
 } from "../store/progressEvents.ts";
+import { pbEqFilter } from "../store/realtimeFilters.ts";
 import { queryKeys } from "../store/queryKeys.ts";
 import { useQueryClient } from "../store/useQueryClient.ts";
 
@@ -17,9 +18,6 @@ const POLL_MS = 1500;
 /**
  * SSE subscription that patches the progress query cache (C-20).
  *
- * Prefer `sessionId` when available — session-scoped PB subscribe matches the
- * proven GM roster path.
- *
  * Polls progress while active as a fallback when cross-tab realtime is slow
  * or missed (Phase 6.5).
  */
@@ -28,7 +26,7 @@ export const useWatchProgressMission = (
   missionId: string,
   onUpdate: (event: ProgressEvent) => void,
   enabled = true,
-  sessionId?: string,
+  _sessionId?: string,
 ): void => {
   const adapter = useAdapter();
   const client = useQueryClient();
@@ -67,9 +65,11 @@ export const useWatchProgressMission = (
       dispatchValidated(event);
     };
 
-    const unsub = sessionId
-      ? adapter.subscribeSessionProgressEvents(sessionId, handleEvent)
-      : adapter.subscribeProgressEvent(playerId, missionId, handleEvent);
+    const unsub = adapter.subscribeCollection(
+      "progress_events",
+      pbEqFilter("playerId", playerId),
+      (_action, record) => handleEvent(record as ProgressEvent),
+    );
 
     const poll = setInterval(() => {
       void client
@@ -86,5 +86,5 @@ export const useWatchProgressMission = (
       clearInterval(poll);
       unsub();
     };
-  }, [adapter, client, enabled, missionId, playerId, sessionId]);
+  }, [adapter, client, enabled, missionId, playerId]);
 };

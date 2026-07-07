@@ -33,37 +33,6 @@ const libraryResources = new Map<string, LibraryResource>();
 const milestoneResources = new Map<string, MilestoneResource>();
 const templates = new Map<string, TemplateExport>();
 
-type ProgressCallback = (event: ProgressEvent) => void;
-const subscriptions = new Map<string, Set<ProgressCallback>>();
-
-type SessionPlayerCallback = (player: Player) => void;
-const sessionPlayerSubscriptions = new Map<
-  string,
-  Set<SessionPlayerCallback>
->();
-
-type SessionProgressCallback = (event: ProgressEvent) => void;
-const sessionProgressSubscriptions = new Map<
-  string,
-  Set<SessionProgressCallback>
->();
-
-const makeId = (): string =>
-  Math.random().toString(36).slice(2, 17).padEnd(15, "0").slice(0, 15);
-
-const now = (): string => new Date().toISOString();
-
-const makeRecord = (): PBRecord => {
-  const t = now();
-  return { id: makeId(), created: t, updated: t };
-};
-
-const notify = (key: string, event: ProgressEvent): void => {
-  const subs = subscriptions.get(key);
-  if (!subs) return;
-  for (const cb of subs) cb(event);
-};
-
 type RealtimeAction = "create" | "update" | "delete";
 type CollectionCallback = (
   action: RealtimeAction,
@@ -103,27 +72,29 @@ const notifyCollection = (
 };
 
 const notifySessionPlayer = (
-  sessionId: string,
+  _sessionId: string,
   player: Player,
   action: RealtimeAction = "update",
 ): void => {
-  const subs = sessionPlayerSubscriptions.get(sessionId);
-  if (subs) {
-    for (const cb of subs) cb(player);
-  }
   notifyCollection("players", action, player);
 };
 
 const notifySessionProgress = (
-  sessionId: string,
+  _sessionId: string,
   event: ProgressEvent,
   action: RealtimeAction = "update",
 ): void => {
-  const subs = sessionProgressSubscriptions.get(sessionId);
-  if (subs) {
-    for (const cb of subs) cb(event);
-  }
   notifyCollection("progress_events", action, event);
+};
+
+const makeId = (): string =>
+  Math.random().toString(36).slice(2, 17).padEnd(15, "0").slice(0, 15);
+
+const now = (): string => new Date().toISOString();
+
+const makeRecord = (): PBRecord => {
+  const t = now();
+  return { id: makeId(), created: t, updated: t };
 };
 
 let currentGmUid = "uid_gamemaker_peter";
@@ -145,7 +116,6 @@ const simulateGmApproval = (key: string, gmUid?: string): void => {
       updated: now(),
     };
     progressEvents.set(key, approved);
-    notify(key, approved);
     if (approved.sessionId) notifySessionProgress(approved.sessionId, approved);
   }, 4000);
 };
@@ -448,6 +418,7 @@ const upsertFormSchema = async (
     ? { ...existing, fields, updated: now() }
     : { ...makeRecord(), missionId, fields };
   formSchemas.set(missionId, schema);
+  notifyCollection("form_schemas", existing ? "update" : "create", schema);
   return schema;
 };
 
@@ -472,7 +443,6 @@ const upsertProgressEvent = async (
   };
   const event: ProgressEvent = { ...base, ...patch, updated: now() };
   progressEvents.set(key, event);
-  notify(key, event);
   if (sessionId) notifySessionProgress(sessionId, event);
   if (event.status === "pendingApproval") simulateGmApproval(key);
   return event;
@@ -503,47 +473,6 @@ const subscribeCollection = (
   };
 };
 
-const subscribeProgressEvent = (
-  playerId: string,
-  missionId: string,
-  callback: (event: ProgressEvent) => void,
-): () => void => {
-  const key = `${playerId}::${missionId}`;
-  let subs = subscriptions.get(key);
-  if (!subs) {
-    subs = new Set();
-    subscriptions.set(key, subs);
-  }
-  subs.add(callback);
-  return () => subs?.delete(callback);
-};
-
-const subscribeSessionPlayers = (
-  sessionId: string,
-  callback: (player: Player) => void,
-): () => void => {
-  let subs = sessionPlayerSubscriptions.get(sessionId);
-  if (!subs) {
-    subs = new Set();
-    sessionPlayerSubscriptions.set(sessionId, subs);
-  }
-  subs.add(callback);
-  return () => subs?.delete(callback);
-};
-
-const subscribeSessionProgressEvents = (
-  sessionId: string,
-  callback: (event: ProgressEvent) => void,
-): () => void => {
-  let subs = sessionProgressSubscriptions.get(sessionId);
-  if (!subs) {
-    subs = new Set();
-    sessionProgressSubscriptions.set(sessionId, subs);
-  }
-  subs.add(callback);
-  return () => subs?.delete(callback);
-};
-
 const getBuddyProfile = async (
   playerId: string,
 ): Promise<BuddyProfile | null> => {
@@ -568,6 +497,11 @@ const upsertBuddyProfile = async (
     ? { ...existing, ...data, assignedToPlayerId: playerId, updated: now() }
     : { ...makeRecord(), ...data, assignedToPlayerId: playerId };
   buddyProfiles.set(playerId, profile);
+  notifyCollection(
+    "buddy_profiles",
+    existing ? "update" : "create",
+    profile,
+  );
   return profile;
 };
 
@@ -584,6 +518,7 @@ const createLibraryResource = async (
   await Promise.resolve();
   const resource: LibraryResource = { ...makeRecord(), ...data };
   libraryResources.set(resource.id, resource);
+  notifyCollection("library_resources", "create", resource);
   return resource;
 };
 
@@ -596,12 +531,15 @@ const updateLibraryResource = async (
   if (!existing) throw new Error(`Library resource not found: ${resourceId}`);
   const updated: LibraryResource = { ...existing, ...patch, updated: now() };
   libraryResources.set(resourceId, updated);
+  notifyCollection("library_resources", "update", updated);
   return updated;
 };
 
 const deleteLibraryResource = async (resourceId: string): Promise<void> => {
   await Promise.resolve();
+  const existing = libraryResources.get(resourceId);
   libraryResources.delete(resourceId);
+  if (existing) notifyCollection("library_resources", "delete", existing);
   for (const [id, mr] of milestoneResources) {
     if (mr.libraryResourceId === resourceId) milestoneResources.delete(id);
   }
@@ -624,6 +562,7 @@ const attachMilestoneResource = async (
   await Promise.resolve();
   const attachment: MilestoneResource = { ...makeRecord(), ...data };
   milestoneResources.set(attachment.id, attachment);
+  notifyCollection("milestone_resources", "create", attachment);
   return attachment;
 };
 
@@ -638,12 +577,15 @@ const updateMilestoneResource = async (
   }
   const updated: MilestoneResource = { ...existing, ...patch, updated: now() };
   milestoneResources.set(attachmentId, updated);
+  notifyCollection("milestone_resources", "update", updated);
   return updated;
 };
 
 const detachMilestoneResource = async (attachmentId: string): Promise<void> => {
   await Promise.resolve();
+  const existing = milestoneResources.get(attachmentId);
   milestoneResources.delete(attachmentId);
+  if (existing) notifyCollection("milestone_resources", "delete", existing);
 };
 
 const listResources = async (
@@ -661,12 +603,16 @@ const listTemplates = async (): Promise<ReadonlyArray<TemplateExport>> => {
 
 const saveTemplate = async (template: TemplateExport): Promise<void> => {
   await Promise.resolve();
+  const existing = templates.has(template.name);
   templates.set(template.name, template);
+  notifyCollection("templates", existing ? "update" : "create", template);
 };
 
 const deleteTemplate = async (name: string): Promise<void> => {
   await Promise.resolve();
+  const existing = templates.get(name);
   templates.delete(name);
+  if (existing) notifyCollection("templates", "delete", existing);
 };
 
 export const mockAdapter: AppAdapter = {
@@ -695,9 +641,6 @@ export const mockAdapter: AppAdapter = {
   upsertProgressEvent,
   listProgressEvents,
   subscribeCollection,
-  subscribeProgressEvent,
-  subscribeSessionPlayers,
-  subscribeSessionProgressEvents,
   getBuddyProfile,
   listBuddyProfiles,
   upsertBuddyProfile,

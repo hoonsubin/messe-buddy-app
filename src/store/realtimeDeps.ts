@@ -58,6 +58,55 @@ export const resolveRealtimeDeps = (
     ];
   }
 
+  if (queryKey === "templates") {
+    return [{ collection: "templates" }];
+  }
+
+  if (queryKey === "libraryResources") {
+    return [{ collection: "library_resources" }];
+  }
+
+  if (queryKey.startsWith("buddy:")) {
+    const playerId = queryKey.slice("buddy:".length);
+    if (!playerId) return [];
+    return [{
+      collection: "buddy_profiles",
+      filter: pbEqFilter("assignedToPlayerId", playerId),
+    }];
+  }
+
+  if (queryKey.startsWith("buddyPicker:")) {
+    const sessionId = queryKey.slice("buddyPicker:".length);
+    if (!sessionId) return [];
+    return [{
+      collection: "buddy_profiles",
+      filter: pbEqFilter("sessionId", sessionId),
+    }];
+  }
+
+  if (queryKey.startsWith("resources:")) {
+    const parts = queryKey.split(":");
+    if (parts.length < 3) return [];
+    const playerId = parts.slice(2).join(":");
+    if (!playerId) return [];
+    return [
+      {
+        collection: "milestone_resources",
+        filter: pbEqFilter("playerId", playerId),
+      },
+      { collection: "library_resources" },
+    ];
+  }
+
+  if (queryKey.startsWith("formSchema:")) {
+    const missionId = queryKey.slice("formSchema:".length);
+    if (!missionId) return [];
+    return [{
+      collection: "form_schemas",
+      filter: pbEqFilter("missionId", missionId),
+    }];
+  }
+
   return [];
 };
 

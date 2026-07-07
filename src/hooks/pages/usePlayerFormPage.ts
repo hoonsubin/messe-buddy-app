@@ -87,7 +87,7 @@ export const usePlayerFormPage = (): UsePlayerFormPageResult => {
     { enabled: !!playerId },
   );
 
-  const formSchemaQuery = useQuery(
+  const formSchemaQuery = useLiveQuery(
     missionId ? queryKeys.formSchema(missionId) : null,
     fetchFormSchema(missionId ?? ""),
     { enabled: !!missionId },

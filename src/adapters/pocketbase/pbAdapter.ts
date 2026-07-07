@@ -411,6 +411,16 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
           return marshalMilestone(record);
         case "missions":
           return marshalMission(record);
+        case "buddy_profiles":
+          return marshalBuddyProfile(pb, record);
+        case "library_resources":
+          return marshalLibraryResource(record);
+        case "form_schemas":
+          return marshalFormSchema(record);
+        case "milestone_resources":
+          return marshalMilestoneResource(record);
+        case "templates":
+          return marshalTemplate(record);
         default:
           return record;
       }
@@ -433,82 +443,6 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
       else unsubscribe = unsub;
     });
 
-    return () => {
-      cancelled = true;
-      if (unsubscribe) void unsubscribe();
-    };
-  };
-
-  const subscribeProgressEvent = (
-    playerId: string,
-    missionId: string,
-    callback: (event: ProgressEvent) => void,
-  ): () => void => {
-    let unsubscribe: (() => Promise<void>) | null = null;
-    let cancelled = false;
-    // Single-field filter — compound playerId+missionId filters can miss PB realtime.
-    void pb.collection("progress_events").subscribe(
-      "*",
-      (e) => {
-        const record = e.record as RecordModel;
-        if (record.playerId !== playerId || record.missionId !== missionId) {
-          return;
-        }
-        callback(marshalProgressEvent(record));
-      },
-      { filter: pb.filter("playerId = {:playerId}", { playerId }) },
-    ).then((unsub) => {
-      if (cancelled) void unsub();
-      else unsubscribe = unsub;
-    });
-    return () => {
-      cancelled = true;
-      if (unsubscribe) void unsubscribe();
-    };
-  };
-
-  const subscribeSessionPlayers = (
-    sessionId: string,
-    callback: (player: Player) => void,
-  ): () => void => {
-    let unsubscribe: (() => Promise<void>) | null = null;
-    let cancelled = false;
-    void pb.collection("players").subscribe(
-      "*",
-      (e) => {
-        const record = e.record as RecordModel;
-        if (record.sessionId !== sessionId) return;
-        callback(marshalPlayer(pb, record));
-      },
-      { filter: pb.filter("sessionId = {:sessionId}", { sessionId }) },
-    ).then((unsub) => {
-      if (cancelled) void unsub();
-      else unsubscribe = unsub;
-    });
-    return () => {
-      cancelled = true;
-      if (unsubscribe) void unsubscribe();
-    };
-  };
-
-  const subscribeSessionProgressEvents = (
-    sessionId: string,
-    callback: (event: ProgressEvent) => void,
-  ): () => void => {
-    let unsubscribe: (() => Promise<void>) | null = null;
-    let cancelled = false;
-    void pb.collection("progress_events").subscribe(
-      "*",
-      (e) => {
-        const record = e.record as RecordModel;
-        if (record.sessionId !== sessionId) return;
-        callback(marshalProgressEvent(record));
-      },
-      { filter: pb.filter("sessionId = {:sessionId}", { sessionId }) },
-    ).then((unsub) => {
-      if (cancelled) void unsub();
-      else unsubscribe = unsub;
-    });
     return () => {
       cancelled = true;
       if (unsubscribe) void unsubscribe();
@@ -715,9 +649,6 @@ export const createPBAdapter = (pb: PocketBase): AppAdapter => {
     upsertProgressEvent,
     listProgressEvents,
     subscribeCollection,
-    subscribeProgressEvent,
-    subscribeSessionPlayers,
-    subscribeSessionProgressEvents,
     getBuddyProfile,
     listBuddyProfiles,
     upsertBuddyProfile,
