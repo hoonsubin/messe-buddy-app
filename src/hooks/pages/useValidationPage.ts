@@ -112,7 +112,7 @@ export const useValidationPage = (
     decodeKey,
     sessionId,
     token,
-    sessionMeta.data?.qrSecret,
+    sessionMeta.data,
     sessionMeta.isInitialLoading,
   ]);
 

@@ -30,7 +30,6 @@ const QRDisplay = (props: QRDisplayProps) => {
       }
     },
     true,
-    sessionId,
   );
 
   useEffect(() => {

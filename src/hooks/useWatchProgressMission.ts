@@ -26,7 +26,6 @@ export const useWatchProgressMission = (
   missionId: string,
   onUpdate: (event: ProgressEvent) => void,
   enabled = true,
-  _sessionId?: string,
 ): void => {
   const adapter = useAdapter();
   const client = useQueryClient();

@@ -59,8 +59,14 @@ export const useQrScan = (
   );
 
   const session = sessionMeta.data ?? null;
-  const players = gmRoster.data?.players ?? [];
-  const missions = journey.data?.missions ?? [];
+  const players = useMemo(
+    () => gmRoster.data?.players ?? [],
+    [gmRoster.data?.players],
+  );
+  const missions = useMemo(
+    () => journey.data?.missions ?? [],
+    [journey.data?.missions],
+  );
 
   const loading = sessionMeta.isInitialLoading || gmRoster.isInitialLoading ||
     (!!resolvedPlayerId &&

@@ -93,8 +93,14 @@ export const usePlayerFormPage = (): UsePlayerFormPageResult => {
     { enabled: !!missionId },
   );
 
-  const milestones = journey.data?.milestones ?? [];
-  const missions = journey.data?.missions ?? [];
+  const milestones = useMemo(
+    () => journey.data?.milestones ?? [],
+    [journey.data?.milestones],
+  );
+  const missions = useMemo(
+    () => journey.data?.missions ?? [],
+    [journey.data?.missions],
+  );
   const mission = missions.find((m) => m.id === missionId) ?? null;
   const isProfileMission = mission !== null &&
     isOnboardingProfileMission(mission);

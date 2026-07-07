@@ -144,8 +144,14 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     if (playerId) client.invalidateQuery(queryKeys.progress(playerId));
   }, [client, playerId]);
 
-  const milestones = journey.data?.milestones ?? [];
-  const missions = journey.data?.missions ?? [];
+  const milestones = useMemo(
+    () => journey.data?.milestones ?? [],
+    [journey.data?.milestones],
+  );
+  const missions = useMemo(
+    () => journey.data?.missions ?? [],
+    [journey.data?.missions],
+  );
   const session = sessionMeta.data ?? null;
 
   const progress = useDerivedPlayerProgress(
@@ -194,14 +200,15 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     null,
   );
   const [popupMission, setPopupMission] = useState<Mission | null>(null);
+  const [prevCockpitTab, setPrevCockpitTab] = useState(cockpitTab);
+  if (prevCockpitTab !== cockpitTab) {
+    setPrevCockpitTab(cockpitTab);
+    setSelectedMilestoneId(null);
+  }
 
   const closeMilestoneSidebar = useCallback(() => {
     setSelectedMilestoneId(null);
   }, []);
-
-  useEffect(() => {
-    closeMilestoneSidebar();
-  }, [cockpitTab, closeMilestoneSidebar]);
 
   const handleMissionClick = useCallback(
     (missionId: string, fromTutorial = false) => {
