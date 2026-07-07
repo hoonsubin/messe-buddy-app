@@ -126,6 +126,44 @@ Deno.test("patchQuery updates cache without a network fetch", async () => {
   );
 });
 
+Deno.test("fetchQuery does not retry cached errors until invalidated", async () => {
+  const client = createQueryClient();
+  let calls = 0;
+
+  await assert.rejects(
+    () =>
+      client.fetchQuery("sessionMeta:missing", async () => {
+        calls += 1;
+        throw new Error("404");
+      }),
+    /404/,
+  );
+
+  await assert.rejects(
+    () =>
+      client.fetchQuery("sessionMeta:missing", async () => {
+        calls += 1;
+        throw new Error("404");
+      }),
+    /404/,
+  );
+
+  assert.equal(calls, 1);
+
+  client.invalidateQuery("sessionMeta:missing");
+
+  await assert.rejects(
+    () =>
+      client.fetchQuery("sessionMeta:missing", async () => {
+        calls += 1;
+        throw new Error("404");
+      }),
+    /404/,
+  );
+
+  assert.equal(calls, 2);
+});
+
 Deno.test("journey key is not fetched when caller skips fetchQuery", async () => {
   const client = createQueryClient();
   let calls = 0;

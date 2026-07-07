@@ -47,9 +47,13 @@ const PlayerDetailOverlays = ({ vm }: PlayerDetailOverlaysProps) => {
             })}
           onUpdateResource={(id, patch) =>
             void vm.gmResources.updateResource(id, patch)}
-          onDeleteResource={(id) => void vm.gmResources.deleteResource(id)}
+          onDeleteResource={(id) =>
+            vm.handleDetachResource(id, openMilestone.id)}
           onToggleResourceVisibility={(id, visible) =>
             void vm.gmResources.toggleVisibility(id, visible)}
+          libraryResources={vm.gmResources.libraryResources}
+          onAttachFromLibrary={(libraryResourceId) =>
+            vm.handleAttachFromLibrary(libraryResourceId, openMilestone.id)}
         />
       )}
 

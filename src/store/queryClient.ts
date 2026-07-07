@@ -15,6 +15,7 @@ export interface QueryState<T> {
   readonly error: Error | null;
   readonly isInitialLoading: boolean;
   readonly isRefreshing: boolean;
+  readonly isStale: boolean;
 }
 
 export interface QueryClient {
@@ -36,6 +37,7 @@ const emptyState = <T>(): QueryState<T> => ({
   error: null,
   isInitialLoading: false,
   isRefreshing: false,
+  isStale: false,
 });
 
 export const createQueryClient = (): QueryClient => {
@@ -65,12 +67,17 @@ export const createQueryClient = (): QueryClient => {
     }
 
     const entry = getEntry<T>(key);
-    if (
-      entry?.data !== undefined && entry.status === "success" && !entry.stale
-    ) {
-      const ageMs = entry.fetchedAt !== null ? Date.now() - entry.fetchedAt : 0;
-      devBackendTrace.queryHit(key, ageMs);
-      return entry.data;
+    if (entry && !entry.stale) {
+      if (entry.status === "success" && entry.data !== undefined) {
+        const ageMs = entry.fetchedAt !== null
+          ? Date.now() - entry.fetchedAt
+          : 0;
+        devBackendTrace.queryHit(key, ageMs);
+        return entry.data;
+      }
+      if (entry.status === "error" && entry.error) {
+        throw entry.error;
+      }
     }
 
     devBackendTrace.queryFetch(key);
@@ -93,7 +100,7 @@ export const createQueryClient = (): QueryClient => {
           data: entry?.data,
           error,
           status: "error",
-          fetchedAt: entry?.fetchedAt ?? null,
+          fetchedAt: Date.now(),
           stale: false,
         });
         notify(key);
@@ -119,8 +126,9 @@ export const createQueryClient = (): QueryClient => {
     return {
       data: entry?.data,
       error: entry?.error ?? null,
-      isInitialLoading: !hasData && loading,
+      isInitialLoading: !hasData && loading && entry?.status !== "error",
       isRefreshing: hasData && loading,
+      isStale: entry?.stale ?? false,
     };
   };
 

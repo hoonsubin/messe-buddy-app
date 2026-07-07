@@ -20,6 +20,7 @@ const PlayerDetailHeader = ({
         type="button"
         variant="ghost"
         className="player-detail__header-btn"
+        aria-label="All players"
         onClick={onBack}
       >
         <MdArrowBack size={16} />
@@ -34,6 +35,7 @@ const PlayerDetailHeader = ({
         type="button"
         variant="ghost"
         className="player-detail__header-btn"
+        aria-label="Scan QR code"
         onClick={onScan}
       >
         <MdQrCodeScanner size={16} />

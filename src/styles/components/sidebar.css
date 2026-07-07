@@ -96,3 +96,28 @@
 .sidebar-mission-row:last-child {
   border-block-end: none;
 }
+
+.sidebar-resource-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-block-end: 1px solid hsl(var(--color-border));
+  color: hsl(var(--color-fg));
+  text-decoration: none;
+  font-size: var(--text-sm);
+}
+
+.sidebar-resource-row:last-child {
+  border-block-end: none;
+}
+
+.sidebar-resource-row__icon {
+  flex-shrink: 0;
+  color: hsl(var(--color-muted-fg));
+}
+
+.sidebar-resource-row__title {
+  flex: 1;
+  font-weight: var(--weight-medium);
+}

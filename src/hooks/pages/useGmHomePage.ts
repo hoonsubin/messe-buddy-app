@@ -14,6 +14,7 @@ import type {
 import { useGmRosterRealtime } from "../useGmRosterRealtime.ts";
 import { useActiveProfile } from "../useActiveProfile.ts";
 import { clearActiveUid, useIdentity } from "../useIdentity.ts";
+import { useStaleSessionRedirect } from "../useStaleSessionRedirect.ts";
 import { useMutation } from "../useMutation.ts";
 import { useQuery } from "../useQuery.ts";
 import { useAdapter } from "../../adapters/useAdapter.ts";
@@ -154,6 +155,9 @@ export const useGmHomePage = (): UseGmHomePageResult => {
     navigate("/", { replace: true });
   }, [identity, removeProfile, navigate]);
 
+  const sessionMissing = !sessionMeta.isInitialLoading && !!sessionMeta.error;
+  useStaleSessionRedirect(sessionMissing, identity?.uid);
+
   const createJourneyMutation = useMutation({
     label: "gm:createOnboardingJourney",
     mutationFn: async (
@@ -269,7 +273,7 @@ export const useGmHomePage = (): UseGmHomePageResult => {
     loading: gmRoster.isInitialLoading ||
       (gmRoster.data === undefined && !gmRoster.error),
     checkingSession: sessionMeta.isInitialLoading,
-    sessionMissing: !sessionMeta.isInitialLoading && !!sessionMeta.error,
+    sessionMissing,
     templates: templatesQuery.data ?? [],
     wizardOpen,
     setWizardOpen,

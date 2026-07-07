@@ -14,6 +14,7 @@ const idleState = <T>(): QueryState<T> => ({
   error: null,
   isInitialLoading: false,
   isRefreshing: false,
+  isStale: false,
 });
 
 /**
@@ -49,7 +50,12 @@ export const useQuery = <T>(
     run();
     return client.subscribe(resolvedKey, () => {
       setTick((t) => t + 1);
-      run();
+      const state = client.getQueryState<T>(resolvedKey);
+      if (
+        state.isStale && !state.isInitialLoading && !state.isRefreshing
+      ) {
+        run();
+      }
     });
   }, [adapter, client, resolvedKey]);
 

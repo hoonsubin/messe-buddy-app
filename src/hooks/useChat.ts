@@ -12,14 +12,23 @@ import { useAssistantAvailability } from "./useAssistantAvailability.ts";
 
 export type { ChatMessage, UseChatReturn } from "./useChatStream.ts";
 
+export interface UseChatOptions {
+  /** When false, skip /llm/health/readiness polling (dashboard tab). */
+  readonly pollAssistantHealth?: boolean;
+}
+
 export interface UseChatWithAvailability extends UseChatReturn {
   // True when serving the mock fallback because the live assistant is
   // unreachable (or the reachability check hasn't resolved yet).
   readonly assistantUnavailable: boolean;
 }
 
-export function useChat(appContext?: string): UseChatWithAvailability {
-  const available = useAssistantAvailability();
+export function useChat(
+  appContext?: string,
+  options?: UseChatOptions,
+): UseChatWithAvailability {
+  const poll = options?.pollAssistantHealth ?? false;
+  const available = useAssistantAvailability(poll);
   const mock = useMockChat();
   const live = useChatStream(appContext);
   return available

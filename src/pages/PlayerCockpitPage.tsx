@@ -1,8 +1,5 @@
-import { MdArrowBack } from "react-icons/md";
 import { useLocation, useParams } from "react-router-dom";
 import { usePlayerCockpitPage } from "../hooks/pages/usePlayerCockpitPage.ts";
-import { Button } from "../components/shared/index.ts";
-import { BUTTON_VARIANT } from "../components/shared/types.ts";
 import ConfirmDialog from "../components/shared/ConfirmDialog.tsx";
 import RouteTabBar from "../components/shared/RouteTabBar.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
@@ -46,33 +43,6 @@ const PlayerCockpitPage = () => {
         data-page="player-cockpit"
       >
         <p>Could not load player data. Please try again.</p>
-      </div>
-    );
-  }
-
-  if (result.status === "session-missing") {
-    return (
-      <div
-        className="page-state-center"
-        data-testid="player-cockpit-page"
-        data-page="player-cockpit"
-      >
-        <div
-          className="card"
-          style={{ maxWidth: "24rem", textAlign: "center" }}
-        >
-          <p className="session-missing__message">
-            This session could not be found. It may have been reset or removed —
-            this profile is no longer valid.
-          </p>
-          <Button
-            variant={BUTTON_VARIANT.DESTRUCTIVE}
-            onClick={result.onRemove}
-          >
-            <MdArrowBack size={16} aria-hidden="true" />
-            Remove this profile
-          </Button>
-        </div>
       </div>
     );
   }
@@ -153,6 +123,11 @@ const PlayerCockpitPage = () => {
           milestoneId={m.selectedMilestone.id}
           milestoneName={m.selectedMilestone.name}
           missions={m.sidebarMissions}
+          resources={m.resources.filter(
+            (r) =>
+              r.milestoneId === m.selectedMilestone!.id &&
+              r.isVisibleToPlayer,
+          )}
           progressEvents={m.progress.progressEvents}
           currentXP={m.msProgressEarnedXP}
           xpThreshold={m.selectedMilestone.xpThreshold}
@@ -172,6 +147,7 @@ const PlayerCockpitPage = () => {
           playerXPercent={m.currentMilestone?.xPercent}
           playerYPercent={m.currentMilestone?.yPercent}
           currentMissions={m.currentMissions}
+          journeyMissionCount={m.journeyMissionCount}
           progressEvents={m.progress.progressEvents}
           buddy={m.buddy}
           resources={m.resources}

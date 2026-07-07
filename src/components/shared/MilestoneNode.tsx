@@ -25,7 +25,7 @@ const MIN_FILL = 0.12;
 const MilestoneNode = (props: MilestoneNodeProps) => {
   const fillHeight = Math.max(MIN_FILL, props.progressPercent);
   const pct = Math.round(props.progressPercent * 100);
-  const mCount = props.missionCount ?? 0;
+  const mCount = Number(props.missionCount ?? 0);
   const missionCountLabel = mCount === 1 ? "1 mission" : `${mCount} missions`;
 
   return (

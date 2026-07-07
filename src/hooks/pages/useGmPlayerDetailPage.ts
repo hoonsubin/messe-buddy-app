@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type {
   FormSchema,
@@ -21,12 +21,14 @@ import { useGmMilestoneEditor } from "../useGmMilestoneEditor.ts";
 import { useGmMissionEditor } from "../useGmMissionEditor.ts";
 import { useGmProgressView } from "../useGmProgressView.ts";
 import { useGmRosterRealtime } from "../useGmRosterRealtime.ts";
+import { useStaleSessionRedirect } from "../useStaleSessionRedirect.ts";
 import { useQuery } from "../useQuery.ts";
 import { useAdapter } from "../../adapters/useAdapter.ts";
 import { devBackendTrace } from "../../store/devBackendTrace.ts";
 import {
   fetchBuddy,
   fetchJourney,
+  fetchLibraryResources,
   fetchPlayerById,
   fetchPlayerResources,
   fetchSessionMeta,
@@ -113,7 +115,10 @@ export const useGmPlayerDetailPage = () => {
   const missions = journey.data?.missions ?? [];
   const sessionLoading = sessionMeta.isInitialLoading ||
     journey.isInitialLoading;
+  const sessionMissing = !sessionMeta.isInitialLoading && !!sessionMeta.error;
   const sessionError = sessionMeta.error ?? journey.error;
+
+  useStaleSessionRedirect(sessionMissing, identity?.uid);
 
   const refreshSession = useCallback(() => {
     client.invalidateQuery([
@@ -238,6 +243,12 @@ export const useGmPlayerDetailPage = () => {
     { enabled: !!homeSid && !!playerId },
   );
 
+  const libraryQuery = useQuery(
+    playerId ? queryKeys.libraryResources() : null,
+    fetchLibraryResources(),
+    { enabled: !!playerId },
+  );
+
   const refreshResources = useCallback(() => {
     if (homeSid && playerId) {
       client.invalidateQuery(queryKeys.resources(homeSid, playerId));
@@ -331,6 +342,35 @@ export const useGmPlayerDetailPage = () => {
     [adapter, playerId, refreshResources],
   );
 
+  const detachFromMilestone = useCallback(
+    async (resourceId: string, milestoneId: string) => {
+      if (!playerId) return;
+      const attachments = await adapter.listMilestoneResources(
+        playerId,
+        milestoneId,
+      );
+      const match = attachments.find((mr) => mr.libraryResourceId === resourceId);
+      if (match) await adapter.detachMilestoneResource(match.id);
+      refreshResources();
+    },
+    [adapter, playerId, refreshResources],
+  );
+
+  const attachFromLibrary = useCallback(
+    async (libraryResourceId: string, milestoneId: string) => {
+      if (!playerId) throw new Error("playerId required to attach resources");
+      await adapter.attachMilestoneResource({
+        sessionId: homeSid,
+        playerId,
+        milestoneId,
+        libraryResourceId,
+        isVisibleToPlayer: true,
+      });
+      refreshResources();
+    },
+    [adapter, homeSid, playerId, refreshResources],
+  );
+
   const toggleVisibility = useCallback(
     async (resourceId: string, visible: boolean) => {
       await updateResource(resourceId, { isVisibleToPlayer: visible });
@@ -341,12 +381,15 @@ export const useGmPlayerDetailPage = () => {
   const gmResources = {
     role: "gamemaker" as const,
     resources: resourcesQuery.data ?? [],
+    libraryResources: libraryQuery.data ?? [],
     loading: resourcesQuery.isInitialLoading,
     error: resourcesQuery.error,
     refresh: refreshResources,
     addResource,
     updateResource,
     deleteResource,
+    detachFromMilestone,
+    attachFromLibrary,
     toggleVisibility,
   };
 
@@ -554,6 +597,24 @@ export const useGmPlayerDetailPage = () => {
     [gmResources, milestoneEditor.selectedMilestone, showToast],
   );
 
+  const handleAttachFromLibrary = useCallback(
+    (libraryResourceId: string, milestoneId: string) => {
+      void gmResources.attachFromLibrary(libraryResourceId, milestoneId)
+        .then(() => showToast("Resource attached"))
+        .catch(() => showToast("Could not attach resource"));
+    },
+    [gmResources, showToast],
+  );
+
+  const handleDetachResource = useCallback(
+    (resourceId: string, milestoneId: string) => {
+      void gmResources.detachFromMilestone(resourceId, milestoneId)
+        .then(() => showToast("Resource removed"))
+        .catch(() => showToast("Could not remove resource"));
+    },
+    [gmResources, showToast],
+  );
+
   const isDirty = useMemo(
     () =>
       milestoneEditor.draftMilestonesAreDirty ||
@@ -640,10 +701,11 @@ export const useGmPlayerDetailPage = () => {
   );
 
   useEffect(() => {
-    if (sessionError && !sessionLoading) {
+    if (sessionMissing) return;
+    if (sessionError && !sessionLoading && !sessionMeta.error) {
       navigate(`/gamemaker/${homeSid}`, { replace: true });
     }
-  }, [sessionError, sessionLoading, navigate, homeSid]);
+  }, [homeSid, navigate, sessionError, sessionLoading, sessionMeta.error, sessionMissing]);
 
   const playerName = gmProgress.selectedPlayer?.name || session?.name ||
     "Player";
@@ -690,15 +752,20 @@ export const useGmPlayerDetailPage = () => {
     milestoneEditor.setSelectedMilestone(null);
   }, [missionEditor, milestoneEditor]);
 
-  // Fresh player route (e.g. post-wizard redirect) must not leave a sheet open.
+  const closeMilestoneEditorRef = useRef(closeMilestoneEditor);
   useEffect(() => {
-    closeMilestoneEditor();
-  }, [playerId, closeMilestoneEditor]);
+    closeMilestoneEditorRef.current = closeMilestoneEditor;
+  });
 
-  // Scan mode replaces the map — dismiss any open milestone sheet first.
+  // Fresh player route only — do not depend on closeMilestoneEditor identity
+  // (mission/milestone editor hooks return new objects each render).
   useEffect(() => {
-    if (isScanMode) closeMilestoneEditor();
-  }, [isScanMode, closeMilestoneEditor]);
+    closeMilestoneEditorRef.current();
+  }, [playerId]);
+
+  useEffect(() => {
+    if (isScanMode) closeMilestoneEditorRef.current();
+  }, [isScanMode]);
 
   // Project unsaved edits into the mission list the sheet renders:
   //   1. filter to the currently-open milestone,
@@ -775,6 +842,8 @@ export const useGmPlayerDetailPage = () => {
     handleDeleteMilestone,
     handleDeleteMission,
     handleAddResource,
+    handleAttachFromLibrary,
+    handleDetachResource,
     handleSave,
     handleSaveToTemplate,
     handleDiscard,

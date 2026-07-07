@@ -61,7 +61,28 @@ deno task dev:full                  # Vite (HMR) + native `go run . serve` in pa
 
 This forces `VITE_USE_MOCK_PB=false` and starts PocketBase on `127.0.0.1:8090` (Vite's dev proxy already points `/api` there — see [`vite.config.ts`](vite.config.ts)). Admin UI: `http://localhost:8090/_/`, login `dev@local.test` / `devdevdevdev` (hardcoded local-only credential, unrelated to `.env`'s `PB_ADMIN_*`). Data lives in `server/pb_data/` (gitignored) — delete it to reset. AI chat still uses its own mock (`useMockChat`) since there's no LiteLLM proxy in this mode.
 
-### Full-stack with Docker
+### Dev backend trace
+
+In development, query/mutation/SSE activity is logged to a session-scoped ring buffer:
+
+```js
+// Browser console — enable verbose sink
+localStorage.mb_dev_trace = "1";
+
+// Inspect events for the active session
+window.__MB_DEV_TRACE__.getLog("<sessionId>");
+```
+
+Disable with `localStorage.removeItem("mb_dev_trace")`. See `src/store/devBackendTrace.ts`.
+
+### Manual verification (Playwright MCP)
+
+Regression checks use **Playwright MCP** at **390×844** (iPhone 15) with visual screenshots — not CI smoke scripts. After a clean rebuild:
+
+1. Reset PB if needed: delete `server/pb_data/` and restart `deno task dev:full`
+2. Walk GM + player flows per `design/design-tokens.md` §10
+3. Optional headless script: `SMOKE_BASE_URL=http://127.0.0.1:5173 deno run -A --node-modules-dir=auto scripts/smoke-live.ts`
+
 
 ```sh
 cp .env.example .env  # Fill in LLM_SERVER_API_KEY and LITELLM_MASTER_KEY

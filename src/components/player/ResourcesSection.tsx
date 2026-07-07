@@ -98,7 +98,22 @@ const ResourcesSection = (props: ResourcesSectionProps) => {
             </div>
 
             {/* ── Empty state: no query yet ───────────────────────── */}
-            {!hasQuery && (
+            {!hasQuery && props.resources.length === 0 && (
+              <p
+                style={{
+                  color: "hsl(var(--color-muted-fg))",
+                  fontSize: "var(--text-sm)",
+                  textAlign: "center",
+                  padding: "var(--space-4) var(--space-2)",
+                }}
+                data-testid="resources-search-empty-catalog"
+              >
+                No resources shared yet. Your Game Master can attach guides to
+                milestones — try the map sidebar Resources tab.
+              </p>
+            )}
+
+            {!hasQuery && props.resources.length > 0 && (
               <p
                 style={{
                   color: "hsl(var(--color-muted-fg))",

@@ -7,12 +7,16 @@
 //
 // Defaults to unavailable until the first check resolves - a brief false
 // negative is harmless since the assistant card starts collapsed.
+//
+// Pass `enabled: false` on non-assistant routes to avoid /llm health polls
+// (and console 502 noise) when LiteLLM is not running locally.
 
 import { useEffect, useState } from "react";
 import { LLM_BASE_URL } from "../config/llm.ts";
 
 const CHECK_TIMEOUT_MS = 4000;
 const RECHECK_INTERVAL_MS = 45_000;
+const MAX_CONSECUTIVE_FAILURES = 2;
 
 async function checkReadiness(): Promise<boolean> {
   const controller = new AbortController();
@@ -31,25 +35,44 @@ async function checkReadiness(): Promise<boolean> {
   }
 }
 
-export function useAssistantAvailability(): boolean {
+export function useAssistantAvailability(enabled = true): boolean {
   const [available, setAvailable] = useState(false);
 
   useEffect(() => {
+    if (!enabled) {
+      setAvailable(false);
+      return;
+    }
+
     let cancelled = false;
+    let consecutiveFailures = 0;
+    let interval: ReturnType<typeof setInterval> | undefined;
 
     const run = () => {
       void checkReadiness().then((ok) => {
-        if (!cancelled) setAvailable(ok);
+        if (cancelled) return;
+        setAvailable(ok);
+        if (ok) {
+          consecutiveFailures = 0;
+          return;
+        }
+        consecutiveFailures += 1;
+        if (
+          consecutiveFailures >= MAX_CONSECUTIVE_FAILURES && interval !== undefined
+        ) {
+          clearInterval(interval);
+          interval = undefined;
+        }
       });
     };
 
     run();
-    const interval = setInterval(run, RECHECK_INTERVAL_MS);
+    interval = setInterval(run, RECHECK_INTERVAL_MS);
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      if (interval !== undefined) clearInterval(interval);
     };
-  }, []);
+  }, [enabled]);
 
-  return available;
+  return enabled ? available : false;
 }

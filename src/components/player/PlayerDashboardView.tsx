@@ -23,6 +23,7 @@ interface PlayerDashboardViewProps {
   readonly playerXPercent?: number;
   readonly playerYPercent?: number;
   readonly currentMissions: ReadonlyArray<Mission>;
+  readonly journeyMissionCount: number;
   readonly progressEvents: ReadonlyArray<ProgressEvent>;
   readonly buddy: BuddyProfile | null;
   readonly resources: ReadonlyArray<Resource>;
@@ -40,6 +41,7 @@ const PlayerDashboardView = ({
   playerXPercent,
   playerYPercent,
   currentMissions,
+  journeyMissionCount,
   progressEvents,
   buddy,
   resources,
@@ -78,6 +80,7 @@ const PlayerDashboardView = ({
 
         <CurrentMissionsList
           missions={currentMissions}
+          journeyMissionCount={journeyMissionCount}
           progressEvents={progressEvents}
           onMissionClick={onMissionClick}
           onMarkComplete={() => undefined}

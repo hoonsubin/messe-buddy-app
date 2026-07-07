@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type {
   BuddyProfile,
   Milestone,
@@ -12,7 +12,8 @@ import type {
 import { MISSION_TYPE, USER_ROLE } from "../../types/index.ts";
 import type { CachedIdentity } from "../../types/index.ts";
 import { useActiveProfile } from "../../hooks/useActiveProfile.ts";
-import { clearActiveUid, useIdentity } from "../../hooks/useIdentity.ts";
+import { clearActiveUid } from "../../hooks/useIdentity.ts";
+import { useStaleSessionRedirect } from "../../hooks/useStaleSessionRedirect.ts";
 import { useDerivedPlayerProgress } from "../../hooks/useDerivedPlayerProgress.ts";
 import { useTutorial } from "../../hooks/useTutorial.ts";
 import { useChat } from "../../hooks/useChat.ts";
@@ -32,6 +33,7 @@ import { queryKeys } from "../../store/queryKeys.ts";
 import { useQueryClient } from "../../store/useQueryClient.ts";
 import { useAdapter } from "../../adapters/useAdapter.ts";
 import { findOnboardingProfileMission } from "../../utils/onboardingMission.ts";
+import { parsePlayerCockpitTab } from "../../utils/routeTabs.ts";
 import {
   TUTORIAL_FORM_KEY,
   TUTORIAL_STEP_KEY,
@@ -67,6 +69,7 @@ export interface PlayerCockpitPageModel {
   readonly popupMission: Mission | null;
   readonly setPopupMission: (mission: Mission | null) => void;
   readonly currentMissions: ReadonlyArray<Mission>;
+  readonly journeyMissionCount: number;
   readonly currentMilestone: Milestone | null;
   readonly handleMissionClick: (
     missionId: string,
@@ -78,7 +81,6 @@ export interface PlayerCockpitPageModel {
 export type UsePlayerCockpitPageResult =
   | { readonly status: "no-identity" }
   | { readonly status: "player-error" }
-  | { readonly status: "session-missing"; readonly onRemove: () => void }
   | { readonly status: "session-redirect" }
   | { readonly status: "ready"; readonly model: PlayerCockpitPageModel };
 
@@ -86,6 +88,8 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
   const { sessionId: routeSessionId } = useParams<{ sessionId: string }>();
   const sessionId = routeSessionId ?? "";
   const navigate = useNavigate();
+  const location = useLocation();
+  const cockpitTab = parsePlayerCockpitTab(location.pathname);
   const adapter = useAdapter();
   const client = useQueryClient();
   const identity = useActiveProfile(sessionId, USER_ROLE.PLAYER);
@@ -152,8 +156,6 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     refreshProgress,
   );
 
-  const { removeProfile } = useIdentity();
-
   const updatePlayerMutation = useMutation({
     label: "player:update",
     mutationFn: async (patch: Partial<Omit<Player, keyof PBRecord>>) => {
@@ -169,12 +171,6 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
       updatePlayerMutation.mutate(patch),
     [updatePlayerMutation],
   );
-
-  const handleRemoveStaleProfile = useCallback(() => {
-    if (identity) removeProfile(identity.uid);
-    clearActiveUid();
-    navigate("/", { replace: true });
-  }, [identity, removeProfile, navigate]);
 
   const tutorialPlayer = useMemo(() => {
     if (!player) return null;
@@ -292,7 +288,9 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     );
   }, [player?.preferredName, player?.name, buddy]);
 
-  const chat = useChat(aiAppContext);
+  const chat = useChat(aiAppContext, {
+    pollAssistantHealth: cockpitTab === "assistant",
+  });
 
   const handleLeave = useCallback(() => {
     clearActiveUid();
@@ -304,11 +302,11 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
   const checkingSession = sessionMeta.isInitialLoading;
   const sessionMissing = !checkingSession && !!sessionMeta.error;
 
+  useStaleSessionRedirect(sessionMissing, identity?.uid);
+
   if (!identity) return { status: "no-identity" };
   if (playerQuery.error) return { status: "player-error" };
-  if (!checkingSession && sessionMissing) {
-    return { status: "session-missing", onRemove: handleRemoveStaleProfile };
-  }
+  if (sessionMissing) return { status: "session-redirect" };
   if (sessionMeta.error && !sessionMeta.isInitialLoading) {
     return { status: "session-redirect" };
   }
@@ -345,6 +343,7 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
       popupMission,
       setPopupMission,
       currentMissions,
+      journeyMissionCount: missions.length,
       currentMilestone,
       handleMissionClick,
       handleLeave,
