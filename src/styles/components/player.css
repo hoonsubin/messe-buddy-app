@@ -400,7 +400,6 @@
   border-block-end-color: hsl(var(--color-primary));
 }
 
-/* Centered scrollable tab row (player + player detail pages) */
 .route-tab-bar {
   display: flex;
   flex-shrink: 0;
@@ -412,10 +411,8 @@
   padding-inline: var(--space-2);
 }
 
-/* Above milestone sidebar scrim (49) and drawer (50) */
 .player-cockpit .route-tab-bar {
   position: relative;
-  z-index: 51;
 }
 
 /* ── Player cockpit page chrome ── */

@@ -12,6 +12,7 @@ import CurrentMissionsList from "./CurrentMissionsList.tsx";
 import ResourcesSection from "./ResourcesSection.tsx";
 import BuddyCard from "./BuddyCard.tsx";
 import type { ChatMessage } from "../../hooks/useChat.ts";
+import { TUTORIAL_TARGETS } from "../tutorial/Tutorial.tsx";
 
 interface PlayerDashboardViewProps {
   readonly playerName?: string;
@@ -65,7 +66,10 @@ const PlayerDashboardView = ({
       <div className="cockpit-col">
         <section aria-label="Milestones">
           <h2 className="section-label">Milestones</h2>
-          <div className="player-cockpit__map-wrap">
+          <div
+            className="player-cockpit__map-wrap"
+            data-tutorial-target={TUTORIAL_TARGETS.MILESTONE_MAP}
+          >
             <MilestoneMapViewer
               milestones={milestones}
               bgImageUrl={bgImageUrl}

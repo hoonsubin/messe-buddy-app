@@ -5,7 +5,9 @@ import {
   MdChevronRight,
 } from "react-icons/md";
 import type { Mission, ProgressEvent } from "../../types/index.ts";
+import { MISSION_TAG } from "../../types/index.ts";
 import TagBadge from "../shared/TagBadge.tsx";
+import { TUTORIAL_TARGETS } from "../tutorial/Tutorial.tsx";
 
 interface CurrentMissionsListProps {
   readonly missions: ReadonlyArray<Mission>;
@@ -72,6 +74,9 @@ const CurrentMissionsList = (props: CurrentMissionsListProps) => {
               }`}
               data-testid="mission-item"
               data-mission-id={mission.id}
+              {...(mission.tags.includes(MISSION_TAG.ONBOARDING_PROFILE) && {
+                "data-tutorial-target": TUTORIAL_TARGETS.PROFILE_MISSION,
+              })}
               onClick={() => props.onMissionClick(mission.id)}
             >
               {/* Checkbox indicator */}
