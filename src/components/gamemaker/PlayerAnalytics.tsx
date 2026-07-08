@@ -1,7 +1,11 @@
 import { useMemo } from "react";
 import { MdFlag, MdTrendingUp, MdWbSunny } from "react-icons/md";
 import type { Milestone, Mission, ProgressEvent } from "../../types/index.ts";
-import { expectedProgressPct } from "../../utils/expectedProgress.ts";
+import {
+  expectedProgressPct,
+  onboardingDays,
+  TOTAL_ONBOARDING_DAYS,
+} from "../../utils/expectedProgress.ts";
 import MissionTimelineChart from "./MissionTimelineChart.tsx";
 
 interface PlayerAnalyticsProps {
@@ -13,14 +17,6 @@ interface PlayerAnalyticsProps {
 }
 
 const COMPLETED = new Set(["completed", "autoApproved"]);
-const DAY = 86_400_000;
-
-const daysSince = (iso?: string): number | null => {
-  if (!iso) return null;
-  const start = new Date(iso).getTime();
-  if (Number.isNaN(start)) return null;
-  return Math.max(0, Math.floor((Date.now() - start) / DAY));
-};
 
 const StatCard = (
   { icon, label, children }: {
@@ -53,11 +49,11 @@ const PlayerAnalytics = (props: PlayerAnalyticsProps) => {
     [props.events],
   );
 
-  const days = daysSince(props.startDateISO);
+  const days = onboardingDays(props.startDateISO, props.events);
   const total = props.missions.length;
   const doneCount = props.missions.filter((m) => completedSet.has(m.id)).length;
   const actualPct = total === 0 ? 0 : Math.round((doneCount / total) * 100);
-  const expectedPct = Math.round(expectedProgressPct(days ?? 0));
+  const expectedPct = Math.round(expectedProgressPct(days));
   const gap = Math.abs(actualPct - expectedPct);
   const planColorVar = actualPct < expectedPct
     ? "--color-destructive"
@@ -92,10 +88,10 @@ const PlayerAnalytics = (props: PlayerAnalyticsProps) => {
         >
           <div className="player-analytics__stat-row">
             <span className="player-analytics__big-number">
-              {days ?? "—"}
+              {days}
             </span>
             <span className="player-analytics__label">
-              {days === 1 ? "day" : "days"}
+              {days === 1 ? "day" : "days"} of {TOTAL_ONBOARDING_DAYS}
             </span>
           </div>
           <p className="player-analytics__caption">

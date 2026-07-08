@@ -18,6 +18,39 @@ export const EXPECTED_SCHEDULE: ReadonlyArray<readonly [number, number]> = [
   [84, 100],
 ];
 
+const DAY_MS = 86_400_000;
+
+/**
+ * Number of full days since onboarding started.
+ *
+ * Uses {@link startDateISO} (player's `startDate` field) when available and
+ * valid. Falls back to the earliest progress-event timestamp if the explicit
+ * start date is missing or unparseable. Returns 0 as a last resort (day 0 means
+ * "started today", which means no expected progress).
+ */
+export const onboardingDays = (
+  startDateISO?: string,
+  events?: ReadonlyArray<{ readonly updated: string }>,
+): number => {
+  let startMs = NaN;
+
+  // Primary: parse the explicit start date
+  if (startDateISO) {
+    const t = new Date(startDateISO).getTime();
+    if (!Number.isNaN(t)) startMs = t;
+  }
+
+  // Fallback 1: earliest progress event timestamp
+  if (Number.isNaN(startMs) && events?.length) {
+    startMs = Math.min(...events.map((e) => new Date(e.updated).getTime()));
+  }
+
+  // Fallback 2: assume onboarding started now (day 0)
+  if (Number.isNaN(startMs)) return 0;
+
+  return Math.max(0, Math.floor((Date.now() - startMs) / DAY_MS));
+};
+
 /** Expected % complete at a given day since onboarding started (0–100). */
 export const expectedProgressPct = (days: number): number => {
   if (days <= 0) return 0;
