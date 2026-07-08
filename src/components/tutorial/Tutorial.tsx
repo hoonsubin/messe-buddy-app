@@ -211,6 +211,13 @@ export const useTutorial = (
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player?.id]);
 
+  useEffect(() => {
+    if (player?.tutorialComplete) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing local visibility to the backend-confirmed value, same pattern as the sessionStorage restore above
+      setShowTutorial(false);
+    }
+  }, [player?.tutorialComplete]);
+
   const { missionsReady, onboardingProfileMission, onLaunchTutorialMission } =
     options;
 
