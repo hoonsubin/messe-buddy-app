@@ -631,6 +631,14 @@ export const useGmPlayerDetailPage = () => {
     [missionEditor, showToast],
   );
 
+  // Resource attach/detach take effect immediately for this player (no
+  // dirty-draft staging like milestones/missions), so if this player was
+  // seeded from a template we offer the same "update the template too?"
+  // prompt right here instead of waiting for a milestone/mission save.
+  const promptTemplateSyncIfApplied = useCallback(() => {
+    if (appliedTemplate) setShowTemplateSavePrompt(true);
+  }, [appliedTemplate]);
+
   const handleAddResource = useCallback(
     (data: AddResourceInput) => {
       void (async () => {
@@ -642,27 +650,39 @@ export const useGmPlayerDetailPage = () => {
         }
         await gmResources.addResource({ ...data, milestoneId });
         showToast("Resource attached");
+        promptTemplateSyncIfApplied();
       })().catch(() => showToast("Could not attach resource"));
     },
-    [gmResources, milestoneEditor.selectedMilestone, showToast],
+    [
+      gmResources,
+      milestoneEditor.selectedMilestone,
+      showToast,
+      promptTemplateSyncIfApplied,
+    ],
   );
 
   const handleAttachFromLibrary = useCallback(
     (libraryResourceId: string, milestoneId: string) => {
       void gmResources.attachFromLibrary(libraryResourceId, milestoneId)
-        .then(() => showToast("Resource attached"))
+        .then(() => {
+          showToast("Resource attached");
+          promptTemplateSyncIfApplied();
+        })
         .catch(() => showToast("Could not attach resource"));
     },
-    [gmResources, showToast],
+    [gmResources, showToast, promptTemplateSyncIfApplied],
   );
 
   const handleDetachResource = useCallback(
     (resourceId: string, milestoneId: string) => {
       void gmResources.detachFromMilestone(resourceId, milestoneId)
-        .then(() => showToast("Resource removed"))
+        .then(() => {
+          showToast("Resource removed");
+          promptTemplateSyncIfApplied();
+        })
         .catch(() => showToast("Could not remove resource"));
     },
-    [gmResources, showToast],
+    [gmResources, showToast, promptTemplateSyncIfApplied],
   );
 
   const isDirty = useMemo(

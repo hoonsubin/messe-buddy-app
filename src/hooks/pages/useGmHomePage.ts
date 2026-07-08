@@ -84,8 +84,25 @@ export interface UseGmHomePageResult {
     patch: LibraryResourcePatch,
   ) => Promise<LibraryResource>;
   readonly deleteLibraryResource: (id: string) => Promise<void>;
+  readonly templateAssignmentsByResourceKey: ReadonlyMap<
+    string,
+    ReadonlyArray<TemplateResourceAssignment>
+  >;
+  readonly toggleResourceOnTemplateMilestone: (
+    templateName: string,
+    milestoneIndex: number,
+    resourceKey: string,
+    attach: boolean,
+  ) => Promise<void>;
   readonly buddyOptions: ReadonlyArray<BuddyProfile>;
   readonly buddyLoading: boolean;
+}
+
+/** Where a library resource is currently attached — one row per template milestone. */
+export interface TemplateResourceAssignment {
+  readonly templateName: string;
+  readonly milestoneIndex: number;
+  readonly milestoneName: string;
 }
 
 export const useGmHomePage = (): UseGmHomePageResult => {
@@ -247,6 +264,33 @@ export const useGmHomePage = (): UseGmHomePageResult => {
     [adapter, client],
   );
 
+  const toggleResourceOnTemplateMilestone = useCallback(
+    async (
+      templateName: string,
+      milestoneIndex: number,
+      resourceKey: string,
+      attach: boolean,
+    ): Promise<void> => {
+      const template = (templatesQuery.data ?? []).find((t) =>
+        t.name === templateName
+      );
+      if (!template) return;
+      const milestones = template.milestones.map((ms, i) => {
+        if (i !== milestoneIndex) return ms;
+        const current = ms.resources ?? [];
+        const resources = attach
+          ? (current.includes(resourceKey)
+            ? current
+            : [...current, resourceKey])
+          : current.filter((key) => key !== resourceKey);
+        return { ...ms, resources };
+      });
+      await adapter.saveTemplate({ ...template, milestones });
+      client.invalidateQuery(queryKeys.templates());
+    },
+    [adapter, client, templatesQuery.data],
+  );
+
   const players = gmRoster.data?.rows ?? [];
   const joinedPlayers = players.filter((p) => p.joined);
   const joinedCount = joinedPlayers.length;
@@ -262,6 +306,28 @@ export const useGmHomePage = (): UseGmHomePageResult => {
     () => collectTagSuggestions(libraryQuery.data ?? []),
     [libraryQuery.data],
   );
+
+  const templateAssignmentsByResourceKey = useMemo(() => {
+    const map = new Map<string, TemplateResourceAssignment[]>();
+    for (const template of templatesQuery.data ?? []) {
+      template.milestones.forEach((ms, milestoneIndex) => {
+        for (const resourceKey of ms.resources ?? []) {
+          const assignment: TemplateResourceAssignment = {
+            templateName: template.name,
+            milestoneIndex,
+            milestoneName: ms.name,
+          };
+          const list = map.get(resourceKey);
+          if (list) {
+            list.push(assignment);
+          } else {
+            map.set(resourceKey, [assignment]);
+          }
+        }
+      });
+    }
+    return map;
+  }, [templatesQuery.data]);
 
   return {
     sid,
@@ -298,6 +364,8 @@ export const useGmHomePage = (): UseGmHomePageResult => {
     createLibraryResource,
     updateLibraryResource,
     deleteLibraryResource,
+    templateAssignmentsByResourceKey,
+    toggleResourceOnTemplateMilestone,
     buddyOptions: buddyPickerQuery.data ?? [],
     buddyLoading: buddyPickerQuery.isInitialLoading,
   };
