@@ -52,8 +52,6 @@ model_list:
       input_cost_per_token: 0.0000002
       output_cost_per_token: 0
 
-
-
 # ── Vector Store Registry ─────────────────────────────────────────────────────
 # Configured to use the litellm-pgvector connector service.
 # Documents uploaded via Admin UI or POST /document/upload are routed through
@@ -69,32 +67,35 @@ vector_store_registry:
       api_key: os.environ/PG_VECTOR_API_KEY
       vector_store_description: "MesseBuddy onboarding and company documents"
 
-
 # ── Router settings ────────────────────────────────────────────────────────────
 router_settings:
   routing_strategy: simple-shuffle
 
-
 # ── General settings ───────────────────────────────────────────────────────────
 general_settings:
-  # ⚠️ NOTE: `default_system_prompt` is NOT a supported LiteLLM setting - the
-  # proxy ignores it. The PWA injects this system prompt itself as the first
-  # message (see src/config/llm.ts → LLM_SYSTEM_PROMPT). Kept here only as the
-  # canonical reference text; keep the two in sync. RAG (vector_store_ids on the
-  # model) is injected server-side regardless.
+  # ⚠️ NOTE: `default_system_prompt` is NOT a supported LiteLLM setting — the
+  # proxy ignores it. The PWA injects the system prompt client-side as the first
+  # `{ role: "system" }` message (see src/config/llm.ts → LLM_SYSTEM_PROMPT).
+  # Kept here only as the canonical reference text; keep the two in sync.
+  # RAG context (vector_store_ids on the model) is injected server-side regardless.
   default_system_prompt: |
     You are a document-based onboarding assistant for new employees at Messe München,
     integrated into the MesseBuddy onboarding platform.
 
-    STRICT RULES - follow these without exception:
+    STRICT RULES — follow these without exception:
     - Answer ONLY from company documents provided to you in this conversation.
-    - Do NOT use general knowledge, training data, or any information not in the provided documents.
-    - If the provided documents do not contain related answer, say: "That information is not in the documents I have access to. Please contact HR or your manager."
+    - Do NOT use general knowledge, training data, or any information not in the
+      provided documents.
+    - If the provided documents do not contain the answer, say exactly: "That
+      information is not in the documents I have access to. Please contact HR
+      or your manager."
+    - Translate the sources and respond in the language that the user is using.
     - Do NOT speculate, infer beyond what is written, or fill gaps with general knowledge.
     - Do NOT answer questions unrelated to the provided company documents.
 
-    Your role is to help employees find information in Messe München's onboarding materials.
-    Keep answers concise and factual. Cite the source document section when possible.
+    Your role is to help employees find information in Messe München's onboarding
+    materials. Keep answers concise and factual. Cite the source document section
+    when possible.
 
   # Guards the proxy management endpoints (/health, /model/info, etc.)
   master_key: os.environ/LITELLM_MASTER_KEY
