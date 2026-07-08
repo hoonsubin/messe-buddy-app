@@ -5,10 +5,7 @@ import RouteTabBar from "../components/shared/RouteTabBar.tsx";
 import TopBar from "../components/shared/TopBar.tsx";
 import MilestoneSidebarViewer from "../components/player/MilestoneSidebarViewer.tsx";
 import MissionDetailPopup from "../components/player/MissionDetailPopup.tsx";
-import {
-  PLACEHOLDER_STEPS,
-  TutorialOverlayWithStep,
-} from "../components/tutorial/TutorialOverlay.tsx";
+import { STEPS, Tutorial } from "../components/tutorial/Tutorial.tsx";
 import { playerCockpitTabsForSession } from "../components/player/constants.ts";
 import { parsePlayerCockpitTab } from "../utils/routeTabs.ts";
 import PlayerCockpitToolbar from "../components/player/PlayerCockpitToolbar.tsx";
@@ -72,10 +69,10 @@ const PlayerCockpitPage = () => {
         </div>
       )}
 
-      <TutorialOverlayWithStep
+      <Tutorial
         isVisible={m.showTutorial}
         currentStepIndex={m.tutorialStep}
-        steps={PLACEHOLDER_STEPS}
+        steps={STEPS}
         playerName={m.player.name}
         onNext={m.handleTutorialNext}
         onSkip={m.handleTutorialSkip}

@@ -15,7 +15,7 @@ import { useActiveProfile } from "../../hooks/useActiveProfile.ts";
 import { clearActiveUid } from "../../hooks/useIdentity.ts";
 import { useStaleSessionRedirect } from "../../hooks/useStaleSessionRedirect.ts";
 import { useDerivedPlayerProgress } from "../../hooks/useDerivedPlayerProgress.ts";
-import { useTutorial } from "../../hooks/useTutorial.ts";
+import { useTutorial } from "../../components/tutorial/Tutorial.tsx";
 import { useChat } from "../../hooks/useChat.ts";
 import type { UseChatWithAvailability } from "../../hooks/useChat.ts";
 import { useMutation } from "../../hooks/useMutation.ts";
@@ -38,7 +38,7 @@ import { parsePlayerCockpitTab } from "../../utils/routeTabs.ts";
 import {
   TUTORIAL_FORM_KEY,
   TUTORIAL_STEP_KEY,
-} from "../../components/tutorial/constants.ts";
+} from "../../components/tutorial/Tutorial.tsx";
 import type { UseProgressPlayerResult } from "../progressTypes.ts";
 
 export interface PlayerCockpitPageModel {
