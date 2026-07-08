@@ -74,6 +74,11 @@ const GmHomePage = () => {
               createResource={vm.createLibraryResource}
               updateResource={vm.updateLibraryResource}
               deleteResource={vm.deleteLibraryResource}
+              templates={vm.templates}
+              templateAssignmentsByResourceKey={vm
+                .templateAssignmentsByResourceKey}
+              toggleResourceOnTemplateMilestone={vm
+                .toggleResourceOnTemplateMilestone}
             />
           )}
       </main>

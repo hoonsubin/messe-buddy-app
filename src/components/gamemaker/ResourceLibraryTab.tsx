@@ -1,14 +1,16 @@
 import { useCallback, useState } from "react";
 import { MdAdd } from "react-icons/md";
-import type { LibraryResource } from "../../types/index.ts";
+import type { LibraryResource, TemplateExport } from "../../types/index.ts";
 import type {
   LibraryResourceInput,
   LibraryResourcePatch,
 } from "../../types/resourceInputs.ts";
+import type { TemplateResourceAssignment } from "../../hooks/pages/useGmHomePage.ts";
 import ConfirmDialog from "../shared/ConfirmDialog.tsx";
 import FetchErrorPanel from "../shared/FetchErrorPanel.tsx";
 import LibraryResourceCard from "./LibraryResourceCard.tsx";
 import LibraryResourceFormModal from "./LibraryResourceFormModal.tsx";
+import AssignResourceToTemplateModal from "./AssignResourceToTemplateModal.tsx";
 
 interface ResourceLibraryTabProps {
   readonly resources: ReadonlyArray<LibraryResource>;
@@ -24,6 +26,17 @@ interface ResourceLibraryTabProps {
     patch: LibraryResourcePatch,
   ) => Promise<LibraryResource>;
   readonly deleteResource: (id: string) => Promise<void>;
+  readonly templates: ReadonlyArray<TemplateExport>;
+  readonly templateAssignmentsByResourceKey: ReadonlyMap<
+    string,
+    ReadonlyArray<TemplateResourceAssignment>
+  >;
+  readonly toggleResourceOnTemplateMilestone: (
+    templateName: string,
+    milestoneIndex: number,
+    resourceKey: string,
+    attach: boolean,
+  ) => Promise<void>;
 }
 
 const ResourceLibraryTab = ({
@@ -35,6 +48,9 @@ const ResourceLibraryTab = ({
   createResource,
   updateResource,
   deleteResource,
+  templates,
+  templateAssignmentsByResourceKey,
+  toggleResourceOnTemplateMilestone,
 }: ResourceLibraryTabProps) => {
   const [formMode, setFormMode] = useState<"create" | "edit" | null>(null);
   const [editing, setEditing] = useState<LibraryResource | null>(null);
@@ -42,6 +58,7 @@ const ResourceLibraryTab = ({
   const [pendingDelete, setPendingDelete] = useState<LibraryResource | null>(
     null,
   );
+  const [assigning, setAssigning] = useState<LibraryResource | null>(null);
 
   const closeForm = useCallback(() => {
     setFormMode(null);
@@ -134,11 +151,22 @@ const ResourceLibraryTab = ({
               <LibraryResourceCard
                 key={resource.id}
                 resource={resource}
+                assignments={templateAssignmentsByResourceKey.get(
+                  resource.resourceKey,
+                ) ?? []}
                 onEdit={() => {
                   setEditing(resource);
                   setFormMode("edit");
                 }}
                 onDelete={() => setPendingDelete(resource)}
+                onAssign={() => setAssigning(resource)}
+                onUnassign={(templateName, milestoneIndex) =>
+                  void toggleResourceOnTemplateMilestone(
+                    templateName,
+                    milestoneIndex,
+                    resource.resourceKey,
+                    false,
+                  )}
               />
             ))}
           </ul>
@@ -167,6 +195,21 @@ const ResourceLibraryTab = ({
         onConfirm={() => void handleConfirmDelete()}
         onCancel={() => setPendingDelete(null)}
       />
+
+      {assigning && (
+        <AssignResourceToTemplateModal
+          resource={assigning}
+          templates={templates}
+          onToggle={(templateName, milestoneIndex, attach) =>
+            void toggleResourceOnTemplateMilestone(
+              templateName,
+              milestoneIndex,
+              assigning.resourceKey,
+              attach,
+            )}
+          onClose={() => setAssigning(null)}
+        />
+      )}
     </div>
   );
 };
