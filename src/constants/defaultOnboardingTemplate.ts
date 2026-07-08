@@ -68,7 +68,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 5,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.SELF_APPROVE,
         },
         {
@@ -78,7 +78,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 10,
           tags: [MISSION_TAG.MANDATORY],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
         {
@@ -88,7 +88,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 5,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.SELF_APPROVE,
         },
         {
@@ -98,7 +98,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 5,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
       ],
@@ -116,7 +116,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 15,
           tags: [MISSION_TAG.MANDATORY],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
       ],
@@ -146,7 +146,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 10,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.SELF_APPROVE,
         },
         {
@@ -156,7 +156,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 10,
           tags: [MISSION_TAG.MANDATORY],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
         {
@@ -166,7 +166,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 15,
           tags: [MISSION_TAG.MANDATORY],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
         {
@@ -176,7 +176,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 10,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
         {
@@ -186,7 +186,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 15,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
         {
@@ -196,7 +196,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 10,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
         {
@@ -206,7 +206,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 10,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
         {
@@ -216,7 +216,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 10,
           tags: [MISSION_TAG.MANDATORY],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
         {
@@ -226,7 +226,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 10,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
         {
@@ -236,7 +236,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 20,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.SELF_APPROVE,
         },
       ],
@@ -266,7 +266,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           externalUrl: "https://www.messe-muenchen.de/en/company/about-us/",
           xpValue: 5,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.SELF_APPROVE,
         },
         {
@@ -277,7 +277,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           externalUrl: "https://www.messe-muenchen.de/en/company/about-us/",
           xpValue: 15,
           tags: [MISSION_TAG.MANDATORY],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
         {
@@ -288,7 +288,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           externalUrl: "https://www.messe-muenchen.de/en/company/strategy/",
           xpValue: 10,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
         {
@@ -298,7 +298,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 5,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.SELF_APPROVE,
         },
         {
@@ -308,7 +308,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 20,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
         {
@@ -319,7 +319,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           externalUrl: "https://www.messe-muenchen.de/en/company/about-us/",
           xpValue: 15,
           tags: [MISSION_TAG.MANDATORY],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.SELF_APPROVE,
         },
       ],
@@ -340,7 +340,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
             "https://www.messe-muenchen.de/en/company/career/benefits/",
           xpValue: 5,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.SELF_APPROVE,
         },
         {
@@ -350,7 +350,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 15,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
         {
@@ -360,7 +360,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 15,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
       ],
@@ -388,7 +388,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 15,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
         {
@@ -398,7 +398,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 10,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
         {
@@ -408,7 +408,7 @@ export const DEFAULT_ONBOARDING_TEMPLATE: TemplateExport = {
           type: MISSION_TYPE.TEXT,
           xpValue: 15,
           tags: [],
-          isInCurrentMissions: true,
+          isInCurrentMissions: false,
           validationMethod: VALIDATION_METHOD.QR,
         },
       ],

@@ -225,6 +225,7 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
         if (fromTutorial) {
           sessionStorage.setItem(TUTORIAL_FORM_KEY, "1");
         }
+        // todo: instead of navigating to the first mission of the milestone, the app should tell the player to touch the mission item.
         navigate(`/form/${sessionId}/${missionId}`);
       } else {
         setPopupMission(mission);
@@ -248,9 +249,12 @@ export const usePlayerCockpitPage = (): UsePlayerCockpitPageResult => {
     onLaunchTutorialMission: (id) => handleMissionClick(id, true),
   });
 
-  const currentMissions = missions.filter((m) => m.isInCurrentMissions);
+  const currentMissions = missions.filter((mission) =>
+    mission.isInCurrentMissions
+  );
   const selectedMilestone = selectedMilestoneId !== null
-    ? (milestones.find((m) => m.id === selectedMilestoneId) ?? undefined)
+    ? (milestones.find((milestone) => milestone.id === selectedMilestoneId) ??
+      undefined)
     : undefined;
   const sidebarMissions = selectedMilestoneId !== null
     ? missions.filter((m) => m.milestoneId === selectedMilestoneId)
