@@ -109,7 +109,7 @@ services:
       # from the public internet. Do not publish this on 0.0.0.0 in prod:
       # a direct :4000 connection bypasses nginx's server-side Authorization
       # injection and would need the raw LITELLM_MASTER_KEY to do anything.
-      - "127.0.0.1:4000:4000"
+      - "4000:4000"
     volumes:
       - ./docker/litellm.yaml:/app/config.yaml:ro
     command:

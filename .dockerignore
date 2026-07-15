@@ -1,0 +1,63 @@
+# Dependencies & build artifacts
+node_modules/
+dist/
+.vite/
+
+# IDE / editor
+.cursor/
+.roo/
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Playwright MCP screenshots (large, not needed in builds)
+.playwright-mcp/
+
+# PocketBase local data
+.pb-data/
+
+# Git (not needed inside containers)
+.git/
+.gitignore
+
+# Docs & design assets
+docs/
+design/
+consume-docs/
+
+# CI / tooling configs
+.github/
+.devcontainer/
+.actrc
+.act.secrets.example
+
+# Env files (injected at runtime via docker-compose env_file)
+.env
+.env.*
+
+# Root config files that are only needed in the build context for specific services
+deno.json
+deno.lock
+eslint.config.js
+index.html
+AGENTS.md
+SPECS.md
+README.md
+docker-compose.yml
+Dockerfile
+
+# Keep docker/ — main Dockerfile and pb-seed need its contents
+!docker/
+
+# Keep root files needed by main Dockerfile & pb-seed build contexts
+!deno.json
+!deno.lock
+!index.html
+!scripts/
+!src/

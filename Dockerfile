@@ -64,7 +64,7 @@ RUN go mod tidy && \
 #   • nginx     — serves PWA static files on :80
 #   • pocketbase-server — REST + SSE backend on :8090
 # Both managed by supervisord.
-FROM debian:bookworm-slim AS runtime
+FROM debian:trixie-slim AS runtime
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
